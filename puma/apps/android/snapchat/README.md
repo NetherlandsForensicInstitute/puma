@@ -20,7 +20,8 @@ phone = SnapchatActions("emulator-5444")
 You can navigate to one of the main Snapchat tabs, or open a specific chat:
 
 ```python
-phone.go_to_main_tab("Chat")  # Go to the Chat tab. Other options are Map, Camera, Stories, or Spotlight
+phone.go_to_camera_tab() # Go to the Camera tab.
+phone.go_to_conversation_tab() # Go to the Chat tab.
 phone.select_chat("Bob")  # Will go to the chat tab and open the conversation with Bob
 ```
 
