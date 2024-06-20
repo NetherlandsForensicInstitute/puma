@@ -44,9 +44,9 @@ bob.end_call()
 The following apps are supported by Puma. each app has its own documentation page detailing the supported actions with
 example implementations:
 
-* [WhatsApp](apps/android/whatsapp/README)
-* [Telegram](apps/android/telegram/README)
-* [Snapchat](apps/android/snapchat/README)
+* [WhatsApp](puma/apps/android/whatsapp/README.md)
+* [Telegram](puma/apps/android/telegram/README.md)
+* [Snapchat](puma/apps/android/snapchat/README.md)
 
 Right now only Android is supported.
 
