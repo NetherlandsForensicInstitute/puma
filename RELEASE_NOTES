@@ -1,3 +1,6 @@
 Version 1.1.0
 -------------
+8. Make Snapchat tests more robust
+9. Install transitive dependencies
+5. Fix links between README files
 1. Publish initial version to GitHub, supporting Android apps WhatsApp v2.24.11.79, Telegram v10.13.4 and Snapchat v12.90.0.46
