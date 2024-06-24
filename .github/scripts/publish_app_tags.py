@@ -1,7 +1,7 @@
 import os
 from typing import Callable, Tuple
 
-from git import Repo
+from git import Repo, Remote
 
 from puma.apps.android.snapchat.snapchat import SnapchatActions
 from puma.apps.android.telegram.telegram import TelegramActions
@@ -30,11 +30,32 @@ def get_app_name_and_platform(app_action_class: Callable) -> Tuple:
     return platform, app_name
 
 
+def remove_app_tag(local_repo: Repo, remote_repo: Remote, tag_name: str):
+    """
+    Remove the tag from the remote repo and all its dependencies. Assumes the tag actually is present.
+    :param local_repo: Local repository
+    :param remote_repo: Remote repository
+    :param tag_name: Tag name
+    """
+    try:
+        local_repo.delete_tag(tag_name)
+        print(f"Tag '{tag_name}' has been removed from the local repository.")
+    except Exception as e:
+        print(f"Failed to delete the tag: {e}")
+
+    try:
+        remote_repo.push(refspec=f':refs/tags/{tag_name}')
+        print(f"Tag '{tag_name}' has been removed from the remote repository.")
+    except Exception as e:
+        print(f"Failed to delete the tag from the remote repository: {e}")
+
+
 if __name__ == '__main__':
     repo_dir = os.getenv('GITHUB_WORKSPACE', os.getcwd())
     token = os.getenv('GITHUB_TOKEN')
 
     puma_repo = Repo(repo_dir)
+
     origin = puma_repo.remote()
     remote_url = origin.url.replace('https://', f'https://{token}@')
     origin.set_url(remote_url)
@@ -43,6 +64,11 @@ if __name__ == '__main__':
     for app_action_class in all_app_actions:
         platform, app_name = get_app_name_and_platform(app_action_class)
         app_version_tag = f"{app_name}-{platform}-v{app_action_class.supported_version}"# Note that supported_version is a custom decorator, so your IDE might not autocomplete it.
-        if app_version_tag not in repo_tags:
+        if app_version_tag in repo_tags:
+            remove_app_tag(puma_repo, origin, app_version_tag)
+        try:
             puma_repo.create_tag(app_version_tag)
-        origin.push(app_version_tag)
+            origin.push(app_version_tag)
+            print("Successfully created tag {app_version_tag}.")
+        except Exception as e:
+            print(f"Something went wrong when creating or pushing the tag {app_version_tag}.")
