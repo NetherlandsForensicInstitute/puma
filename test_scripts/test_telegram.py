@@ -38,8 +38,6 @@ class TestTelegram(unittest.TestCase):
         else:
             print("WARNING: No udid configured for Bob. Some tests will fail as a result")
 
-        self.alice = TelegramActions(device_udids["Alice"])
-        self.bob = TelegramActions(device_udids["Bob"])
         self.contact_alice = "Alice"
         self.contact_bob = "Bob"
 
