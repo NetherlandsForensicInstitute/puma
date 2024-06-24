@@ -35,13 +35,38 @@ class SnapchatActions(AndroidAppiumActions):
         return self.is_present(
             '//android.widget.TextView[@resource-id="com.snapchat.android:id/hova_page_title" and @text="Chat"]')
 
+    def _currently_on_top_of_conversation_overview(self) -> bool:
+        """
+        Check if the current position is at the top of the conversation view.
+        """
+        on_top = False
+        header_patterns = ["Unread", "Groups", "Unreplied"]
+        for pattern in header_patterns:
+            if self.is_present(f'//android.widget.TextView[lower-case(@content-desc)="{pattern.lower()}"]'):
+                on_top = True
+                break
+        return on_top
+
     def _currently_in_conversation(self) -> bool:
         return self.is_present(
             '//android.widget.EditText[@resource-id="com.snapchat.android:id/chat_input_text_field"]')
 
-    def go_to_main_tab(self, tab_name: str):
+    def _currently_in_camera_tab(self) -> bool:
         """
-        One fo the main tabs of snapchat: Map, chat, Camera, Stories, or Spotlight
+        Check if the current position is the camera tab.
+        The camera button is checked, but this element also occurs in the camera view when sending a photo to a contact.
+        Thus, an additional check is needed if "Send To" is not present is required.
+        :return:
+        """
+        return (
+                self.is_present('//android.widget.FrameLayout[@content-desc="Camera Capture"]') and not
+                self.is_present('//android.widget.TextView[@text="Send To"]')
+        )
+
+    def _go_to_main_tab(self, tab_name: str):
+        """
+        Navigate to one of the main tabs.
+        :param tab_name: One of the main tabs of snapchat: Map, Chat, Camera, Stories, or Spotlight
         """
         if self.driver.current_package != SNAPCHAT_PACKAGE:
             self.driver.activate_app(SNAPCHAT_PACKAGE)
@@ -50,19 +75,39 @@ class SnapchatActions(AndroidAppiumActions):
         self.driver.find_element(by=AppiumBy.XPATH,
                                  value=f'//android.widget.LinearLayout[@resource-id="com.snapchat.android:id/ngs_navigation_bar"]/android.view.ViewGroup[@content-desc="{tab_name}"]').click()
 
+    #TODO create a separate function for each tab, so the user cannot make any typos
+    def go_to_conversation_tab(self):
+        """
+        Navigate to the top of the conversation tab.
+        When tapping "navigate to chat" when already in the conversation
+        tab, the focus shifts down to the Quick Add section. This poses a problem when selecting a specific
+        conversation that is out of view. This method makes sure to be at the top
+        """
+        if not self._currently_in_conversation_overview():
+            self._go_to_main_tab("Chat")
+        if not self._currently_on_top_of_conversation_overview():
+            self._go_to_main_tab("Chat")
+
+    def go_to_camera_tab(self):
+        """
+        Navigate to camera tab.
+        """
+        if not self._currently_in_camera_tab():
+            self._go_to_main_tab("Camera")
+
     def select_chat(self, chat_subject: str):
         """
         Opens a given conversation.
         :param chat_subject: the name of the conversation to open
         """
-        self.go_to_main_tab('Chat')
+        self.go_to_conversation_tab()
         self.driver.find_element(by=AppiumBy.XPATH,
                                  value=f'//javaClass[contains(lower-case(@text), "{chat_subject.lower()}")]/..').click()
 
     def _if_chat_go_to_chat(self, chat: str):
         if chat is not None:
-            self.go_to_main_tab('Chat')
             self.select_chat(chat)
+        sleep(1)
         if not self._currently_in_conversation():
             raise Exception('Expected to be in conversation screen now, but screen contents are unknown')
 
@@ -91,7 +136,7 @@ class SnapchatActions(AndroidAppiumActions):
         :param front_camera: Optional: whether or not to use the front camera (True by default)
         """
         # go to camera and snap picture
-        self.go_to_main_tab('Camera')
+        self.go_to_camera_tab()
         if not front_camera:
             self.driver.find_element(by=AppiumBy.XPATH,
                                      value='//android.view.ViewGroup[@content-desc="Flip Camera"]').click()
