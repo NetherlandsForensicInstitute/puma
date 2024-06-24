@@ -1,7 +1,7 @@
 import os
 from typing import Callable, Tuple
 
-from git import Repo
+from git import Repo, Remote
 
 from puma.apps.android.snapchat.snapchat import SnapchatActions
 from puma.apps.android.telegram.telegram import TelegramActions
@@ -29,6 +29,29 @@ def get_app_name_and_platform(app_action_class: Callable) -> Tuple:
     app_name = app_path.split(".")[3]
     return platform, app_name
 
+def remove_app_tag(local_repo: Repo, remote_repo: Remote, tag_name: str):
+    # Check if the tag exists
+    tag = None
+    try:
+        tag = local_repo.tags[tag_name]
+    except IndexError:
+        print(f"Tag '{tag_name}' does not exist in the repository.")
+        return
+
+    # Delete the tag locally
+    try:
+        local_repo.delete_tag(tag)
+        print(f"Tag '{tag_name}' has been removed from the local repository.")
+    except Exception as e:
+        print(f"Failed to delete the tag: {e}")
+
+    # Delete the tag from the remote repository
+    try:
+        remote_repo.push(refspec=f':refs/tags/{tag_name}')
+        print(f"Tag '{tag_name}' has been removed from the remote repository.")
+    except Exception as e:
+        print(f"Failed to delete the tag from the remote repository: {e}")
+
 
 if __name__ == '__main__':
     repo_dir = os.getenv('GITHUB_WORKSPACE', os.getcwd())
@@ -43,6 +66,11 @@ if __name__ == '__main__':
     for app_action_class in all_app_actions:
         platform, app_name = get_app_name_and_platform(app_action_class)
         app_version_tag = f"{app_name}-{platform}-v{app_action_class.supported_version}"# Note that supported_version is a custom decorator, so your IDE might not autocomplete it.
-        if app_version_tag not in repo_tags:
+        if app_version_tag in repo_tags:
+            remove_app_tag(puma_repo, origin, app_version_tag)
+        try:
             puma_repo.create_tag(app_version_tag)
-        origin.push(app_version_tag)
+            origin.push(app_version_tag)
+            print("Successfully created tag {app_version_tag}.")
+        except Exception as e:
+            print(f"Something went wrong when creating or pushing the tag {app_version_tag}.")
