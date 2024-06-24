@@ -134,15 +134,17 @@ _See [troubleshooting](#installing-appium-with-npm-fails) if installing Appium o
 
 - Android SDK platform tools ([Download here](https://developer.android.com/studio/releases/platform-tools)) or with the following commands:
 ```bash
+cd /path/of/your/choosing
+sudo mkdir -p android-sdk-linux/cmdline-tools
+cd android-sdk-linux/cmdline-tools/ || exit
 sudo wget https://dl.google.com/android/repository/commandlinetools-linux-9123335_latest.zip
 sudo unzip commandlinetools-linux-9123335_latest.zip
 sudo mv cmdline-tools latest
-cd latest/bin || exit
 ```
 
 - `ANDROID_SDK_ROOT` environment variable set:
 ```bash
-$ export ANDROID_SDK_ROOT={path/to/sdk/root} >> ~/.bashrc
+$ export ANDROID_SDK_ROOT={/path/to/android-sdk-linux} >> ~/.bashrc
 $ source ~/.bashrc
 ```
 
