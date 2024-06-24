@@ -132,31 +132,29 @@ appium driver install uiautomator2
 ```
 _See [troubleshooting](#installing-appium-with-npm-fails) if installing Appium or npm fails._
 
-- Android SDK platform tools ([Download here](https://developer.android.com/studio/releases/platform-tools)) or with the following commands:
-```bash
-cd /path/of/your/choosing
-sudo mkdir -p android-sdk-linux/cmdline-tools
-cd android-sdk-linux/cmdline-tools/ || exit
-sudo wget https://dl.google.com/android/repository/commandlinetools-linux-9123335_latest.zip
-sudo unzip commandlinetools-linux-9123335_latest.zip
-sudo mv cmdline-tools latest
-```
+### ADB
+ADB (We recommend installing [Android platform-tools](https://developer.android.com/studio/releases/platform-tools), which contains ADB.
+Create the directory `~/Android/Sdk/` and unzip the platform-tools in this folder, so the absolute path to adb becomes `~/Android/Sdk/platform-tools/adb`. 
+This is the location where Appium and Puma look for ADB by default.
+
+### Environment variables
 
 - `ANDROID_SDK_ROOT` environment variable set:
 ```bash
-$ export ANDROID_SDK_ROOT={/path/to/android-sdk-linux} >> ~/.bashrc
+$ export ANDROID_SDK_ROOT={~/Android/Sdk/} >> ~/.bashrc
 $ source ~/.bashrc
 ```
+> :warning: When running your Appium script from an IDE, you might get the error `Could not determine Android SDK ROOT.`
+> This is because the IDE might not load the environment variables correctly. Since Puma then defaults to ~/Android/Sdk,
+> you will not need to do anything if you followed the steps above, and you can ignore this messgae. If you really want 
+> to use another location, please refer to you IDE specific documentation how to set environment variables.  
 
-- ADB (Possibly installed with platform tools, export env variable)
-- One of the following browsers: Google Chrome, Chromium, updated to a relatively new version
-- 1 or more Android devices connected to the system where Puma runs, with:
-    - The Google Play Store installed
-    - Logged in to a Google account
+### Android Device(s) or Emulators
+- 1 or more Android devices or emulators connected to the system where Puma runs, with:
     - Internet connection
-    - USB debugging enabled
     - Language set to English
-    - Device is not secured (e.g. with a password, pattern, or fingerprint)
+    - File transfer enabled
+    - Device is not secured (e.g. with a password, pattern, or fingerprint), otherwise unlock it everytime before starting your script.
     - (Root access is not needed)
   - You can check if the device is connected:
     ```bash
