@@ -29,23 +29,20 @@ def get_app_name_and_platform(app_action_class: Callable) -> Tuple:
     app_name = app_path.split(".")[3]
     return platform, app_name
 
-def remove_app_tag(local_repo: Repo, remote_repo: Remote, tag_name: str):
-    # Check if the tag exists
-    tag = None
-    try:
-        tag = local_repo.tags[tag_name]
-    except IndexError:
-        print(f"Tag '{tag_name}' does not exist in the repository.")
-        return
 
-    # Delete the tag locally
+def remove_app_tag(local_repo: Repo, remote_repo: Remote, tag_name: str):
+    """
+    Remove the tag from the remote repo and all its dependencies. Assumes the tag actually is present.
+    :param local_repo: Local repository
+    :param remote_repo: Remote repository
+    :param tag_name: Tag name
+    """
     try:
-        local_repo.delete_tag(tag)
+        local_repo.delete_tag(tag_name)
         print(f"Tag '{tag_name}' has been removed from the local repository.")
     except Exception as e:
         print(f"Failed to delete the tag: {e}")
 
-    # Delete the tag from the remote repository
     try:
         remote_repo.push(refspec=f':refs/tags/{tag_name}')
         print(f"Tag '{tag_name}' has been removed from the remote repository.")
@@ -58,6 +55,7 @@ if __name__ == '__main__':
     token = os.getenv('GITHUB_TOKEN')
 
     puma_repo = Repo(repo_dir)
+
     origin = puma_repo.remote()
     remote_url = origin.url.replace('https://', f'https://{token}@')
     origin.set_url(remote_url)
