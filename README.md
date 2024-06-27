@@ -115,61 +115,72 @@ Puma is developed and tested on Linux and Windows. MacOS is not tested by us, bu
 ### Python
 
 Puma is tested on Python 3.10 and 3.11, we haven't tested other versions.
+Download Python [here](https://www.python.org/downloads/) or install it using apt:
+```shell
+sudo apt install python3.11
+```
 
 ### ADB
 
-Puma uses ADB to connect to Android devices for some features. [Install ADB](https://developer.android.com/tools/adb)
-and ensure it's on your PATH.
+Puma uses ADB to connect to Android devices for some features, both directly and through Appium.
+To install ADB, download [the Android Sdk Platform Tools](https://developer.android.com/tools/releases/platform-tools).
+Create the directory `~/Android/Sdk/` and unzip the platform-tools in this folder, so the absolute path to adb becomes `~/Android/Sdk/platform-tools/adb`. 
+Then create the environmental value `ANDROID_SDK_ROOT` with the value `~/Android/Sdk/`:
+
+```shell
+$ echo 'export ANDROID_SDK_ROOT="$HOME/Android/Sdk/"' >> ~/.bashrc
+$ source ~/.bashrc
+```
+> :warning: When running your Appium script from an IDE, you might get the error `Could not determine ANDROID_SDK_ROOT.`
+> This is because the IDE might not load the environment variables correctly. Since Puma then defaults to ~/Android/Sdk,
+> you will not need to do anything if you followed the steps above, and you can ignore this message. If you really want 
+> to use another location, please refer to you IDE specific documentation how to set environment variables.
 
 ### Appium
 
 Apps are controlled through Appium. See the [Appium website](https://appium.io/docs/en/2.0/quickstart/install/) or below
 how to install Appium, Appium v2.0 or greater is needed to run Puma.
 
-```bash
+Appium is a NodeJS application which can be installed through NPM.
+If you don't have NPM isntalled, we recommend installing NPM and Node using NVM, an application to manage your NodeJS
+installation.
+
+```shell
 sudo apt install curl
-curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.35.3/install.sh | bash
+curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.7/install.sh | bash
 nvm install 19.0.0
+```
+
+If you have NPM installed you can install Appium:
+
+```shell
 npm install -g appium
 appium driver install uiautomator2
 ```
-_See [troubleshooting](#installing-appium-with-npm-fails) if installing Appium or npm fails._
-
-### ADB
-ADB (We recommend installing [Android platform-tools](https://developer.android.com/studio/releases/platform-tools), which contains ADB.
-Create the directory `~/Android/Sdk/` and unzip the platform-tools in this folder, so the absolute path to adb becomes `~/Android/Sdk/platform-tools/adb`.
-This is the location where Appium and Puma look for ADB by default.
-
-### Environment variables
-
-- `ANDROID_SDK_ROOT` environment variable set:
-```bash
-$ export ANDROID_SDK_ROOT={~/Android/Sdk/} >> ~/.bashrc
-$ source ~/.bashrc
-```
-> :warning: When running your Appium script from an IDE, you might get the error `Could not determine Android SDK ROOT.`
-> This is because the IDE might not load the environment variables correctly. Since Puma then defaults to ~/Android/Sdk,
-> you will not need to do anything if you followed the steps above, and you can ignore this messgae. If you really want
-> to use another location, please refer to you IDE specific documentation how to set environment variables.
+_See [troubleshooting](#installing-appium-with-npm-fails) if installing Appium or npm fails._ 
 
 ### Android Device(s) or Emulators
 - 1 or more Android devices or emulators connected to the system where Puma runs, with:
-    - Internet connection
-    - Language set to English
-    - File transfer enabled
-    - Device is not secured (e.g. with a password, pattern, or fingerprint), otherwise unlock it everytime before starting your script.
-    - (Root access is not needed)
-  - You can check if the device is connected:
-    ```bash
-    $ adb devices
+  - Internet connection
+  - Language set to English
+  - File transfer enabled
+  - Recommended: disable 
+  - (Root access is not needed)
+
+You can check if the device is connected:
+  ```shell
+  adb devices
     > List of devices attached
-    847734hfdjkd93937  device
-    ```
+  894759843jjg99993  device
+  ```
 If the status says `device`, the device is connected and available.
 
-### OCR module
+### Optional: OCR module
 
-If you wish to use the OCR module, you need to have tesseract installed:
+Puma has an OCR module which is required for some apps. See the documentation of the apps you want ot use whether you
+need OCR.
+
+Top use the OCR module you need to install Tesseract:
 
 ```shell
 sudo apt install tesseract-ocr
@@ -177,8 +188,8 @@ sudo apt install tesseract-ocr
 
 Or use the Windows installer.
 
-### FFMPEG
-
+### Optional: FFMPEG
+ 
 To use `video_utils.py` you need to install ffmpeg:
 
 ```shell
@@ -192,9 +203,22 @@ horizontally).
 ### ADB shows status unauthorized
 This happens when you did not allow data transfer via usb. Tap on the charging popup or go to `settings > USB preferences` and select `File Transfer`.
 
+### Adb device cannot connect
+If the status of your device is `unauthorized`, make sure USB debugging is enabled in developer options:
+
+- [Enable developer options](https://developer.android.com/studio/debug/dev-options)
+- [Enable USB debugging](https://developer.android.com/studio/debug/dev-options#Enable-debugging)
+- Connect your device to your computer, open a terminal and run `adb devices`
+- Your device should now show a popup to allow USB debugging. Press always allow.
+
+If you do not get the pop-up, reset USB debugging authorisation in `Settings > Developer options > Revoke USB debugging
+authorisations` and reconnect the device and run `adb devices` again.
+
 ### Installing Appium with npm fails
-If you are behind a proxy and the appium install hangs, make sure to configure your `~/.npmrc` with the following settings.
+If you are behind a proxy and the appium install hangs, make sure to configure your `~/.npmrc` with the following
+settings.
 Fill in the values, restart terminal and try again:
+
 ```text
 registry=<your organization registry>
 proxy=<organization proxy>
@@ -214,6 +238,7 @@ sudo chmod +x Appium-Server-GUI-*.AppImage
 - Do not change the default settings
 - Click the startServer button
 - Now you can run Puma
+
 ### ConnectionRefusedError: [Errno 111] Connection refused
 This error is probably caused by Appium not running. Start Appium first and try again.
 
