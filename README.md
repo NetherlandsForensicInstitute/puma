@@ -125,7 +125,7 @@ Create the directory `~/Android/Sdk/` and unzip the platform-tools in this folde
 Then create the environmental value `ANDROID_SDK_ROOT` with the value `~/Android/Sdk/`:
 
 ```shell
-$ export ANDROID_SDK_ROOT={~/Android/Sdk/} >> ~/.bashrc
+$ echo 'export ANDROID_SDK_ROOT="$HOME/Android/Sdk/"' >> ~/.bashrc
 $ source ~/.bashrc
 ```
 > :warning: When running your Appium script from an IDE, you might get the error `Could not determine ANDROID_SDK_ROOT.`
@@ -198,9 +198,22 @@ horizontally).
 
 ## Troubleshooting
 
+### Adb device cannot connect
+If the status of your device is `unauthorized`, make sure USB debugging is enabled in developer options:
+
+- [Enable developer options](https://developer.android.com/studio/debug/dev-options)
+- [Enable USB debugging](https://developer.android.com/studio/debug/dev-options#Enable-debugging)
+- Connect your device to your computer, open a terminal and run `adb devices`
+- Your device should now show a popup to allow USB debugging. Press always allow.
+
+If you do not get the pop-up, reset USB debugging authorisation in `Settings > Developer options > Revoke USB debugging
+authorisations` and reconnect the device and run `adb devices` again.
+
 ### Installing Appium with npm fails
-If you are behind a proxy and the appium install hangs, make sure to configure your `~/.npmrc` with the following settings.
+If you are behind a proxy and the appium install hangs, make sure to configure your `~/.npmrc` with the following
+settings.
 Fill in the values, restart terminal and try again:
+
 ```text
 registry=<your organization registry>
 proxy=<organization proxy>
@@ -220,6 +233,7 @@ sudo chmod +x Appium-Server-GUI-*.AppImage
 - Do not change the default settings
 - Click the startServer button
 - Now you can run Puma
+
 ### ConnectionRefusedError: [Errno 111] Connection refused
 This error is probably caused by Appium not running. Start Appium first and try again.
 
