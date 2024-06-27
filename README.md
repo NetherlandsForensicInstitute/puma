@@ -11,32 +11,35 @@ Puma is an open-source non-commercial project, and community contributions to ad
 apps are welcome! If you want to contribute, please read [CONTRIBUTING.md](CONTRIBUTING.md).
 
 > :no_mobile_phones: Puma currently only supports Android apps. iOS apps are on our to-do list!
-## Installation
+## Getting started
+- To get started with Puma, make sure you installed all requirements (see the [requirements](#requirements) section).
+- Connect your Android device or start an emulator, make sure it is in File Transfer mode, and retrieve the device UDID with ADB:
 ```bash
-pip install pumapy
-# Example import for WhatsApp
-from puma.apps.android.whatsapp.whatsapp import WhatsappActions
+$ adb devices
+> List of devices attached
+847734hfdjkd93937  device
+```
+In the above output, `847734hfdjkd93937` is the UDID, and `device` is the status indicating it is connected correctly.
+
+Below is an example for WhatsApp. You need to have WhatsApp installed on your device and a registered WhatsApp account
+(see also the [WhatsApp README](apps/android/whatsapp/README)). You also need a contact or group name to send the message to. In the below example,
+we will assume you already have a conversation with that person and that conversation is visible when opening WhatsApp.
+
+Before running the code below, start Appium in your shell, or if you have Appium Desktop in the GUI:
+```shell
+Appium
 ```
 
-## Example usage
-
-The following code is an example on how to easily execute a series of actions on multiple devices:
-
+Then, pip install puma in your venv:
+```bash
+pip install pumapy
+```
+Finally, run insert the required information and the following Python code
 ```python
 from puma.apps.android.whatsapp.whatsapp import WhatsappActions
 
-alice = WhatsappActions("emulator-5554")  # initialize a connection with device emulator-5554
-bob = WhatsappActions("emulator-5556")  # initialize a connection with device emulator-5556
-# Now chatting is very easy
-alice.create_new_chat("Bob", "Hi Bob, how are you?")
-bob.select_chat("Alice")
-bob.send_message("Hi Alice, I'm great, are we still on for the 12th Avengers movie next weekend?")
-alice.send_message("Shoot, I totally forgot. Wait, I'm calling you!")
-# we can even make calls
-alice.call_contact()
-bob.answer_call()
-time.sleep(5)
-bob.end_call()
+alice = WhatsappActions("<INSERT UDID HERE>")  # Initialize a connection with device
+alice.send_message("Hello world", chat="<Insert the contact name>") # Send a message to contact
 ```
 
 ## Supported apps
@@ -134,7 +137,7 @@ _See [troubleshooting](#installing-appium-with-npm-fails) if installing Appium o
 
 ### ADB
 ADB (We recommend installing [Android platform-tools](https://developer.android.com/studio/releases/platform-tools), which contains ADB.
-Create the directory `~/Android/Sdk/` and unzip the platform-tools in this folder, so the absolute path to adb becomes `~/Android/Sdk/platform-tools/adb`. 
+Create the directory `~/Android/Sdk/` and unzip the platform-tools in this folder, so the absolute path to adb becomes `~/Android/Sdk/platform-tools/adb`.
 This is the location where Appium and Puma look for ADB by default.
 
 ### Environment variables
@@ -146,8 +149,8 @@ $ source ~/.bashrc
 ```
 > :warning: When running your Appium script from an IDE, you might get the error `Could not determine Android SDK ROOT.`
 > This is because the IDE might not load the environment variables correctly. Since Puma then defaults to ~/Android/Sdk,
-> you will not need to do anything if you followed the steps above, and you can ignore this messgae. If you really want 
-> to use another location, please refer to you IDE specific documentation how to set environment variables.  
+> you will not need to do anything if you followed the steps above, and you can ignore this messgae. If you really want
+> to use another location, please refer to you IDE specific documentation how to set environment variables.
 
 ### Android Device(s) or Emulators
 - 1 or more Android devices or emulators connected to the system where Puma runs, with:
@@ -186,6 +189,8 @@ This utils code offers a way to process screen recordings (namely concatenating 
 horizontally).
 
 ## Troubleshooting
+### ADB shows status unauthorized
+This happens when you did not allow data transfer via usb. Tap on the charging popup or go to `settings > USB preferences` and select `File Transfer`.
 
 ### Installing Appium with npm fails
 If you are behind a proxy and the appium install hangs, make sure to configure your `~/.npmrc` with the following settings.
