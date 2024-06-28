@@ -32,17 +32,15 @@ appium
 ```shell
 pip install pumapy
 ```
-
 Now you can use Puma! The code below is a small example on how to send a WhatsApp message, you can run this on a phone
 that has WhatsApp installed and has a registered WhatsApp account:
-
 ```python
 from puma.apps.android.whatsapp.whatsapp import WhatsappActions
 
 alice = WhatsappActions("<INSERT UDID HERE>")  # Initialize a connection with device
 alice.send_message("Hello world", chat="<Insert the contact name>")  # Send a message to contact in your contact list
 ```
-Congratulations, you just sent a WHatsApp message without touching your phone!
+Congratulations, you just sent a WhatsApp message without touching your phone!
 You can now explore what other function are possible with Puma in [WhatsApp](puma/apps/android/whatsapp/README.md), or
 try a [different application](#supported-apps). Or you could even start working on [adding support for aa new app](CONTRIBUTING.md).
 
@@ -51,9 +49,9 @@ try a [different application](#supported-apps). Or you could even start working 
 The following apps are supported by Puma. each app has its own documentation page detailing the supported actions with
 example implementations:
 
-* [WhatsApp](apps/android/whatsapp/README)
-* [Telegram](apps/android/telegram/README)
-* [Snapchat](apps/android/snapchat/README)
+* [WhatsApp](puma/apps/android/whatsapp/README.md)
+* [Telegram](puma/apps/android/telegram/README.md)
+* [Snapchat](puma/apps/android/snapchat/README.md)
 
 Right now only Android is supported.
 
@@ -104,10 +102,10 @@ In the second example, the chat conversation to send the message in is supplied 
 sent, there will be navigated to the home screen first, and then the chat "Bob" will be selected.
 
 
-Although the latter one is the safest, _ie_ it will always handle navigation correctly regardless of your position, it is not very efficient. When
-you send multiple messages in the same conversation consecutively, this will result in going to the home screen and
-into the conversation each time you send a message. Thus, it is advised to use the first example when sending multiple
-messages in the same conversation, and use the second one if you only send one message in the conversation.
+Although the latter one is the safest, it is slower as it will always do some navigation before sending the message.
+When you send multiple messages in the same conversation consecutively, this will result in going to the home screen and
+into the conversation each time you send a message. Therefore, it is advised to use `select_chat` or the optional `chat`
+argument only once, and then sticking to `send_message` without the secondary argument.
 
 
 ## Requirements
