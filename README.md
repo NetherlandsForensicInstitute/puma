@@ -12,35 +12,39 @@ apps are welcome! If you want to contribute, please read [CONTRIBUTING.md](CONTR
 
 > :no_mobile_phones: Puma currently only supports Android apps. iOS apps are on our to-do list!
 ## Getting started
-- To get started with Puma, make sure you installed all requirements (see the [requirements](#requirements) section).
-- Connect your Android device or start an emulator, make sure it is in File Transfer mode, and retrieve the device UDID with ADB:
-```bash
+1. Install all required software (see the [requirements](#requirements) section).
+    - install [ADB](#ADB)
+    - install [Appium](#Appium)
+2. Connect your Android device (or start an emulator), make sure it is connected properly over ADB (See the 
+[troubleshooting](#Troubleshooting) if you encounter problems).
+    - :warn: Make sure the phone is set to English, and [all other requirements](#Android-Devices-or-Emulators) are met!
+3. Get the UDID of your device by running `adb devices` (in the example below `954724ertyui74125` is the UDID of the device):
+```shell
 $ adb devices
 > List of devices attached
-847734hfdjkd93937  device
+954724ertyui74125  device
 ```
-In the above output, `847734hfdjkd93937` is the UDID, and `device` is the status indicating it is connected correctly.
-
-Below is an example for WhatsApp. You need to have WhatsApp installed on your device and a registered WhatsApp account
-(see also the [WhatsApp README](apps/android/whatsapp/README)). You also need a contact or group name to send the message to. In the below example,
-we will assume you already have a conversation with that person and that conversation is visible when opening WhatsApp.
-
-Before running the code below, start Appium in your shell, or if you have Appium Desktop in the GUI:
+4. Run Appium. This starts the Appium server, a process that needs to run while you use Puma.
 ```shell
-Appium
+appium
 ```
-
-Then, pip install puma in your venv:
-```bash
+5. Install Puma. We recommend always installing packages within [a Python venv](https://docs.python.org/3/library/venv.html).
+```shell
 pip install pumapy
 ```
-Finally, run insert the required information and the following Python code
+
+Now you can use Puma! The code below is a small example on how to send a WhatsApp message, you can run this on a phone
+that has WhatsApp installed and has a registered WhatsApp account:
+
 ```python
 from puma.apps.android.whatsapp.whatsapp import WhatsappActions
 
 alice = WhatsappActions("<INSERT UDID HERE>")  # Initialize a connection with device
-alice.send_message("Hello world", chat="<Insert the contact name>") # Send a message to contact
+alice.send_message("Hello world", chat="<Insert the contact name>")  # Send a message to contact in your contact list
 ```
+Congratulations, you just sent a WHatsApp message without touching your phone!
+You can now explore what other function are possible with Puma in [WhatsApp](puma/apps/android/whatsapp/README.md), or
+try a [different application](#supported-apps). Or you could even start working on [adding support for aa new app](CONTRIBUTING.md).
 
 ## Supported apps
 
