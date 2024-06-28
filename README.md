@@ -24,13 +24,13 @@ $ adb devices
 > List of devices attached
 954724ertyui74125  device
 ```
-4. Run Appium. This starts the Appium server, a process that needs to run while you use Puma.
-```shell
-appium
-```
-5. Install Puma. We recommend always installing packages within [a Python venv](https://docs.python.org/3/library/venv.html).
+4. Install Puma. We recommend always installing packages within [a Python venv](https://docs.python.org/3/library/venv.html).
 ```shell
 pip install pumapy
+```
+5. Run Appium. This starts the Appium server, a process that needs to run while you use Puma.
+```shell
+appium
 ```
 Now you can use Puma! The code below is a small example on how to send a WhatsApp message, you can run this on a phone
 that has WhatsApp installed and has a registered WhatsApp account:
