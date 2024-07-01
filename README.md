@@ -39,7 +39,8 @@ that has WhatsApp installed and has a registered WhatsApp account:
 from puma.apps.android.whatsapp.whatsapp import WhatsappActions
 
 alice = WhatsappActions("<INSERT UDID HERE>")  # Initialize a connection with device
-alice.send_message("Hello world", chat="<Insert the contact name>")  # Send a message to contact in your contact list
+alice.create_new_chat(contact="<Insert the contact name>", first_message="Hello world!")  # Send a message to contact in your contact list
+alice.send_message("Sorry for the spam :)")  # we can send a second message in the open conversation
 ```
 Congratulations, you just sent a WhatsApp message without touching your phone!
 You can now explore what other function are possible with Puma in [WhatsApp](puma/apps/android/whatsapp/README.md), or
