@@ -1,4 +1,6 @@
 import re
+import threading
+import time
 from time import sleep
 from typing import Dict
 
@@ -13,11 +15,13 @@ from puma.apps.android.appium_actions import AndroidAppiumActions
 UPDATE_TIME = 1
 SPEED = 80  # km/h
 SECONDS_PER_HOUR = 3600
+next_point = None
+lock = threading.Lock()
+point_updated = False
 
 
 def extrapolate_over_points(file):
     distance_to_travel = UPDATE_TIME * ((SPEED * 1000) / SECONDS_PER_HOUR)
-    print("distance to travel " + str(distance_to_travel))
     travelled = 0
     gpx = gpxpy.parse(open(file, 'r'))
     for track in gpx.tracks:
@@ -29,7 +33,6 @@ def extrapolate_over_points(file):
             while point_index + 1 < len(points):
                 next_travel_point = points[point_index + 1]
                 distance_to_next_travel_point = geopy.distance.geodesic((current_position.latitude, current_position.longitude), (next_travel_point.latitude, next_travel_point.longitude)).m
-                print(distance_to_next_travel_point)
                 if distance_to_next_travel_point < distance_to_travel - travelled:
                     travelled += distance_to_next_travel_point
                     current_position = next_travel_point
@@ -49,6 +52,18 @@ def extrapolate_over_points(file):
                     travelled = 0
                     current_position = GPXTrackPoint(next_x, next_y, current_position.elevation)
                     yield current_position.latitude, current_position.longitude, current_position.elevation
+
+
+def calculate_next_point():
+    file = '/home/oudsen/Documents/puma/puma/puma/apps/android/google_maps/low_points.gpx'
+    global next_point
+    global point_updated
+    for point in extrapolate_over_points(file):
+        print("hello")
+        while point_updated:
+            sleep(.1)
+        next_point = point
+        point_updated = True
 
 
 class GoogleMapsActions(AndroidAppiumActions):
@@ -90,8 +105,9 @@ class GoogleMapsActions(AndroidAppiumActions):
     def start_directions(self):
         self.driver.find_element(by=AppiumBy.XPATH, value='//android.widget.Button[@content-desc="Start driving navigation"]').click()
 
-    def set_location(self, lat, lon, alt):
-        self.driver.set_location(lat, lon, alt)
+    def set_location(self, lat, lon, alt, speed=80, num_sat=5):
+        self.driver.set_location(lat, lon, alt, speed, num_sat)
+        # self.driver.location.
 
     def get_current_speed_limit(self):
         try:
@@ -106,9 +122,21 @@ class GoogleMapsActions(AndroidAppiumActions):
 
     def execute_directions_extrapolate_over_points(self, file):
         for point in extrapolate_over_points(file):
-            print(point)
             sleep(UPDATE_TIME)
-            self.set_location(point[0], point[1], point[2])
+            self.set_location(point[0], point[1], point[2], 80, 5)
+
+    def update_location(self):
+        global next_point
+        global point_updated
+        while True:
+            if next_point is not None:
+                start = time.time()
+                self.set_location(next_point[0], next_point[1], next_point[2])
+                end = time.time()
+                print(end - start)
+                point_updated = False
+                print("update location")
+                time.sleep(1 - (end - start))  # Print every secondn
 
 
 if __name__ == '__main__':
@@ -124,4 +152,14 @@ if __name__ == '__main__':
     sleep(2)
     google_maps.start_directions()
     sleep(3)
-    google_maps.execute_directions_extrapolate_over_points('puma/apps/android/google_maps/low_points.gpx')
+    producer_thread = threading.Thread(target=calculate_next_point)
+    producer_thread.daemon = True
+    producer_thread.start()
+    consumer_thread = threading.Thread(target=google_maps.update_location)
+    consumer_thread.daemon = True
+    consumer_thread.start()
+    try:
+        while True:
+            time.sleep(0.1)  # Main thread is idle here
+    except KeyboardInterrupt:
+        print("Program terminated.")
