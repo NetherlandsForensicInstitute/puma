@@ -66,6 +66,14 @@ def calculate_next_point():
         point_updated = True
 
 
+def get_point_iterator():
+    file = '/home/oudsen/Documents/puma/puma/puma/apps/android/google_maps/low_points.gpx'
+    return extrapolate_over_points(file)
+
+
+point_iterator = get_point_iterator()
+
+
 class GoogleMapsActions(AndroidAppiumActions):
     def __init__(self,
                  device_udid,
@@ -104,6 +112,12 @@ class GoogleMapsActions(AndroidAppiumActions):
 
     def start_directions(self):
         self.driver.find_element(by=AppiumBy.XPATH, value='//android.widget.Button[@content-desc="Start driving navigation"]').click()
+
+    def set_location_direct(self):
+        global point_iterator
+        point = next(point_iterator)
+        print(point)
+        self.driver.set_location(point[0], point[1], point[2])
 
     def set_location(self, lat, lon, alt, speed=80, num_sat=5):
         self.driver.set_location(lat, lon, alt, speed, num_sat)
@@ -152,12 +166,15 @@ if __name__ == '__main__':
     sleep(2)
     google_maps.start_directions()
     sleep(3)
-    producer_thread = threading.Thread(target=calculate_next_point)
-    producer_thread.daemon = True
-    producer_thread.start()
-    consumer_thread = threading.Thread(target=google_maps.update_location)
-    consumer_thread.daemon = True
-    consumer_thread.start()
+    while True:
+        threading.Timer(1, google_maps.set_location_direct).start()
+        sleep(1)
+    # producer_thread = threading.Thread(target=calculate_next_point)
+    # producer_thread.daemon = True
+    # producer_thread.start()
+    # consumer_thread = threading.Thread(target=google_maps.update_location)
+    # consumer_thread.daemon = True
+    # consumer_thread.start()
     try:
         while True:
             time.sleep(0.1)  # Main thread is idle here
