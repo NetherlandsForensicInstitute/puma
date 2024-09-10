@@ -21,7 +21,7 @@ point_updated = False
 
 
 def extrapolate_over_points(file):
-    distance_to_travel = UPDATE_TIME * ((SPEED * 1000) / SECONDS_PER_HOUR)
+    distance_to_travel = (UPDATE_TIME * ((SPEED * 1000) / SECONDS_PER_HOUR))
     travelled = 0
     gpx = gpxpy.parse(open(file, 'r'))
     for track in gpx.tracks:
@@ -114,10 +114,12 @@ class GoogleMapsActions(AndroidAppiumActions):
         self.driver.find_element(by=AppiumBy.XPATH, value='//android.widget.Button[@content-desc="Start driving navigation"]').click()
 
     def set_location_direct(self):
-        global point_iterator
-        point = next(point_iterator)
-        print(point)
-        self.driver.set_location(point[0], point[1], point[2])
+        global next_point
+        global point_updated
+        print(next_point)
+        self.driver.set_location(next_point[0], next_point[1], next_point[2], 80, 6)
+        # self.driver.set_location(next_point[0], next_point[1], next_point[2])
+        point_updated = False
 
     def set_location(self, lat, lon, alt, speed=80, num_sat=5):
         self.driver.set_location(lat, lon, alt, speed, num_sat)
@@ -166,6 +168,9 @@ if __name__ == '__main__':
     sleep(2)
     google_maps.start_directions()
     sleep(3)
+    producer_thread = threading.Thread(target=calculate_next_point)
+    producer_thread.daemon = True
+    producer_thread.start()
     while True:
         threading.Timer(1, google_maps.set_location_direct).start()
         sleep(1)
