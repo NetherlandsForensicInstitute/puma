@@ -7,7 +7,7 @@ from puma.apps.android.appium_actions import supported_version, AndroidAppiumAct
 
 APPLICATION_PACKAGE = 'ch.swisscows.messenger.teleguardapp'
 
-@supported_version("YOUR VERSION")
+@supported_version("YOUR VERSION") #TODO
 class TeleguardActions(AndroidAppiumActions):
     def __init__(self,
                  device_udid,
@@ -15,7 +15,7 @@ class TeleguardActions(AndroidAppiumActions):
                  implicit_wait=1,
                  appium_server='http://localhost:4723'):
         """
-        Class with an API for Application using Appium. Can be used with an emulator or real device attached to the computer.
+        Class with an API for TeleGuard using Appium. Can be used with an emulator or real device attached to the computer.
         """
         AndroidAppiumActions.__init__(self,
                                       device_udid,
