@@ -1,3 +1,12 @@
+Version 2.5.0
+-------------
+61. Telegram: improve navigating to home screen, lower sleep time when starting a call
+59. WhatsApp: update support to 2.24.25.78
+
+Version 2.4.0
+-------------
+57. Telegram: ending calls when not in an active call now raises an exception, add call status, bump adb-py to 1.0.3
+
 Version 2.3.2
 -------------
 53. Telegram: Fix pictures could sometimes not be sent

@@ -85,6 +85,12 @@ class TestTelegram(unittest.TestCase):
         time.sleep(2)
         self.alice.end_call()
 
+    def test_get_call_status(self):
+        self.assertIsNone(self.alice.get_call_status())
+        self.alice.start_call(self.contact_bob)
+        self.assertIsNotNone(self.alice.get_call_status())
+        self.alice.end_call()
+
     # Call related tests. Note that you need two phones for these tests, otherwise these tests will fail
     def assert_bob_configured(self):
         self.assertTrue(self.bob_configured, "Bob is not configured. This test cannot be executed.")

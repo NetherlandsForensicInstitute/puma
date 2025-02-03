@@ -4,22 +4,28 @@ Telegram Messenger is a messaging app developed by Telegram Messenger Inc.
 Puma supports part of the features of Telegram.
 For detailed information on each method, see the method its PyDoc documentation.
 
-The application can be downloaded in [the Google PlayStore](https://play.google.com/store/apps/details?id=org.telegram.messenger).
+The application can be downloaded
+in [the Google PlayStore](https://play.google.com/store/apps/details?id=org.telegram.messenger).
 
 ### Initialization
 
 Initialization is standard but has one optional parameter.
-When using the most common version of Telegram (the version published to the Google Play Store) you can use standard 
+When using the most common version of Telegram (the version published to the Google Play Store) you can use standard
 initialization:
+
 ```python
 from puma.apps.android.telegram.telegram import TelegramActions
+
 phone = TelegramActions("emulator-5444")
 ```
+
 If you're using the Telegram apk found at [telegram.org](https://telegram.org/android), you can use the optional
-parameter `telegram_web_version`: 
+parameter `telegram_web_version`:
+
 ```python
 phone = TelegramActions("emulator-5444", telegram_web_version=True)
 ```
+
 This is needed because these two versions of the Telegram Android app use different package names.
 
 ### Navigating the UI
@@ -33,7 +39,6 @@ phone.select_chat("Bob")  # opens the conversation with Bob
 phone.select_group("Guys")  # this call will first go back to the home screen, then open the other conversation
 phone.select_channel("News")
 ```
-
 
 ### Sending a message
 
@@ -64,7 +69,7 @@ phone.take_and_send_picture(front_camera=True)  # You can also use the front cam
 
 ## Calls
 
-We can make (videO) calls using telegram:
+We can make (video) calls using telegram:
 
 ```python
 phone_alice.start_call()  # start call in the current conversation
@@ -76,4 +81,14 @@ phone_charlie.decline_call()  # decline an incoming call
 phone.toggle_video_in_call()
 # when in a video call, we can switch between the front and read camera:
 phone.flip_video_in_call()
+```
+
+When calls are made, you can also retrieve the current status of the call:
+
+```python
+phone_alice.get_call_status()  # returns None when not in a call
+phone_alice.start_call()
+phone_alice.get_call_status()  # returns status describing the current phase of the call, as displayed in the UI: connecting, waiting, or requesting
+phone_bob.answer_call()
+phone_alice.get_call_status()  # When a call is in progress after the other party picked up, this returns "In progress"
 ```

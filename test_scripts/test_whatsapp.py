@@ -174,9 +174,10 @@ class TestWhatsapp(unittest.TestCase):
 
     def test_open_view_once_photo(self):
         self.assert_bob_configured()
+        self.bob.select_chat(self.contact_alice)
         self.alice.send_media(self.photo_directory_name, view_once=True, chat=self.contact_bob)
-        sleep(2)
-        self.bob.open_view_once_photo(chat="Alice")
+        sleep(1)
+        self.bob.open_view_once_photo()
 
     # For this test, both Bob and Charlie need to be in Alice's contacts
     def test_send_broadcast(self):
