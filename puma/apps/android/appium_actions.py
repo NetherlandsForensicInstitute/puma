@@ -64,7 +64,8 @@ class AndroidAppiumActions:
                  app_package: str,
                  desired_capabilities: Dict[str, str] = None,
                  implicit_wait: int = 1,
-                 appium_server: str = 'http://localhost:4723'):
+                 appium_server: str = 'http://localhost:4723',
+                 app_activity=None):
         """
         Class with a generic API for Appium scripting on an Android device.
         Can be used with an emulator or real device attached to the computer.
@@ -76,6 +77,7 @@ class AndroidAppiumActions:
         # prepare options
         self.options = _get_android_default_options()
         self.options.udid = udid
+        self.options.app_activity = app_activity
         self.app_package = app_package
         if desired_capabilities:
             self.options.load_capabilities(desired_capabilities)
