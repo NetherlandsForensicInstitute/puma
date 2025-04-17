@@ -1,0 +1,6 @@
+{
+  "appium:automationName": "uiautomator2",
+  "platformName": "Android",
+  "appium:udid": "<your_android_udid>",
+  "appium:noReset": true
+}
