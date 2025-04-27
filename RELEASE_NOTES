@@ -1,3 +1,7 @@
+Version 2.8.0
+-------------
+96. Add tutorial
+
 Version 2.7.1
 -------------
 102. Fix sending Telegram text messages, and disable default logging config
@@ -5,7 +9,7 @@ Version 2.7.1
 Version 2.7.0
 -------------
 91. Telegram: Add support for selecting chat by index
-89. Teleguard: Use hint property instead of text property for finding Telegram chat EditText
+89. Telegram: Use hint property instead of text property for finding Telegram chat EditText
 83. Remove old workshop folder
 81. Add section about problems with starting emulators to troubleshooting
 78. Fix Windows logging to file

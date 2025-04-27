@@ -1,13 +1,13 @@
-import time
 from typing import Dict
 
 from appium.webdriver.common.appiumby import AppiumBy
 
-from puma.apps.android.appium_actions import AndroidAppiumActions
+from puma.apps.android.appium_actions import AndroidAppiumActions, supported_version
 
 GOOGLE_CAMERA_PACKAGE = 'com.google.android.GoogleCamera'
 
 
+@supported_version("9.8.102")
 class GoogleCameraActions(AndroidAppiumActions):
     def __init__(self,
                  device_udid,
@@ -22,22 +22,17 @@ class GoogleCameraActions(AndroidAppiumActions):
                                       appium_server=appium_server)
 
     def take_picture(self):
+        """
+        Takes a single picture.
+        """
         xpath = '//android.widget.ImageButton[@resource-id="com.google.android.GoogleCamera:id/shutter_button"]'
         shutter = self.driver.find_element(by=AppiumBy.XPATH, value=xpath)
         shutter.click()
 
     def switch_camera(self):
+        """
+        Switches between the front and rear camera.
+        """
         xpath = '//android.widget.ImageButton[@resource-id="com.google.android.GoogleCamera:id/camera_switch_button"]'
         button = self.driver.find_element(by=AppiumBy.XPATH, value=xpath)
         button.click()
-
-
-if __name__ == '__main__':
-    with GoogleCameraActions('32131JEHN38079') as alice_camera:
-        alice_camera.switch_camera()
-        time.sleep(1)
-        alice_camera.take_picture()
-        time.sleep(1)
-        alice_camera.switch_camera()
-        time.sleep(1)
-        alice_camera.take_picture()

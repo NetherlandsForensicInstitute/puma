@@ -52,7 +52,7 @@ pip install -r requirements.txt
 - Follow the [GitHub Flow](https://guides.github.com/introduction/flow/) workflow:
   1. Create a new branch from `main`. The branch name should start with the issue number. When adding support for a new
   version of an application, please do this in 1 single issue.
-  2. Make your changes and commit them with descriptive commit messages. See the sections [Adding New Functionality](#adding-new-functionality) or [Supporting new app versions](#supporting-new-app-versions).
+  2. Make your changes and commit them with descriptive commit messages. See the sections [How to add a new application](#how-to-add-a-new-application) or [Supporting new app versions](#supporting-new-app-versions).
   3. Submit a pull request to the main repository's `main` branch.
 - Ensure that your code adheres to the project's [coding standards and conventions](#coding-standards).
 - Provide a clear and detailed description of your changes in the pull request description.

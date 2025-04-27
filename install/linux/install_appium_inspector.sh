@@ -23,7 +23,7 @@ if [ -f "$CURRENT_DIR/Appium-inspector.AppImage" ]; then
    cp "$CURRENT_DIR/Appium-inspector.AppImage" APPIUM_INSPECTOR_FILE
 else
   # Download Appium Inspector for Linux
-  APPIUM_INSPECTOR_URL="https://github.com/appium/appium-inspector/releases/download/v2025.3.1/Appium-Inspector-2025.3.1-linux-arm64.AppImage"
+  APPIUM_INSPECTOR_URL="https://github.com/appium/appium-inspector/releases/download/v2025.3.1/Appium-Inspector-2025.3.1-linux-x64.tar.gz"
 
   echo "Downloading Appium Inspector for Linux..."
   curl -L $APPIUM_INSPECTOR_URL -o "$APPIUM_INSPECTOR_FILE"

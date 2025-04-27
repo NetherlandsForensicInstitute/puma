@@ -9,3 +9,4 @@ venv/
 
 logs/
 cache/
+.ipynb_checkpoints/
