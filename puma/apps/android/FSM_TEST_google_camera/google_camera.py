@@ -1,12 +1,12 @@
+from collections import deque
+
 from statemachine import StateMachine, State
+from statemachine.transition import Transition
 
-
-def raise_error():
-    raise ValueError('FSM says krak')
 
 class GoogleCameraFsm(StateMachine):
     picture_rear = State(initial=True)
-    picture_front = State(enter=lambda: raise_error())
+    picture_front = State()
     video_rear = State()
     video_front = State()
 
@@ -32,8 +32,34 @@ class GoogleCameraFsm(StateMachine):
         return f"Running {event} from {source.id} to {target.id}{message}"
 
 
+def find_shortest_path(machine: StateMachine, destination: State | str) -> list[Transition] | None:
+    """
+    Gets the shortest path (in number of transitions) to the desired state
+    """
+    start = machine.current_state
+    visited = set()
+    queue = deque([(start, [])])
+
+    while queue:
+        state, path = queue.popleft()
+        # if this is a path to the desirted state, return the path
+        if state == destination or state.id == destination:
+            return path
+        # we do not want cycles: skip paths to already visited states
+        if state in visited:
+            continue
+        visited.add(state)
+        # take a step in all possible directions
+        for transition in state.transitions:
+            queue.append((transition.target, path + [transition]))
+    return None
+
+
 if __name__ == '__main__':
     c = GoogleCameraFsm()
-    print(c.current_state)
-    c.switch_camera()
-    print(c.current_state)
+    d = GoogleCameraFsm()
+
+    path = find_shortest_path(c, GoogleCameraFsm.video_front)
+    print("Shortest path to video_front:", [t.event for t in path])
+    path = find_shortest_path(d, "video_front")
+    print("Shortest path to video_front:", [t.event for t in path])
