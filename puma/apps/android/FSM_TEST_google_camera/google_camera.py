@@ -11,7 +11,7 @@ class GoogleCameraFsm(StateMachine):
     picture_front = PumaState()
     video_rear = PumaState()
     video_front = PumaState()
-    camera_setting = PumaState()
+    camera_setting = PumaState(parent=picture_rear)
 
     switch_camera = (
             video_rear.to(video_front)
@@ -27,6 +27,9 @@ class GoogleCameraFsm(StateMachine):
     )
     open_settings = (
         picture_rear.to(camera_setting)
+        | picture_front.to(camera_setting)
+        | video_rear.to(camera_setting)
+        | video_front.to(camera_setting)
     )
 
     def before_switch_camera(self, event: str, source: State, target: State, message: str = ""):
