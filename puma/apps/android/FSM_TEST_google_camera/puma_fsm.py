@@ -6,7 +6,7 @@ from statemachine.transition_list import TransitionList
 
 class PumaState(State):
     def __init__(self, name: str = "",
-                 xpath:str = None,  # TODO: make this a callable
+                 xpath: Callable[[str], bool] = None,
                  initial: bool = False,
                  final: bool = False,
                  parent: Callable[['PumaState'], TransitionList] = None):

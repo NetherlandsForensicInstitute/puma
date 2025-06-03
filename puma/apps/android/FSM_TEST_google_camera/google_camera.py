@@ -7,7 +7,7 @@ from statemachine.transition_list import TransitionList
 from puma.apps.android.FSM_TEST_google_camera.puma_fsm import PumaState
 
 
-def make_back_action(back, state):
+def make_back_action(back, state): # TODO: This can probably be placed in some utility class
     return lambda self: back.add_transitions(self.to(state))
 
 
