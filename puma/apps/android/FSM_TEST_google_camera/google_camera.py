@@ -3,12 +3,15 @@ from collections import deque
 from statemachine import StateMachine, State
 from statemachine.transition import Transition
 
+from puma.apps.android.FSM_TEST_google_camera.puma_fsm import PumaState
+
 
 class GoogleCameraFsm(StateMachine):
-    picture_rear = State(initial=True)
-    picture_front = State()
-    video_rear = State()
-    video_front = State()
+    picture_rear = PumaState(initial=True)
+    picture_front = PumaState()
+    video_rear = PumaState()
+    video_front = PumaState()
+    camera_setting = PumaState()
 
     switch_camera = (
             video_rear.to(video_front)
@@ -21,6 +24,9 @@ class GoogleCameraFsm(StateMachine):
             | picture_front.to(video_front)
             | video_rear.to(picture_rear)
             | picture_rear.to(video_rear)
+    )
+    open_settings = (
+        picture_rear.to(camera_setting)
     )
 
     def before_switch_camera(self, event: str, source: State, target: State, message: str = ""):
