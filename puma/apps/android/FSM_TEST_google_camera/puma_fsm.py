@@ -10,7 +10,7 @@ class PumaState(State):
                  initial: bool = False,
                  final: bool = False,
                  parent: Callable[['PumaState'], TransitionList] = None):
-        super().__init__(name=name, initial=initial, final=final, enter=lambda : self._recognize())
+        super().__init__(name=name, initial=initial, final=final, enter=self._recognize)
         self._xpath = xpath
         if parent:
            parent(self)
