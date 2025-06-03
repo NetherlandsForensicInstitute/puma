@@ -55,7 +55,15 @@ def find_shortest_path(machine: StateMachine, destination: State | str) -> list[
 
 ### PyTransitions
 https://github.com/pytransitions/transitions
+- Easy to create transitions and states, possible with either calling `add_transition` for each transition or supplying a dict with all transitions.
+- Has some other fancy features (Triggering a transition, Automatic transitions, Transitioning from multiple states, Reflexive transitions from multiple states, Internal transitions, Ordered transitions, Queued transitions, Conditional transitions, Check transitions, Callbacks
+)
+- Automatic transitions are possible, by calling `to_«state»()`
+Problems:
 
+- The states are not compile safe, and a bit magic
+
+- 
 ### AutomataLib
 https://github.com/caleb531/automata
 https://pypi.org/project/automata-lib/
