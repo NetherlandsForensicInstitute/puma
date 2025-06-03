@@ -2,16 +2,22 @@ from collections import deque
 
 from statemachine import StateMachine, State
 from statemachine.transition import Transition
+from statemachine.transition_list import TransitionList
 
 from puma.apps.android.FSM_TEST_google_camera.puma_fsm import PumaState
 
 
+def make_back_action(back, state):
+    return lambda self: back.add_transitions(self.to(state))
+
+
 class GoogleCameraFsm(StateMachine):
+    back = TransitionList()
     picture_rear = PumaState(initial=True)
     picture_front = PumaState()
     video_rear = PumaState()
     video_front = PumaState()
-    camera_setting = PumaState(parent=picture_rear)
+    camera_setting = PumaState(parent=make_back_action(back, picture_rear))
 
     switch_camera = (
             video_rear.to(video_front)

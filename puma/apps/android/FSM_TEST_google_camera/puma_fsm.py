@@ -1,4 +1,7 @@
+from typing import Callable
+
 from statemachine import State
+from statemachine.transition_list import TransitionList
 
 
 class PumaState(State):
@@ -6,11 +9,11 @@ class PumaState(State):
                  xpath:str = None,  # TODO: make this a callable
                  initial: bool = False,
                  final: bool = False,
-                 parent: 'PumaState' = None): # TODO: somehow automatically create a 'back' transition to this state. Could be in this class, or in the machine class, don't know what is possible
+                 parent: Callable[['PumaState'], TransitionList] = None):
         super().__init__(name=name, initial=initial, final=final, enter=lambda : self._recognize())
         self._xpath = xpath
         if parent:
-            self.back = self.to(parent) # TODO: see previous TODO: this doesn't work: the transition doesnt get an event name, andthere is no back() function on the FSM
+           parent(self)
 
     def _recognize(self):
         self._say_hello()
