@@ -22,9 +22,36 @@ https://python-statemachine.readthedocs.io/en/latest/index.html
 Seems to be the biggest one, quite easy to create an states and transitions.
 (Possible) problems:
 
-- it doesn't seem possible to call `setState()` directly, so when our real phone acts unpredicable and Puma recovers
-back to a known, state, we can't directly sync the FSM with the real phone.
+- ~~it doesn't seem possible to call `setState()` directly, so when our real phone acts unpredicable and Puma recovers
+back to a known, state, we can't directly sync the FSM with the real phone.~~
+You can simply call `machine.current_state = NEW_STATE`
 - Finding the shortest path between 2 states is not built in, we would need to add path finding ourselves
+**-> Takes 20 lines of code, so not a huge problem, see below**
+
+#### Shortest path code
+```python
+def find_shortest_path(machine: StateMachine, destination: State | str) -> list[Transition] | None:
+    """
+    Gets the shortest path (in number of transitions) to the desired state
+    """
+    start = machine.current_state
+    visited = set()
+    queue = deque([(start, [])])
+
+    while queue:
+        state, path = queue.popleft()
+        # if this is a path to the desirted state, return the path
+        if state == destination or state.id == destination:
+            return path
+        # we do not want cycles: skip paths to already visited states
+        if state in visited:
+            continue
+        visited.add(state)
+        # take a step in all possible directions
+        for transition in state.transitions:
+            queue.append((transition.target, path + [transition]))
+    return None
+```
 
 ### PyTransitions
 https://github.com/pytransitions/transitions
