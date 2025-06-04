@@ -2,6 +2,7 @@ import datetime
 import logging
 from collections import deque
 
+from appium.webdriver.common.appiumby import AppiumBy
 from statemachine import StateMachine, State
 from statemachine.transition import Transition
 
@@ -24,6 +25,36 @@ def action(first_state: PumaState):
             return result
         return wrapper
     return decorator
+
+def validation(func):
+    def wrapper(*args):
+        valid = func(*args)
+        while not valid:
+            print("not valid")
+            in_permission = args[0].appium_actions.is_present('//android.widget.Button[@package="com.google.android.permissioncontroller"]')
+            if in_permission:
+                xpath = '//android.widget.Button[@resource-id="com.android.permissioncontroller:id/permission_allow_foreground_only_button"]' # TODO: Create or for this
+                xpath2 = '//android.widget.Button[@resource-id="com.android.permissioncontroller:id/permission_allow_button"]'
+                print("Clicking permission")
+                if args[0].appium_actions.is_present(xpath):
+                    button = args[0].driver.find_element(by=AppiumBy.XPATH, value=xpath)
+                    button.click()
+                elif args[0].appium_actions.is_present(xpath2):
+                    button = args[0].driver.find_element(by=AppiumBy.XPATH, value=xpath2)
+                    button.click()
+            else:
+                print("hello") #TODO: implement search
+            valid = func(*args)
+        print("valid")
+        return valid
+    return wrapper
+#
+# def transition(func):
+#     def wrapper(*args):
+#         print("entering transition")
+#         result = func(*args)
+#         return result
+#     return wrapper
 
 def make_back_action(back, state):
     """
