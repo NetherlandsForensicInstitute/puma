@@ -1,6 +1,7 @@
 import datetime
 import logging
 from collections import deque
+from typing import Callable
 
 from appium.webdriver.common.appiumby import AppiumBy
 from statemachine import StateMachine, State
@@ -9,12 +10,14 @@ from statemachine.transition import Transition
 from puma.apps.android.fsm_test.fsm.puma_fsm import PumaState
 
 
-def action(first_state: PumaState):
+def action(first_state: PumaState, validate_call: Callable[[], None] = None):
     """
     Decorator with parameters, enables the user to execute actions without the need to switch states manually.
     """
     def decorator(func):
         def wrapper(*args):
+            if args[0].current_state == first_state and validate_call:
+                validate_call()
             while args[0].current_state != first_state:
                 shortest_path = find_shortest_path(args[0], first_state)
                 print(f'Taking the next step with event {shortest_path[0].event}')
