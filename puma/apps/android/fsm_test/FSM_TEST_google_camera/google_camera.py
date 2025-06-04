@@ -53,7 +53,7 @@ class GoogleCameraFsm(StateMachine):
 
     switch_to_video = (
         picture_rear.to(video_rear)
-        | picture_front.to(picture_front)
+        | picture_front.to(video_front)
     )
 
     switch_to_picture = (
@@ -105,7 +105,7 @@ class GoogleCameraFsm(StateMachine):
 
     # Transitions
     @transition
-    def before_switch_camera(self, event: str, source: PumaState, target: PumaState, message: str = "", **kwargs): #TODO: Investigate if it works without passing kwargs
+    def before_switch_camera(self, *args, **kwargs): #TODO: Investigate if it works without passing kwargs
         """
         Switches between the front and rear camera.
         """
@@ -114,7 +114,7 @@ class GoogleCameraFsm(StateMachine):
         button.click()
 
     @transition
-    def before_switch_to_video(self, event: str, source: PumaState, target: PumaState, message: str = "", **kwargs):
+    def before_switch_to_video(self, *args, **kwargs):
         """
         Switches from camera to video.
         """
@@ -123,7 +123,7 @@ class GoogleCameraFsm(StateMachine):
         button.click()
 
     @transition
-    def before_switch_to_picture(self, event: str, source: PumaState, target: PumaState, message: str = "", **kwargs):
+    def before_switch_to_picture(self, *args, **kwargs):
         """
         Switches from camera to video.
         """
@@ -132,7 +132,7 @@ class GoogleCameraFsm(StateMachine):
         button.click()
 
     @transition
-    def before_back(self, event: str, source: PumaState, target: PumaState, message: str = "", **kwargs):
+    def before_back(self, *args, **kwargs):
         """
         Uses the back functionality of Android.
         """
@@ -140,14 +140,14 @@ class GoogleCameraFsm(StateMachine):
         # Validation methods
 
     @validation
-    def on_enter_video_rear(self):
+    def on_enter_video_rear(self, *args, **kwargs):
         print('Entered on enter video rear')
         return self.appium_actions.is_present(
             '//android.widget.ImageButton[@content-desc="Switch to front camera"]') and self.appium_actions.is_present(
             '//android.widget.TextView[@content-desc="Video"]')
 
     @validation
-    def on_enter_picture_rear(self):
+    def on_enter_picture_rear(self, *args, **kwargs):
         print('Entered on enter picture rear')
         return self.appium_actions.is_present(
             '//android.widget.ImageButton[@content-desc="Switch to front camera"]') and self.appium_actions.is_present(
@@ -166,6 +166,10 @@ class GoogleCameraFsm(StateMachine):
 
 if __name__ == '__main__':
     c = GoogleCameraFsm('34281JEHN03866')
+    # This example will only run on automated tests if dot is present
+    img_path = "./camera_fsm.png"
+    c._graph().write_png(img_path)
+
     # d = GoogleCameraFsm()
     # for t in c.current_state.transitions:
     #     print("Registered event:", t.event, "from:", t.source.id, "to:", t.target.id)
