@@ -11,8 +11,9 @@ from puma.apps.android.fsm_test.util.fsm_util import make_back_action, action, f
 
 GOOGLE_CAMERA_PACKAGE = 'com.google.android.GoogleCamera'
 
+
 @supported_version("9.8.102")
-class GoogleCameraFsm(StateMachine, AndroidAppiumActions):
+class GoogleCameraFsm(StateMachine):
     back = TransitionList()
     picture_rear = PumaState(initial=True)
     picture_front = PumaState()
@@ -54,12 +55,13 @@ class GoogleCameraFsm(StateMachine, AndroidAppiumActions):
         Can be used with an emulator or real device attached to the computer.
         """
         StateMachine.__init__(self)
-        AndroidAppiumActions.__init__(self,
+        self.appium_actions = AndroidAppiumActions(
                                       device_udid,
                                       GOOGLE_CAMERA_PACKAGE,
                                       desired_capabilities=desired_capabilities,
                                       implicit_wait=implicit_wait,
                                       appium_server=appium_server)
+        self.driver = self.appium_actions.driver
 
     # Actions
     @action(picture_rear)
@@ -135,6 +137,15 @@ class GoogleCameraFsm(StateMachine, AndroidAppiumActions):
         xpath = '//android.widget.ImageButton[@resource-id="com.google.android.GoogleCamera:id/shutter_button"]'
         shutter = self.driver.find_element(by=AppiumBy.XPATH, value=xpath)
         shutter.click()
+
+    # Recognize methods #TODO: Initial state, can not use this method
+    def on_enter_video_rear(self):
+        print('Entered on enter video rear')
+        bool_res: bool = self.appium_actions.is_present('//android.widget.ImageButton[@content-desc="Switch to front camera"]') and self.appium_actions.is_present('//android.widget.TextView[@content-desc="Video"]')
+        if not bool_res:
+            print('Grote boos')
+        else:
+            print('Grote blij')
 
 
 if __name__ == '__main__':

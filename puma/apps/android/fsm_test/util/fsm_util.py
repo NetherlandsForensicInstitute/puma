@@ -41,7 +41,7 @@ def find_shortest_path(machine: StateMachine, destination: State | str) -> list[
 
     while queue:
         state, path = queue.popleft()
-        # if this is a path to the desirted state, return the path
+        # if this is a path to the desired state, return the path
         if state == destination or state.id == destination:
             return path
         # we do not want cycles: skip paths to already visited states

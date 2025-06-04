@@ -1,4 +1,4 @@
-from typing import Callable
+from typing import Callable, Any
 
 from statemachine import State
 from statemachine.transition_list import TransitionList
@@ -6,14 +6,14 @@ from statemachine.transition_list import TransitionList
 
 class PumaState(State):
     def __init__(self, name: str = "",
-                 xpath: Callable[[str], bool] = None,
+                 xpath: Callable[[Any], bool] = None,
                  initial: bool = False,
                  final: bool = False,
                  parent: Callable[['PumaState'], TransitionList] = None):
         """
         Class that extends the statemachine state for Puma specific support.
         """
-        super().__init__(name=name, initial=initial, final=final, enter=self._recognize)
+        super().__init__(name=name, initial=initial, final=final)
         self._xpath = xpath
         if parent:
            parent(self)
