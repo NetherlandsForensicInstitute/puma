@@ -1,4 +1,5 @@
 from collections import deque
+from time import sleep
 from typing import Dict
 
 from appium.webdriver.common.appiumby import AppiumBy
@@ -20,7 +21,7 @@ def action(first_state: PumaState): # TODO: Should probably be placed in some ut
                 shortest_path = find_shortest_path(args[0], first_state)
                 print(f'Taking the next step with event {shortest_path[0].event}')
                 args[0].send(f"{shortest_path[0].event}", message="hello message")
-            result = func(args[0])
+            result = func(*args)
             print('should have executed the action by now')
             return result
         return wrapper
@@ -45,11 +46,14 @@ class GoogleCameraFsm(StateMachine, AndroidAppiumActions):
             | picture_rear.to(picture_front)
     )
 
-    switch_mode = (
-            video_front.to(picture_front)
-            | picture_front.to(video_front)
-            | video_rear.to(picture_rear)
-            | picture_rear.to(video_rear)
+    switch_to_video = (
+        picture_rear.to(video_rear)
+        | picture_front.to(picture_front)
+    )
+
+    switch_to_picture = (
+        video_rear.to(picture_rear)
+        | video_front.to(picture_front)
     )
 
     open_settings = (
@@ -91,6 +95,34 @@ class GoogleCameraFsm(StateMachine, AndroidAppiumActions):
         shutter = self.driver.find_element(by=AppiumBy.XPATH, value=xpath)
         shutter.click()
 
+    @action(video_rear)
+    def take_video_rear(self, duration: int):
+        """
+        Takes a video with the rear camera.
+        :param duration: the duration of the video
+        """
+        xpath = '//android.widget.ImageButton[@resource-id="com.google.android.GoogleCamera:id/shutter_button"]'
+        shutter = self.driver.find_element(by=AppiumBy.XPATH, value=xpath)
+        shutter.click()
+        sleep(duration)
+        xpath = '//android.widget.ImageButton[@resource-id="com.google.android.GoogleCamera:id/shutter_button"]'
+        shutter = self.driver.find_element(by=AppiumBy.XPATH, value=xpath)
+        shutter.click()
+
+    @action(video_front)
+    def take_video_front(self, duration: int):
+        """
+        Takes a video with the front camera.
+        :param duration: the duration of the video
+        """
+        xpath = '//android.widget.ImageButton[@resource-id="com.google.android.GoogleCamera:id/shutter_button"]'
+        shutter = self.driver.find_element(by=AppiumBy.XPATH, value=xpath)
+        shutter.click()
+        sleep(duration)
+        xpath = '//android.widget.ImageButton[@resource-id="com.google.android.GoogleCamera:id/shutter_button"]'
+        shutter = self.driver.find_element(by=AppiumBy.XPATH, value=xpath)
+        shutter.click()
+
     # Transitions
     def before_switch_camera(self, event: str, source: PumaState, target: PumaState, message: str = ""):
         """
@@ -102,6 +134,24 @@ class GoogleCameraFsm(StateMachine, AndroidAppiumActions):
 
         message = ". " + message if message else ""
         return f"Running {event} from {source.id} to {target.id}{message}"
+
+    def before_switch_to_video(self, event: str, source: PumaState, target: PumaState, message: str = ""):
+        """
+        Switches from camera to video.
+        """
+        xpath = '//android.widget.TextView[@content-desc="Switch to Video Camera"]'
+
+        button = self.driver.find_element(by=AppiumBy.XPATH, value=xpath)
+        button.click()
+
+    def before_switch_to_picture(self, event: str, source: PumaState, target: PumaState, message: str = ""):
+        """
+        Switches from camera to video.
+        """
+        xpath = '//android.widget.TextView[@content-desc="Switch to Camera Mode"]'
+
+        button = self.driver.find_element(by=AppiumBy.XPATH, value=xpath)
+        button.click()
 
     def before_switch_mode(self, event: str, source: PumaState, target: PumaState, message: str = ""):
         """
@@ -155,7 +205,9 @@ if __name__ == '__main__':
     #     print("Registered event:", t.event, "from:", t.source.id, "to:", t.target.id)
 
     c.take_picture_front()
+    c.take_video_rear(3)
     c.take_picture_rear()
+    c.take_video_front(3)
 
     path = find_shortest_path(c, GoogleCameraFsm.video_front)
     print("Shortest path to video_front:", [t.event for t in path])
