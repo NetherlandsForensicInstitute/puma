@@ -59,27 +59,12 @@ class GoogleCameraFsm(StateMachine, AndroidAppiumActions):
         | video_front.to(camera_setting)
     )
 
-
-    # State machine definitions # TODO: Before methods are no longer called when the event is triggered
-    def before_switch_camera(self, event: str, source: PumaState, target: PumaState, message: str = ""):
-        message = ". " + message if message else ""
-        return f"Running {event} from {source.id} to {target.id}{message}"
-
-    def before_switch_mode(self, event: str, source: PumaState, target: PumaState, message: str = ""):
-        message = ". " + message if message else ""
-        return f"Running {event} from {source.id} to {target.id}{message}"
-
-    def before_back(self, event: str, source: PumaState, target: PumaState, message: str = ""):
-        message = ". " + message if message else ""
-        return f"Running {event} from {source.id} to {target.id}{message}"
-
     def __init__(self,
                  device_udid,
                  desired_capabilities: Dict[str, str] = None,
                  implicit_wait=1,
                  appium_server='http://localhost:4723'):
-        super().__init__()
-
+        StateMachine.__init__(self)
         AndroidAppiumActions.__init__(self,
                                       device_udid,
                                       GOOGLE_CAMERA_PACKAGE,
@@ -107,7 +92,7 @@ class GoogleCameraFsm(StateMachine, AndroidAppiumActions):
         shutter.click()
 
     # Transitions
-    def switch_camera_transition(self):
+    def before_switch_camera(self, event: str, source: PumaState, target: PumaState, message: str = ""):
         """
         Switches between the front and rear camera.
         """
@@ -115,10 +100,28 @@ class GoogleCameraFsm(StateMachine, AndroidAppiumActions):
         button = self.driver.find_element(by=AppiumBy.XPATH, value=xpath)
         button.click()
 
-    # def before_transition(self, event, source, target, message=""):
-    #     print(f"[before_transition] Event={event}, From={source.id}, To={target.id}")
+        message = ". " + message if message else ""
+        return f"Running {event} from {source.id} to {target.id}{message}"
 
+    def before_switch_mode(self, event: str, source: PumaState, target: PumaState, message: str = ""):
+        """
+        Switches between the front and rear camera.
+        """
+        xpath = '//android.widget.ImageButton[@resource-id="com.google.android.GoogleCamera:id/camera_switch_button"]'
+        button = self.driver.find_element(by=AppiumBy.XPATH, value=xpath)
+        button.click()
 
+        message = ". " + message if message else ""
+        return f"Running {event} from {source.id} to {target.id}{message}"
+
+    def before_back(self, event: str, source: PumaState, target: PumaState, message: str = ""):
+        """
+        Uses the back functionality of Android.
+        """
+        self.driver.back()
+
+        message = ". " + message if message else ""
+        return f"Running {event} from {source.id} to {target.id}{message}"
 
 
 # TODO: Move this method to a utility class
@@ -152,6 +155,7 @@ if __name__ == '__main__':
     #     print("Registered event:", t.event, "from:", t.source.id, "to:", t.target.id)
 
     c.take_picture_front()
+    c.take_picture_rear()
 
     path = find_shortest_path(c, GoogleCameraFsm.video_front)
     print("Shortest path to video_front:", [t.event for t in path])
