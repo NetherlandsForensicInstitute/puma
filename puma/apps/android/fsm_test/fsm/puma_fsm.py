@@ -10,6 +10,9 @@ class PumaState(State):
                  initial: bool = False,
                  final: bool = False,
                  parent: Callable[['PumaState'], TransitionList] = None):
+        """
+        Class that extends the statemachine state for Puma specific support.
+        """
         super().__init__(name=name, initial=initial, final=final, enter=self._recognize)
         self._xpath = xpath
         if parent:

@@ -6,12 +6,12 @@ from statemachine import StateMachine
 from statemachine.transition_list import TransitionList
 
 from puma.apps.android.fsm_test.fsm.puma_fsm import PumaState
-from puma.apps.android.appium_actions import AndroidAppiumActions
+from puma.apps.android.appium_actions import AndroidAppiumActions, supported_version
 from puma.apps.android.fsm_test.util.fsm_util import make_back_action, action, find_shortest_path
 
 GOOGLE_CAMERA_PACKAGE = 'com.google.android.GoogleCamera'
 
-
+@supported_version("9.8.102")
 class GoogleCameraFsm(StateMachine, AndroidAppiumActions):
     back = TransitionList()
     picture_rear = PumaState(initial=True)
@@ -49,6 +49,10 @@ class GoogleCameraFsm(StateMachine, AndroidAppiumActions):
                  desired_capabilities: Dict[str, str] = None,
                  implicit_wait=1,
                  appium_server='http://localhost:4723'):
+        """
+        Class with an API for Google Camera using Appium and a finite state machine.
+        Can be used with an emulator or real device attached to the computer.
+        """
         StateMachine.__init__(self)
         AndroidAppiumActions.__init__(self,
                                       device_udid,

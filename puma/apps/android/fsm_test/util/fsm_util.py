@@ -7,6 +7,9 @@ from puma.apps.android.fsm_test.fsm.puma_fsm import PumaState
 
 
 def action(first_state: PumaState):
+    """
+    Decorator with parameters, enables the user to execute actions without the need to switch states manually.
+    """
     def decorator(func):
         def wrapper(*args):
             while args[0].current_state != first_state:
@@ -20,11 +23,14 @@ def action(first_state: PumaState):
     return decorator
 
 def make_back_action(back, state):
+    """
+    Adds the transition to the provided TransitionList from the current state to the provided state.
+    """
     return lambda self: back.add_transitions(self.to(state))
 
 def find_shortest_path(machine: StateMachine, destination: State | str) -> list[Transition] | None:
     """
-    Gets the shortest path (in number of transitions) to the desired state
+    Gets the shortest path (in number of transitions) to the desired state.
     """
     start = machine.current_state
     visited = set()
