@@ -82,18 +82,14 @@ class GoogleCameraFsm(StateMachine, AndroidAppiumActions):
         """
         Takes a single picture.
         """
-        xpath = '//android.widget.ImageButton[@resource-id="com.google.android.GoogleCamera:id/shutter_button"]'
-        shutter = self.driver.find_element(by=AppiumBy.XPATH, value=xpath)
-        shutter.click()
+        self.shutter_button()
 
     @action(picture_front)
     def take_picture_front(self):
         """
         Takes a single picture.
         """
-        xpath = '//android.widget.ImageButton[@resource-id="com.google.android.GoogleCamera:id/shutter_button"]'
-        shutter = self.driver.find_element(by=AppiumBy.XPATH, value=xpath)
-        shutter.click()
+        self.shutter_button()
 
     @action(video_rear)
     def take_video_rear(self, duration: int):
@@ -101,13 +97,9 @@ class GoogleCameraFsm(StateMachine, AndroidAppiumActions):
         Takes a video with the rear camera.
         :param duration: the duration of the video
         """
-        xpath = '//android.widget.ImageButton[@resource-id="com.google.android.GoogleCamera:id/shutter_button"]'
-        shutter = self.driver.find_element(by=AppiumBy.XPATH, value=xpath)
-        shutter.click()
+        self.shutter_button()
         sleep(duration)
-        xpath = '//android.widget.ImageButton[@resource-id="com.google.android.GoogleCamera:id/shutter_button"]'
-        shutter = self.driver.find_element(by=AppiumBy.XPATH, value=xpath)
-        shutter.click()
+        self.shutter_button()
 
     @action(video_front)
     def take_video_front(self, duration: int):
@@ -115,13 +107,9 @@ class GoogleCameraFsm(StateMachine, AndroidAppiumActions):
         Takes a video with the front camera.
         :param duration: the duration of the video
         """
-        xpath = '//android.widget.ImageButton[@resource-id="com.google.android.GoogleCamera:id/shutter_button"]'
-        shutter = self.driver.find_element(by=AppiumBy.XPATH, value=xpath)
-        shutter.click()
+        self.shutter_button()
         sleep(duration)
-        xpath = '//android.widget.ImageButton[@resource-id="com.google.android.GoogleCamera:id/shutter_button"]'
-        shutter = self.driver.find_element(by=AppiumBy.XPATH, value=xpath)
-        shutter.click()
+        self.shutter_button()
 
     # Transitions
     def before_switch_camera(self, event: str, source: PumaState, target: PumaState, message: str = ""):
@@ -132,15 +120,11 @@ class GoogleCameraFsm(StateMachine, AndroidAppiumActions):
         button = self.driver.find_element(by=AppiumBy.XPATH, value=xpath)
         button.click()
 
-        message = ". " + message if message else ""
-        return f"Running {event} from {source.id} to {target.id}{message}"
-
     def before_switch_to_video(self, event: str, source: PumaState, target: PumaState, message: str = ""):
         """
         Switches from camera to video.
         """
         xpath = '//android.widget.TextView[@content-desc="Switch to Video Camera"]'
-
         button = self.driver.find_element(by=AppiumBy.XPATH, value=xpath)
         button.click()
 
@@ -149,20 +133,8 @@ class GoogleCameraFsm(StateMachine, AndroidAppiumActions):
         Switches from camera to video.
         """
         xpath = '//android.widget.TextView[@content-desc="Switch to Camera Mode"]'
-
         button = self.driver.find_element(by=AppiumBy.XPATH, value=xpath)
         button.click()
-
-    def before_switch_mode(self, event: str, source: PumaState, target: PumaState, message: str = ""):
-        """
-        Switches between the front and rear camera.
-        """
-        xpath = '//android.widget.ImageButton[@resource-id="com.google.android.GoogleCamera:id/camera_switch_button"]'
-        button = self.driver.find_element(by=AppiumBy.XPATH, value=xpath)
-        button.click()
-
-        message = ". " + message if message else ""
-        return f"Running {event} from {source.id} to {target.id}{message}"
 
     def before_back(self, event: str, source: PumaState, target: PumaState, message: str = ""):
         """
@@ -172,6 +144,15 @@ class GoogleCameraFsm(StateMachine, AndroidAppiumActions):
 
         message = ". " + message if message else ""
         return f"Running {event} from {source.id} to {target.id}{message}"
+
+    # Utility methods
+    def shutter_button(self):
+        """
+        Utility method for pressing the shutter button.
+        """
+        xpath = '//android.widget.ImageButton[@resource-id="com.google.android.GoogleCamera:id/shutter_button"]'
+        shutter = self.driver.find_element(by=AppiumBy.XPATH, value=xpath)
+        shutter.click()
 
 
 # TODO: Move this method to a utility class
