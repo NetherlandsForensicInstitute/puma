@@ -1,7 +1,8 @@
 import datetime
 import logging
 from collections import deque
-from typing import Callable
+from time import sleep
+from typing import Callable, Any
 
 from appium.webdriver.common.appiumby import AppiumBy
 from statemachine import StateMachine, State
@@ -10,18 +11,22 @@ from statemachine.transition import Transition
 from puma.apps.android.fsm_test.fsm.puma_fsm import PumaState
 
 
-def action(first_state: PumaState, validate_call: Callable[[], None] = None):
+def action(first_state: PumaState, validate_call: Callable[[Any], None] = None):
     """
     Decorator with parameters, enables the user to execute actions without the need to switch states manually.
     """
     def decorator(func):
         def wrapper(*args):
             if args[0].current_state == first_state and validate_call:
-                validate_call()
+                validate_result = validate_call(*args)
+                if not validate_result:
+                    args[0].driver.back()
+                    sleep(1) #TODO: FIX THIS
+                    args[0].back()
             while args[0].current_state != first_state:
                 shortest_path = find_shortest_path(args[0], first_state)
                 print(f'Taking the next step with event {shortest_path[0].event}')
-                args[0].send(f"{shortest_path[0].event}", message="hello message")
+                args[0].send(f"{shortest_path[0].event}", *args)
             logging.log(20, f"Executing action {str(func)} at {datetime.datetime.now()}") #TODO: Replace with correct logging?
             result = func(*args)
             print('should have executed the action by now')
