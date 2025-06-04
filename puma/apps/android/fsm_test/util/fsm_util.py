@@ -33,7 +33,7 @@ def validation(func):
             print("not valid")
             in_permission = args[0].appium_actions.is_present('//android.widget.Button[@package="com.google.android.permissioncontroller"]')
             if in_permission:
-                xpath = '//android.widget.Button[@resource-id="com.android.permissioncontroller:id/permission_allow_foreground_only_button"]' # TODO: Create or for this
+                xpath = '//android.widget.Button[@resource-id="com.android.permissioncontroller:id/permission_allow_foreground_only_button"]' # TODO: Create 'or' for this
                 xpath2 = '//android.widget.Button[@resource-id="com.android.permissioncontroller:id/permission_allow_button"]'
                 print("Clicking permission")
                 if args[0].appium_actions.is_present(xpath):
@@ -49,12 +49,12 @@ def validation(func):
         return valid
     return wrapper
 #
-# def transition(func):
-#     def wrapper(*args):
-#         print("entering transition")
-#         result = func(*args)
-#         return result
-#     return wrapper
+def transition(func):
+    def wrapper(*args, **kwargs):
+        print("entering transition")
+        result = func(*args, **kwargs)
+        return result
+    return wrapper
 
 def make_back_action(back, state):
     """

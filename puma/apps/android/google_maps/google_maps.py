@@ -78,3 +78,7 @@ class GoogleMapsActions(AndroidAppiumActions):
         self.route_simulator.execute_route_with_queries(from_query, to_query, osm_mode)
         self.start_navigation(to_query, transport_type)
         self.route_simulator.update_speed(speed)
+
+if __name__ == "__main__":
+    google_actions = GoogleMapsActions("emulator-5554")
+    google_actions._ensure_at_start()
