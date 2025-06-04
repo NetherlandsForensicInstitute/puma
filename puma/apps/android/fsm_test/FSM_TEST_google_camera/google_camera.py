@@ -1,34 +1,15 @@
-from collections import deque
 from time import sleep
 from typing import Dict
 
 from appium.webdriver.common.appiumby import AppiumBy
-from statemachine import StateMachine, State
-from statemachine.transition import Transition
+from statemachine import StateMachine
 from statemachine.transition_list import TransitionList
 
-from puma.apps.android.FSM_TEST_google_camera.puma_fsm import PumaState
+from puma.apps.android.fsm_test.fsm.puma_fsm import PumaState
 from puma.apps.android.appium_actions import AndroidAppiumActions
-
+from puma.apps.android.fsm_test.util.fsm_util import make_back_action, action, find_shortest_path
 
 GOOGLE_CAMERA_PACKAGE = 'com.google.android.GoogleCamera'
-
-
-def action(first_state: PumaState): # TODO: Should probably be placed in some utility class
-    def decorator(func):
-        def wrapper(*args):
-            while args[0].current_state != first_state:
-                shortest_path = find_shortest_path(args[0], first_state)
-                print(f'Taking the next step with event {shortest_path[0].event}')
-                args[0].send(f"{shortest_path[0].event}", message="hello message")
-            result = func(*args)
-            print('should have executed the action by now')
-            return result
-        return wrapper
-    return decorator
-
-def make_back_action(back, state): # TODO: This can probably be placed in some utility class
-    return lambda self: back.add_transitions(self.to(state))
 
 
 class GoogleCameraFsm(StateMachine, AndroidAppiumActions):
@@ -142,9 +123,6 @@ class GoogleCameraFsm(StateMachine, AndroidAppiumActions):
         """
         self.driver.back()
 
-        message = ". " + message if message else ""
-        return f"Running {event} from {source.id} to {target.id}{message}"
-
     # Utility methods
     def shutter_button(self):
         """
@@ -153,30 +131,6 @@ class GoogleCameraFsm(StateMachine, AndroidAppiumActions):
         xpath = '//android.widget.ImageButton[@resource-id="com.google.android.GoogleCamera:id/shutter_button"]'
         shutter = self.driver.find_element(by=AppiumBy.XPATH, value=xpath)
         shutter.click()
-
-
-# TODO: Move this method to a utility class
-def find_shortest_path(machine: StateMachine, destination: State | str) -> list[Transition] | None:
-    """
-    Gets the shortest path (in number of transitions) to the desired state
-    """
-    start = machine.current_state
-    visited = set()
-    queue = deque([(start, [])])
-
-    while queue:
-        state, path = queue.popleft()
-        # if this is a path to the desirted state, return the path
-        if state == destination or state.id == destination:
-            return path
-        # we do not want cycles: skip paths to already visited states
-        if state in visited:
-            continue
-        visited.add(state)
-        # take a step in all possible directions
-        for transition in state.transitions:
-            queue.append((transition.target, path + [transition]))
-    return None
 
 
 if __name__ == '__main__':
