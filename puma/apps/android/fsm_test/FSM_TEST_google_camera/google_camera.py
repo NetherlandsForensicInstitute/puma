@@ -7,7 +7,8 @@ from statemachine.transition_list import TransitionList
 
 from puma.apps.android.fsm_test.fsm.puma_fsm import PumaState
 from puma.apps.android.appium_actions import AndroidAppiumActions, supported_version
-from puma.apps.android.fsm_test.util.fsm_util import make_back_action, action, find_shortest_path, validation
+from puma.apps.android.fsm_test.util.fsm_util import make_back_action, action, find_shortest_path, validation, \
+    transition
 
 GOOGLE_CAMERA_PACKAGE = 'com.google.android.GoogleCamera'
 
@@ -103,8 +104,8 @@ class GoogleCameraFsm(StateMachine):
         self.shutter_button()
 
     # Transitions
-    # @transition
-    def before_switch_camera(self, event: str, source: PumaState, target: PumaState, message: str = ""):
+    @transition
+    def before_switch_camera(self, event: str, source: PumaState, target: PumaState, message: str = "", **kwargs): #TODO: Investigate if it works without passing kwargs
         """
         Switches between the front and rear camera.
         """
@@ -112,8 +113,8 @@ class GoogleCameraFsm(StateMachine):
         button = self.driver.find_element(by=AppiumBy.XPATH, value=xpath)
         button.click()
 
-    # @transition
-    def before_switch_to_video(self, event: str, source: PumaState, target: PumaState, message: str = ""):
+    @transition
+    def before_switch_to_video(self, event: str, source: PumaState, target: PumaState, message: str = "", **kwargs):
         """
         Switches from camera to video.
         """
@@ -121,8 +122,8 @@ class GoogleCameraFsm(StateMachine):
         button = self.driver.find_element(by=AppiumBy.XPATH, value=xpath)
         button.click()
 
-    # @transition
-    def before_switch_to_picture(self, event: str, source: PumaState, target: PumaState, message: str = ""):
+    @transition
+    def before_switch_to_picture(self, event: str, source: PumaState, target: PumaState, message: str = "", **kwargs):
         """
         Switches from camera to video.
         """
@@ -130,8 +131,8 @@ class GoogleCameraFsm(StateMachine):
         button = self.driver.find_element(by=AppiumBy.XPATH, value=xpath)
         button.click()
 
-    # @transition
-    def before_back(self, event: str, source: PumaState, target: PumaState, message: str = ""):
+    @transition
+    def before_back(self, event: str, source: PumaState, target: PumaState, message: str = "", **kwargs):
         """
         Uses the back functionality of Android.
         """
