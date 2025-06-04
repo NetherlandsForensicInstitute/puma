@@ -1,3 +1,5 @@
+import datetime
+import logging
 from collections import deque
 
 from statemachine import StateMachine, State
@@ -16,6 +18,7 @@ def action(first_state: PumaState):
                 shortest_path = find_shortest_path(args[0], first_state)
                 print(f'Taking the next step with event {shortest_path[0].event}')
                 args[0].send(f"{shortest_path[0].event}", message="hello message")
+            logging.log(20, f"Executing action {str(func)} at {datetime.datetime.now()}") #TODO: Replace with correct logging?
             result = func(*args)
             print('should have executed the action by now')
             return result
