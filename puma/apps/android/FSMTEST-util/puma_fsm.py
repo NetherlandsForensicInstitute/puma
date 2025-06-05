@@ -1,4 +1,5 @@
 from abc import ABC, abstractmethod
+from collections import deque
 from dataclasses import dataclass
 from typing import Callable, Any, List
 
@@ -75,13 +76,36 @@ class PumaUIGraphMeta(type):
             raise ValueError(f'Graph needs an initial state')
         elif len(initial_states) > 1:
             raise ValueError(f'Graph can only have 1 initial state, currently more defined: {initial_states}')
+        new_class.initial_state = initial_states[0]
 
         return new_class
 
 
 class PumaUIGraph(metaclass=PumaUIGraphMeta):
     def __init__(self):
-        print(f'GRAPH INITIATED, STATES: {self.states}')
+        self.current_state = self.initial_state
+
+    def _find_shortest_path(self, destination: State | str) -> list[Transition] | None:
+        """
+        Gets the shortest path (in number of transitions) to the desired state.
+        """
+        start = self.current_state
+        visited = set()
+        queue = deque([(start, [])])
+
+        while queue:
+            state, path = queue.popleft()
+            # if this is a path to the desired state, return the path
+            if state == destination or state.name == destination:
+                return path
+            # we do not want cycles: skip paths to already visited states
+            if state in visited:
+                continue
+            visited.add(state)
+            # take a step in all possible directions
+            for transition in state.transitions:
+                queue.append((transition.to_state, path + [transition]))
+        return None
 
 
 # Example usage
@@ -89,9 +113,11 @@ class TestFsm(PumaUIGraph):
     conversations = SimpleState("Conversation overview", [],
                                 True)  # TODO: infer name from attribute name (here: state1)
     chat_screen = SimpleState("Chat screen", [], parent_state=conversations)
+    chat_management = SimpleState("Chat management", [], parent_state=chat_screen)
     setting_screen = SimpleState("Settings", [], parent_state=conversations)
 
     conversations.to(chat_screen, lambda x: None)
+    chat_screen.to(chat_management, lambda x: None)
     conversations.to(setting_screen, lambda x: None)
 
 
@@ -99,3 +125,6 @@ if __name__ == '__main__':
     print(TestFsm.states)
     print("transitions: " + str(len(TestFsm.transitions)))
     print('test')
+
+    t = TestFsm()
+    print(len(t._find_shortest_path(TestFsm.chat_management)))
