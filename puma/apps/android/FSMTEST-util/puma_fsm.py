@@ -3,13 +3,23 @@ from dataclasses import dataclass
 from typing import Callable, Any, List
 
 
+def back(driver):
+    print(f'calling driver.back()')
+
+
 class State(ABC):
-    def __init__(self, name: str, initial_state: bool = False):
+    def __init__(self, name: str, parent_state: 'State' = None, initial_state: bool = False):
+        if initial_state and parent_state:
+            raise ValueError(f'Error creating state {name}: initial state cannot have a parent state')
         self.name = name
         self.initial_state = initial_state
+        self.parent_state = parent_state
         self.transitions = []
 
-    def to(self, to_state:'State', ui_actions: Callable[[Any], None]):
+        if parent_state:
+            self.to(parent_state, back)
+
+    def to(self, to_state: 'State', ui_actions: Callable[[Any], None]):
         self.transitions.append(Transition(self, to_state, ui_actions))
 
     @abstractmethod
@@ -21,8 +31,8 @@ class State(ABC):
 
 
 class SimpleState(State):
-    def __init__(self, name: str, xpaths: List[str], initial_state: bool = False):
-        super().__init__(name, initial_state)
+    def __init__(self, name: str, xpaths: List[str], initial_state: bool = False, parent_state: 'State' = None, ):
+        super().__init__(name, parent_state=parent_state, initial_state=initial_state)
         self.xpaths = xpaths
 
     def validate(self, driver) -> bool:
@@ -65,12 +75,15 @@ class PumaUIGraph(metaclass=PumaUIGraphMeta):
 
 # Example usage
 class TestFsm(PumaUIGraph):
-    state1 = SimpleState("State 1", [], True)  # TODO: infer name from attribute name (here: state1)
-    state2 = SimpleState("State 2", [])
+    conversations = SimpleState("Conversation overview", [],
+                                True)  # TODO: infer name from attribute name (here: state1)
+    chat_screen = SimpleState("Chat screen", [], parent_state=conversations)
+    setting_screen = SimpleState("Settings", [], parent_state=conversations)
 
-    state1.to(state2, lambda x:None)
+    conversations.to(chat_screen, lambda x: None)
+    conversations.to(setting_screen, lambda x: None)
 
 
 if __name__ == '__main__':
     print(TestFsm.states)
-    print(TestFsm.transitions)
+    print("transitions: " + str(len(TestFsm.transitions)))
