@@ -53,6 +53,10 @@ class PumaUIGraphMeta(type):
         # Create the class
         new_class = super().__new__(cls, name, bases, namespace)
 
+        # Skip validation for the base PumaUIGraph class
+        if name == 'PumaUIGraph':
+            return new_class
+
         ## collect states and transitions
         states = []
         transitions = []
@@ -61,16 +65,23 @@ class PumaUIGraphMeta(type):
                 states.append(value)
             if isinstance(value, Transition):
                 transitions.append(value)
-
-        # Attach the collected bars to the class
         new_class.states = states
         new_class.transitions = [transition for state in states for transition in state.transitions]
+
+        ## validation
+        # only 1 initial state
+        initial_states = [s for s in states if s.initial_state]
+        if len(initial_states) == 0:
+            raise ValueError(f'Graph needs an initial state')
+        elif len(initial_states) > 1:
+            raise ValueError(f'Graph can only have 1 initial state, currently more defined: {initial_states}')
 
         return new_class
 
 
 class PumaUIGraph(metaclass=PumaUIGraphMeta):
-    pass
+    def __init__(self):
+        print(f'GRAPH INITIATED, STATES: {self.states}')
 
 
 # Example usage
@@ -87,3 +98,4 @@ class TestFsm(PumaUIGraph):
 if __name__ == '__main__':
     print(TestFsm.states)
     print("transitions: " + str(len(TestFsm.transitions)))
+    print('test')
