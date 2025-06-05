@@ -77,6 +77,8 @@ class PumaUIGraphMeta(type):
         elif len(initial_states) > 1:
             raise ValueError(f'Graph can only have 1 initial state, currently more defined: {initial_states}')
         new_class.initial_state = initial_states[0]
+        # every state except initial state needs transitions
+        # TODO: states might need their incoming transitions? Then we can easily check this
 
         return new_class
 
