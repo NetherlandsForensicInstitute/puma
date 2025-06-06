@@ -42,14 +42,6 @@ class SimpleState(State):
         return True
 
 
-class ConversationsState(SimpleState):
-    def __init__(self):
-        super().__init__("Conversation screen", ["//some/xpath[expression='hoi']"], initial_state=True)
-
-    def go_to_settings(self, driver):
-        print(f"click on settings button with driver {driver}")
-
-
 @dataclass
 class Transition:
     from_state: State
@@ -103,6 +95,7 @@ class PumaUIGraph(metaclass=PumaUIGraphMeta):
         for transition in transitions:
             # apply the transition
             # TODO: check if we are in the correct start state with validate
+            ## TODO: sanitize kwargs for the ui_actions method
             transition.ui_actions(self.driver, **kwargs)  # TODO: kwargs and stuff?
             # TODO: check if we are in the correct end state with validate
             self.current_state = transition.to_state
@@ -131,14 +124,40 @@ class PumaUIGraph(metaclass=PumaUIGraphMeta):
 
 
 # Example usage
+class ConversationsState(SimpleState):
+    def __init__(self):
+        super().__init__("Conversation screen", ["//some/xpath[expression='hoi']"], initial_state=True)
+
+    def go_to_settings(self, driver):
+        print(f"click on settings button with driver {driver}")
+
+    def go_to_chat(self, driver, conversation:str):
+        print(f'Clicking on conversation {conversation} with driver {driver}')
+
+
+class ChatState(State):
+    def __init__(self, parent_state):
+        super().__init__("Chat screen", parent_state)
+
+    def validate(self, driver, conversation: str = None) -> bool:
+        # 2 checks: 1) in conversation 2) in correct conversation
+        print(f'Check in conversation with xpath "//xpath/in_conversation" with driver {driver}')
+        if conversation:
+            print(
+                f'Check in conversation with xpath "//android.view.View[contains(lower-case(@content-desc), "{conversation.lower()}")]"')
+        else:
+            print(f'Not checking conversation name')
+        return True
+
+
 class TestFsm(PumaUIGraph):
     # TODO: infer name from attribute name (here: state1)
     conversations = ConversationsState()
-    chat_screen = SimpleState("Chat screen", [], parent_state=conversations)
+    chat_screen = ChatState(conversations)
     chat_management = SimpleState("Chat management", [], parent_state=chat_screen)
     setting_screen = SimpleState("Settings", [], parent_state=conversations)
 
-    conversations.to(chat_screen, lambda x: None)
+    conversations.to(chat_screen, conversations.go_to_chat)
     chat_screen.to(chat_management, lambda x: None)
     conversations.to(setting_screen, conversations.go_to_settings)
 
@@ -152,5 +171,6 @@ if __name__ == '__main__':
     print(len(t._find_shortest_path(TestFsm.chat_management)))
     t.go_to_state(TestFsm.setting_screen)
     print(f"Currently in state [{t.current_state}]")
-    t.go_to_state(TestFsm.conversations)
+
+    t.go_to_state(TestFsm.chat_screen, conversation='Alice')
     print(f"Currently in state [{t.current_state}]")
