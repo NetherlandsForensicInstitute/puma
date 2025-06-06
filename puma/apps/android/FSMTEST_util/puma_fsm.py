@@ -101,26 +101,40 @@ class PumaUIGraph(metaclass=PumaUIGraphMeta):
         self.current_state = self.initial_state
         self.driver = driver
 
-    def go_to_state(self, to_state: State | str, **kwargs):
+    def go_to_state(self, to_state: State | str, **kwargs) -> bool:
         if to_state not in self.states:
             raise ValueError(f"{to_state.name} is not a known state in this PumaUiGraph")
         kwargs['driver'] = self.driver
-        self._validate(self.current_state, **kwargs)
-        transitions = self._find_shortest_path(to_state)
-        for transition in transitions:
+        self._sanity_check(self.current_state, **kwargs)
+        while self.current_state != to_state: # TODO: Add loop counter (calc max distance in graph * 2)
+            transition = self._find_shortest_path(to_state)[0]
             _safe_func_call(transition.ui_actions, **kwargs)
-            self._validate(transition.to_state, **kwargs)
-            self.current_state = transition.to_state
+            self._sanity_check(transition.to_state, **kwargs)
+        return True
 
-    def _validate(self, state: State, **kwargs):
-        valid = _safe_func_call(state.validate, **kwargs)
+    def _sanity_check(self, expected_state: State, **kwargs) -> bool:
+        valid = _safe_func_call(expected_state.validate, **kwargs)
         if valid == True:
-            return
+            self.current_state = expected_state
+            return True
         elif isinstance(valid, str):
-            self.go_to_state(state.parent_state)
+            return self.go_to_state(expected_state.parent_state)
         else:
-            print("not valid, do stuff, popups....") #TODO: More stuff to do
-            self.driver.back() #TODO: TeleGuard hack
+            self._recover_state()
+
+    def _recover_state(self):
+        print("TODO ensure app is active")
+        print("TODO handling pop ups")
+        print("TODO searching for known state")
+        if self.current_state.validate(self.driver):
+            return 
+        current_states = [s for s in self.states if s.validate(self.driver)]
+        if len(current_states) == 0:
+            raise ValueError("Unknown state. Maybe we should try restarting once?")  # TDO: e restart?
+        elif len(current_states) >1:
+            raise ValueError("More than one state matches the current UI. Write stricter XPATHs")
+        print(f'Was in unknown state. Recovered: now in state {current_states[0]}')
+        self.current_state = current_states[0]
 
 
     def _find_shortest_path(self, destination: State | str) -> list[Transition] | None:
@@ -174,7 +188,7 @@ HAMBURGER_MENU = '//android.widget.FrameLayout[@resource-id="android:id/content"
 class ConversationsState(SimpleState):
 
     def __init__(self):
-        super().__init__("Conversation screen", ['//android.view.View[@content-desc="TeleGuard"]', HAMBURGER_MENU], initial_state=True)
+        super().__init__("Conversation screen", ['//android.view.View[@content-desc="TeleGuard"]', HAMBURGER_MENU, '//android.view.View[@content-desc="Online"]|//android.view.View[contains(@content-desc, "Connection to server")]'], initial_state=True)
 
     def go_to_settings(self, driver: PumaDriver):
         print(f"click on settings button with driver {driver}")
@@ -214,8 +228,8 @@ class TestFsm(PumaUIGraph):
     # TODO: infer name from attribute name (here: state1)
     conversations = ConversationsState()
     chat_screen = ChatState(conversations)
-    chat_management = SimpleState("Chat management", [], parent_state=chat_screen)
-    setting_screen = SimpleState("Settings", [], parent_state=conversations)
+    chat_management = SimpleState("Chat management", ['//android.widget.ImageView[@content-desc="All chat settings"]'], parent_state=chat_screen)
+    setting_screen = SimpleState("Settings", ['//android.view.View[@content-desc="Change TeleGuard ID"]'], parent_state=conversations)
 
     conversations.to(chat_screen, conversations.go_to_chat)
     chat_screen.to(chat_management, lambda x: None)
