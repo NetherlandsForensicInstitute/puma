@@ -1,7 +1,7 @@
 from appium.webdriver.common.appiumby import AppiumBy
 
 from puma.apps.android.FSMTEST_util.puma_driver import PumaDriver
-from puma.apps.android.FSMTEST_util.puma_fsm import SimpleState, State, PumaUIGraph, action
+from puma.apps.android.FSMTEST_util.puma_fsm import SimpleState, State, PumaUIGraph, action, simple_popup_handler
 
 HAMBURGER_MENU = '//android.widget.FrameLayout[@resource-id="android:id/content"]/android.widget.FrameLayout/android.widget.FrameLayout/android.view.View/android.view.View/android.view.View/android.view.View/android.view.View[1]/android.view.View[2]/android.view.View[3]'
 class ConversationsState(SimpleState):
@@ -61,6 +61,7 @@ class TestFsm(PumaUIGraph):
         self.driver = PumaDriver(device_udid, APPLICATION_PACKAGE)
         self.driver.activate_app() # TODO: Activate app should be part of the navigation code
         PumaUIGraph.__init__(self, self.driver)
+        self.add_popup_handler(simple_popup_handler('bah'))
 
     @action(chat_screen)
     def send_message(self, msg: str, conversation: str = None):

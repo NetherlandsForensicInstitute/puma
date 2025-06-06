@@ -47,12 +47,12 @@ class PumaDriver:
         self.driver.press_keycode(AndroidKey.HOME)
 
     def click(self, xpath: str):
-        if not self.is_present(xpath):
+        if not self.is_present(xpath, self.implicit_wait):
             raise ValueError(f'Could not click on non present element with xpath {xpath}')
         self.driver.find_element(by=AppiumBy.XPATH, value=xpath).click()
 
     def get_element(self, xpath: str):
-        if not self.is_present(xpath):
+        if not self.is_present(xpath, self.implicit_wait):
             raise ValueError(f'Could not click on non present element with xpath {xpath}')
         return self.driver.find_element(by=AppiumBy.XPATH, value=xpath)
 

@@ -114,17 +114,31 @@ class PumaUIGraph(metaclass=PumaUIGraphMeta):
     def __init__(self, driver: PumaDriver):
         self.current_state = self.initial_state
         self.driver = driver
+        self.app_popups = []
         # self._sanity_check(self.initial_state, driver=self.driver)
 
     def go_to_state(self, to_state: State | str, **kwargs) -> bool:
+        counter = 0
         if to_state not in self.states:
             raise ValueError(f"{to_state.name} is not a known state in this PumaUiGraph")
         kwargs['driver'] = self.driver
-        self._sanity_check(self.current_state, **kwargs)
+        try:
+            self._sanity_check(self.current_state, **kwargs)
+        except:
+            counter += 1
+            print(f"Retry before while: {counter}")
+            if counter > 5:
+                raise ValueError("Really krak boem 2")
         while self.current_state != to_state: # TODO: Add loop counter (calc max distance in graph * 2)
-            transition = self._find_shortest_path(to_state)[0]
-            _safe_func_call(transition.ui_actions, **kwargs)
-            self._sanity_check(transition.to_state, **kwargs)
+            try:
+                transition = self._find_shortest_path(to_state)[0]
+                _safe_func_call(transition.ui_actions, **kwargs)
+                self._sanity_check(transition.to_state, **kwargs)
+            except:
+                counter += 1
+                print(f"Retry in while: {counter}")
+                if counter > 5:
+                    raise ValueError("Really krak boem")
         return True
 
     def _sanity_check(self, expected_state: State, **kwargs) -> bool:
@@ -144,10 +158,9 @@ class PumaUIGraph(metaclass=PumaUIGraphMeta):
 
         # Pop ups
         clicked = True
-        sleep(1) #TODO: timing problems, code is too fast for the application
         while clicked:
             clicked = False
-            for popup_handler in known_popups:
+            for popup_handler in known_popups + self.app_popups:
                 if self.driver.is_present(popup_handler.recognize):
                     self.driver.click(popup_handler.click)
                     clicked = True
@@ -174,6 +187,8 @@ class PumaUIGraph(metaclass=PumaUIGraphMeta):
         print(f'Was in unknown state. Recovered: now in state {current_states[0]}')
         self.current_state = current_states[0]
 
+    def add_popup_handler(self, popup_handler: PopUpHandler):
+        self.app_popups.append(popup_handler)
 
     def _find_shortest_path(self, destination: State | str) -> list[Transition] | None:
         """
