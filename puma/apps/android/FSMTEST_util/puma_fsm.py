@@ -1,7 +1,10 @@
+import inspect
 from abc import ABC, abstractmethod
 from collections import deque
 from dataclasses import dataclass
-from typing import Callable, Any, List
+from typing import Callable, Any, List, Dict
+
+from puma.apps.android.appium_actions import AndroidAppiumActions
 
 
 def back(driver):
@@ -95,8 +98,16 @@ class PumaUIGraph(metaclass=PumaUIGraphMeta):
         for transition in transitions:
             # apply the transition
             # TODO: check if we are in the correct start state with validate
-            ## TODO: sanitize kwargs for the ui_actions method
-            transition.ui_actions(self.driver, **kwargs)  # TODO: kwargs and stuff?
+            sig = inspect.signature(transition.ui_actions)
+            filtered_args = {
+                k: v for k, v in kwargs.items() if k in sig.parameters
+            }
+
+            # Bind to validate missing/invalid args
+            filtered_args['driver'] = self.driver
+            bound_args = sig.bind(**filtered_args)
+            bound_args.apply_defaults()
+            transition.ui_actions(**bound_args.arguments)  # TODO: kwargs and stuff?
             # TODO: check if we are in the correct end state with validate
             self.current_state = transition.to_state
 
@@ -121,6 +132,36 @@ class PumaUIGraph(metaclass=PumaUIGraphMeta):
             for transition in state.transitions:
                 queue.append((transition.to_state, path + [transition]))
         return None
+
+
+def action(to_state: State):
+    def decorator(func):
+        def wrapper(*args, **kwargs):
+            # args = [PumaUIGraph, msg]
+            # kwargs = {conv="value"}
+            # Combine args into kwargs with parameter names
+            bound_args = inspect.signature(func).bind(*args, **kwargs)
+            bound_args.apply_defaults()
+            arguments = bound_args.arguments  # OrderedDict of param_name: value
+            arguments.pop('self')
+            # Pass all paramaters to go to state
+            args[0].go_to_state(to_state, **arguments)
+
+            # Filter parameters for action method
+            sig2 = inspect.signature(func)
+            filtered_args = {
+                k: v for k, v in arguments.items() if k in sig2.parameters
+            }
+
+            # Bind to validate missing/invalid args
+            filtered_args['self'] = args[0]
+            bound_args2 = sig2.bind(**filtered_args)
+            bound_args2.apply_defaults()
+            result = func(**bound_args2.arguments)
+
+            return result
+        return wrapper
+    return decorator
 
 
 # Example usage
@@ -149,6 +190,7 @@ class ChatState(State):
             print(f'Not checking conversation name')
         return True
 
+APPLICATION_PACKAGE = 'ch.swisscows.messenger.teleguardapp'
 
 class TestFsm(PumaUIGraph):
     # TODO: infer name from attribute name (here: state1)
@@ -162,6 +204,29 @@ class TestFsm(PumaUIGraph):
     conversations.to(setting_screen, conversations.go_to_settings)
 
 
+    # def __init__(self,
+    #              device_udid,
+    #              desired_capabilities: Dict[str, str] = None,
+    #              implicit_wait=1,
+    #              appium_server='http://localhost:4723'):
+    #     """
+    #     Class with an API for TeleGuard using Appium. Can be used with an emulator or real device attached to the computer.
+    #     """
+    #     PumaUIGraph.__init__(self)
+    #     self.appium_actions = AndroidAppiumActions(
+    #         device_udid,
+    #         APPLICATION_PACKAGE,
+    #         desired_capabilities=desired_capabilities,
+    #         implicit_wait=implicit_wait,
+    #         appium_server=appium_server)
+    #     self.driver = self.appium_actions.driver
+    #     self.package_name = APPLICATION_PACKAGE
+
+    @action(chat_screen)
+    def send_message(self, msg: str, conversation: str = None):
+        print(f"Sending message {msg}")
+
+
 if __name__ == '__main__':
     print(TestFsm.states)
     print("transitions: " + str(len(TestFsm.transitions)))
@@ -170,7 +235,8 @@ if __name__ == '__main__':
     t = TestFsm()
     print(len(t._find_shortest_path(TestFsm.chat_management)))
     t.go_to_state(TestFsm.setting_screen)
-    print(f"Currently in state [{t.current_state}]")
-
-    t.go_to_state(TestFsm.chat_screen, conversation='Alice')
-    print(f"Currently in state [{t.current_state}]")
+    # print(f"Currently in state [{t.current_state}]")
+    #
+    # t.go_to_state(TestFsm.chat_screen, conversation='Alice')
+    # print(f"Currently in state [{t.current_state}]")
+    t.send_message("Hello Alice", conversation="Alice")
