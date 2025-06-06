@@ -122,7 +122,7 @@ class PumaUIGraph(metaclass=PumaUIGraphMeta):
         else:
             self._recover_state()
 
-    def _recover_state(self):
+    def _recover_state(self, try_restart:bool=True):
         print("TODO ensure app is active")
         print("TODO handling pop ups")
         print("TODO searching for known state")
@@ -130,8 +130,16 @@ class PumaUIGraph(metaclass=PumaUIGraphMeta):
             return 
         current_states = [s for s in self.states if s.validate(self.driver)]
         if len(current_states) == 0:
+            if try_restart:
+                print(f'Not in a known state. Restarting app {self.driver.app_package} once')
+                self.driver.restart_app()
+                self._recover_state(False)
             raise ValueError("Unknown state. Maybe we should try restarting once?")  # TDO: e restart?
         elif len(current_states) >1:
+            if try_restart:
+                print(f'Not in a known state. Restarting app {self.driver.app_package} once')
+                self.driver.restart_app()
+                self._recover_state(False)
             raise ValueError("More than one state matches the current UI. Write stricter XPATHs")
         print(f'Was in unknown state. Recovered: now in state {current_states[0]}')
         self.current_state = current_states[0]
@@ -269,9 +277,5 @@ if __name__ == '__main__':
     t = TestFsm('34281JEHN03866')
     print(len(t._find_shortest_path(TestFsm.chat_management)))
     t.go_to_state(TestFsm.setting_screen)
-    # print(f"Currently in state [{t.current_state}]")
-    #
-    # t.go_to_state(TestFsm.chat_screen, conversation='Alice')
-    # print(f"Currently in state [{t.current_state}]")
     t.send_message("Hello Bob", conversation="bob")
     t.send_message("Test", conversation='TeleGuard')
