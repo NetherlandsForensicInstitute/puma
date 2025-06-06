@@ -2,9 +2,8 @@ import inspect
 from abc import ABC, abstractmethod
 from collections import deque
 from dataclasses import dataclass
-from typing import Callable, Any, List, Dict
+from typing import Callable, Any, List
 
-from puma.apps.android.appium_actions import AndroidAppiumActions
 
 
 def back(driver):
@@ -85,6 +84,14 @@ class PumaUIGraphMeta(type):
 
         return new_class
 
+def safe_func_call(func, **kwargs):
+    sig = inspect.signature(func)
+    filtered_args = {
+        k: v for k, v in kwargs.items() if k in sig.parameters
+    }
+    bound_args = sig.bind(**filtered_args)
+    bound_args.apply_defaults()
+    return func(**bound_args.arguments)
 
 class PumaUIGraph(metaclass=PumaUIGraphMeta):
     def __init__(self):
@@ -95,21 +102,18 @@ class PumaUIGraph(metaclass=PumaUIGraphMeta):
         if to_state not in self.states:
             raise ValueError(f"{to_state.name} is not a known state in this PumaUiGraph")
         transitions = self._find_shortest_path(to_state)
+        kwargs['driver'] = self.driver
         for transition in transitions:
-            # apply the transition
-            # TODO: check if we are in the correct start state with validate
-            sig = inspect.signature(transition.ui_actions)
-            filtered_args = {
-                k: v for k, v in kwargs.items() if k in sig.parameters
-            }
-
-            # Bind to validate missing/invalid args
-            filtered_args['driver'] = self.driver
-            bound_args = sig.bind(**filtered_args)
-            bound_args.apply_defaults()
-            transition.ui_actions(**bound_args.arguments)  # TODO: kwargs and stuff?
-            # TODO: check if we are in the correct end state with validate
+            self._validate(transition.from_state, **kwargs)
+            safe_func_call(transition.ui_actions, **kwargs)
+            self._validate(transition.to_state, **kwargs)
             self.current_state = transition.to_state
+
+    def _validate(self, state: State, **kwargs):
+        valid = safe_func_call(state.validate, **kwargs)
+        if valid:
+            return
+        print("not valid, do stuff, popups....") #TODO: More stuff to do
 
     def _find_shortest_path(self, destination: State | str) -> list[Transition] | None:
         """
@@ -137,28 +141,21 @@ class PumaUIGraph(metaclass=PumaUIGraphMeta):
 def action(to_state: State):
     def decorator(func):
         def wrapper(*args, **kwargs):
-            # args = [PumaUIGraph, msg]
-            # kwargs = {conv="value"}
-            # Combine args into kwargs with parameter names
             bound_args = inspect.signature(func).bind(*args, **kwargs)
             bound_args.apply_defaults()
-            arguments = bound_args.arguments  # OrderedDict of param_name: value
+            arguments = bound_args.arguments
             arguments.pop('self')
-            # Pass all paramaters to go to state
             args[0].go_to_state(to_state, **arguments)
 
-            # Filter parameters for action method
             sig2 = inspect.signature(func)
             filtered_args = {
                 k: v for k, v in arguments.items() if k in sig2.parameters
             }
 
-            # Bind to validate missing/invalid args
             filtered_args['self'] = args[0]
             bound_args2 = sig2.bind(**filtered_args)
             bound_args2.apply_defaults()
             result = func(**bound_args2.arguments)
-
             return result
         return wrapper
     return decorator
