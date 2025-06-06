@@ -5,7 +5,7 @@ from typing import Callable, Any, List
 
 
 def back(driver):
-    print(f'calling driver.back()')
+    print(f'calling driver.back() with driver {driver}')
 
 
 class State(ABC):
@@ -36,10 +36,18 @@ class SimpleState(State):
         super().__init__(name, parent_state=parent_state, initial_state=initial_state)
         self.xpaths = xpaths
 
-    def validate(self, driver) -> bool:
+    def validate(self, driver, conversation: str = None) -> bool:
         for xpath in self.xpaths:
             print(f'checking rule {xpath}')  # TODO: actually check
         return True
+
+
+class ConversationsState(SimpleState):
+    def __init__(self):
+        super().__init__("Conversation screen", ["//some/xpath[expression='hoi']"], initial_state=True)
+
+    def go_to_settings(self, driver):
+        print(f"click on settings button with driver {driver}")
 
 
 @dataclass
@@ -86,6 +94,18 @@ class PumaUIGraphMeta(type):
 class PumaUIGraph(metaclass=PumaUIGraphMeta):
     def __init__(self):
         self.current_state = self.initial_state
+        self.driver = "blah"
+
+    def go_to_state(self, to_state: State | str, **kwargs):
+        if to_state not in self.states:
+            raise ValueError(f"{to_state.name} is not a known state in this PumaUiGraph")
+        transitions = self._find_shortest_path(to_state)
+        for transition in transitions:
+            # apply the transition
+            # TODO: check if we are in the correct start state with validate
+            transition.ui_actions(self.driver, **kwargs)  # TODO: kwargs and stuff?
+            # TODO: check if we are in the correct end state with validate
+            self.current_state = transition.to_state
 
     def _find_shortest_path(self, destination: State | str) -> list[Transition] | None:
         """
@@ -112,15 +132,15 @@ class PumaUIGraph(metaclass=PumaUIGraphMeta):
 
 # Example usage
 class TestFsm(PumaUIGraph):
-    conversations = SimpleState("Conversation overview", [],
-                                True)  # TODO: infer name from attribute name (here: state1)
+    # TODO: infer name from attribute name (here: state1)
+    conversations = ConversationsState()
     chat_screen = SimpleState("Chat screen", [], parent_state=conversations)
     chat_management = SimpleState("Chat management", [], parent_state=chat_screen)
     setting_screen = SimpleState("Settings", [], parent_state=conversations)
 
     conversations.to(chat_screen, lambda x: None)
     chat_screen.to(chat_management, lambda x: None)
-    conversations.to(setting_screen, lambda x: None)
+    conversations.to(setting_screen, conversations.go_to_settings)
 
 
 if __name__ == '__main__':
@@ -130,3 +150,7 @@ if __name__ == '__main__':
 
     t = TestFsm()
     print(len(t._find_shortest_path(TestFsm.chat_management)))
+    t.go_to_state(TestFsm.setting_screen)
+    print(f"Currently in state [{t.current_state}]")
+    t.go_to_state(TestFsm.conversations)
+    print(f"Currently in state [{t.current_state}]")
