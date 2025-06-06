@@ -2,11 +2,16 @@ import inspect
 from abc import ABC, abstractmethod
 from collections import deque
 from dataclasses import dataclass
-from typing import Callable, Any, List
+from typing import Callable, Any, List, Dict
+
+from appium.webdriver.common.appiumby import AppiumBy
+
+from puma.apps.android.FSMTEST_util.puma_driver import PumaDriver
 
 
 
-def back(driver):
+def back(driver: PumaDriver):
+    driver.back()
     print(f'calling driver.back() with driver {driver}')
 
 
@@ -26,7 +31,7 @@ class State(ABC):
         self.transitions.append(Transition(self, to_state, ui_actions))
 
     @abstractmethod
-    def validate(self, driver) -> bool:  # TODO: type of driver, or do we want wrapped method?
+    def validate(self, driver: PumaDriver) -> bool | str:  # TODO: type of driver, or do we want wrapped method?
         pass
 
     def __repr__(self):
@@ -38,10 +43,8 @@ class SimpleState(State):
         super().__init__(name, parent_state=parent_state, initial_state=initial_state)
         self.xpaths = xpaths
 
-    def validate(self, driver, conversation: str = None) -> bool:
-        for xpath in self.xpaths:
-            print(f'checking rule {xpath}')  # TODO: actually check
-        return True
+    def validate(self, driver: PumaDriver, conversation: str = None) -> bool | str:
+        return all(driver.is_present(xpath) for xpath in self.xpaths)
 
 
 @dataclass
@@ -94,9 +97,9 @@ def _safe_func_call(func, **kwargs):
     return func(**bound_args.arguments)
 
 class PumaUIGraph(metaclass=PumaUIGraphMeta):
-    def __init__(self):
+    def __init__(self, driver: PumaDriver):
         self.current_state = self.initial_state
-        self.driver = "blah"
+        self.driver = driver
 
     def go_to_state(self, to_state: State | str, **kwargs):
         if to_state not in self.states:
@@ -111,10 +114,14 @@ class PumaUIGraph(metaclass=PumaUIGraphMeta):
 
     def _validate(self, state: State, **kwargs):
         valid = _safe_func_call(state.validate, **kwargs)
-        if valid:
+        if valid == True:
             return
+        elif isinstance(valid, str):
+            self.go_to_state(state.parent_state)
+        else:
+            print("not valid, do stuff, popups....") #TODO: More stuff to do
+            self.driver.back() #TODO: TeleGuard hack
 
-        print("not valid, do stuff, popups....") #TODO: More stuff to do
 
     def _find_shortest_path(self, destination: State | str) -> list[Transition] | None:
         """
@@ -163,14 +170,25 @@ def action(to_state: State):
 
 
 # Example usage
+HAMBURGER_MENU = '//android.widget.FrameLayout[@resource-id="android:id/content"]/android.widget.FrameLayout/android.widget.FrameLayout/android.view.View/android.view.View/android.view.View/android.view.View/android.view.View[1]/android.view.View[2]/android.view.View[3]'
 class ConversationsState(SimpleState):
+
     def __init__(self):
-        super().__init__("Conversation screen", ["//some/xpath[expression='hoi']"], initial_state=True)
+        super().__init__("Conversation screen", ['//android.view.View[@content-desc="TeleGuard"]', HAMBURGER_MENU], initial_state=True)
 
-    def go_to_settings(self, driver):
+    def go_to_settings(self, driver: PumaDriver):
         print(f"click on settings button with driver {driver}")
+        driver.click(HAMBURGER_MENU)
+        driver.click('//android.widget.ImageView[@content-desc="Settings"]')
 
-    def go_to_chat(self, driver, conversation:str):
+    def go_to_chat(self, driver: PumaDriver, conversation:str):
+        """
+        Switches from chats to a chat screen
+        """
+        xpath = f'//android.widget.ImageView[contains(lower-case(@content-desc), "{conversation.lower()}")] | \
+                        //android.view.View[contains(lower-case(@content-desc), "{conversation.lower()}")]'
+
+        driver.driver.find_elements(by=AppiumBy.XPATH, value=xpath)[-1].click() #TODO Fix this, there should a ticket somewhere (#104)
         print(f'Clicking on conversation {conversation} with driver {driver}')
 
 
@@ -178,14 +196,16 @@ class ChatState(State):
     def __init__(self, parent_state):
         super().__init__("Chat screen", parent_state)
 
-    def validate(self, driver, conversation: str = None) -> bool:
+    def validate(self, driver: PumaDriver, conversation: str = None) -> bool | str:
         # 2 checks: 1) in conversation 2) in correct conversation
         print(f'Check in conversation with xpath "//xpath/in_conversation" with driver {driver}')
+        if not driver.is_present('//android.widget.FrameLayout[@resource-id="android:id/content"]/android.widget.FrameLayout/android.widget.FrameLayout/android.view.View/android.view.View/android.view.View/android.view.View/android.widget.ImageView[4]'):
+            return False
         if conversation:
-            print(
-                f'Check in conversation with xpath "//android.view.View[contains(lower-case(@content-desc), "{conversation.lower()}")]"')
-        else:
-            print(f'Not checking conversation name')
+            content_desc = driver.get_element('//android.widget.FrameLayout[@resource-id="android:id/content"]/android.widget.FrameLayout/android.widget.FrameLayout/android.view.View/android.view.View/android.view.View/android.view.View/android.view.View[1]/android.view.View[2]/android.widget.ImageView[2]').get_attribute('content-desc')
+            if conversation.lower() in content_desc.lower():
+                return True
+            return content_desc.lower()
         return True
 
 APPLICATION_PACKAGE = 'ch.swisscows.messenger.teleguardapp'
@@ -201,28 +221,30 @@ class TestFsm(PumaUIGraph):
     chat_screen.to(chat_management, lambda x: None)
     conversations.to(setting_screen, conversations.go_to_settings)
 
-
-    # def __init__(self,
-    #              device_udid,
-    #              desired_capabilities: Dict[str, str] = None,
-    #              implicit_wait=1,
-    #              appium_server='http://localhost:4723'):
-    #     """
-    #     Class with an API for TeleGuard using Appium. Can be used with an emulator or real device attached to the computer.
-    #     """
-    #     PumaUIGraph.__init__(self)
-    #     self.appium_actions = AndroidAppiumActions(
-    #         device_udid,
-    #         APPLICATION_PACKAGE,
-    #         desired_capabilities=desired_capabilities,
-    #         implicit_wait=implicit_wait,
-    #         appium_server=appium_server)
-    #     self.driver = self.appium_actions.driver
-    #     self.package_name = APPLICATION_PACKAGE
+    def __init__(self,
+                 device_udid,
+                 desired_capabilities: Dict[str, str] = None,
+                 implicit_wait=1,
+                 appium_server='http://localhost:4723'):
+        """
+        Class with an API for TeleGuard using Appium. Can be used with an emulator or real device attached to the computer.
+        """
+        self.driver = PumaDriver(device_udid, APPLICATION_PACKAGE)
+        self.driver.activate_app() # TODO: Activate app should be part of the navigation code
+        PumaUIGraph.__init__(self, self.driver)
 
     @action(chat_screen)
     def send_message(self, msg: str, conversation: str = None):
+        """
+        Sends a message
+        """
         print(f"Sending message {msg}")
+        text_field = '//android.widget.EditText'
+        self.driver.click(text_field)
+        self.driver.send_keys(text_field, msg)
+        # text_box_el.click()
+        # text_box_el.send_keys(msg)
+        self.driver.click('//android.widget.FrameLayout[@resource-id="android:id/content"]/android.widget.FrameLayout/android.widget.FrameLayout/android.view.View/android.view.View/android.view.View/android.view.View/android.widget.ImageView[3]')
 
 
 if __name__ == '__main__':
@@ -230,11 +252,12 @@ if __name__ == '__main__':
     print("transitions: " + str(len(TestFsm.transitions)))
     print('test')
 
-    t = TestFsm()
+    t = TestFsm('34281JEHN03866')
     print(len(t._find_shortest_path(TestFsm.chat_management)))
     t.go_to_state(TestFsm.setting_screen)
     # print(f"Currently in state [{t.current_state}]")
     #
     # t.go_to_state(TestFsm.chat_screen, conversation='Alice')
     # print(f"Currently in state [{t.current_state}]")
-    t.send_message("Hello Alice", conversation="Alice")
+    t.send_message("Hello Bob", conversation="bob")
+    t.send_message("Test", conversation='TeleGuard')
