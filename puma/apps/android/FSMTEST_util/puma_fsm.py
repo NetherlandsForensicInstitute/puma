@@ -2,6 +2,7 @@ import inspect
 from abc import ABC, abstractmethod
 from collections import deque
 from dataclasses import dataclass
+from time import sleep
 from typing import Callable, Any, List, Dict
 
 from appium.webdriver.common.appiumby import AppiumBy
@@ -9,6 +10,19 @@ from appium.webdriver.common.appiumby import AppiumBy
 from puma.apps.android.FSMTEST_util.puma_driver import PumaDriver
 
 
+@dataclass
+class PopUpHandler:
+    recognize: str
+    click: str
+
+def simple_popup_handler(xpath: str):
+    return PopUpHandler(xpath, xpath)
+
+known_popups = [simple_popup_handler('//android.widget.ImageView[@content-desc="Dismiss update dialog"]'),
+                simple_popup_handler(
+                    '//android.widget.Button[@resource-id="com.android.permissioncontroller:id/permission_allow_foreground_only_button"]'),
+                simple_popup_handler(
+                    '//android.widget.Button[@resource-id="com.android.permissioncontroller:id/permission_allow_button"]')]
 
 def back(driver: PumaDriver):
     driver.back()
@@ -100,6 +114,7 @@ class PumaUIGraph(metaclass=PumaUIGraphMeta):
     def __init__(self, driver: PumaDriver):
         self.current_state = self.initial_state
         self.driver = driver
+        # self._sanity_check(self.initial_state, driver=self.driver)
 
     def go_to_state(self, to_state: State | str, **kwargs) -> bool:
         if to_state not in self.states:
@@ -123,22 +138,37 @@ class PumaUIGraph(metaclass=PumaUIGraphMeta):
             self._recover_state()
 
     def _recover_state(self, try_restart:bool=True):
-        print("TODO ensure app is active")
-        print("TODO handling pop ups")
-        print("TODO searching for known state")
+        # Ensure app active
+        if not self.driver.app_open():
+            self.driver.activate_app()
+
+        # Pop ups
+        clicked = True
+        sleep(1) #TODO: timing problems, code is too fast for the application
+        while clicked:
+            clicked = False
+            for popup_handler in known_popups:
+                if self.driver.is_present(popup_handler.recognize):
+                    self.driver.click(popup_handler.click)
+                    clicked = True
+
         if self.current_state.validate(self.driver):
-            return 
+            return
+
+        # Search state
         current_states = [s for s in self.states if s.validate(self.driver)]
         if len(current_states) == 0:
             if try_restart:
                 print(f'Not in a known state. Restarting app {self.driver.app_package} once')
                 self.driver.restart_app()
+                sleep(3)
                 self._recover_state(False)
             raise ValueError("Unknown state. Maybe we should try restarting once?")  # TDO: e restart?
         elif len(current_states) >1:
             if try_restart:
                 print(f'Not in a known state. Restarting app {self.driver.app_package} once')
                 self.driver.restart_app()
+                sleep(3)
                 self._recover_state(False)
             raise ValueError("More than one state matches the current UI. Write stricter XPATHs")
         print(f'Was in unknown state. Recovered: now in state {current_states[0]}')
@@ -190,92 +220,3 @@ def action(to_state: State):
         return wrapper
     return decorator
 
-
-# Example usage
-HAMBURGER_MENU = '//android.widget.FrameLayout[@resource-id="android:id/content"]/android.widget.FrameLayout/android.widget.FrameLayout/android.view.View/android.view.View/android.view.View/android.view.View/android.view.View[1]/android.view.View[2]/android.view.View[3]'
-class ConversationsState(SimpleState):
-
-    def __init__(self):
-        super().__init__("Conversation screen", ['//android.view.View[@content-desc="TeleGuard"]', HAMBURGER_MENU, '//android.view.View[@content-desc="Online"]|//android.view.View[contains(@content-desc, "Connection to server")]'], initial_state=True)
-
-    def go_to_settings(self, driver: PumaDriver):
-        print(f"click on settings button with driver {driver}")
-        driver.click(HAMBURGER_MENU)
-        driver.click('//android.widget.ImageView[@content-desc="Settings"]')
-
-    def go_to_chat(self, driver: PumaDriver, conversation:str):
-        """
-        Switches from chats to a chat screen
-        """
-        xpath = f'//android.widget.ImageView[contains(lower-case(@content-desc), "{conversation.lower()}")] | \
-                        //android.view.View[contains(lower-case(@content-desc), "{conversation.lower()}")]'
-
-        driver.driver.find_elements(by=AppiumBy.XPATH, value=xpath)[-1].click() #TODO Fix this, there should a ticket somewhere (#104)
-        print(f'Clicking on conversation {conversation} with driver {driver}')
-
-
-class ChatState(State):
-    def __init__(self, parent_state):
-        super().__init__("Chat screen", parent_state)
-
-    def validate(self, driver: PumaDriver, conversation: str = None) -> bool | str:
-        # 2 checks: 1) in conversation 2) in correct conversation
-        print(f'Check in conversation with xpath "//xpath/in_conversation" with driver {driver}')
-        if not driver.is_present('//android.widget.FrameLayout[@resource-id="android:id/content"]/android.widget.FrameLayout/android.widget.FrameLayout/android.view.View/android.view.View/android.view.View/android.view.View/android.widget.ImageView[4]'):
-            return False
-        if conversation:
-            content_desc = driver.get_element('//android.widget.FrameLayout[@resource-id="android:id/content"]/android.widget.FrameLayout/android.widget.FrameLayout/android.view.View/android.view.View/android.view.View/android.view.View/android.view.View[1]/android.view.View[2]/android.widget.ImageView[2]').get_attribute('content-desc')
-            if conversation.lower() in content_desc.lower():
-                return True
-            return content_desc.lower()
-        return True
-
-APPLICATION_PACKAGE = 'ch.swisscows.messenger.teleguardapp'
-
-class TestFsm(PumaUIGraph):
-    # TODO: infer name from attribute name (here: state1)
-    conversations = ConversationsState()
-    chat_screen = ChatState(conversations)
-    chat_management = SimpleState("Chat management", ['//android.widget.ImageView[@content-desc="All chat settings"]'], parent_state=chat_screen)
-    setting_screen = SimpleState("Settings", ['//android.view.View[@content-desc="Change TeleGuard ID"]'], parent_state=conversations)
-
-    conversations.to(chat_screen, conversations.go_to_chat)
-    chat_screen.to(chat_management, lambda x: None)
-    conversations.to(setting_screen, conversations.go_to_settings)
-
-    def __init__(self,
-                 device_udid,
-                 desired_capabilities: Dict[str, str] = None,
-                 implicit_wait=1,
-                 appium_server='http://localhost:4723'):
-        """
-        Class with an API for TeleGuard using Appium. Can be used with an emulator or real device attached to the computer.
-        """
-        self.driver = PumaDriver(device_udid, APPLICATION_PACKAGE)
-        self.driver.activate_app() # TODO: Activate app should be part of the navigation code
-        PumaUIGraph.__init__(self, self.driver)
-
-    @action(chat_screen)
-    def send_message(self, msg: str, conversation: str = None):
-        """
-        Sends a message
-        """
-        print(f"Sending message {msg}")
-        text_field = '//android.widget.EditText'
-        self.driver.click(text_field)
-        self.driver.send_keys(text_field, msg)
-        # text_box_el.click()
-        # text_box_el.send_keys(msg)
-        self.driver.click('//android.widget.FrameLayout[@resource-id="android:id/content"]/android.widget.FrameLayout/android.widget.FrameLayout/android.view.View/android.view.View/android.view.View/android.view.View/android.widget.ImageView[3]')
-
-
-if __name__ == '__main__':
-    print(TestFsm.states)
-    print("transitions: " + str(len(TestFsm.transitions)))
-    print('test')
-
-    t = TestFsm('34281JEHN03866')
-    print(len(t._find_shortest_path(TestFsm.chat_management)))
-    t.go_to_state(TestFsm.setting_screen)
-    t.send_message("Hello Bob", conversation="bob")
-    t.send_message("Test", conversation='TeleGuard')
