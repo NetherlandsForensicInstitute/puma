@@ -84,7 +84,7 @@ class PumaUIGraphMeta(type):
 
         return new_class
 
-def safe_func_call(func, **kwargs):
+def _safe_func_call(func, **kwargs):
     sig = inspect.signature(func)
     filtered_args = {
         k: v for k, v in kwargs.items() if k in sig.parameters
@@ -101,18 +101,19 @@ class PumaUIGraph(metaclass=PumaUIGraphMeta):
     def go_to_state(self, to_state: State | str, **kwargs):
         if to_state not in self.states:
             raise ValueError(f"{to_state.name} is not a known state in this PumaUiGraph")
-        transitions = self._find_shortest_path(to_state)
         kwargs['driver'] = self.driver
+        self._validate(self.current_state, **kwargs)
+        transitions = self._find_shortest_path(to_state)
         for transition in transitions:
-            self._validate(transition.from_state, **kwargs)
-            safe_func_call(transition.ui_actions, **kwargs)
+            _safe_func_call(transition.ui_actions, **kwargs)
             self._validate(transition.to_state, **kwargs)
             self.current_state = transition.to_state
 
     def _validate(self, state: State, **kwargs):
-        valid = safe_func_call(state.validate, **kwargs)
+        valid = _safe_func_call(state.validate, **kwargs)
         if valid:
             return
+
         print("not valid, do stuff, popups....") #TODO: More stuff to do
 
     def _find_shortest_path(self, destination: State | str) -> list[Transition] | None:
