@@ -58,9 +58,9 @@ class State(ABC):
     def __repr__(self):
         return f'[{self.name}]'
 
-class FState(State):  # TODO: find decent name for this type of state
+class FState(State):  # TODO: find decent name for this type of state. DynamicState? ParameterizedState? ContextualState?
     @abstractmethod
-    def variable_validate(self, driver: PumaDriver) -> bool:  # TODO: find decent name for this method
+    def variable_validate(self, driver: PumaDriver) -> bool:  # TODO: find decent name for this method. validate_with_context? and should we add **kwargs as argument?
         pass
 
 
@@ -168,7 +168,7 @@ def _safe_func_call(func, **kwargs):
     return func(**bound_args.arguments)
 
 
-class PumaUIGraph(metaclass=PumaUIGraphMeta):
+class PumaUIGraph(metaclass=PumaUIGraphMeta):  # TODO: rename. PumaAppModel, PumaStateMachine? UiModel? Just PumaActions like before?
     def __init__(self, driver: PumaDriver):
         self.current_state = self.initial_state
         self.driver = driver
