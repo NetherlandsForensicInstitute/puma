@@ -5,7 +5,7 @@ from puma.apps.android.FSMTEST_util.puma_fsm import SimpleState, State, PumaUIGr
     FState
 
 APPLICATION_PACKAGE = 'ch.swisscows.messenger.teleguardapp'
-HAMBURGER_MENU = '//android.widget.FrameLayout[@resource-id"android:id/content"]/android.widget.FrameLayout/android.widget.FrameLayout/android.view.View/android.view.View/android.view.View/android.view.View/android.view.View[1]/android.view.View[2]/android.view.View[3]'
+HAMBURGER_MENU = '//android.widget.FrameLayout[@resource-id="android:id/content"]/android.widget.FrameLayout/android.widget.FrameLayout/android.view.View/android.view.View/android.view.View/android.view.View/android.view.View[1]/android.view.View[2]/android.view.View[3]'
 
 class ConversationsState(SimpleState):
 
@@ -29,11 +29,8 @@ class ConversationsState(SimpleState):
 
 class ChatState(SimpleState, FState):
     def __init__(self, parent_state):
-        super().__init__("Chat screen", parent_state)
-
-    def validate(self, driver: PumaDriver) -> bool:
-        return driver.is_present(
-            '//android.widget.FrameLayout[@resource-id="android:id/content"]/android.widget.FrameLayout/android.widget.FrameLayout/android.view.View/android.view.View/android.view.View/android.view.View/android.widget.ImageView[4]')
+        super().__init__("Chat screen", xpaths=['//android.widget.FrameLayout[@resource-id="android:id/content"]/android.widget.FrameLayout/android.widget.FrameLayout/android.view.View/android.view.View/android.view.View/android.view.View/android.widget.ImageView[4]'],
+                         parent_state=parent_state)
 
     def variable_validate(self, driver: PumaDriver, conversation: str = None) -> bool:
         if not conversation:
@@ -60,7 +57,6 @@ class TestFsm(PumaUIGraph):
         Class with an API for TeleGuard using Appium. Can be used with an emulator or real device attached to the computer.
         """
         self.driver = PumaDriver(device_udid, APPLICATION_PACKAGE)
-        self.driver.activate_app() # TODO: Activate app should be part of the navigation code
         PumaUIGraph.__init__(self, self.driver)
         self.add_popup_handler(simple_popup_handler('bah'))
 

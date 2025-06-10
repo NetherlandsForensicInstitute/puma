@@ -56,7 +56,7 @@ class State(ABC):
         pass
 
     def __repr__(self):
-        return f'State {self.name} initial: {self.initial_state}'
+        return f'[{self.name}]'
 
 class FState(State):  # TODO: find decent name for this type of state
     @abstractmethod
