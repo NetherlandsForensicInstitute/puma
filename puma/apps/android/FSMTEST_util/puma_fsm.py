@@ -145,6 +145,11 @@ class PumaUIGraphMeta(type):
         unreachable_states = [s for s in states if not s.initial_state and not(bool(_shortest_path(initial_state, s)) and bool(_shortest_path(s, initial_state)))]
         if unreachable_states:
             raise ValueError(f'Some states cannot be reached from the initial state, or cannot go back to the initial state: {unreachable_states}')
+        # No duplicate names for states
+        seen = set()
+        duplicate_names = {s.name for s in states if s.name in seen or seen.add(s.name)}
+        if duplicate_names:
+            raise ValueError(f"States must have a unique name. Multiple sates are named {duplicate_names}")
         # No duplicate transitions: only one transition between each 2 states
         for s in states:
             seen = set()
