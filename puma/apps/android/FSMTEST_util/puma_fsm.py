@@ -52,11 +52,16 @@ class State(ABC):
         self.transitions.append(Transition(self, to_state, ui_actions))
 
     @abstractmethod
-    def validate(self, driver: PumaDriver) -> bool | str:  # TODO: type of driver, or do we want wrapped method?
+    def validate(self, driver: PumaDriver) -> bool:  # TODO: type of driver, or do we want wrapped method?
         pass
 
     def __repr__(self):
         return f'State {self.name} initial: {self.initial_state}'
+
+class FState(State):  # TODO: find decent name for this type of state
+    @abstractmethod
+    def variable_validate(self, driver: PumaDriver) -> bool:  # TODO: find decent name for this method
+        pass
 
 
 class SimpleState(State):
@@ -64,7 +69,7 @@ class SimpleState(State):
         super().__init__(name, parent_state=parent_state, initial_state=initial_state)
         self.xpaths = xpaths
 
-    def validate(self, driver: PumaDriver, conversation: str = None) -> bool | str:
+    def validate(self, driver: PumaDriver) -> bool:
         return all(driver.is_present(xpath) for xpath in self.xpaths)
 
 
@@ -107,6 +112,7 @@ class PumaUIGraphMeta(type):
         # every state except initial state needs transitions
         # TODO: further validation: you need to be able to go from  the initial state to each other state and back
         # No duplicate transitions: only one transition between each 2 states
+        # initial state cannot be FState, FStates need parent state
 
         return new_class
 
@@ -151,15 +157,23 @@ class PumaUIGraph(metaclass=PumaUIGraphMeta):
                     raise ValueError("Really krak boem")
         return True
 
-    def _sanity_check(self, expected_state: State, **kwargs) -> bool:
-        valid = _safe_func_call(expected_state.validate, **kwargs)
-        if valid == True:
-            self.current_state = expected_state
-            return True
-        elif isinstance(valid, str):
-            return self.go_to_state(expected_state.parent_state)
-        else:
+    def _sanity_check(self, expected_state: State, **kwargs):
+        # validate
+        valid = expected_state.validate(self.driver)
+        var_valid = True
+        if isinstance(expected_state, FState):
+            var_valid = _safe_func_call(expected_state.variable_validate, **kwargs)
+
+        # handle validation results
+        if not valid:
+             # state is totally unexpected
             self._recover_state()
+        elif not var_valid:
+            # correct state, but wrong variant (eg we want a conversation with Alice, but we're in a conversation with Bob)
+            # recovery: always go back to the parent state
+            self.go_to_state(expected_state.parent_state)
+        else:
+            self.current_state = expected_state
 
     def _recover_state(self, try_restart: bool = True):
         # Ensure app active

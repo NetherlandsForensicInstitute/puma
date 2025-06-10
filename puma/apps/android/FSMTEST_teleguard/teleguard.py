@@ -1,7 +1,9 @@
 from appium.webdriver.common.appiumby import AppiumBy
 
 from puma.apps.android.FSMTEST_util.puma_driver import PumaDriver
-from puma.apps.android.FSMTEST_util.puma_fsm import SimpleState, State, PumaUIGraph, action, simple_popup_handler
+from puma.apps.android.FSMTEST_util.puma_fsm import SimpleState, State, PumaUIGraph, action, simple_popup_handler, \
+    FState
+
 APPLICATION_PACKAGE = 'ch.swisscows.messenger.teleguardapp'
 HAMBURGER_MENU = '//android.widget.FrameLayout[@resource-id"android:id/content"]/android.widget.FrameLayout/android.widget.FrameLayout/android.view.View/android.view.View/android.view.View/android.view.View/android.view.View[1]/android.view.View[2]/android.view.View[3]'
 
@@ -25,23 +27,21 @@ class ConversationsState(SimpleState):
         driver.driver.find_elements(by=AppiumBy.XPATH, value=xpath)[-1].click() #TODO Fix this, there should a ticket somewhere (#104)
         print(f'Clicking on conversation {conversation} with driver {driver}')
 
-
-class ChatState(State):
+class ChatState(SimpleState, FState):
     def __init__(self, parent_state):
         super().__init__("Chat screen", parent_state)
 
-    def validate(self, driver: PumaDriver, conversation: str = None) -> bool | str:
-        # 2 checks: 1) in conversation 2) in correct conversation
-        print(f'Check in conversation with xpath "//xpath/in_conversation" with driver {driver}')
-        if not driver.is_present('//android.widget.FrameLayout[@resource-id="android:id/content"]/android.widget.FrameLayout/android.widget.FrameLayout/android.view.View/android.view.View/android.view.View/android.view.View/android.widget.ImageView[4]'):
-            return False
-        if conversation:
-            content_desc = (driver.get_element('//android.widget.FrameLayout[@resource-id="android:id/content"]/android.widget.FrameLayout/android.widget.FrameLayout/android.view.View/android.view.View/android.view.View/android.view.View/android.view.View[1]/android.view.View[2]/android.widget.ImageView[2]')
-                            .get_attribute('content-desc'))
-            if conversation.lower() in content_desc.lower():
-                return True
-            return content_desc.lower()
-        return True
+    def validate(self, driver: PumaDriver) -> bool:
+        return driver.is_present(
+            '//android.widget.FrameLayout[@resource-id="android:id/content"]/android.widget.FrameLayout/android.widget.FrameLayout/android.view.View/android.view.View/android.view.View/android.view.View/android.widget.ImageView[4]')
+
+    def variable_validate(self, driver: PumaDriver, conversation: str = None) -> bool:
+        if not conversation:
+            return True
+        content_desc = (driver.get_element(
+            '//android.widget.FrameLayout[@resource-id="android:id/content"]/android.widget.FrameLayout/android.widget.FrameLayout/android.view.View/android.view.View/android.view.View/android.view.View/android.view.View[1]/android.view.View[2]/android.widget.ImageView[2]')
+                        .get_attribute('content-desc'))
+        return conversation.lower() in content_desc.lower()
 
 
 class TestFsm(PumaUIGraph):
