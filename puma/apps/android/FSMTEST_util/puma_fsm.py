@@ -3,26 +3,33 @@ from abc import ABC, abstractmethod
 from collections import deque
 from dataclasses import dataclass
 from time import sleep
-from typing import Callable, Any, List, Dict
-
-from appium.webdriver.common.appiumby import AppiumBy
+from typing import Callable, Any, List
 
 from puma.apps.android.FSMTEST_util.puma_driver import PumaDriver
 
 
 @dataclass
 class PopUpHandler:
-    recognize: str
+    recognize_xpath: str
     click: str
+
+    def recognize(self, driver: PumaDriver) -> bool:
+        return driver.is_present(self.recognize_xpath)
+
+    def dismiss_popup(self, driver: PumaDriver):
+        driver.click(self.click)
+
 
 def simple_popup_handler(xpath: str):
     return PopUpHandler(xpath, xpath)
+
 
 known_popups = [simple_popup_handler('//android.widget.ImageView[@content-desc="Dismiss update dialog"]'),
                 simple_popup_handler(
                     '//android.widget.Button[@resource-id="com.android.permissioncontroller:id/permission_allow_foreground_only_button"]'),
                 simple_popup_handler(
                     '//android.widget.Button[@resource-id="com.android.permissioncontroller:id/permission_allow_button"]')]
+
 
 def back(driver: PumaDriver):
     driver.back()
@@ -89,6 +96,7 @@ class PumaUIGraphMeta(type):
         new_class.transitions = [transition for state in states for transition in state.transitions]
 
         ## validation
+        # TODO: make separate validate method
         # only 1 initial state
         initial_states = [s for s in states if s.initial_state]
         if len(initial_states) == 0:
@@ -97,9 +105,11 @@ class PumaUIGraphMeta(type):
             raise ValueError(f'Graph can only have 1 initial state, currently more defined: {initial_states}')
         new_class.initial_state = initial_states[0]
         # every state except initial state needs transitions
-        # TODO: states might need their incoming transitions? Then we can easily check this
+        # TODO: further validation: you need to be able to go from  the initial state to each other state and back
+        # No duplicate transitions: only one transition between each 2 states
 
         return new_class
+
 
 def _safe_func_call(func, **kwargs):
     sig = inspect.signature(func)
@@ -110,27 +120,27 @@ def _safe_func_call(func, **kwargs):
     bound_args.apply_defaults()
     return func(**bound_args.arguments)
 
+
 class PumaUIGraph(metaclass=PumaUIGraphMeta):
     def __init__(self, driver: PumaDriver):
         self.current_state = self.initial_state
         self.driver = driver
         self.app_popups = []
-        # self._sanity_check(self.initial_state, driver=self.driver)
 
     def go_to_state(self, to_state: State | str, **kwargs) -> bool:
         counter = 0
         if to_state not in self.states:
             raise ValueError(f"{to_state.name} is not a known state in this PumaUiGraph")
         kwargs['driver'] = self.driver
-        try:
+        try:  # TODO: try to simplify/unify the try except statements. Perhaps also have 1 counter for all retries, reset this counter per actions/transition?
             self._sanity_check(self.current_state, **kwargs)
         except:
             counter += 1
             print(f"Retry before while: {counter}")
             if counter > 5:
                 raise ValueError("Really krak boem 2")
-        while self.current_state != to_state: # TODO: Add loop counter (calc max distance in graph * 2)
-            try:
+        while self.current_state != to_state:  # TODO: Add loop counter (chosen bound: (# states * 2) +5 )
+            try: # TODO: try to simplify/unify the try except statements. Perhaps also have 1 counter for all retries, reset this counter per actions/transition?
                 transition = self._find_shortest_path(to_state)[0]
                 _safe_func_call(transition.ui_actions, **kwargs)
                 self._sanity_check(transition.to_state, **kwargs)
@@ -151,18 +161,21 @@ class PumaUIGraph(metaclass=PumaUIGraphMeta):
         else:
             self._recover_state()
 
-    def _recover_state(self, try_restart:bool=True):
+    def _recover_state(self, try_restart: bool = True):
         # Ensure app active
         if not self.driver.app_open():
             self.driver.activate_app()
 
-        # Pop ups
+        if self.current_state.validate(self.driver):
+            return
+
+        # Pop-ups
         clicked = True
         while clicked:
             clicked = False
             for popup_handler in known_popups + self.app_popups:
-                if self.driver.is_present(popup_handler.recognize):
-                    self.driver.click(popup_handler.click)
+                if popup_handler.recognize(self.driver):
+                    popup_handler.dismiss_popup(self.driver)
                     clicked = True
 
         if self.current_state.validate(self.driver):
@@ -177,7 +190,7 @@ class PumaUIGraph(metaclass=PumaUIGraphMeta):
                 sleep(3)
                 self._recover_state(False)
             raise ValueError("Unknown state. Maybe we should try restarting once?")  # TDO: e restart?
-        elif len(current_states) >1:
+        elif len(current_states) > 1:
             if try_restart:
                 print(f'Not in a known state. Restarting app {self.driver.app_package} once')
                 self.driver.restart_app()
@@ -220,18 +233,21 @@ def action(to_state: State):
             bound_args.apply_defaults()
             arguments = bound_args.arguments
             arguments.pop('self')
-            args[0].go_to_state(to_state, **arguments)
+            puma_ui_graph = args[0]
+            puma_ui_graph.go_to_state(to_state, **arguments)
 
             sig2 = inspect.signature(func)
             filtered_args = {
                 k: v for k, v in arguments.items() if k in sig2.parameters
             }
 
-            filtered_args['self'] = args[0]
+            filtered_args['self'] = puma_ui_graph
             bound_args2 = sig2.bind(**filtered_args)
             bound_args2.apply_defaults()
+            # TODO: make this function call resilient
             result = func(**bound_args2.arguments)
             return result
-        return wrapper
-    return decorator
 
+        return wrapper
+
+    return decorator

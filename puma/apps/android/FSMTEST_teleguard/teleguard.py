@@ -2,8 +2,9 @@ from appium.webdriver.common.appiumby import AppiumBy
 
 from puma.apps.android.FSMTEST_util.puma_driver import PumaDriver
 from puma.apps.android.FSMTEST_util.puma_fsm import SimpleState, State, PumaUIGraph, action, simple_popup_handler
+APPLICATION_PACKAGE = 'ch.swisscows.messenger.teleguardapp'
+HAMBURGER_MENU = '//android.widget.FrameLayout[@resource-id"android:id/content"]/android.widget.FrameLayout/android.widget.FrameLayout/android.view.View/android.view.View/android.view.View/android.view.View/android.view.View[1]/android.view.View[2]/android.view.View[3]'
 
-HAMBURGER_MENU = '//android.widget.FrameLayout[@resource-id="android:id/content"]/android.widget.FrameLayout/android.widget.FrameLayout/android.view.View/android.view.View/android.view.View/android.view.View/android.view.View[1]/android.view.View[2]/android.view.View[3]'
 class ConversationsState(SimpleState):
 
     def __init__(self):
@@ -35,13 +36,13 @@ class ChatState(State):
         if not driver.is_present('//android.widget.FrameLayout[@resource-id="android:id/content"]/android.widget.FrameLayout/android.widget.FrameLayout/android.view.View/android.view.View/android.view.View/android.view.View/android.widget.ImageView[4]'):
             return False
         if conversation:
-            content_desc = driver.get_element('//android.widget.FrameLayout[@resource-id="android:id/content"]/android.widget.FrameLayout/android.widget.FrameLayout/android.view.View/android.view.View/android.view.View/android.view.View/android.view.View[1]/android.view.View[2]/android.widget.ImageView[2]').get_attribute('content-desc')
+            content_desc = (driver.get_element('//android.widget.FrameLayout[@resource-id="android:id/content"]/android.widget.FrameLayout/android.widget.FrameLayout/android.view.View/android.view.View/android.view.View/android.view.View/android.view.View[1]/android.view.View[2]/android.widget.ImageView[2]')
+                            .get_attribute('content-desc'))
             if conversation.lower() in content_desc.lower():
                 return True
             return content_desc.lower()
         return True
 
-APPLICATION_PACKAGE = 'ch.swisscows.messenger.teleguardapp'
 
 class TestFsm(PumaUIGraph):
     # TODO: infer name from attribute name (here: state1)
