@@ -238,20 +238,16 @@ class PumaUIGraph(metaclass=PumaUIGraphMeta):
 
         # Search state
         current_states = [s for s in self.states if s.validate(self.driver)]
-        if len(current_states) == 0:
-            if try_restart:
-                print(f'Not in a known state. Restarting app {self.driver.app_package} once')
-                self.driver.restart_app()
-                sleep(3)
-                self._recover_state(False)
-            raise ValueError("Unknown state. Maybe we should try restarting once?")  # TDO: e restart?
-        elif len(current_states) > 1:
-            if try_restart:
-                print(f'Not in a known state. Restarting app {self.driver.app_package} once')
-                self.driver.restart_app()
-                sleep(3)
-                self._recover_state(False)
-            raise ValueError("More than one state matches the current UI. Write stricter XPATHs")
+        if len(current_states) != 1:
+            if not try_restart:
+                if len(current_states) > 1:
+                    raise ValueError("More than one state matches the current UI. Write stricter XPATHs")
+                else:
+                    raise ValueError("Unknown state, cannot recover.")
+            print(f'Not in a known state. Restarting app {self.driver.app_package} once')
+            self.driver.restart_app()
+            sleep(3)
+            self._recover_state(False)
         print(f'Was in unknown state. Recovered: now in state {current_states[0]}')
         self.current_state = current_states[0]
 
