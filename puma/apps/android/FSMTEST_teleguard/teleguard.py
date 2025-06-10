@@ -81,4 +81,5 @@ if __name__ == '__main__':
     t = TestFsm('34281JEHN03866')
     t.go_to_state(TestFsm.setting_screen)
     t.send_message("Hello Bob", conversation="bob")
+    t.send_message("Hello Bob second message")
     t.send_message("Test", conversation='TeleGuard')
