@@ -65,8 +65,7 @@ class TestFsm(PumaUIGraph):
         """
         Class with an API for TeleGuard using Appium. Can be used with an emulator or real device attached to the computer.
         """
-        self.driver = PumaDriver(device_udid, APPLICATION_PACKAGE)
-        PumaUIGraph.__init__(self, self.driver)
+        PumaUIGraph.__init__(self, device_udid, APPLICATION_PACKAGE)
         self.add_popup_handler(simple_popup_handler('bah'))
 
     @action(chat_state)
