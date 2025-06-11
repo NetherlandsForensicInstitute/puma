@@ -210,7 +210,8 @@ class PumaUIGraph(metaclass=PumaUIGraphMeta):  # TODO: rename. PumaAppModel, Pum
         # handle validation results
         if not valid:
              # state is totally unexpected
-            self._recover_state()
+            self._recover_state(expected_state)
+            self._sanity_check(self.current_state, **kwargs)
         elif not var_valid:
             # correct state, but wrong variant (eg we want a conversation with Alice, but we're in a conversation with Bob)
             # recovery: always go back to the parent state
@@ -218,7 +219,7 @@ class PumaUIGraph(metaclass=PumaUIGraphMeta):  # TODO: rename. PumaAppModel, Pum
         else:
             self.current_state = expected_state
 
-    def _recover_state(self):
+    def _recover_state(self, expected_state):
         # Ensure app active
         if not self.driver.app_open():
             self.driver.activate_app()
@@ -251,7 +252,7 @@ class PumaUIGraph(metaclass=PumaUIGraphMeta):  # TODO: rename. PumaAppModel, Pum
             sleep(3)
             self.try_restart = False
             return
-        print(f'Was in unknown state. Recovered: now in state {current_states[0]}')
+        print(f'Was in unknown state, expected {expected_state}. Recovered: now in state {current_states[0]}')
         self.current_state = current_states[0]
 
     def add_popup_handler(self, popup_handler: PopUpHandler):
@@ -285,7 +286,7 @@ def action(to_state: State):
             try:
                 result = func(**bound_args2.arguments)
             except PumaClickException as pce:
-                puma_ui_graph._recover_state() # Dangerous call, but if it fails, do we want to continue?
+                puma_ui_graph._recover_state(to_state) # Dangerous call, but if it fails, do we want to continue?
                 puma_ui_graph.go_to_state(to_state, **arguments)
                 result = func(**bound_args2.arguments)
             puma_ui_graph.try_restart = True
