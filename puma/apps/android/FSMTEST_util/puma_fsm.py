@@ -58,9 +58,9 @@ class State(ABC):
     def __repr__(self):
         return f'[{self.name}]'
 
-class FState(State):  # TODO: find decent name for this type of state. DynamicState? ParameterizedState? ContextualState?
+class ContextualState(State):
     @abstractmethod
-    def variable_validate(self, driver: PumaDriver) -> bool:  # TODO: find decent name for this method. validate_with_context? and should we add **kwargs as argument?
+    def validate_context(self, driver: PumaDriver) -> bool:
         pass
 
 
@@ -103,9 +103,9 @@ def _shortest_path(start: State, destination: State | str):
             queue.append((transition.to_state, path + [transition]))
     return None
 
-def click(xpaths: List[str]) -> Callable[[PumaDriver], None]:
+def compose_clicks(xpaths: List[str]) -> Callable[[PumaDriver], None]:
     """
-    Helper method to create lambdas to construct tranistions
+    Helper method to create lambdas to construct transitions
     :param xpaths: XPaths of elements to click
     :return: lambda to be used as a transition action
     """
@@ -115,13 +115,13 @@ def click(xpaths: List[str]) -> Callable[[PumaDriver], None]:
     return _click_
 
 
-class PumaUIGraphMeta(type):
+class StateGraphMeta(type):
     def __new__(cls, name, bases, namespace):
         # Create the class
         new_class = super().__new__(cls, name, bases, namespace)
 
         # Skip validation for the base PumaUIGraph class
-        if name == 'PumaUIGraph':
+        if name == 'StateGraph':
             return new_class
 
         ## collect states and transitions
@@ -137,7 +137,7 @@ class PumaUIGraphMeta(type):
         new_class.initial_state = next(s for s in states if s.initial_state)
 
         ## validation
-        PumaUIGraphMeta._validate_graph(states)
+        StateGraphMeta._validate_graph(states)
 
         return new_class
 
@@ -152,11 +152,11 @@ class PumaUIGraphMeta(type):
         initial_state = initial_states[0]
 
         # initial state cannot be FState
-        if isinstance(initial_state, FState):
+        if isinstance(initial_state, ContextualState):
             raise ValueError(f'Initial state ({initial_state}) Cannot be an FState')
 
         # FStates need parent state
-        fstate_without_parent = [s for s in states if isinstance(s, FState) and s.parent_state is None]
+        fstate_without_parent = [s for s in states if isinstance(s, ContextualState) and s.parent_state is None]
         if fstate_without_parent:
             raise ValueError(f'FStates without parent are not allowed: {fstate_without_parent}')
 
@@ -191,7 +191,7 @@ def _safe_func_call(func, **kwargs):
         return None
 
 
-class PumaUIGraph(metaclass=PumaUIGraphMeta):  # TODO: rename. PumaAppModel, PumaStateMachine? UiModel? Just PumaActions like before?
+class StateGraph(metaclass=StateGraphMeta):
     def __init__(self, device_udid: str, app_package: str):
         self.current_state = self.initial_state
         self.driver = PumaDriver(device_udid, app_package)
@@ -204,35 +204,35 @@ class PumaUIGraph(metaclass=PumaUIGraphMeta):  # TODO: rename. PumaAppModel, Pum
             raise ValueError(f"{to_state.name} is not a known state in this PumaUiGraph")
         kwargs['driver'] = self.driver
         try:
-            self._sanity_check(self.current_state, **kwargs)
+            self._validate_state(self.current_state, **kwargs)
         except PumaClickException as pce:
-            print(f"Initial sanity check encountered a problem {pce}")
+            print(f"Initial state validation encountered a problem {pce}")
         while self.current_state != to_state and counter < len(self.states) * 2 + 5:
             counter += 1
             try:
                 transition = self._find_shortest_path(to_state)[0]
                 _safe_func_call(transition.ui_actions, **kwargs)
-                self._sanity_check(transition.to_state, **kwargs)
+                self._validate_state(transition.to_state, **kwargs)
             except PumaClickException as pce:
-                print(f"Transition or sanity check failed, recover? {pce}")
+                print(f"Transition or state validation failed, recover? {pce}")
         if counter >= len(self.states) * 2 + 5:
             raise ValueError(f"Too many transitions, unrecoverable")
         return True
 
-    def _sanity_check(self, expected_state: State, **kwargs):
+    def _validate_state(self, expected_state: State, **kwargs):
         # validate
         valid = expected_state.validate(self.driver)
-        var_valid = True
-        if isinstance(expected_state, FState):
-            var_valid = _safe_func_call(expected_state.variable_validate, **kwargs)
+        context_valid = True
+        if isinstance(expected_state, ContextualState):
+            context_valid = _safe_func_call(expected_state.validate_context, **kwargs)
 
         # handle validation results
         if not valid:
              # state is totally unexpected
             self._recover_state(expected_state)
-            self._sanity_check(self.current_state, **kwargs)
-        elif not var_valid:
-            # correct state, but wrong variant (eg we want a conversation with Alice, but we're in a conversation with Bob)
+            self._validate_state(self.current_state, **kwargs)
+        elif not context_valid:
+            # correct state, but wrong context (eg we want a conversation with Alice, but we're in a conversation with Bob)
             # recovery: always go back to the parent state
             self.go_to_state(expected_state.parent_state)
         else:
@@ -294,38 +294,15 @@ def action(to_state: State):
             puma_ui_graph = args[0]
             puma_ui_graph.go_to_state(to_state, **arguments)
 
-            sig2 = inspect.signature(func)
-            filtered_args = {
-                k: v for k, v in arguments.items() if k in sig2.parameters
-            }
-
-            filtered_args['self'] = puma_ui_graph
-            bound_args2 = sig2.bind(**filtered_args)
-            bound_args2.apply_defaults()
             try:
-                result = func(**bound_args2.arguments)
+                result = func(*args, **kwargs)
             except PumaClickException as pce:
                 puma_ui_graph._recover_state(to_state) # Dangerous call, but if it fails, do we want to continue?
                 puma_ui_graph.go_to_state(to_state, **arguments)
-                result = func(**bound_args2.arguments)
+                result = func(*args, **kwargs)
             puma_ui_graph.try_restart = True
             return result
 
         return wrapper
 
     return decorator
-
-
-class TestFsm(PumaUIGraph):
-    start_state = SimpleState("start state", [], True)
-    state1 = SimpleState("state 1", [], parent_state=start_state)
-    state1_1 = SimpleState("state 1.1", [], parent_state=state1)
-    state2 = SimpleState("state 2", [], parent_state=start_state)
-
-    start_state.to(state1, None)
-    state1.to(state1_1, None)
-    start_state.to(state2, None)
-
-
-if __name__ == '__main__':
-    print("testing")

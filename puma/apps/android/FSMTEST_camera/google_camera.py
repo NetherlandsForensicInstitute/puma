@@ -1,12 +1,11 @@
 from time import sleep
 
-from puma.apps.android.FSMTEST_util.puma_driver import PumaDriver
-from puma.apps.android.FSMTEST_util.puma_fsm import PumaUIGraph, SimpleState, action, click
+from puma.apps.android.FSMTEST_util.puma_fsm import StateGraph, SimpleState, action, compose_clicks
 from puma.apps.android.appium_actions import supported_version
 
 APPLICATION_PACKAGE = 'com.google.android.GoogleCamera'
 @supported_version("8.8.225.510547499.09")
-class GoogleCamera(PumaUIGraph):
+class GoogleCamera(StateGraph):
 
     # Define states
     photo = SimpleState("Camera",
@@ -22,15 +21,15 @@ class GoogleCamera(PumaUIGraph):
                          parent_state=photo) # note that settings does not have a real parent state. the back restores the last state before navigating to settings.
 
     # Define transitions. Only forward transitions are needed, back transitions are added automatically
-    photo.to(video, click(['//android.widget.TextView[@content-desc="Switch to Video Camera"]']))
-    video.to(photo, click(['//android.widget.TextView[@content-desc="Switch to Camera Mode"]']))
+    photo.to(video, compose_clicks(['//android.widget.TextView[@content-desc="Switch to Video Camera"]']))
+    video.to(photo, compose_clicks(['//android.widget.TextView[@content-desc="Switch to Camera Mode"]']))
     settings_xpaths = ['//android.widget.ImageView[@content-desc="Open options menu"]',
                        '//android.widget.Button[@content-desc="Open settings"]']
-    photo.to(settings, click(settings_xpaths))
-    video.to(settings, click(settings_xpaths))
+    photo.to(settings, compose_clicks(settings_xpaths))
+    video.to(settings, compose_clicks(settings_xpaths))
 
     def __init__(self, device_udid):
-        PumaUIGraph.__init__(self, device_udid, APPLICATION_PACKAGE)
+        StateGraph.__init__(self, device_udid, APPLICATION_PACKAGE)
 
 
     # Define your actions

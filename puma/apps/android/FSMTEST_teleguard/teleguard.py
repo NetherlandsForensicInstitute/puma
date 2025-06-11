@@ -1,7 +1,7 @@
 from appium.webdriver.common.appiumby import AppiumBy
 
 from puma.apps.android.FSMTEST_util.puma_driver import PumaDriver
-from puma.apps.android.FSMTEST_util.puma_fsm import SimpleState, PumaUIGraph, action, simple_popup_handler, FState
+from puma.apps.android.FSMTEST_util.puma_fsm import SimpleState, StateGraph, action, simple_popup_handler, ContextualState
 
 APPLICATION_PACKAGE = 'ch.swisscows.messenger.teleguardapp'
 
@@ -36,13 +36,13 @@ def go_to_about(driver: PumaDriver):
     driver.click(CONVERSATION_STATE_ABOUT_BUTTON)
 
 
-class ChatState(SimpleState, FState):
+class ChatState(SimpleState, ContextualState):
     def __init__(self, parent_state):
         super().__init__("Chat screen",
                          xpaths=[CHAT_STATE_CONVERSATION_NAME, CHAT_STATE_MICROPHONE_BUTTON, CHAT_STATE_TEXT_FIELD],
                          parent_state=parent_state)
 
-    def variable_validate(self, driver: PumaDriver, conversation: str = None) -> bool:
+    def validate_context(self, driver: PumaDriver, conversation: str = None) -> bool:
         if not conversation:
             return True
 
@@ -50,7 +50,7 @@ class ChatState(SimpleState, FState):
         return conversation.lower() in content_desc.lower()
 
 
-class TestFsm(PumaUIGraph):
+class TestFsm(StateGraph):
     # TODO: infer name from attribute name (here: state1)
     conversations_state = SimpleState("Conversation screen", [CONVERSATION_STATE_TELEGUARD_HEADER, CONVERSATION_STATE_HAMBURGER_MENU, CONVERSATION_STATE_TELEGUARD_STATUS], initial_state=True)
     chat_state = ChatState(conversations_state)
@@ -65,7 +65,7 @@ class TestFsm(PumaUIGraph):
         """
         Class with an API for TeleGuard using Appium. Can be used with an emulator or real device attached to the computer.
         """
-        PumaUIGraph.__init__(self, device_udid, APPLICATION_PACKAGE)
+        StateGraph.__init__(self, device_udid, APPLICATION_PACKAGE)
         self.add_popup_handler(simple_popup_handler('bah'))
 
     @action(chat_state)
