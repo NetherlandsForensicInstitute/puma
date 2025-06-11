@@ -5,6 +5,10 @@ from dataclasses import dataclass
 from time import sleep
 from typing import Callable, Any, List
 
+import matplotlib.pyplot as plt
+import networkx as nx
+import numpy as np
+
 from puma.apps.android.FSMTEST_util.puma_driver import PumaDriver, PumaClickException
 
 
@@ -283,6 +287,57 @@ class PumaUIGraph(metaclass=PumaUIGraphMeta):  # TODO: rename. PumaAppModel, Pum
         """
         return _shortest_path(self.current_state, destination)
 
+    def draw_graph(self):
+        G = nx.DiGraph()
+        nodes = [s.name for s in self.states]
+        edges = [(s.name, t.to_state.name) for s in self.states for t in s.transitions]
+        edge_labels = {(s.name, t.to_state.name): t.ui_actions.__name__ for s in self.states for t in s.transitions}
+        G.add_nodes_from(nodes)
+        G.add_edges_from(edges)
+
+        pos = nx.nx_agraph.graphviz_layout(G, prog='dot')
+        nx.draw_networkx_nodes(G, pos, node_color='lightblue', node_size=2000)
+        nx.draw_networkx_labels(G, pos, font_size=15)
+        # Draw curved edges
+        for (u, v) in edges:
+            rad = 0.2 if (v, u) in G.edges else 0.0  # Curve only if there's a reverse edge
+            nx.draw_networkx_edges(
+                G, pos,
+                edgelist=[(u, v)],
+                connectionstyle=f'arc3,rad={rad}',
+                edge_color='gray',
+                arrows=True
+            )
+        label_pos = {}
+        # for (u, v), label in edge_labels.items():
+        #     rad = 0.2 if (v, u) in G.edges else 0.0
+        #     label_pos[(u, v)] = self.curved_edge_label_pos(pos, u, v, rad=rad)
+
+        nx.draw_networkx_edge_labels(G, pos, edge_labels=edge_labels, font_color='red')
+        plt.title("Graph")
+        plt.show()
+
+    # Function to offset edge label positions
+    def curved_edge_label_pos(pos, u, v, rad=0.2):
+        # Midpoint of the edge
+        x1, y1 = pos[u]
+        x2, y2 = pos[v]
+        xm, ym = (x1 + x2) / 2, (y1 + y2) / 2
+
+        # Compute direction perpendicular to the edge
+        dx = x2 - x1
+        dy = y2 - y1
+        d = np.hypot(dx, dy)
+        if d == 0:
+            return (xm, ym)
+
+        # Normalize perpendicular vector
+        perp_dx = -dy / d
+        perp_dy = dx / d
+
+        # Offset midpoint in the perpendicular direction
+        offset = rad * 0.5  # adjust factor to control label distance
+        return (xm + offset * perp_dx, ym + offset * perp_dy)
 
 def action(to_state: State):
     def decorator(func):

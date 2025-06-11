@@ -101,8 +101,9 @@ class TestFsm(PumaUIGraph):
 
 if __name__ == '__main__':
     t = TestFsm('34281JEHN03866')
-    t.go_to_state(TestFsm.settings_state)
-    t.send_message("Hello Bob", conversation="bob")
-    t.send_message("Hello Bob second message")
-    t.send_message("Test", conversation='TeleGuard')
-    t.go_to_state(TestFsm.about_screen_state)
+    t.draw_graph()
+    # t.go_to_state(TestFsm.settings_state)
+    # t.send_message("Hello Bob", conversation="bob")
+    # t.send_message("Hello Bob second message")
+    # t.send_message("Test", conversation='TeleGuard')
+    # t.go_to_state(TestFsm.about_screen_state)
