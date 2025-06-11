@@ -7,7 +7,7 @@ from typing import Callable, Any, List
 
 from puma.apps.android.FSMTEST_util.puma_driver import PumaDriver, PumaClickException
 
-
+# TODO move parts to their own files
 class PopUpHandler:
     """
     Handler for popup windows in Android applications.
@@ -263,7 +263,7 @@ class StateGraphMeta(type):
         :param states: A list of states in the state graph.
         :raises ValueError: If any of the validation checks fail.
         """
-
+        # TODO extract method for each validation
         # only 1 initial state
         initial_states = [s for s in states if s.initial_state]
         if len(initial_states) == 0:
@@ -272,9 +272,9 @@ class StateGraphMeta(type):
             raise ValueError(f'Graph can only have 1 initial state, currently more defined: {initial_states}')
         initial_state = initial_states[0]
 
-        # initial state cannot be FState
+        # initial state cannot be Contextual state
         if isinstance(initial_state, ContextualState):
-            raise ValueError(f'Initial state ({initial_state}) Cannot be an FState')
+            raise ValueError(f'Initial state ({initial_state}) Cannot be an Contextual state')
 
         # Contextual states need parent state
         contextual_state_without_parent = [s for s in states if isinstance(s, ContextualState) and s.parent_state is None]

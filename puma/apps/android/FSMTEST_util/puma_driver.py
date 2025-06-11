@@ -27,7 +27,7 @@ def _get_android_default_options() -> UiAutomator2Options:
     options.new_command_timeout = 1200
     return options
 # TODO the PumaDriver misses some functionality compared to the driver initialisation part of appium actions, such as
-# logging that appium is not running., or adding desired capabilities. make sure we have the same functionality as
+# logging that appium is not running., or adding desired capabilities, driver cache make sure we have the same functionality as
 # before!
 class PumaDriver:
     """
