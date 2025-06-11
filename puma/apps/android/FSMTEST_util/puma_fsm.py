@@ -66,6 +66,13 @@ class FState(State):  # TODO: find decent name for this type of state
 
 class SimpleState(State):
     def __init__(self, name: str, xpaths: List[str], initial_state: bool = False, parent_state: 'State' = None, ):
+        """
+        TODO
+        :param name:
+        :param xpaths:
+        :param initial_state:
+        :param parent_state:
+        """
         super().__init__(name, parent_state=parent_state, initial_state=initial_state)
         self.xpaths = xpaths
 
@@ -78,6 +85,18 @@ class Transition:
     from_state: State
     to_state: State
     ui_actions: Callable[[Any], None]  # TODO: typing
+
+
+def click(xpaths: List[str]) -> Callable[[PumaDriver], None]:
+    """
+    Helper method to create lambdas to construct tranistions
+    :param xpaths: XPaths of elements to click
+    :return: lambda to be used as a transition action
+    """
+    def  _click_(driver):
+        for xpath in xpaths:
+            driver.click(xpath)
+    return _click_
 
 
 class PumaUIGraphMeta(type):
