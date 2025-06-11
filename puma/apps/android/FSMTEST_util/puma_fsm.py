@@ -8,16 +8,37 @@ from typing import Callable, Any, List
 from puma.apps.android.FSMTEST_util.puma_driver import PumaDriver, PumaClickException
 
 
-@dataclass
 class PopUpHandler:
-    recognize_xpath: str
-    click: str
+    """
+    Handler for pop-up windows in Android applications.
+    """
 
-    def recognize(self, driver: PumaDriver) -> bool:
+    def __init__(self, recognize_xpath: str, dismiss_xpath: str):
+        """
+        Constructor for the popup handler class.
+
+        :param recognize_xpath: The XPath to use for recognizing pop-up windows.
+        :param click: The XPath for the element to dismiss the pop-up.
+        """
+        self.recognize_xpath = recognize_xpath
+        self.dismiss_xpath = dismiss_xpath
+
+    def is_popup_window(self, driver: PumaDriver) -> bool:
+        """
+        self.recognize_xpath = recognize_xpath
+
+        :param driver: The PumaDriver instance to use for searching the window.
+        return: Whether the pop-up window was found or not.
+        """
         return driver.is_present(self.recognize_xpath)
 
     def dismiss_popup(self, driver: PumaDriver):
-        driver.click(self.click)
+        """
+        Dismiss a popup window using the provided xpath.
+
+        :param driver: The PumaDriver instance to use for searching and clicking the button.
+        """
+        driver.click(self.dismiss_xpath)
 
 
 def simple_popup_handler(xpath: str):
