@@ -21,6 +21,11 @@ class PopUpHandler:
 
 
 def simple_popup_handler(xpath: str):
+    """
+    Utility method to create a popup handler that uses the same XPath for both recognizing and dismissing the popup.
+    :param xpath: xpath of the element to click
+    :return: PopUpHandler for the provided xpath
+    """
     return PopUpHandler(xpath, xpath)
 
 
@@ -32,12 +37,22 @@ known_popups = [simple_popup_handler('//android.widget.ImageView[@content-desc="
 
 
 def back(driver: PumaDriver):
-    driver.back()
+    """
+    Utility method for calling the back action in Android devices.
+    :param driver:
+    """
     print(f'calling driver.back() with driver {driver}')
+    driver.back()
 
 
 class State(ABC):
     def __init__(self, name: str, parent_state: 'State' = None, initial_state: bool = False):
+        """
+
+        :param name:
+        :param parent_state:
+        :param initial_state:
+        """
         if initial_state and parent_state:
             raise ValueError(f'Error creating state {name}: initial state cannot have a parent state')
         self.name = name
