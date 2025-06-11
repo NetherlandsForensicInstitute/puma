@@ -5,7 +5,7 @@ from dataclasses import dataclass
 from time import sleep
 from typing import Callable, Any, List
 
-from puma.apps.android.FSMTEST_util.puma_driver import PumaDriver
+from puma.apps.android.FSMTEST_util.puma_driver import PumaDriver, PumaClickException
 
 
 @dataclass
@@ -52,15 +52,15 @@ class State(ABC):
         self.transitions.append(Transition(self, to_state, ui_actions))
 
     @abstractmethod
-    def validate(self, driver: PumaDriver) -> bool:  # TODO: type of driver, or do we want wrapped method?
+    def validate(self, driver: PumaDriver) -> bool:
         pass
 
     def __repr__(self):
         return f'[{self.name}]'
 
-class FState(State):  # TODO: find decent name for this type of state
+class FState(State):  # TODO: find decent name for this type of state. DynamicState? ParameterizedState? ContextualState?
     @abstractmethod
-    def variable_validate(self, driver: PumaDriver) -> bool:  # TODO: find decent name for this method
+    def variable_validate(self, driver: PumaDriver) -> bool:  # TODO: find decent name for this method. validate_with_context? and should we add **kwargs as argument?
         pass
 
 
@@ -86,6 +86,22 @@ class Transition:
     to_state: State
     ui_actions: Callable[[Any], None]  # TODO: typing
 
+def _shortest_path(start: State, destination: State | str):
+    visited = set()
+    queue = deque([(start, [])])
+    while queue:
+        state, path = queue.popleft()
+        # if this is a path to the desired state, return the path
+        if state == destination or state.name == destination:
+            return path
+        # we do not want cycles: skip paths to already visited states
+        if state in visited:
+            continue
+        visited.add(state)
+        # take a step in all possible directions
+        for transition in state.transitions:
+            queue.append((transition.to_state, path + [transition]))
+    return None
 
 def click(xpaths: List[str]) -> Callable[[PumaDriver], None]:
     """
@@ -118,22 +134,47 @@ class PumaUIGraphMeta(type):
                 transitions.append(value)
         new_class.states = states
         new_class.transitions = [transition for state in states for transition in state.transitions]
+        new_class.initial_state = next(s for s in states if s.initial_state)
 
         ## validation
-        # TODO: make separate validate method
+        PumaUIGraphMeta._validate_graph(states)
+
+        return new_class
+
+    @staticmethod
+    def _validate_graph(states: List[State]):  # TODO: make unit test for this validation
         # only 1 initial state
         initial_states = [s for s in states if s.initial_state]
         if len(initial_states) == 0:
             raise ValueError(f'Graph needs an initial state')
         elif len(initial_states) > 1:
             raise ValueError(f'Graph can only have 1 initial state, currently more defined: {initial_states}')
-        new_class.initial_state = initial_states[0]
-        # every state except initial state needs transitions
-        # TODO: further validation: you need to be able to go from  the initial state to each other state and back
-        # No duplicate transitions: only one transition between each 2 states
-        # initial state cannot be FState, FStates need parent state
+        initial_state = initial_states[0]
 
-        return new_class
+        # initial state cannot be FState
+        if isinstance(initial_state, FState):
+            raise ValueError(f'Initial state ({initial_state}) Cannot be an FState')
+
+        # FStates need parent state
+        fstate_without_parent = [s for s in states if isinstance(s, FState) and s.parent_state is None]
+        if fstate_without_parent:
+            raise ValueError(f'FStates without parent are not allowed: {fstate_without_parent}')
+
+        #you need to be able to go from  the initial state to each other state and back
+        unreachable_states = [s for s in states if not s.initial_state and not(bool(_shortest_path(initial_state, s)) and bool(_shortest_path(s, initial_state)))]
+        if unreachable_states:
+            raise ValueError(f'Some states cannot be reached from the initial state, or cannot go back to the initial state: {unreachable_states}')
+        # No duplicate names for states
+        seen = set()
+        duplicate_names = {s.name for s in states if s.name in seen or seen.add(s.name)}
+        if duplicate_names:
+            raise ValueError(f"States must have a unique name. Multiple sates are named {duplicate_names}")
+        # No duplicate transitions: only one transition between each 2 states
+        for s in states:
+            seen = set()
+            duplicates = {t.to_state for t in s.transitions if t.to_state in seen or seen.add(t.to_state)}
+            if duplicates:
+                raise ValueError(f"State {s} has invalid transitions: multiple transitions defined to neighboring state(s) {duplicates}")
 
 
 def _safe_func_call(func, **kwargs):
@@ -143,37 +184,39 @@ def _safe_func_call(func, **kwargs):
     }
     bound_args = sig.bind(**filtered_args)
     bound_args.apply_defaults()
-    return func(**bound_args.arguments)
+    try:
+        return func(**bound_args.arguments)
+    except PumaClickException as pce:
+        print(f"A problem occurred during a safe function call, recovering.. {pce}")
+        return None
 
 
-class PumaUIGraph(metaclass=PumaUIGraphMeta):
+class PumaUIGraph(metaclass=PumaUIGraphMeta):  # TODO: rename. PumaAppModel, PumaStateMachine? UiModel? Just PumaActions like before?
     def __init__(self, driver: PumaDriver):
         self.current_state = self.initial_state
         self.driver = driver
         self.app_popups = []
+        self.try_restart = True
 
     def go_to_state(self, to_state: State | str, **kwargs) -> bool:
         counter = 0
         if to_state not in self.states:
             raise ValueError(f"{to_state.name} is not a known state in this PumaUiGraph")
         kwargs['driver'] = self.driver
-        try:  # TODO: try to simplify/unify the try except statements. Perhaps also have 1 counter for all retries, reset this counter per actions/transition?
+        try:
             self._sanity_check(self.current_state, **kwargs)
-        except:
+        except PumaClickException as pce:
+            print(f"Initial sanity check encountered a problem {pce}")
+        while self.current_state != to_state and counter < len(self.states) * 2 + 5:
             counter += 1
-            print(f"Retry before while: {counter}")
-            if counter > 5:
-                raise ValueError("Really krak boem 2")
-        while self.current_state != to_state:  # TODO: Add loop counter (chosen bound: (# states * 2) +5 )
-            try: # TODO: try to simplify/unify the try except statements. Perhaps also have 1 counter for all retries, reset this counter per actions/transition?
+            try:
                 transition = self._find_shortest_path(to_state)[0]
                 _safe_func_call(transition.ui_actions, **kwargs)
                 self._sanity_check(transition.to_state, **kwargs)
-            except:
-                counter += 1
-                print(f"Retry in while: {counter}")
-                if counter > 5:
-                    raise ValueError("Really krak boem")
+            except PumaClickException as pce:
+                print(f"Transition or sanity check failed, recover? {pce}")
+        if counter >= len(self.states) * 2 + 5:
+            raise ValueError(f"Too many transitions, unrecoverable")
         return True
 
     def _sanity_check(self, expected_state: State, **kwargs):
@@ -194,7 +237,7 @@ class PumaUIGraph(metaclass=PumaUIGraphMeta):
         else:
             self.current_state = expected_state
 
-    def _recover_state(self, try_restart: bool = True):
+    def _recover_state(self):
         # Ensure app active
         if not self.driver.app_open():
             self.driver.activate_app()
@@ -216,20 +259,17 @@ class PumaUIGraph(metaclass=PumaUIGraphMeta):
 
         # Search state
         current_states = [s for s in self.states if s.validate(self.driver)]
-        if len(current_states) == 0:
-            if try_restart:
-                print(f'Not in a known state. Restarting app {self.driver.app_package} once')
-                self.driver.restart_app()
-                sleep(3)
-                self._recover_state(False)
-            raise ValueError("Unknown state. Maybe we should try restarting once?")  # TDO: e restart?
-        elif len(current_states) > 1:
-            if try_restart:
-                print(f'Not in a known state. Restarting app {self.driver.app_package} once')
-                self.driver.restart_app()
-                sleep(3)
-                self._recover_state(False)
-            raise ValueError("More than one state matches the current UI. Write stricter XPATHs")
+        if len(current_states) != 1:
+            if not self.try_restart:
+                if len(current_states) > 1:
+                    raise ValueError("More than one state matches the current UI. Write stricter XPATHs")
+                else:
+                    raise ValueError("Unknown state, cannot recover.")
+            print(f'Not in a known state. Restarting app {self.driver.app_package} once')
+            self.driver.restart_app()
+            sleep(3)
+            self.try_restart = False
+            return
         print(f'Was in unknown state. Recovered: now in state {current_states[0]}')
         self.current_state = current_states[0]
 
@@ -240,23 +280,7 @@ class PumaUIGraph(metaclass=PumaUIGraphMeta):
         """
         Gets the shortest path (in number of transitions) to the desired state.
         """
-        start = self.current_state
-        visited = set()
-        queue = deque([(start, [])])
-
-        while queue:
-            state, path = queue.popleft()
-            # if this is a path to the desired state, return the path
-            if state == destination or state.name == destination:
-                return path
-            # we do not want cycles: skip paths to already visited states
-            if state in visited:
-                continue
-            visited.add(state)
-            # take a step in all possible directions
-            for transition in state.transitions:
-                queue.append((transition.to_state, path + [transition]))
-        return None
+        return _shortest_path(self.current_state, destination)
 
 
 def action(to_state: State):
@@ -277,10 +301,30 @@ def action(to_state: State):
             filtered_args['self'] = puma_ui_graph
             bound_args2 = sig2.bind(**filtered_args)
             bound_args2.apply_defaults()
-            # TODO: make this function call resilient
-            result = func(**bound_args2.arguments)
+            try:
+                result = func(**bound_args2.arguments)
+            except PumaClickException as pce:
+                puma_ui_graph._recover_state() # Dangerous call, but if it fails, do we want to continue?
+                puma_ui_graph.go_to_state(to_state, **arguments)
+                result = func(**bound_args2.arguments)
+            puma_ui_graph.try_restart = True
             return result
 
         return wrapper
 
     return decorator
+
+
+class TestFsm(PumaUIGraph):
+    start_state = SimpleState("start state", [], True)
+    state1 = SimpleState("state 1", [], parent_state=start_state)
+    state1_1 = SimpleState("state 1.1", [], parent_state=state1)
+    state2 = SimpleState("state 2", [], parent_state=start_state)
+
+    start_state.to(state1, None)
+    state1.to(state1_1, None)
+    start_state.to(state2, None)
+
+
+if __name__ == '__main__':
+    print("testing")
