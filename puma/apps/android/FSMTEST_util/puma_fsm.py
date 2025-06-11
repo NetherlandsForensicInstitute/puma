@@ -66,6 +66,13 @@ class FState(State):  # TODO: find decent name for this type of state. DynamicSt
 
 class SimpleState(State):
     def __init__(self, name: str, xpaths: List[str], initial_state: bool = False, parent_state: 'State' = None, ):
+        """
+        TODO
+        :param name:
+        :param xpaths:
+        :param initial_state:
+        :param parent_state:
+        """
         super().__init__(name, parent_state=parent_state, initial_state=initial_state)
         self.xpaths = xpaths
 
@@ -95,6 +102,18 @@ def _shortest_path(start: State, destination: State | str):
         for transition in state.transitions:
             queue.append((transition.to_state, path + [transition]))
     return None
+
+def click(xpaths: List[str]) -> Callable[[PumaDriver], None]:
+    """
+    Helper method to create lambdas to construct tranistions
+    :param xpaths: XPaths of elements to click
+    :return: lambda to be used as a transition action
+    """
+    def  _click_(driver):
+        for xpath in xpaths:
+            driver.click(xpath)
+    return _click_
+
 
 class PumaUIGraphMeta(type):
     def __new__(cls, name, bases, namespace):
@@ -173,9 +192,9 @@ def _safe_func_call(func, **kwargs):
 
 
 class PumaUIGraph(metaclass=PumaUIGraphMeta):  # TODO: rename. PumaAppModel, PumaStateMachine? UiModel? Just PumaActions like before?
-    def __init__(self, driver: PumaDriver):
+    def __init__(self, device_udid: str, app_package: str):
         self.current_state = self.initial_state
-        self.driver = driver
+        self.driver = PumaDriver(device_udid, app_package)
         self.app_popups = []
         self.try_restart = True
 
@@ -252,7 +271,7 @@ class PumaUIGraph(metaclass=PumaUIGraphMeta):  # TODO: rename. PumaAppModel, Pum
             sleep(3)
             self.try_restart = False
             return
-        print(f'Was in unknown state, expected {expected_state}. Recovered: now in state {current_states[0]}')
+        print(f'Was in unknown state, expected {expected_state}. Recovered: now in state {current_states[0]}') # TODO improve this logging. make clear that the recovery entails just knowing in which state it is
         self.current_state = current_states[0]
 
     def add_popup_handler(self, popup_handler: PopUpHandler):
