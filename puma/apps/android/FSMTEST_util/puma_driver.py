@@ -6,6 +6,10 @@ from appium import webdriver
 from appium.webdriver.extensions.android.nativekey import AndroidKey
 
 
+class PumaClickException(Exception):
+    pass
+
+
 def _get_android_default_options():
     options = UiAutomator2Options()
     options.no_reset = True
@@ -49,14 +53,17 @@ class PumaDriver:
         self.driver.press_keycode(AndroidKey.HOME)
 
     def click(self, xpath: str):
-        if not self.is_present(xpath, self.implicit_wait):
-            raise ValueError(f'Could not click on non present element with xpath {xpath}')
-        self.driver.find_element(by=AppiumBy.XPATH, value=xpath).click()
+        for attempt in range(3):
+            if self.is_present(xpath, self.implicit_wait):
+                self.driver.find_element(by=AppiumBy.XPATH, value=xpath).click()
+                return
+        raise PumaClickException(f'Could not click on non present element with xpath {xpath}')
 
     def get_element(self, xpath: str):
-        if not self.is_present(xpath, self.implicit_wait):
-            raise ValueError(f'Could not click on non present element with xpath {xpath}')
-        return self.driver.find_element(by=AppiumBy.XPATH, value=xpath)
+        for attempt in range(3):
+            if self.is_present(xpath, self.implicit_wait):
+                return self.driver.find_element(by=AppiumBy.XPATH, value=xpath)
+        raise PumaClickException(f'Could not click on non present element with xpath {xpath}')
 
     def swipe_to_click_element(self, xpath: str, max_swipes: int = 10):
         for attempt in range(max_swipes):
@@ -77,7 +84,7 @@ class PumaDriver:
                 # Wait a bit before the next attempt
                 time.sleep(0.5)
         # If the loop completes, the element was not found
-        raise ValueError(f'After {max_swipes} swipes, cannot find element with xpath {xpath}')
+        raise PumaClickException(f'After {max_swipes} swipes, cannot find element with xpath {xpath}')
 
     def send_keys(self, xpath: str, keys: str):
         element = self.get_element(xpath)

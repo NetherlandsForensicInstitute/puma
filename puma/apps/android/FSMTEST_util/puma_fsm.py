@@ -5,7 +5,7 @@ from dataclasses import dataclass
 from time import sleep
 from typing import Callable, Any, List
 
-from puma.apps.android.FSMTEST_util.puma_driver import PumaDriver
+from puma.apps.android.FSMTEST_util.puma_driver import PumaDriver, PumaClickException
 
 
 @dataclass
@@ -165,7 +165,11 @@ def _safe_func_call(func, **kwargs):
     }
     bound_args = sig.bind(**filtered_args)
     bound_args.apply_defaults()
-    return func(**bound_args.arguments)
+    try:
+        return func(**bound_args.arguments)
+    except PumaClickException as pce:
+        print(f"A problem occurred during a safe function call, recovering.. {pce}")
+        return None
 
 
 class PumaUIGraph(metaclass=PumaUIGraphMeta):  # TODO: rename. PumaAppModel, PumaStateMachine? UiModel? Just PumaActions like before?
@@ -173,29 +177,27 @@ class PumaUIGraph(metaclass=PumaUIGraphMeta):  # TODO: rename. PumaAppModel, Pum
         self.current_state = self.initial_state
         self.driver = driver
         self.app_popups = []
+        self.try_restart = True
 
     def go_to_state(self, to_state: State | str, **kwargs) -> bool:
         counter = 0
         if to_state not in self.states:
             raise ValueError(f"{to_state.name} is not a known state in this PumaUiGraph")
         kwargs['driver'] = self.driver
-        try:  # TODO: try to simplify/unify the try except statements. Perhaps also have 1 counter for all retries, reset this counter per actions/transition?
+        try:
             self._sanity_check(self.current_state, **kwargs)
-        except:
+        except PumaClickException as pce:
+            print(f"Initial sanity check encountered a problem {pce}")
+        while self.current_state != to_state and counter < len(self.states) * 2 + 5:
             counter += 1
-            print(f"Retry before while: {counter}")
-            if counter > 5:
-                raise ValueError("Really krak boem 2")
-        while self.current_state != to_state:  # TODO: Add loop counter (chosen bound: (# states * 2) +5 )
-            try: # TODO: try to simplify/unify the try except statements. Perhaps also have 1 counter for all retries, reset this counter per actions/transition?
+            try:
                 transition = self._find_shortest_path(to_state)[0]
                 _safe_func_call(transition.ui_actions, **kwargs)
                 self._sanity_check(transition.to_state, **kwargs)
-            except:
-                counter += 1
-                print(f"Retry in while: {counter}")
-                if counter > 5:
-                    raise ValueError("Really krak boem")
+            except PumaClickException as pce:
+                print(f"Transition or sanity check failed, recover? {pce}")
+        if counter >= len(self.states) * 2 + 5:
+            raise ValueError(f"Too many transitions, unrecoverable")
         return True
 
     def _sanity_check(self, expected_state: State, **kwargs):
@@ -216,7 +218,7 @@ class PumaUIGraph(metaclass=PumaUIGraphMeta):  # TODO: rename. PumaAppModel, Pum
         else:
             self.current_state = expected_state
 
-    def _recover_state(self, try_restart: bool = True):
+    def _recover_state(self):
         # Ensure app active
         if not self.driver.app_open():
             self.driver.activate_app()
@@ -239,7 +241,7 @@ class PumaUIGraph(metaclass=PumaUIGraphMeta):  # TODO: rename. PumaAppModel, Pum
         # Search state
         current_states = [s for s in self.states if s.validate(self.driver)]
         if len(current_states) != 1:
-            if not try_restart:
+            if not self.try_restart:
                 if len(current_states) > 1:
                     raise ValueError("More than one state matches the current UI. Write stricter XPATHs")
                 else:
@@ -247,7 +249,8 @@ class PumaUIGraph(metaclass=PumaUIGraphMeta):  # TODO: rename. PumaAppModel, Pum
             print(f'Not in a known state. Restarting app {self.driver.app_package} once')
             self.driver.restart_app()
             sleep(3)
-            self._recover_state(False)
+            self.try_restart = False
+            return
         print(f'Was in unknown state. Recovered: now in state {current_states[0]}')
         self.current_state = current_states[0]
 
@@ -279,13 +282,19 @@ def action(to_state: State):
             filtered_args['self'] = puma_ui_graph
             bound_args2 = sig2.bind(**filtered_args)
             bound_args2.apply_defaults()
-            # TODO: make this function call resilient
-            result = func(**bound_args2.arguments)
+            try:
+                result = func(**bound_args2.arguments)
+            except PumaClickException as pce:
+                puma_ui_graph._recover_state() # Dangerous call, but if it fails, do we want to continue?
+                puma_ui_graph.go_to_state(to_state, **arguments)
+                result = func(**bound_args2.arguments)
+            puma_ui_graph.try_restart = True
             return result
 
         return wrapper
 
     return decorator
+
 
 class TestFsm(PumaUIGraph):
     start_state = SimpleState("start state", [], True)
