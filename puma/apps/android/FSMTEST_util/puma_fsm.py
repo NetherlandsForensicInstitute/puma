@@ -192,9 +192,9 @@ def _safe_func_call(func, **kwargs):
 
 
 class PumaUIGraph(metaclass=PumaUIGraphMeta):  # TODO: rename. PumaAppModel, PumaStateMachine? UiModel? Just PumaActions like before?
-    def __init__(self, driver: PumaDriver):
+    def __init__(self, device_udid: str, app_package: str):
         self.current_state = self.initial_state
-        self.driver = driver
+        self.driver = PumaDriver(device_udid, app_package)
         self.app_popups = []
         self.try_restart = True
 
@@ -270,7 +270,7 @@ class PumaUIGraph(metaclass=PumaUIGraphMeta):  # TODO: rename. PumaAppModel, Pum
             sleep(3)
             self.try_restart = False
             return
-        print(f'Was in unknown state. Recovered: now in state {current_states[0]}')
+        print(f'Was in unknown state. Recovered: now in state {current_states[0]}') # TODO improve this logging. make clear that the recovery entails just knowing in which state it is
         self.current_state = current_states[0]
 
     def add_popup_handler(self, popup_handler: PopUpHandler):

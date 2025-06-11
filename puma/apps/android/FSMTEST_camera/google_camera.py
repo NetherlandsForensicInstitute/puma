@@ -1,11 +1,11 @@
 from time import sleep
 
-import puma.apps.android.FSMTEST_util.puma_fsm
 from puma.apps.android.FSMTEST_util.puma_driver import PumaDriver
 from puma.apps.android.FSMTEST_util.puma_fsm import PumaUIGraph, SimpleState, action, click
+from puma.apps.android.appium_actions import supported_version
 
 APPLICATION_PACKAGE = 'com.google.android.GoogleCamera'
-
+@supported_version("8.8.225.510547499.09")
 class GoogleCamera(PumaUIGraph):
 
     # Define states
@@ -24,17 +24,14 @@ class GoogleCamera(PumaUIGraph):
     # Define transitions. Only forward transitions are needed, back transitions are added automatically
     photo.to(video, click(['//android.widget.TextView[@content-desc="Switch to Video Camera"]']))
     video.to(photo, click(['//android.widget.TextView[@content-desc="Switch to Camera Mode"]']))
-    settings_xpaths = ['//android.widget.ImageView[@content-desc="Camera settings"]',
+    settings_xpaths = ['//android.widget.ImageView[@content-desc="Open options menu"]',
                        '//android.widget.Button[@content-desc="Open settings"]']
     photo.to(settings, click(settings_xpaths))
     video.to(settings, click(settings_xpaths))
 
     def __init__(self, device_udid):
-        self.driver = PumaDriver(device_udid, APPLICATION_PACKAGE)
-        PumaUIGraph.__init__(self, self.driver)
+        PumaUIGraph.__init__(self, device_udid, APPLICATION_PACKAGE)
 
-        # Optional: create your own app-specific popup handler
-        # self.add_popup_handler(simple_popup_handler('test'))
 
     # Define your actions
     @action(photo)
@@ -61,15 +58,15 @@ class GoogleCamera(PumaUIGraph):
         if front_camera is None:
             return
         switch_button = self.driver.get_element('//android.widget.ImageButton[@resource-id="com.google.android.GoogleCamera:id/camera_switch_button"]')
-        currently_in_front =  FRONT in switch_button.get_attribute("content-desc")
+        currently_in_front =  'front' in switch_button.get_attribute("content-desc")
         if currently_in_front != front_camera:
             switch_button.click()
 
 if __name__ == "__main__":
     alice = GoogleCamera('32131JEHN38079')
-    alice.take_picture(alice.front)
+    alice.take_picture(front_camera=True)
     alice.record_video(2, True)
-    alice.take_picture(alice.back)
+    alice.take_picture(front_camera=False)
     alice.record_video(2, False)
     alice.go_to_state(GoogleCamera.settings)
 

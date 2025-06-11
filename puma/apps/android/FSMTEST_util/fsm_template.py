@@ -22,8 +22,6 @@ class TemplateApp(PumaUIGraph):
     def __init__(self, device_udid):
         PumaUIGraph.__init__(self, self.driver)
         self.driver = PumaDriver(device_udid, APPLICATION_PACKAGE)
-        # Optional: create your own app-specific popup handler
-        # self.add_popup_handler(simple_popup_handler('test'))
 
     # Define your actions
     @action(state1)
