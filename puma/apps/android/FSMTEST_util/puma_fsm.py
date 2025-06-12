@@ -9,6 +9,8 @@ import matplotlib.pyplot as plt
 import networkx as nx
 import numpy as np
 
+import textwrap
+
 from puma.apps.android.FSMTEST_util.puma_driver import PumaDriver, PumaClickException
 
 # TODO move parts to their own files
@@ -468,6 +470,7 @@ class StateGraph(metaclass=StateGraphMeta):
         return _shortest_path(self.current_state, destination)
 
     def draw_graph(self):
+        plt.figure(figsize=(12,8))
         G = nx.DiGraph()
         nodes = [s.name for s in self.states]
         edges = [(s.name, t.to_state.name) for s in self.states for t in s.transitions]
@@ -475,12 +478,13 @@ class StateGraph(metaclass=StateGraphMeta):
         G.add_nodes_from(nodes)
         G.add_edges_from(edges)
 
-        pos = nx.nx_agraph.graphviz_layout(G, prog='dot')
-        nx.draw_networkx_nodes(G, pos, node_color='lightblue', node_size=2000)
-        nx.draw_networkx_labels(G, pos, font_size=15)
+        pos = nx.spring_layout(G)
+        nx.draw_networkx_nodes(G, pos, node_color='lightblue', node_size=5000)
+        labels = {node: '\n'.join(textwrap.wrap(str(node), width=10)) for node in G.nodes()}
+        nx.draw_networkx_labels(G, pos, labels=labels, font_size=10)
         # Draw curved edges
         for (u, v) in edges:
-            rad = 0.2 if (v, u) in G.edges else 0.0  # Curve only if there's a reverse edge
+            rad = 0.3 if (v, u) in G.edges else 0.0  # Curve only if there's a reverse edge
             nx.draw_networkx_edges(
                 G, pos,
                 edgelist=[(u, v)],
@@ -488,17 +492,17 @@ class StateGraph(metaclass=StateGraphMeta):
                 edge_color='gray',
                 arrows=True
             )
-        label_pos = {}
-        # for (u, v), label in edge_labels.items():
-        #     rad = 0.2 if (v, u) in G.edges else 0.0
-        #     label_pos[(u, v)] = self.curved_edge_label_pos(pos, u, v, rad=rad)
+        # Compute custom label positions
+        for (u, v), label in edge_labels.items():
+            rad = 0.3 if (v, u) in G.edges else 0.0
+            label_pos = self.curved_edge_label_pos(pos, u, v, rad=rad)
+            plt.text(label_pos[0], label_pos[1], label, fontsize=12, color='red', ha='center', va='center')
 
-        nx.draw_networkx_edge_labels(G, pos, edge_labels=edge_labels, font_color='red')
-        plt.title("Graph")
+        plt.axis('off')
         plt.show()
 
     # Function to offset edge label positions
-    def curved_edge_label_pos(pos, u, v, rad=0.2):
+    def curved_edge_label_pos(self, pos, u, v, rad=0.3):
         # Midpoint of the edge
         x1, y1 = pos[u]
         x2, y2 = pos[v]
