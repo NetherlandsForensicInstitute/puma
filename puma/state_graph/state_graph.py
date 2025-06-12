@@ -138,7 +138,7 @@ class StateGraph(metaclass=StateGraphMeta):
        methods to navigate between states, validate states, and handle unexpected states or errors.
 
    """
-    def __init__(self, device_udid: str, app_package: str):
+    def __init__(self, device_udid: str, app_package: str, appium_server: str = 'http://localhost:4723'):
         """
         Initializes the StateGraph with a device and application package.
 
@@ -147,7 +147,7 @@ class StateGraph(metaclass=StateGraphMeta):
         """
 
         self.current_state = self.initial_state
-        self.driver = PumaDriver(device_udid, app_package)
+        self.driver = PumaDriver(device_udid, app_package, appium_server=appium_server)
         self.app_popups = []
         self.try_restart = True
 
