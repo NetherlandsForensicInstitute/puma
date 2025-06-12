@@ -1,21 +1,18 @@
-from puma.state_graph.puma_driver import PumaDriver
 from puma.state_graph.action import action
+from puma.state_graph.puma_driver import PumaDriver
+from puma.state_graph.state import SimpleState, compose_clicks
 from puma.state_graph.state_graph import StateGraph
-from puma.state_graph.state import SimpleState
-from puma.state_graph.transition import compose_clicks
 
 APPLICATION_PACKAGE = "INSERT YOUR PACKAGE HERE"
+
 
 # define here custom methods to navigate to a certain state
 
 class TemplateApp(StateGraph):
-
     # Define states
-    state1 = SimpleState("State 1",
-                         xpaths=["xpath1", "xpath2"],
+    state1 = SimpleState(xpaths=["xpath1", "xpath2"],
                          initial_state=True)
-    state2 = SimpleState("State 2",
-                         xpaths=["xpath1"],
+    state2 = SimpleState(xpaths=["xpath1"],
                          parent_state=state1)
 
     # Define transitions. Only forward transitions are needed, back transitions are added automatically
@@ -35,7 +32,3 @@ class TemplateApp(StateGraph):
 if __name__ == "__main__":
     app = TemplateApp(device_udid="INSERT YOUR DEVICE ID HERE")
     app.action_1()
-
-
-
-

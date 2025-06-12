@@ -9,10 +9,16 @@ Thank you for considering contributing to our project! By following these guidel
   * [Development Installation](#development-installation)
   * [Issues](#issues)
   * [Pull Requests](#pull-requests)
-  * [Development requirements](#development-requirements)
   * [Coding Standards](#coding-standards)
   * [Documentation](#documentation)
     * [App Version Support:](#app-version-support)
+  * [StateGraph](#stategraph)
+    * [Key Components](#key-components)
+      * [States](#states)
+        * [SimpleState](#simplestate)
+        * [Contextual states](#contextual-states)
+      * [Transitions](#transitions)
+      * [Actions](#actions)
   * [How to add a new application](#how-to-add-a-new-application)
   * [How to write Appium actions](#how-to-write-appium-actions)
     * [Example: writing new Appium actions](#example-writing-new-appium-actions)
@@ -189,9 +195,8 @@ When adding support for a new application, make sure to add a new class to the c
 components mentioned in the [Stategraph section](#stategraph) all come together in the following class template:
 ```python
 from puma.state_graph.state_graph import StateGraph
-from puma.state_graph.state import SimpleState
+from puma.state_graph.state import SimpleState, compose_clicks
 from puma.state_graph.action import action
-from puma.state_graph.transition import compose_clicks
 
 APPLICATION_PACKAGE = 'com.example.app'
 
@@ -225,10 +230,13 @@ class ExampleApp(StateGraph):
         self.driver.click('//android.widget.Button[@content-desc="Update Settings"]')
 
 ```
+Note that this is a simple example. For a more advanced example using ContextualStates, see the Teleguard 
+implementation.
 - Add the desired functionality (see [the next section](#how-to-write-appium-actions))
 - Add a README for this app and add a link to the project README
 - Add a test script in the [test scripts directory](test_scripts), in which each function is tested.
 - Add your class to the list of apps in [publish_app_tags](.github/scripts/publish_app_tags.py)
+- Add the app name to the list of supported apps in the [README](README.md#supported-apps)
 
 ## How to write Appium actions
 Appium is a framework for testing applications, based on Selenium. In this project, we use Appium to execute actions on the device.
