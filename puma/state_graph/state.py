@@ -111,7 +111,7 @@ class Transition:
     ui_actions: Callable[..., None]
 
 
-def compose_clicks(xpaths: List[str]) -> Callable[[PumaDriver], None]:
+def compose_clicks(xpaths: List[str], name: str = 'click') -> Callable[[PumaDriver], None]:
     """
     Helper function to create a lambda for constructing transitions by clicking elements.
 
@@ -121,9 +121,10 @@ def compose_clicks(xpaths: List[str]) -> Callable[[PumaDriver], None]:
     :param xpaths: A list of XPaths of the elements to be clicked.
     :return: A lambda function that takes a driver and performs the clicking actions.
     """
-    def  _click_(driver):
+    def _click_(driver):
         for xpath in xpaths:
             driver.click(xpath)
+    _click_.__name__ = name
     return _click_
 
 

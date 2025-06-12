@@ -88,8 +88,8 @@ class TeleGuard(StateGraph):
     about_screen_state = SimpleState( ['//android.view.View[@content-desc="About"]', '//android.view.View[@content-desc=" Terms of use"]'], parent_state=conversations_state)
 
     conversations_state.to(chat_state, go_to_chat)
-    conversations_state.to(settings_state, compose_clicks([CONVERSATION_STATE_HAMBURGER_MENU, CONVERSATION_STATE_SETTINGS_BUTTON]))
-    conversations_state.to(about_screen_state, compose_clicks([CONVERSATION_STATE_HAMBURGER_MENU, CONVERSATION_STATE_ABOUT_BUTTON]))
+    conversations_state.to(settings_state, compose_clicks([CONVERSATION_STATE_HAMBURGER_MENU, CONVERSATION_STATE_SETTINGS_BUTTON], name='go_to_settings'))
+    conversations_state.to(about_screen_state, compose_clicks([CONVERSATION_STATE_HAMBURGER_MENU, CONVERSATION_STATE_ABOUT_BUTTON], name='go_to_about'))
 
     def __init__(self, device_udid):
         """

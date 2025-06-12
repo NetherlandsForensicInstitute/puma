@@ -27,12 +27,13 @@ class GoogleCamera(StateGraph):
                            parent_state=photo)  # note that settings does not have a real parent state. the back restores the last state before navigating to settings.
 
     # Define transitions. Only forward transitions are needed, back transitions are added automatically
-    photo.to(video, compose_clicks(['//android.widget.TextView[@content-desc="Switch to Video Camera"]']))
-    video.to(photo, compose_clicks(['//android.widget.TextView[@content-desc="Switch to Camera Mode"]']))
-    settings_xpaths = ['//android.widget.ImageView[@content-desc="Open options menu"]',
-                       '//android.widget.Button[@content-desc="Open settings"]']
-    photo.to(settings, compose_clicks(settings_xpaths))
-    video.to(settings, compose_clicks(settings_xpaths))
+    photo.to(video, compose_clicks(['//android.widget.TextView[@content-desc="Switch to Video Camera"]'], name='go_to_video'))
+    video.to(photo, compose_clicks(['//android.widget.TextView[@content-desc="Switch to Camera Mode"]'], name='go_to_camera'))
+    go_to_settings = compose_clicks(['//android.widget.ImageView[@content-desc="Open options menu"]',
+                                     '//android.widget.Button[@content-desc="Open settings"]'],
+                                    name= 'go_to_settings')
+    photo.to(settings, go_to_settings)
+    video.to(settings, go_to_settings)
 
     def __init__(self, device_udid):
         """
