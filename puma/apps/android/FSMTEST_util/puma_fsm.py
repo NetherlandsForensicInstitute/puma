@@ -3,7 +3,7 @@ from abc import ABC, abstractmethod
 from collections import deque
 from dataclasses import dataclass
 from time import sleep
-from typing import Callable, Any, List
+from typing import Callable, List
 
 from puma.apps.android.FSMTEST_util.puma_driver import PumaDriver, PumaClickException
 
@@ -63,7 +63,7 @@ class State(ABC):
         if parent_state:
             self.to(parent_state, back)
 
-    def to(self, to_state: 'State', ui_actions: Callable[[Any], None]):
+    def to(self, to_state: 'State', ui_actions: Callable[..., None]):
         self.transitions.append(Transition(self, to_state, ui_actions))
 
     @abstractmethod
@@ -99,7 +99,7 @@ class SimpleState(State):
 class Transition:
     from_state: State
     to_state: State
-    ui_actions: Callable[[Any], None]  # TODO: typing
+    ui_actions: Callable[..., None]
 
 def _shortest_path(start: State, destination: State | str):
     visited = set()
