@@ -1,5 +1,8 @@
-from puma.apps.android.FSMTEST_util.puma_driver import PumaDriver
-from puma.apps.android.FSMTEST_util.puma_fsm import StateGraph, SimpleState, action, click
+from puma.state_graph.puma_driver import PumaDriver
+from puma.state_graph.action import action
+from puma.state_graph.state_graph import StateGraph
+from puma.state_graph.state import SimpleState
+from puma.state_graph.transition import compose_clicks
 
 APPLICATION_PACKAGE = "INSERT YOUR PACKAGE HERE"
 
@@ -16,7 +19,7 @@ class TemplateApp(StateGraph):
                          parent_state=state1)
 
     # Define transitions. Only forward transitions are needed, back transitions are added automatically
-    state1.to(state2, click(['xpath1', 'xpath2']))
+    state1.to(state2, compose_clicks(['xpath1', 'xpath2']))
 
     # init
     def __init__(self, device_udid):

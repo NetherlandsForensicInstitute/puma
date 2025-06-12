@@ -1,6 +1,10 @@
 from appium.webdriver.common.appiumby import AppiumBy
-from puma.apps.android.FSMTEST_util.puma_driver import PumaDriver
-from puma.apps.android.FSMTEST_util.puma_fsm import SimpleState, StateGraph, action, simple_popup_handler, ContextualState, compose_clicks
+from puma.state_graph.puma_driver import PumaDriver
+from puma.state_graph.action import action
+from puma.state_graph.state_graph import StateGraph
+from puma.state_graph.transition import compose_clicks
+from puma.state_graph.state import ContextualState, SimpleState
+from puma.state_graph.popup_handler import simple_popup_handler
 from puma.apps.android.appium_actions import supported_version
 
 APPLICATION_PACKAGE = 'ch.swisscows.messenger.teleguardapp'

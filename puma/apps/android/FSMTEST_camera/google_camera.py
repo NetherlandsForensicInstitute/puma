@@ -1,6 +1,9 @@
 from time import sleep
 
-from puma.apps.android.FSMTEST_util.puma_fsm import StateGraph, SimpleState, action, compose_clicks
+from puma.state_graph.action import action
+from puma.state_graph.state_graph import StateGraph
+from puma.state_graph.transition import compose_clicks
+from puma.state_graph.state import SimpleState
 from puma.apps.android.appium_actions import supported_version
 
 APPLICATION_PACKAGE = 'com.google.android.GoogleCamera'

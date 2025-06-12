@@ -1,208 +1,12 @@
-import inspect
-from abc import ABC, abstractmethod
-from collections import deque
-from dataclasses import dataclass
 from time import sleep
-from typing import Callable, List
+from typing import List
 
-from puma.apps.android.FSMTEST_util.puma_driver import PumaDriver, PumaClickException
+from puma.state_graph.popup_handler import known_popups, PopUpHandler
+from puma.state_graph.puma_driver import PumaDriver, PumaClickException
 
-# TODO move parts to their own files
-class PopUpHandler:
-    """
-    Handler for popup windows in Android applications.
-    """
-
-    def __init__(self, recognize_xpath: str, dismiss_xpath: str):
-        """
-        Popup handler.
-
-        :param recognize_xpath: The XPath to use for recognizing popup windows.
-        :param click: The XPath for the element to dismiss the popup.
-        """
-        self.recognize_xpath = recognize_xpath
-        self.dismiss_xpath = dismiss_xpath
-
-    def is_popup_window(self, driver: PumaDriver) -> bool:
-        """
-        Check if a popup is present in the current window
-
-        :param driver: The PumaDriver instance to use for searching the window.
-        return: Whether the popup window was found or not.
-        """
-        return driver.is_present(self.recognize_xpath)
-
-    def dismiss_popup(self, driver: PumaDriver):
-        """
-        Dismiss a popup window using the provided xpath.
-
-        :param driver: The PumaDriver instance to use for searching and clicking the button.
-        """
-        driver.click(self.dismiss_xpath)
-
-
-def simple_popup_handler(xpath: str):
-    """
-    Utility method to create a popup handler that uses the same XPath for both recognizing and dismissing the popup.
-    :param xpath: xpath of the element to click
-    :return: PopUpHandler for the provided xpath
-    """
-    return PopUpHandler(xpath, xpath)
-
-
-known_popups = [simple_popup_handler('//android.widget.ImageView[@content-desc="Dismiss update dialog"]'),
-                simple_popup_handler(
-                    '//android.widget.Button[@resource-id="com.android.permissioncontroller:id/permission_allow_foreground_only_button"]'),
-                simple_popup_handler(
-                    '//android.widget.Button[@resource-id="com.android.permissioncontroller:id/permission_allow_button"]')]
-
-
-def back(driver: PumaDriver):
-    """
-    Utility method for calling the back action in Android devices.
-    :param driver: PumaDriver
-    """
-    print(f'calling driver.back() with driver {driver}')
-    driver.back()
-
-
-class State(ABC):
-    """
-    Abstract class representing a state. Each state represents a window in the UI.
-    """
-    def __init__(self, name: str, parent_state: 'State' = None, initial_state: bool = False):
-        """
-        Initializes a new State instance.
-
-        :param name: The name of the state.
-        :param parent_state: The parent state of this state, or None if it has no parent.
-        :param initial_state: Whether this is the initial state of the FSM.
-        """
-        if initial_state and parent_state:
-            raise ValueError(f'Error creating state {name}: initial state cannot have a parent state')
-        self.name = name
-        self.initial_state = initial_state
-        self.parent_state = parent_state
-        self.transitions = []
-
-        if parent_state:
-            self.to(parent_state, back)
-
-    def to(self, to_state: 'State', ui_actions: Callable[..., None]):
-        """
-        Transition to another state.
-
-        :param to_state: The next state to transition to.
-        :param ui_actions: A list of UI action functions to perform the transition.
-        """
-        self.transitions.append(Transition(self, to_state, ui_actions))
-
-    @abstractmethod
-    def validate(self, driver: PumaDriver) -> bool:
-        """
-        Abstract method to validate the state.
-
-        :param driver: The PumaDriver instance to use.
-        """
-        pass
-
-class ContextualState(State):
-    @abstractmethod
-    def validate_context(self, driver: PumaDriver) -> bool:
-        """
-        Abstract method to validate the contextual state.
-
-        :param driver: The PumaDriver instance to use.
-        """
-        pass
-
-
-class SimpleState(State):
-    """
-    Simple State. This is a standard state which can be validated by providing a list of XPaths.
-    """
-    def __init__(self, name: str, xpaths: List[str], initial_state: bool = False, parent_state: 'State' = None, ):
-        """
-        Initializes a new SimpleState instance.
-
-        :param name: The name of the state.
-        :param xpaths: A list of XPaths which are all present on the state window.
-        :param initial_state: Whether this is the initial state.
-        :param parent_state: The parent state of this state, or None if it has no parent.
-        """
-        super().__init__(name, parent_state=parent_state, initial_state=initial_state)
-        self.xpaths = xpaths
-
-    def validate(self, driver: PumaDriver) -> bool:
-        """
-        Validates if all XPaths are present on the screen.
-        :param driver: The PPumaDriver instance to use.
-        :return a boolean
-        """
-        return all(driver.is_present(xpath) for xpath in self.xpaths)
-
-
-@dataclass
-class Transition:
-    """
-    A class representing a transition between states.
-
-    This class encapsulates the details of a transition, including the starting state,
-    the destination state, and any associated UI actions that should be executed
-    to perform the transition.
-
-    :param from_state: The starting state of the transition.
-    :param to_state: The destination state of the transition.
-    :param ui_actions: A function to be called with optional arguments during the transition,
-                        typically to perform UI-related actions.
-    """
-    from_state: State
-    to_state: State
-    ui_actions: Callable[..., None]
-
-def _shortest_path(start: State, destination: State | str) -> list[Transition] | None:
-    """
-       Finds the shortest path between two states.
-
-       This function uses a breadth-first search algorithm to find the shortest path
-       from the starting state to the destination state. The destination can be specified
-       either as a State object or as a string representing the name of the state.
-
-       :param start: The starting state for the path search.
-       :param destination: The destination state or state name for the path search.
-       :return: A list of transitions representing the shortest path from the start
-                state to the destination state. Returns None if no path is found.
-       """
-    visited = set()
-    queue = deque([(start, [])])
-    while queue:
-        state, path = queue.popleft()
-        # if this is a path to the desired state, return the path
-        if state == destination or state.name == destination:
-            return path
-        # we do not want cycles: skip paths to already visited states
-        if state in visited:
-            continue
-        visited.add(state)
-        # take a step in all possible directions
-        for transition in state.transitions:
-            queue.append((transition.to_state, path + [transition]))
-    return None
-
-def compose_clicks(xpaths: List[str]) -> Callable[[PumaDriver], None]:
-    """
-    Helper function to create a lambda for constructing transitions by clicking elements.
-
-    This function generates a lambda function that, when executed, will click on a series
-    of elements specified by their XPaths.
-
-    :param xpaths: A list of XPaths of the elements to be clicked.
-    :return: A lambda function that takes a driver and performs the clicking actions.
-    """
-    def  _click_(driver):
-        for xpath in xpaths:
-            driver.click(xpath)
-    return _click_
+from puma.state_graph.utils import _safe_func_call
+from puma.state_graph.state import State, ContextualState
+from puma.state_graph.transition import Transition, _shortest_path
 
 
 class StateGraphMeta(type):
@@ -277,7 +81,8 @@ class StateGraphMeta(type):
             raise ValueError(f'Initial state ({initial_state}) Cannot be an Contextual state')
 
         # Contextual states need parent state
-        contextual_state_without_parent = [s for s in states if isinstance(s, ContextualState) and s.parent_state is None]
+        contextual_state_without_parent = [s for s in states if isinstance(s,
+                                                                           ContextualState) and s.parent_state is None]
         if contextual_state_without_parent:
             raise ValueError(f'Contextual states without parent are not allowed: {contextual_state_without_parent}')
 
@@ -296,32 +101,6 @@ class StateGraphMeta(type):
             duplicates = {t.to_state for t in s.transitions if t.to_state in seen or seen.add(t.to_state)}
             if duplicates:
                 raise ValueError(f"State {s} has invalid transitions: multiple transitions defined to neighboring state(s) {duplicates}")
-
-
-def _safe_func_call(func, **kwargs):
-    """
-        Safely calls a function with the provided keyword arguments.
-
-        This function filters the provided keyword arguments to only include those that are
-        defined in the function's signature. It then attempts to call the function with these
-        filtered arguments. If a PumaClickException occurs during the function call, it catches
-        the exception, prints an error message, and returns None.
-
-        :param func: The function to be called.
-        :param kwargs: Arbitrary keyword arguments to pass to the function.
-        :return: The result of the function call, or None if an exception occurs.
-        """
-    signature = inspect.signature(func)
-    filtered_args = {
-        k: v for k, v in kwargs.items() if k in signature.parameters
-    }
-    bound_args = signature.bind(**filtered_args)
-    bound_args.apply_defaults()
-    try:
-        return func(**bound_args.arguments)
-    except PumaClickException as pce:
-        print(f"A problem occurred during a safe function call, recovering.. {pce}")
-        return None
 
 
 class StateGraph(metaclass=StateGraphMeta):
@@ -462,45 +241,3 @@ class StateGraph(metaclass=StateGraphMeta):
         :return: A list of transitions representing the shortest path to the destination state, or None if no path is found.
         """
         return _shortest_path(self.current_state, destination)
-
-
-def action(to_state: State):
-    """
-    Decorator to wrap a function with logic to ensure a specific state before execution.
-
-    This decorator ensures that the application is in the specified state before executing
-    the wrapped function. It is useful for performing actions within an app, such as sending
-    a message, while ensuring the correct state. If a PumaClickException occurs during the
-    execution of the function, it attempts to recover the state and retry the function execution.
-
-    :param to_state: The target state to ensure before executing the decorated function.
-    :return: A decorator function that wraps the provided function with state assurance logic.
-    """
-    def decorator(func):
-        def wrapper(*args, **kwargs):
-            """
-            Wrapper function that ensures the correct state and handles exception recovery.
-
-            :param args: Positional arguments to pass to the decorated function.
-            :param kwargs: Keyword arguments to pass to the decorated function.
-            :return: The result of the decorated function.
-            """
-            bound_args = inspect.signature(func).bind(*args, **kwargs)
-            bound_args.apply_defaults()
-            arguments = bound_args.arguments
-            arguments.pop('self')
-            puma_ui_graph = args[0]
-            puma_ui_graph.go_to_state(to_state, **arguments)
-
-            try:
-                result = func(*args, **kwargs)
-            except PumaClickException as pce:
-                puma_ui_graph._recover_state(to_state) # Dangerous call, but if it fails, do we want to continue?
-                puma_ui_graph.go_to_state(to_state, **arguments)
-                result = func(*args, **kwargs)
-            puma_ui_graph.try_restart = True
-            return result
-
-        return wrapper
-
-    return decorator
