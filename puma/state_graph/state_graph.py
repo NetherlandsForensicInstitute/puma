@@ -67,40 +67,66 @@ class StateGraphMeta(type):
         :param states: A list of states in the state graph.
         :raises ValueError: If any of the validation checks fail.
         """
-        # TODO extract method for each validation
-        # only 1 initial state
+        # there can only be one initial state
+        StateGraphMeta._validate_only_one_initial_state(states)
+        # initial state cannot be Contextual state
+        StateGraphMeta._validate_initial_state(states)
+        # you need to be able to go from  the initial state to each other state and back
+        StateGraphMeta._validate_every_state_reachable(states)
+        # Contextual states need parent state
+        StateGraphMeta._validate_contextual_states(states)
+        # No duplicate names for states
+        StateGraphMeta._validate_no_duplicate_names(states)
+        # No duplicate transitions: max one transition between each 2 states
+        StateGraphMeta._validate_no_duplicate_transitions(states)
+
+    @staticmethod
+    def _validate_only_one_initial_state(states):
         initial_states = [s for s in states if s.initial_state]
         if len(initial_states) == 0:
             raise ValueError(f'Graph needs an initial state')
         elif len(initial_states) > 1:
             raise ValueError(f'Graph can only have 1 initial state, currently more defined: {initial_states}')
         initial_state = initial_states[0]
+        return initial_state
 
-        # initial state cannot be Contextual state
+    @staticmethod
+    def _validate_initial_state(states):
+        initial_state = next(s for s in states if s.initial_state)
         if isinstance(initial_state, ContextualState):
             raise ValueError(f'Initial state ({initial_state}) Cannot be an Contextual state')
 
-        # Contextual states need parent state
-        contextual_state_without_parent = [s for s in states if isinstance(s,
-                                                                           ContextualState) and s.parent_state is None]
+    @staticmethod
+    def _validate_every_state_reachable(states):
+        initial_state = next(s for s in states if s.initial_state)
+        unreachable_states = [s for s in states if not s.initial_state and not (
+                    bool(_shortest_path(initial_state, s)) and bool(_shortest_path(s, initial_state)))]
+        if unreachable_states:
+            raise ValueError(
+                f'Some states cannot be reached from the initial state, or cannot go back to the initial state: {unreachable_states}')
+
+    @staticmethod
+    def _validate_contextual_states(states):
+        contextual_state_without_parent = [s for s in states if
+                                           isinstance(s, ContextualState) and s.parent_state is None]
         if contextual_state_without_parent:
             raise ValueError(f'Contextual states without parent are not allowed: {contextual_state_without_parent}')
 
-        #you need to be able to go from  the initial state to each other state and back
-        unreachable_states = [s for s in states if not s.initial_state and not(bool(_shortest_path(initial_state, s)) and bool(_shortest_path(s, initial_state)))]
-        if unreachable_states:
-            raise ValueError(f'Some states cannot be reached from the initial state, or cannot go back to the initial state: {unreachable_states}')
-        # No duplicate names for states
+    @staticmethod
+    def _validate_no_duplicate_names(states):
         seen = set()
         duplicate_names = {s.name for s in states if s.name in seen or seen.add(s.name)}
         if duplicate_names:
             raise ValueError(f"States must have a unique name. Multiple sates are named {duplicate_names}")
-        # No duplicate transitions: only one transition between each 2 states
+
+    @staticmethod
+    def _validate_no_duplicate_transitions(states):
         for s in states:
             seen = set()
             duplicates = {t.to_state for t in s.transitions if t.to_state in seen or seen.add(t.to_state)}
             if duplicates:
-                raise ValueError(f"State {s} has invalid transitions: multiple transitions defined to neighboring state(s) {duplicates}")
+                raise ValueError(
+                    f"State {s} has invalid transitions: multiple transitions defined to neighboring state(s) {duplicates}")
 
 
 class StateGraph(metaclass=StateGraphMeta):
