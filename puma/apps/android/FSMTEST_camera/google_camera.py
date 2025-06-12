@@ -85,7 +85,7 @@ class GoogleCamera(StateGraph):
         currently_in_front = 'front' in switch_button.get_attribute("content-desc")
         if currently_in_front != front_camera:
             switch_button.click()
-
+#TODO remove main
 if __name__ == "__main__":
     alice = GoogleCamera('32131JEHN38079')
     alice.take_picture(front_camera=True)

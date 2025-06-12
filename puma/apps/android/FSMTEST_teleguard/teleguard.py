@@ -71,8 +71,8 @@ class ChatState(SimpleState, ContextualState):
         content_desc = (driver.get_element(CHAT_STATE_CONVERSATION_NAME).get_attribute('content-desc'))
         return conversation.lower() in content_desc.lower()
 
-@supported_version('4.0.7') # TODO
-class TestFsm(StateGraph): #TODO rename
+@supported_version('4.0.7')
+class TeleGuard(StateGraph):
     """
     A class representing a state graph for managing UI states and transitions in the TeleGuard application.
 
@@ -137,11 +137,11 @@ class TestFsm(StateGraph): #TODO rename
         """
         self.driver.swipe_to_click_element('//android.view.View[contains(@content-desc, "You have been invited")]')
         self.driver.click('//android.widget.Button[@content-desc="ACCEPT INVITE"]')
-
+#TODO remove main
 if __name__ == '__main__':
-    t = TestFsm('34281JEHN03866')
-    t.go_to_state(TestFsm.settings_state)
+    t = TeleGuard('34281JEHN03866')
+    t.go_to_state(TeleGuard.settings_state)
     t.send_message("Hello Bob", conversation="bob")
     t.send_message("Hello Bob second message")
     t.send_message("Test", conversation='TeleGuard')
-    t.go_to_state(TestFsm.about_screen_state)
+    t.go_to_state(TeleGuard.about_screen_state)
