@@ -15,7 +15,6 @@ class State(ABC):
         """
         Initializes a new State instance.
 
-        :param name: The name of the state.
         :param parent_state: The parent state of this state, or None if it has no parent.
         :param initial_state: Whether this is the initial state of the FSM.
         """
@@ -67,7 +66,6 @@ class SimpleState(State):
         """
         Initializes a new SimpleState instance.
 
-        :param name: The name of the state.
         :param xpaths: A list of XPaths which are all present on the state window.
         :param initial_state: Whether this is the initial state.
         :param parent_state: The parent state of this state, or None if it has no parent.
@@ -79,7 +77,7 @@ class SimpleState(State):
         """
         Validates if all XPaths are present on the screen.
         :param driver: The PPumaDriver instance to use.
-        :return a boolean
+        :return: a boolean
         """
         return all(driver.is_present(xpath) for xpath in self.xpaths)
 
@@ -119,6 +117,7 @@ def compose_clicks(xpaths: List[str], name: str = 'click') -> Callable[[PumaDriv
     of elements specified by their XPaths.
 
     :param xpaths: A list of XPaths of the elements to be clicked.
+    :param name: The name to give this lambda function.
     :return: A lambda function that takes a driver and performs the clicking actions.
     """
     def _click_(driver):
