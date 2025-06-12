@@ -72,30 +72,161 @@ pip install -r requirements.txt
 Any pull request to the `main` branch must **fully** support a specific version of the application. (See [Supporting new app versions](#supporting-new-app-versions)) This version should be
 newer than the version currently supported by the codebase.
 
+## StateGraph
 
-## How to add a new application
-When adding support for a new application, make sure to add a new class to the correct location(eg `apps/android). Class template:
+Puma uses a StateGraph framework for managing UI states and transitions in applications. This approach uses a
+state machine pattern to handle navigation and actions within an app, making it more robust and easier to manage
+complex interactions.
+The StateGraph framework is designed to model the user interface of an application as a graph of states, where each
+state represents a screen within the app. Transitions between these states are defined by actions that can be performed
+on the UI, such as clicking buttons or navigating menus.
+
+### Key Components
+#### States
+
+States represent different screens within the application, for example the conversations screen, the chat screen and the
+settings screen.
+
+##### SimpleState
+
+States are usually defined using the SimpleState class, which requires a list of XPaths representing elements
+that identify the state. The initial_state parameter indicates the starting state of the application:
+
 ```python
-from puma.apps.android.appium_actions import supported_version, AndroidAppiumActions
+home_state = SimpleState(xpaths=['//android.widget.TextView[@content-desc="Home"]'],
+                         initial_state=True)
+```
 
-APPLICATION_PACKAGE = 'TODO'
+##### Contextual states
 
-@supported_version("YOUR VERSION")
-class ApplicationActions(AndroidAppiumActions):
-    def __init__(self,
-                 device_udid,
-                 desired_capabilities: Dict[str, str] = None,
-                 implicit_wait=1,
-                 appium_server='http://localhost:4723'):
+A ContextualState is a unique kind of state that can be best illustrated through the example of a chat application.
+Imagine you're in a chat application where you have a chat screen for sending messages to different contacts. This chat
+screen is essentially a ContextualState. In this scenario, the chat screen layout remains the same regardless of the
+contact you are messaging. The only difference lies in the context of the conversation, typically indicated by the name
+of the recipient in one-on-one chats. To effectively use a ContextualState, you need to implement a method called
+validate_context. This method checks whether you are in the correct conversation screen, ensuring that the context, such
+as the recipient's name, matches your intended conversation.
+
+```python
+class ExampleAppChatState(SimpleState, ContextualState):
+  """
+  A state representing a chat screen in the application.
+  This class extends both SimpleState and ContextualState to represent a chat screen
+  and validate its context based on the conversation name.
+  """
+
+  def __init__(self, parent_state):
+    """
+    Initializes the ChatState with a parent state.
+
+    :param parent_state: The parent state of this chat state.
+    """
+    super().__init__("Chat screen",
+                     xpaths=["xpath1", "xpath2"],
+                     parent_state=parent_state)
+
+  def validate_context(self, driver, conversation=None):
+    """
+    Validates the context of the chat state.
+
+    This method checks if the current chat screen matches the expected conversation name.
+
+    :param driver: The driver instance used to interact with the application.
+    :param conversation: The name of the conversation to validate against.
+    :return: True if the context is valid, False otherwise.
+    """
+    if not conversation:
+      return True
+
+    content_desc = driver.get_element("xpath3").get_attribute('content-desc')
+    return conversation.lower() in content_desc.lower()
+```
+
+In this example, a chat state for a specific application is created by inheriting from both SimpleState and
+ContextualState. This dual inheritance allows the chat state to utilize the fundamental state capabilities provided by
+SimpleState, while also incorporating the context validation features of ContextualState. The validate_context method is
+crucial here; it ensures that the current context, such as a specific conversation, aligns with the expected context.
+This method verifies whether the provided conversation name matches the name of the conversation currently shown on the
+screen.  (Note: If you wish to implement your own validation method without using SimpleState, you don't need to inherit
+from SimpleState.)
+Here's how you can use the ChatState:
+```python
+conversations_state = SimpleState("Conversation screen", ["xpath1", "xpath2"], initial_state=True)
+chat_state = ExampleAppChatState(parent_state=conversations_state)
+```
+
+#### Transitions
+
+Transitions specify the process of moving from one state to another. They are generally made up of a sequence of user
+interface actions, such as clicking on specific elements that facilitate the transition to a different state, like
+clicking a settings button to navigate to the settings state. These transitions between states are defined using the `to`
+method. This method identifies the target state and outlines the necessary actions to achieve that transition.
+Typically, these actions are assembled using the compose_clicks function, which accepts a list of XPaths to define the
+elements that need to be clicked to execute the transition.
+
+```python
+home_state.to(to_state=settings_state, ui_actions=compose_clicks(['xpath1', 'xpath2']))
+```
+
+#### Actions
+
+Actions are functions that perform specific tasks within a state, such as sending a message or taking a picture. Actions
+are associated with states and can be executed when the application is in the correct state. To define these actions,
+the action decorator is used. This decorator ties the action function to a specific state, allowing the function to
+perform its designated tasks within that state. With this decorator, you don't have to concern yourself with navigating
+to the correct state before performing an action, as it ensures the application is in the right state for execution.
+specific action.
+
+```python
+@action(settings_state)
+def update_settings(self):
+  """
+  Updates settings in the application.
+  """
+  self.driver.click('//android.widget.Button[@content-desc="Update Settings"]')
+```
+## How to add a new application
+When adding support for a new application, make sure to add a new class to the correct location(eg `apps/android`). All 
+components mentioned in the [Stategraph section](#stategraph) all come together in the following class template:
+```python
+from puma.state_graph.state_graph import StateGraph
+from puma.state_graph.state import SimpleState
+from puma.state_graph.action import action
+from puma.state_graph.transition import compose_clicks
+
+APPLICATION_PACKAGE = 'com.example.app'
+
+class ExampleApp(StateGraph):
+    """
+    A class representing a state graph for managing UI states and transitions in an example application.
+    """
+
+    # Define states
+    home_state = SimpleState("Home",
+                            xpaths=['//android.widget.TextView[@content-desc="Home"]'],
+                            initial_state=True)
+    settings_state = SimpleState("Settings",
+                                xpaths=['//android.widget.TextView[@content-desc="Settings"]'])
+
+    # Define transitions
+    home_state.to(settings_state, compose_clicks(['//android.widget.Button[@content-desc="Go to Settings"]']))
+
+    def __init__(self, device_udid):
         """
-        Class with an API for Application using Appium. Can be used with an emulator or real device attached to the computer.
+        Initializes the ExampleApp with a device UDID.
+
+        :param device_udid: The unique device identifier for the Android device.
         """
-        AndroidAppiumActions.__init__(self,
-                                      device_udid,
-                                      APPLICATION_PACKAGE,
-                                      desired_capabilities=desired_capabilities,
-                                      implicit_wait=implicit_wait,
-                                      appium_server=appium_server)
+        StateGraph.__init__(self, device_udid, APPLICATION_PACKAGE)
+
+    @action(settings_state)
+    def update_settings(self):
+        """
+        Updates settings in the application.
+        """
+        # Perform actions to update settings
+        self.driver.click('//android.widget.Button[@content-desc="Update Settings"]')
+
 ```
 - Add the desired functionality (see [the next section](#how-to-write-appium-actions))
 - Add a README for this app and add a link to the project README
