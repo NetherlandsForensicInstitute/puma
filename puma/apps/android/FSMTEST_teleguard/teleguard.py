@@ -2,8 +2,7 @@ from appium.webdriver.common.appiumby import AppiumBy
 from puma.state_graph.puma_driver import PumaDriver
 from puma.state_graph.action import action
 from puma.state_graph.state_graph import StateGraph
-from puma.state_graph.transition import compose_clicks
-from puma.state_graph.state import ContextualState, SimpleState
+from puma.state_graph.state import ContextualState, SimpleState, compose_clicks
 from puma.state_graph.popup_handler import simple_popup_handler
 from puma.apps.android.appium_actions import supported_version
 

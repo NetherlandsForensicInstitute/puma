@@ -5,8 +5,7 @@ from puma.state_graph.popup_handler import known_popups, PopUpHandler
 from puma.state_graph.puma_driver import PumaDriver, PumaClickException
 
 from puma.state_graph.utils import _safe_func_call
-from puma.state_graph.state import State, ContextualState
-from puma.state_graph.transition import Transition, _shortest_path
+from puma.state_graph.state import State, ContextualState, Transition, _shortest_path
 
 
 class StateGraphMeta(type):
