@@ -1,6 +1,7 @@
 from time import sleep
 from typing import List
 
+from puma.state_graph import logger
 from puma.state_graph.popup_handler import known_popups, PopUpHandler
 from puma.state_graph.puma_driver import PumaDriver, PumaClickException
 
@@ -139,7 +140,7 @@ class StateGraph(metaclass=StateGraphMeta):
         try:
             self._validate_state(self.current_state, **kwargs)
         except PumaClickException as pce:
-            print(f"Initial state validation encountered a problem {pce}")
+            logger.warn(f"Initial state validation encountered a problem {pce}")
         while self.current_state != to_state and counter < len(self.states) * 2 + 5:
             counter += 1
             try:
@@ -147,8 +148,9 @@ class StateGraph(metaclass=StateGraphMeta):
                 _safe_func_call(transition.ui_actions, **kwargs)
                 self._validate_state(transition.to_state, **kwargs)
             except PumaClickException as pce:
-                print(f"Transition or state validation failed, recover? {pce}")
+                logger.warn(f"Transition or state validation failed, recover? {pce}")
         if counter >= len(self.states) * 2 + 5:
+            logger.error(f"Too many transitions, state is unrecoverable")
             raise ValueError(f"Too many transitions, unrecoverable")
         return True
 
@@ -216,12 +218,12 @@ class StateGraph(metaclass=StateGraphMeta):
                     raise ValueError("More than one state matches the current UI. Write stricter XPATHs")
                 else:
                     raise ValueError("Unknown state, cannot recover.")
-            print(f'Not in a known state. Restarting app {self.driver.app_package} once')
+            logger.warn(f'Not in a known state. Restarting app {self.driver.app_package} once')
             self.driver.restart_app()
             sleep(3)
             self.try_restart = False
             return
-        print(f'Was in unknown state, expected {expected_state}. Recovered: now in state {current_states[0]}') # TODO improve this logging. make clear that the recovery entails just knowing in which state it is
+        logger.info(f'Was in unknown state, expected {expected_state}. Recovered: now in state {current_states[0]}') # TODO improve this logging. make clear that the recovery entails just knowing in which state it is
         self.current_state = current_states[0]
 
     def add_popup_handler(self, popup_handler: PopUpHandler):

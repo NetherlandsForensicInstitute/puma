@@ -1,5 +1,6 @@
 import inspect
 
+from puma.state_graph import logger
 from puma.state_graph.puma_driver import PumaClickException
 
 
@@ -25,5 +26,5 @@ def _safe_func_call(func, **kwargs):
     try:
         return func(**bound_args.arguments)
     except PumaClickException as pce:
-        print(f"A problem occurred during a safe function call, recovering.. {pce}")
+        logger.warn(f"A problem occurred during a safe function call, recovering.. {pce}")
         return None

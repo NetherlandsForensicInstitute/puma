@@ -1,5 +1,6 @@
 import inspect
 
+from puma.state_graph import logger
 from puma.state_graph.puma_driver import PumaClickException
 from puma.state_graph.state import State
 
@@ -33,6 +34,7 @@ def action(to_state: State):
             puma_ui_graph.go_to_state(to_state, **arguments)
 
             try:
+                logger.info(f"[{puma_ui_graph.driver.options.udid}] Executing action {func.__name__} with arguments: {args} and key word arguments: {kwargs} for application: {puma_ui_graph.__class__.__name__}")
                 result = func(*args, **kwargs)
             except PumaClickException as pce:
                 puma_ui_graph._recover_state(to_state) # Dangerous call, but if it fails, do we want to continue?

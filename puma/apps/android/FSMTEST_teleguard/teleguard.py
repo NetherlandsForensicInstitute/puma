@@ -1,4 +1,6 @@
 from appium.webdriver.common.appiumby import AppiumBy
+
+from puma.apps.android.FSMTEST_teleguard import logger
 from puma.state_graph.puma_driver import PumaDriver
 from puma.state_graph.action import action
 from puma.state_graph.state_graph import StateGraph
@@ -31,10 +33,10 @@ def go_to_chat(driver: PumaDriver, conversation: str):
     :param driver: The PumaDriver instance used to interact with the application.
     :param conversation: The name of the conversation to navigate to.
     """
+    logger.info(f'Clicking on conversation {conversation} with driver {driver}')
     xpath = f'//android.widget.ImageView[contains(lower-case(@content-desc), "{conversation.lower()}")] | ' \
             f'//android.view.View[contains(lower-case(@content-desc), "{conversation.lower()}")]'
     driver.driver.find_elements(by=AppiumBy.XPATH, value=xpath)[-1].click()
-    print(f'Clicking on conversation {conversation} with driver {driver}')
 
 class ChatState(SimpleState, ContextualState):
     """
@@ -110,7 +112,6 @@ class TeleGuard(StateGraph):
         :param msg: The message to send.
         :param conversation: The name of the conversation to send the message in.
         """
-        print(f"Sending message {msg}")
         self.driver.click(CHAT_STATE_TEXT_FIELD)
         self.driver.send_keys(CHAT_STATE_TEXT_FIELD, msg)
         self.driver.click(CHAT_STATE_SEND_BUTTON)

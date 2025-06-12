@@ -3,6 +3,7 @@ from collections import deque
 from dataclasses import dataclass
 from typing import Callable, List
 
+from puma.state_graph import logger
 from puma.state_graph.puma_driver import PumaDriver
 
 
@@ -88,7 +89,7 @@ def back(driver: PumaDriver):
     Utility method for calling the back action in Android devices.
     :param driver: PumaDriver
     """
-    print(f'calling driver.back() with driver {driver}')
+    logger.info(f'calling driver.back() with driver {driver}')
     driver.back()
 
 @dataclass
