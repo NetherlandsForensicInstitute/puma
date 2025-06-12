@@ -37,7 +37,7 @@ def go_to_chat(driver: PumaDriver, conversation: str):
     driver.driver.find_elements(by=AppiumBy.XPATH, value=xpath)[-1].click()
     print(f'Clicking on conversation {conversation} with driver {driver}')
 
-class ChatState(SimpleState, ContextualState):
+class TeleGuardChatState(SimpleState, ContextualState):
     """
     A state representing a chat screen in the application.
 
@@ -83,7 +83,7 @@ class TeleGuard(StateGraph):
 
     # TODO: Infer name from attribute name (here: state1)
     conversations_state = SimpleState("Conversation screen", [CONVERSATION_STATE_TELEGUARD_HEADER, CONVERSATION_STATE_HAMBURGER_MENU, CONVERSATION_STATE_TELEGUARD_STATUS], initial_state=True)
-    chat_state = ChatState(conversations_state)
+    chat_state = TeleGuardChatState(parent_state=conversations_state)
     settings_state = SimpleState("Settings", ['//android.view.View[@content-desc="Change TeleGuard ID"]'], parent_state=conversations_state)
     about_screen_state = SimpleState("About", ['//android.view.View[@content-desc="About"]', '//android.view.View[@content-desc=" Terms of use"]'], parent_state=conversations_state)
 
