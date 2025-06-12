@@ -1,11 +1,11 @@
 from puma.apps.android.FSMTEST_util.puma_driver import PumaDriver
-from puma.apps.android.FSMTEST_util.puma_fsm import PumaUIGraph, SimpleState, action, click
+from puma.apps.android.FSMTEST_util.puma_fsm import StateGraph, SimpleState, action, click
 
 APPLICATION_PACKAGE = "INSERT YOUR PACKAGE HERE"
 
 # define here custom methods to navigate to a certain state
 
-class TemplateApp(PumaUIGraph):
+class TemplateApp(StateGraph):
 
     # Define states
     state1 = SimpleState("State 1",
@@ -20,7 +20,7 @@ class TemplateApp(PumaUIGraph):
 
     # init
     def __init__(self, device_udid):
-        PumaUIGraph.__init__(self, self.driver)
+        StateGraph.__init__(self, self.driver)
         self.driver = PumaDriver(device_udid, APPLICATION_PACKAGE)
 
     # Define your actions
