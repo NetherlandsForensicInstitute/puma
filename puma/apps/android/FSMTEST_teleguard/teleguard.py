@@ -1,9 +1,10 @@
 from appium.webdriver.common.appiumby import AppiumBy
+
+from puma.apps.android.FSMTEST_teleguard import logger
 from puma.state_graph.puma_driver import PumaDriver
 from puma.state_graph.action import action
 from puma.state_graph.state_graph import StateGraph
-from puma.state_graph.transition import compose_clicks
-from puma.state_graph.state import ContextualState, SimpleState
+from puma.state_graph.state import ContextualState, SimpleState, compose_clicks
 from puma.state_graph.popup_handler import simple_popup_handler
 from puma.apps.android.appium_actions import supported_version
 
@@ -32,10 +33,10 @@ def go_to_chat(driver: PumaDriver, conversation: str):
     :param driver: The PumaDriver instance used to interact with the application.
     :param conversation: The name of the conversation to navigate to.
     """
+    logger.info(f'Clicking on conversation {conversation} with driver {driver}')
     xpath = f'//android.widget.ImageView[contains(lower-case(@content-desc), "{conversation.lower()}")] | ' \
             f'//android.view.View[contains(lower-case(@content-desc), "{conversation.lower()}")]'
     driver.driver.find_elements(by=AppiumBy.XPATH, value=xpath)[-1].click()
-    print(f'Clicking on conversation {conversation} with driver {driver}')
 
 class TeleGuardChatState(SimpleState, ContextualState):
     """
@@ -51,8 +52,7 @@ class TeleGuardChatState(SimpleState, ContextualState):
 
         :param parent_state: The parent state of this chat state.
         """
-        super().__init__("Chat screen",
-                         xpaths=[CHAT_STATE_CONVERSATION_NAME, CHAT_STATE_MICROPHONE_BUTTON, CHAT_STATE_TEXT_FIELD],
+        super().__init__(xpaths=[CHAT_STATE_CONVERSATION_NAME, CHAT_STATE_MICROPHONE_BUTTON, CHAT_STATE_TEXT_FIELD],
                          parent_state=parent_state)
 
     def validate_context(self, driver: PumaDriver, conversation: str = None) -> bool:
@@ -82,14 +82,14 @@ class TeleGuard(StateGraph):
     """
 
     # TODO: Infer name from attribute name (here: state1)
-    conversations_state = SimpleState("Conversation screen", [CONVERSATION_STATE_TELEGUARD_HEADER, CONVERSATION_STATE_HAMBURGER_MENU, CONVERSATION_STATE_TELEGUARD_STATUS], initial_state=True)
+    conversations_state = SimpleState( [CONVERSATION_STATE_TELEGUARD_HEADER, CONVERSATION_STATE_HAMBURGER_MENU, CONVERSATION_STATE_TELEGUARD_STATUS], initial_state=True)
     chat_state = TeleGuardChatState(parent_state=conversations_state)
-    settings_state = SimpleState("Settings", ['//android.view.View[@content-desc="Change TeleGuard ID"]'], parent_state=conversations_state)
-    about_screen_state = SimpleState("About", ['//android.view.View[@content-desc="About"]', '//android.view.View[@content-desc=" Terms of use"]'], parent_state=conversations_state)
+    settings_state = SimpleState(['//android.view.View[@content-desc="Change TeleGuard ID"]'], parent_state=conversations_state)
+    about_screen_state = SimpleState( ['//android.view.View[@content-desc="About"]', '//android.view.View[@content-desc=" Terms of use"]'], parent_state=conversations_state)
 
     conversations_state.to(chat_state, go_to_chat)
-    conversations_state.to(settings_state, compose_clicks([CONVERSATION_STATE_HAMBURGER_MENU, CONVERSATION_STATE_SETTINGS_BUTTON]))
-    conversations_state.to(about_screen_state, compose_clicks([CONVERSATION_STATE_HAMBURGER_MENU, CONVERSATION_STATE_ABOUT_BUTTON]))
+    conversations_state.to(settings_state, compose_clicks([CONVERSATION_STATE_HAMBURGER_MENU, CONVERSATION_STATE_SETTINGS_BUTTON], name='go_to_settings'))
+    conversations_state.to(about_screen_state, compose_clicks([CONVERSATION_STATE_HAMBURGER_MENU, CONVERSATION_STATE_ABOUT_BUTTON], name='go_to_about'))
 
     def __init__(self, device_udid):
         """
@@ -111,7 +111,6 @@ class TeleGuard(StateGraph):
         :param msg: The message to send.
         :param conversation: The name of the conversation to send the message in.
         """
-        print(f"Sending message {msg}")
         self.driver.click(CHAT_STATE_TEXT_FIELD)
         self.driver.send_keys(CHAT_STATE_TEXT_FIELD, msg)
         self.driver.click(CHAT_STATE_SEND_BUTTON)

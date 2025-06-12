@@ -2,8 +2,7 @@ from time import sleep
 
 from puma.state_graph.action import action
 from puma.state_graph.state_graph import StateGraph
-from puma.state_graph.transition import compose_clicks
-from puma.state_graph.state import SimpleState
+from puma.state_graph.state import SimpleState, compose_clicks
 from puma.apps.android.appium_actions import supported_version
 
 APPLICATION_PACKAGE = 'com.google.android.GoogleCamera'
@@ -18,25 +17,23 @@ class GoogleCamera(StateGraph):
     """
 
     # Define states
-    photo = SimpleState("Camera",
-                         xpaths=['//android.widget.ImageButton[@content-desc="Take photo"]',
-                                 '//android.widget.TextView[@content-desc="Camera"]'],
-                         initial_state=True)
-    video = SimpleState("Video",
-                         xpaths=['//android.widget.TextView[@content-desc="Video"]',
-                                 '//android.widget.ImageButton[@content-desc="Start video"]'])
-    settings = SimpleState("Settings",
-                         xpaths=['//android.widget.TextView[@text="Camera settings"]',
-                                 '//android.widget.TextView[@resource-id="android:id/title" and @text="General"]'],
-                         parent_state=photo) # note that settings does not have a real parent state. the back restores the last state before navigating to settings.
+    photo = SimpleState(xpaths=['//android.widget.ImageButton[@content-desc="Take photo"]',
+                                '//android.widget.TextView[@content-desc="Camera"]'],
+                        initial_state=True)
+    video = SimpleState(xpaths=['//android.widget.TextView[@content-desc="Video"]',
+                                '//android.widget.ImageButton[@content-desc="Start video"]'])
+    settings = SimpleState(xpaths=['//android.widget.TextView[@text="Camera settings"]',
+                                   '//android.widget.TextView[@resource-id="android:id/title" and @text="General"]'],
+                           parent_state=photo)  # note that settings does not have a real parent state. the back restores the last state before navigating to settings.
 
     # Define transitions. Only forward transitions are needed, back transitions are added automatically
-    photo.to(video, compose_clicks(['//android.widget.TextView[@content-desc="Switch to Video Camera"]']))
-    video.to(photo, compose_clicks(['//android.widget.TextView[@content-desc="Switch to Camera Mode"]']))
-    settings_xpaths = ['//android.widget.ImageView[@content-desc="Open options menu"]',
-                       '//android.widget.Button[@content-desc="Open settings"]']
-    photo.to(settings, compose_clicks(settings_xpaths))
-    video.to(settings, compose_clicks(settings_xpaths))
+    photo.to(video, compose_clicks(['//android.widget.TextView[@content-desc="Switch to Video Camera"]'], name='go_to_video'))
+    video.to(photo, compose_clicks(['//android.widget.TextView[@content-desc="Switch to Camera Mode"]'], name='go_to_camera'))
+    go_to_settings = compose_clicks(['//android.widget.ImageView[@content-desc="Open options menu"]',
+                                     '//android.widget.Button[@content-desc="Open settings"]'],
+                                    name= 'go_to_settings')
+    photo.to(settings, go_to_settings)
+    video.to(settings, go_to_settings)
 
     def __init__(self, device_udid):
         """
