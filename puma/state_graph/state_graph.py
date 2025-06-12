@@ -42,6 +42,7 @@ class StateGraphMeta(type):
         for key, value in namespace.items():
             if isinstance(value, State):
                 states.append(value)
+                value.id = key
             if isinstance(value, Transition):
                 transitions.append(value)
         new_class.states = states
@@ -75,8 +76,8 @@ class StateGraphMeta(type):
         StateGraphMeta._validate_every_state_reachable(states)
         # Contextual states need parent state
         StateGraphMeta._validate_contextual_states(states)
-        # No duplicate names for states
-        StateGraphMeta._validate_no_duplicate_names(states)
+        # No duplicate ids for states
+        StateGraphMeta._validate_no_duplicate_ids(states)
         # No duplicate transitions: max one transition between each 2 states
         StateGraphMeta._validate_no_duplicate_transitions(states)
 
@@ -113,11 +114,11 @@ class StateGraphMeta(type):
             raise ValueError(f'Contextual states without parent are not allowed: {contextual_state_without_parent}')
 
     @staticmethod
-    def _validate_no_duplicate_names(states):
+    def _validate_no_duplicate_ids(states):
         seen = set()
-        duplicate_names = {s.name for s in states if s.name in seen or seen.add(s.name)}
-        if duplicate_names:
-            raise ValueError(f"States must have a unique name. Multiple sates are named {duplicate_names}")
+        duplicate_ids = {s.id for s in states if s.id in seen or seen.add(s.id)}
+        if duplicate_ids:
+            raise ValueError(f"States must have a unique id. Multiple sates have the id {duplicate_ids}")
 
     @staticmethod
     def _validate_no_duplicate_transitions(states):

@@ -52,8 +52,7 @@ class ChatState(SimpleState, ContextualState):
 
         :param parent_state: The parent state of this chat state.
         """
-        super().__init__("Chat screen",
-                         xpaths=[CHAT_STATE_CONVERSATION_NAME, CHAT_STATE_MICROPHONE_BUTTON, CHAT_STATE_TEXT_FIELD],
+        super().__init__(xpaths=[CHAT_STATE_CONVERSATION_NAME, CHAT_STATE_MICROPHONE_BUTTON, CHAT_STATE_TEXT_FIELD],
                          parent_state=parent_state)
 
     def validate_context(self, driver: PumaDriver, conversation: str = None) -> bool:
@@ -83,10 +82,10 @@ class TeleGuard(StateGraph):
     """
 
     # TODO: Infer name from attribute name (here: state1)
-    conversations_state = SimpleState("Conversation screen", [CONVERSATION_STATE_TELEGUARD_HEADER, CONVERSATION_STATE_HAMBURGER_MENU, CONVERSATION_STATE_TELEGUARD_STATUS], initial_state=True)
+    conversations_state = SimpleState( [CONVERSATION_STATE_TELEGUARD_HEADER, CONVERSATION_STATE_HAMBURGER_MENU, CONVERSATION_STATE_TELEGUARD_STATUS], initial_state=True)
     chat_state = ChatState(conversations_state)
-    settings_state = SimpleState("Settings", ['//android.view.View[@content-desc="Change TeleGuard ID"]'], parent_state=conversations_state)
-    about_screen_state = SimpleState("About", ['//android.view.View[@content-desc="About"]', '//android.view.View[@content-desc=" Terms of use"]'], parent_state=conversations_state)
+    settings_state = SimpleState(['//android.view.View[@content-desc="Change TeleGuard ID"]'], parent_state=conversations_state)
+    about_screen_state = SimpleState( ['//android.view.View[@content-desc="About"]', '//android.view.View[@content-desc=" Terms of use"]'], parent_state=conversations_state)
 
     conversations_state.to(chat_state, go_to_chat)
     conversations_state.to(settings_state, compose_clicks([CONVERSATION_STATE_HAMBURGER_MENU, CONVERSATION_STATE_SETTINGS_BUTTON]))

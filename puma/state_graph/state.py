@@ -11,7 +11,7 @@ class State(ABC):
     """
     Abstract class representing a state. Each state represents a window in the UI.
     """
-    def __init__(self, name: str, parent_state: 'State' = None, initial_state: bool = False):
+    def __init__(self, parent_state: 'State' = None, initial_state: bool = False):
         """
         Initializes a new State instance.
 
@@ -19,9 +19,9 @@ class State(ABC):
         :param parent_state: The parent state of this state, or None if it has no parent.
         :param initial_state: Whether this is the initial state of the FSM.
         """
+        self.id = None  # set in metaclass
         if initial_state and parent_state:
-            raise ValueError(f'Error creating state {name}: initial state cannot have a parent state')
-        self.name = name
+            raise ValueError(f'Error creating state: initial state cannot have a parent state')
         self.initial_state = initial_state
         self.parent_state = parent_state
         self.transitions = []
@@ -63,7 +63,7 @@ class SimpleState(State):
     """
     Simple State. This is a standard state which can be validated by providing a list of XPaths.
     """
-    def __init__(self, name: str, xpaths: List[str], initial_state: bool = False, parent_state: 'State' = None, ):
+    def __init__(self, xpaths: List[str], initial_state: bool = False, parent_state: 'State' = None, ):
         """
         Initializes a new SimpleState instance.
 
@@ -72,7 +72,7 @@ class SimpleState(State):
         :param initial_state: Whether this is the initial state.
         :param parent_state: The parent state of this state, or None if it has no parent.
         """
-        super().__init__(name, parent_state=parent_state, initial_state=initial_state)
+        super().__init__(parent_state=parent_state, initial_state=initial_state)
         self.xpaths = xpaths
 
     def validate(self, driver: PumaDriver) -> bool:
@@ -145,7 +145,7 @@ def _shortest_path(start: State, destination: State | str) -> list[Transition] |
     while queue:
         state, path = queue.popleft()
         # if this is a path to the desired state, return the path
-        if state == destination or state.name == destination:
+        if state == destination or state.id == destination:
             return path
         # we do not want cycles: skip paths to already visited states
         if state in visited:
