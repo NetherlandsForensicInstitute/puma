@@ -121,8 +121,7 @@ class ExampleAppChatState(SimpleState, ContextualState):
 
     :param parent_state: The parent state of this chat state.
     """
-    super().__init__("Chat screen",
-                     xpaths=["xpath1", "xpath2"],
+    super().__init__(xpaths=["xpath1", "xpath2"],
                      parent_state=parent_state)
 
   def validate_context(self, driver, conversation=None):
@@ -147,11 +146,11 @@ ContextualState. This dual inheritance allows the chat state to utilize the fund
 SimpleState, while also incorporating the context validation features of ContextualState. The validate_context method is
 crucial here; it ensures that the current context, such as a specific conversation, aligns with the expected context.
 This method verifies whether the provided conversation name matches the name of the conversation currently shown on the
-screen.  (Note: If you wish to implement your own validation method without using SimpleState, you don't need to inherit
+screen. (Note: If you wish to implement your own validation method without using SimpleState, you don't need to inherit
 from SimpleState.)
 Here's how you can use the ChatState:
 ```python
-conversations_state = SimpleState("Conversation screen", ["xpath1", "xpath2"], initial_state=True)
+conversations_state = SimpleState(["xpath1", "xpath2"], initial_state=True)
 chat_state = ExampleAppChatState(parent_state=conversations_state)
 ```
 
@@ -202,11 +201,9 @@ class ExampleApp(StateGraph):
     """
 
     # Define states
-    home_state = SimpleState("Home",
-                            xpaths=['//android.widget.TextView[@content-desc="Home"]'],
+    home_state = SimpleState(xpaths=['//android.widget.TextView[@content-desc="Home"]'],
                             initial_state=True)
-    settings_state = SimpleState("Settings",
-                                xpaths=['//android.widget.TextView[@content-desc="Settings"]'])
+    settings_state = SimpleState(xpaths=['//android.widget.TextView[@content-desc="Settings"]'])
 
     # Define transitions
     home_state.to(settings_state, compose_clicks(['//android.widget.Button[@content-desc="Go to Settings"]']))
@@ -298,7 +295,7 @@ For some apps, the elements do not have any identifying attributes. In that case
 coordinates. Note that this is not the preferred way, but sometimes this is inevitable.
 
 > :warning: The `click_text_ocr()` method can only click on single words, as the underlying OCR tool (tesseract) can only recognize single words and not sentences.
-Keep this in mind when writing code: for example if you want to click the text `continue game`, you need to call `click_ocr(`continue`).
+> Keep this in mind when writing code: for example if you want to click the text `continue game`, you need to call `click_ocr(`continue`).
 
 
 ## Supporting new app versions
