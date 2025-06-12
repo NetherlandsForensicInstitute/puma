@@ -7,17 +7,38 @@ from typing import Callable, List
 
 from puma.apps.android.FSMTEST_util.puma_driver import PumaDriver, PumaClickException
 
-
-@dataclass
+# TODO move parts to their own files
 class PopUpHandler:
-    recognize_xpath: str
-    click: str
+    """
+    Handler for popup windows in Android applications.
+    """
 
-    def recognize(self, driver: PumaDriver) -> bool:
+    def __init__(self, recognize_xpath: str, dismiss_xpath: str):
+        """
+        Popup handler.
+
+        :param recognize_xpath: The XPath to use for recognizing popup windows.
+        :param click: The XPath for the element to dismiss the popup.
+        """
+        self.recognize_xpath = recognize_xpath
+        self.dismiss_xpath = dismiss_xpath
+
+    def is_popup_window(self, driver: PumaDriver) -> bool:
+        """
+        Check if a popup is present in the current window
+
+        :param driver: The PumaDriver instance to use for searching the window.
+        return: Whether the popup window was found or not.
+        """
         return driver.is_present(self.recognize_xpath)
 
     def dismiss_popup(self, driver: PumaDriver):
-        driver.click(self.click)
+        """
+        Dismiss a popup window using the provided xpath.
+
+        :param driver: The PumaDriver instance to use for searching and clicking the button.
+        """
+        driver.click(self.dismiss_xpath)
 
 
 def simple_popup_handler(xpath: str):
@@ -39,19 +60,23 @@ known_popups = [simple_popup_handler('//android.widget.ImageView[@content-desc="
 def back(driver: PumaDriver):
     """
     Utility method for calling the back action in Android devices.
-    :param driver:
+    :param driver: PumaDriver
     """
     print(f'calling driver.back() with driver {driver}')
     driver.back()
 
 
 class State(ABC):
+    """
+    Abstract class representing a state. Each state represents a window in the UI.
+    """
     def __init__(self, name: str, parent_state: 'State' = None, initial_state: bool = False):
         """
+        Initializes a new State instance.
 
-        :param name:
-        :param parent_state:
-        :param initial_state:
+        :param name: The name of the state.
+        :param parent_state: The parent state of this state, or None if it has no parent.
+        :param initial_state: Whether this is the initial state of the FSM.
         """
         if initial_state and parent_state:
             raise ValueError(f'Error creating state {name}: initial state cannot have a parent state')
@@ -64,44 +89,90 @@ class State(ABC):
             self.to(parent_state, back)
 
     def to(self, to_state: 'State', ui_actions: Callable[..., None]):
+        """
+        Transition to another state.
+
+        :param to_state: The next state to transition to.
+        :param ui_actions: A list of UI action functions to perform the transition.
+        """
         self.transitions.append(Transition(self, to_state, ui_actions))
 
     @abstractmethod
     def validate(self, driver: PumaDriver) -> bool:
-        pass
+        """
+        Abstract method to validate the state.
 
-    def __repr__(self):
-        return f'[{self.name}]'
+        :param driver: The PumaDriver instance to use.
+        """
+        pass
 
 class ContextualState(State):
     @abstractmethod
     def validate_context(self, driver: PumaDriver) -> bool:
+        """
+        Abstract method to validate the contextual state.
+
+        :param driver: The PumaDriver instance to use.
+        """
         pass
 
 
 class SimpleState(State):
+    """
+    Simple State. This is a standard state which can be validated by providing a list of XPaths.
+    """
     def __init__(self, name: str, xpaths: List[str], initial_state: bool = False, parent_state: 'State' = None, ):
         """
-        TODO
-        :param name:
-        :param xpaths:
-        :param initial_state:
-        :param parent_state:
+        Initializes a new SimpleState instance.
+
+        :param name: The name of the state.
+        :param xpaths: A list of XPaths which are all present on the state window.
+        :param initial_state: Whether this is the initial state.
+        :param parent_state: The parent state of this state, or None if it has no parent.
         """
         super().__init__(name, parent_state=parent_state, initial_state=initial_state)
         self.xpaths = xpaths
 
     def validate(self, driver: PumaDriver) -> bool:
+        """
+        Validates if all XPaths are present on the screen.
+        :param driver: The PPumaDriver instance to use.
+        :return a boolean
+        """
         return all(driver.is_present(xpath) for xpath in self.xpaths)
 
 
 @dataclass
 class Transition:
+    """
+    A class representing a transition between states.
+
+    This class encapsulates the details of a transition, including the starting state,
+    the destination state, and any associated UI actions that should be executed
+    to perform the transition.
+
+    :param from_state: The starting state of the transition.
+    :param to_state: The destination state of the transition.
+    :param ui_actions: A function to be called with optional arguments during the transition,
+                        typically to perform UI-related actions.
+    """
     from_state: State
     to_state: State
     ui_actions: Callable[..., None]
 
-def _shortest_path(start: State, destination: State | str):
+def _shortest_path(start: State, destination: State | str) -> list[Transition] | None:
+    """
+       Finds the shortest path between two states.
+
+       This function uses a breadth-first search algorithm to find the shortest path
+       from the starting state to the destination state. The destination can be specified
+       either as a State object or as a string representing the name of the state.
+
+       :param start: The starting state for the path search.
+       :param destination: The destination state or state name for the path search.
+       :return: A list of transitions representing the shortest path from the start
+                state to the destination state. Returns None if no path is found.
+       """
     visited = set()
     queue = deque([(start, [])])
     while queue:
@@ -120,9 +191,13 @@ def _shortest_path(start: State, destination: State | str):
 
 def compose_clicks(xpaths: List[str]) -> Callable[[PumaDriver], None]:
     """
-    Helper method to create lambdas to construct transitions
-    :param xpaths: XPaths of elements to click
-    :return: lambda to be used as a transition action
+    Helper function to create a lambda for constructing transitions by clicking elements.
+
+    This function generates a lambda function that, when executed, will click on a series
+    of elements specified by their XPaths.
+
+    :param xpaths: A list of XPaths of the elements to be clicked.
+    :return: A lambda function that takes a driver and performs the clicking actions.
     """
     def  _click_(driver):
         for xpath in xpaths:
@@ -131,8 +206,26 @@ def compose_clicks(xpaths: List[str]) -> Callable[[PumaDriver], None]:
 
 
 class StateGraphMeta(type):
+    """
+    Metaclass for creating and validating StateGraph classes.
+
+    This metaclass is responsible for collecting states and transitions defined within a class,
+    and performing validation to ensure the integrity of the state graph. It ensures that there
+    is exactly one initial state, that all states are reachable from the initial state, and
+    that there are no duplicate state names or transitions.
+    """
     def __new__(cls, name, bases, namespace):
-        # Create the class
+        """
+        Creates a new class using the StateGraphMeta metaclass.
+
+        This method collects states and transitions from the class namespace and performs
+        validation on the state graph.
+
+        :param name: The name of the class being created.
+        :param bases: The base classes of the class being created.
+        :param namespace: The namespace dictionary containing the class attributes.
+        :return: The newly created class.
+        """
         new_class = super().__new__(cls, name, bases, namespace)
 
         # Skip validation for the base PumaUIGraph class
@@ -157,7 +250,20 @@ class StateGraphMeta(type):
         return new_class
 
     @staticmethod
-    def _validate_graph(states: List[State]):  # TODO: make unit test for this validation
+    def _validate_graph(states: List[State]):        # TODO: make unit test for this validation
+        """
+        Validates the state graph to ensure it meets specific criteria.
+
+        This method checks for the presence of exactly one initial state, ensures that
+        the initial state is not a ContextualState, verifies that all ContextualStates
+        have a parent state, and checks that all states are reachable from the initial
+        state and vice versa. It also ensures there are no duplicate state names or
+        transitions.
+
+        :param states: A list of states in the state graph.
+        :raises ValueError: If any of the validation checks fail.
+        """
+        # TODO extract method for each validation
         # only 1 initial state
         initial_states = [s for s in states if s.initial_state]
         if len(initial_states) == 0:
@@ -166,14 +272,14 @@ class StateGraphMeta(type):
             raise ValueError(f'Graph can only have 1 initial state, currently more defined: {initial_states}')
         initial_state = initial_states[0]
 
-        # initial state cannot be FState
+        # initial state cannot be Contextual state
         if isinstance(initial_state, ContextualState):
-            raise ValueError(f'Initial state ({initial_state}) Cannot be an FState')
+            raise ValueError(f'Initial state ({initial_state}) Cannot be an Contextual state')
 
-        # FStates need parent state
-        fstate_without_parent = [s for s in states if isinstance(s, ContextualState) and s.parent_state is None]
-        if fstate_without_parent:
-            raise ValueError(f'FStates without parent are not allowed: {fstate_without_parent}')
+        # Contextual states need parent state
+        contextual_state_without_parent = [s for s in states if isinstance(s, ContextualState) and s.parent_state is None]
+        if contextual_state_without_parent:
+            raise ValueError(f'Contextual states without parent are not allowed: {contextual_state_without_parent}')
 
         #you need to be able to go from  the initial state to each other state and back
         unreachable_states = [s for s in states if not s.initial_state and not(bool(_shortest_path(initial_state, s)) and bool(_shortest_path(s, initial_state)))]
@@ -193,11 +299,23 @@ class StateGraphMeta(type):
 
 
 def _safe_func_call(func, **kwargs):
-    sig = inspect.signature(func)
+    """
+        Safely calls a function with the provided keyword arguments.
+
+        This function filters the provided keyword arguments to only include those that are
+        defined in the function's signature. It then attempts to call the function with these
+        filtered arguments. If a PumaClickException occurs during the function call, it catches
+        the exception, prints an error message, and returns None.
+
+        :param func: The function to be called.
+        :param kwargs: Arbitrary keyword arguments to pass to the function.
+        :return: The result of the function call, or None if an exception occurs.
+        """
+    signature = inspect.signature(func)
     filtered_args = {
-        k: v for k, v in kwargs.items() if k in sig.parameters
+        k: v for k, v in kwargs.items() if k in signature.parameters
     }
-    bound_args = sig.bind(**filtered_args)
+    bound_args = signature.bind(**filtered_args)
     bound_args.apply_defaults()
     try:
         return func(**bound_args.arguments)
@@ -207,13 +325,35 @@ def _safe_func_call(func, **kwargs):
 
 
 class StateGraph(metaclass=StateGraphMeta):
+    """
+       A class representing a state graph for managing UI states and transitions in an application.
+
+       This class uses a state machine approach to manage transitions between different states
+       of a user interface. It initializes with a device and application package, and provides
+       methods to navigate between states, validate states, and handle unexpected states or errors.
+
+   """
     def __init__(self, device_udid: str, app_package: str):
+        """
+        Initializes the StateGraph with a device and application package.
+
+        :param device_udid: The unique device identifier.
+        :param app_package: The package name of the application.
+        """
+
         self.current_state = self.initial_state
         self.driver = PumaDriver(device_udid, app_package)
         self.app_popups = []
         self.try_restart = True
 
     def go_to_state(self, to_state: State | str, **kwargs) -> bool:
+        """
+        Navigates to a specified state from the current state.
+
+        :param to_state: The destination state or destination state name.
+        :param kwargs: Additional keyword arguments to pass to state validation and transition functions.
+        :return: True if the transition to the desired state is successful.
+        """
         counter = 0
         if to_state not in self.states:
             raise ValueError(f"{to_state.name} is not a known state in this PumaUiGraph")
@@ -235,6 +375,15 @@ class StateGraph(metaclass=StateGraphMeta):
         return True
 
     def _validate_state(self, expected_state: State, **kwargs):
+        """
+        Validates the current state against an expected state.
+
+        This method checks if the current state matches the expected state and handles
+        any discrepancies by attempting to recover the expected state or context.
+
+        :param expected_state: The state that is expected to be the current state.
+        :param kwargs: Additional keyword arguments for context validation.
+        """
         # validate
         valid = expected_state.validate(self.driver)
         context_valid = True
@@ -253,7 +402,15 @@ class StateGraph(metaclass=StateGraphMeta):
         else:
             self.current_state = expected_state
 
-    def _recover_state(self, expected_state):
+    def _recover_state(self, expected_state): #TODO extract methods? #TODO make non-private
+        """
+        Attempts to recover the expected state if the current state is not the expected state.
+
+        This method ensures the application is active, handles popups, and attempts to
+        identify and recover the current state if it does not match the expected state.
+
+        :param expected_state: The state that is expected to be the current state.
+        """
         # Ensure app active
         if not self.driver.app_open():
             self.driver.activate_app()
@@ -261,12 +418,12 @@ class StateGraph(metaclass=StateGraphMeta):
         if self.current_state.validate(self.driver):
             return
 
-        # Pop-ups
+        # popups
         clicked = True
         while clicked:
             clicked = False
             for popup_handler in known_popups + self.app_popups:
-                if popup_handler.recognize(self.driver):
+                if popup_handler.is_popup_window(self.driver):
                     popup_handler.dismiss_popup(self.driver)
                     clicked = True
 
@@ -290,18 +447,44 @@ class StateGraph(metaclass=StateGraphMeta):
         self.current_state = current_states[0]
 
     def add_popup_handler(self, popup_handler: PopUpHandler):
+        """
+        Adds a popup handler to manage application popups.
+
+        :param popup_handler: The popup handler to be added.
+        """
         self.app_popups.append(popup_handler)
 
     def _find_shortest_path(self, destination: State | str) -> list[Transition] | None:
         """
-        Gets the shortest path (in number of transitions) to the desired state.
+        Finds the shortest path in terms of transitions to the desired state.
+
+        :param destination: The destination state or state name.
+        :return: A list of transitions representing the shortest path to the destination state, or None if no path is found.
         """
         return _shortest_path(self.current_state, destination)
 
 
 def action(to_state: State):
+    """
+    Decorator to wrap a function with logic to ensure a specific state before execution.
+
+    This decorator ensures that the application is in the specified state before executing
+    the wrapped function. It is useful for performing actions within an app, such as sending
+    a message, while ensuring the correct state. If a PumaClickException occurs during the
+    execution of the function, it attempts to recover the state and retry the function execution.
+
+    :param to_state: The target state to ensure before executing the decorated function.
+    :return: A decorator function that wraps the provided function with state assurance logic.
+    """
     def decorator(func):
         def wrapper(*args, **kwargs):
+            """
+            Wrapper function that ensures the correct state and handles exception recovery.
+
+            :param args: Positional arguments to pass to the decorated function.
+            :param kwargs: Keyword arguments to pass to the decorated function.
+            :return: The result of the decorated function.
+            """
             bound_args = inspect.signature(func).bind(*args, **kwargs)
             bound_args.apply_defaults()
             arguments = bound_args.arguments

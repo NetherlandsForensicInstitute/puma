@@ -6,6 +6,13 @@ from puma.apps.android.appium_actions import supported_version
 APPLICATION_PACKAGE = 'com.google.android.GoogleCamera'
 @supported_version("8.8.225.510547499.09")
 class GoogleCamera(StateGraph):
+    """
+    A class representing a state graph for managing UI states and transitions in the Google Camera application.
+
+    This class uses a state machine approach to manage transitions between different states
+    of the Google Camera user interface. It provides methods to navigate between states,
+    take pictures, and record videos.
+    """
 
     # Define states
     photo = SimpleState("Camera",
@@ -29,24 +36,34 @@ class GoogleCamera(StateGraph):
     video.to(settings, compose_clicks(settings_xpaths))
 
     def __init__(self, device_udid):
+        """
+        Initializes the GoogleCamera with a device UDID.
+
+        :param device_udid: The unique device identifier for the Android device.
+        """
         StateGraph.__init__(self, device_udid, APPLICATION_PACKAGE)
 
-
-    # Define your actions
     @action(photo)
-    def take_picture(self, front_camera = None):
+    def take_picture(self, front_camera=None):
         """
         Takes a single picture.
+
+        This method ensures the correct camera view (front or back) and then takes a picture.
+
+        :param front_camera: If True, uses the front camera; if False, uses the back camera; if None, no change is made.
         """
         self._ensure_correct_camera_view(front_camera)
         self.driver.click('//android.widget.ImageButton[@resource-id="com.google.android.GoogleCamera:id/shutter_button"]')
 
     @action(video)
-    def record_video(self, duration, front_camera = None):
+    def record_video(self, duration, front_camera=None):
         """
+        Records a video for the given duration.
 
-        Takes a video for the given duration.
-        :return:
+        This method ensures the correct camera view (front or back) and then starts and stops video recording.
+
+        :param duration: The duration in seconds to record the video.
+        :param front_camera: If True, uses the front camera; if False, uses the back camera; if None, no change is made.
         """
         self._ensure_correct_camera_view(front_camera)
         self.driver.click('//android.widget.ImageButton[@content-desc="Start video"]')
@@ -54,10 +71,15 @@ class GoogleCamera(StateGraph):
         self.driver.click('//android.widget.ImageButton[@content-desc="Stop video"]')
 
     def _ensure_correct_camera_view(self, front_camera):
+        """
+        Ensures the correct camera view (front or back) is selected.
+
+        :param front_camera: If True, ensures the front camera is selected; if False, ensures the back camera is selected.
+        """
         if front_camera is None:
             return
         switch_button = self.driver.get_element('//android.widget.ImageButton[@resource-id="com.google.android.GoogleCamera:id/camera_switch_button"]')
-        currently_in_front =  'front' in switch_button.get_attribute("content-desc")
+        currently_in_front = 'front' in switch_button.get_attribute("content-desc")
         if currently_in_front != front_camera:
             switch_button.click()
 
@@ -68,10 +90,3 @@ if __name__ == "__main__":
     alice.take_picture(front_camera=False)
     alice.record_video(2, False)
     alice.go_to_state(GoogleCamera.settings)
-
-
-
-
-
-
-
