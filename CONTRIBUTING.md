@@ -105,13 +105,15 @@ home_state = SimpleState(xpaths=['//android.widget.TextView[@content-desc="Home"
 
 ##### Contextual states
 
-A ContextualState is a unique kind of state that can be best illustrated through the example of a chat application.
-Imagine you're in a chat application where you have a chat screen for sending messages to different contacts. This chat
-screen is essentially a ContextualState. In this scenario, the chat screen layout remains the same regardless of the
-contact you are messaging. The only difference lies in the context of the conversation, typically indicated by the name
-of the recipient in one-on-one chats. To effectively use a ContextualState, you need to implement a method called
-validate_context. This method checks whether you are in the correct conversation screen, ensuring that the context, such
-as the recipient's name, matches your intended conversation.
+A ContextualState is a special kind of state that takes context into account when validating the UI. Imagine you're in a
+chat application where you have a chat screen for sending messages a contact. If you want to check whether
+you're in a chat screen, you can do so, but if you want to check whether you're in a chat screen with a specific person,
+you need the context. To achieve this, ContextualState expands the State class with an additional verification method
+named validate_context which has the additional input validation code needs to validate whether the current screen is
+indeed the exact screen we're looking for. Aside from validate_context, ContextualStates still have a validate method, which
+should check whether the current screen matches the state, without any context. In the example of the chat state in a
+chat app, validate should return True if we're in ANY chat screen, while validate_context should return True if we're in the
+chat screen with the wanted person.
 
 ```python
 class ExampleAppChatState(SimpleState, ContextualState):
@@ -142,9 +144,7 @@ class ExampleAppChatState(SimpleState, ContextualState):
     """
     if not conversation:
       return True
-
-    content_desc = driver.get_element("xpath3").get_attribute('content-desc')
-    return conversation.lower() in content_desc.lower()
+    return driver.is_present(f'//some_element[@text = "{conversation}"]')
 ```
 
 In this example, a chat state for a specific application is created by inheriting from both SimpleState and
@@ -170,8 +170,24 @@ Typically, these actions are assembled using the compose_clicks function, which 
 elements that need to be clicked to execute the transition.
 
 ```python
-home_state.to(to_state=settings_state, ui_actions=compose_clicks(['xpath1', 'xpath2']))
+home_state.to(to_state=settings_state, ui_actions=compose_clicks(['xpath_button1', 'xpath_button2']))
 ```
+
+If we're defining a transition to a ContextualState, the transition probably needs to know the context to be executed.
+In that case you need to define the transition method from scratch, rather than use compose_clicks, by defining a method
+that takes the required context as an argument: 
+
+```python
+def open_chat(driver:PumaDriver, conversation:str):
+    driver.click(f'//contact_row[@text="{conversation}"]')
+
+conversations_state = SimpleState(["xpath1", "xpath2"], initial_state=True)
+chat_state = ExampleAppChatState(parent_state=conversations_state)
+
+conversations_state.to(chat_state, open_chat)
+```
+It's crucial that the name(s) of the variable(s) that represent the context match exactly (in the example: the variable
+name conversation). 
 
 #### Actions
 
@@ -190,6 +206,24 @@ def update_settings(self):
   """
   self.driver.click('//android.widget.Button[@content-desc="Update Settings"]')
 ```
+
+When actions are to be performed a ContextualState, you need to add the arguments to the method signature, using the
+exact same variable names as used in the transition method and the validate_context method. Adding a send_message method
+to our example above looks like this:
+
+```python
+@action(chat_state)
+def send_message(self, message:str, conversation:str):
+  """
+  Sends a message to a specific person
+  """
+  self.driver.send_keys('//text_field', message)
+  self.driver.click('//button[@content_desc="Send"]')
+```
+
+In this example the argument conversation is not used inside the send_message method, but it will be used to properly
+navigate to the correct conversation.
+
 ## How to add a new application
 When adding support for a new application, make sure to add a new class to the correct location(eg `apps/android`). All 
 components mentioned in the [Stategraph section](#stategraph) all come together in the following class template:
