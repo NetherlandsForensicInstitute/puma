@@ -79,12 +79,12 @@ class GoogleCamera(StateGraph):
         if front_camera is None:
             return
         switch_button = self.driver.get_element('//android.widget.ImageButton[@resource-id="com.google.android.GoogleCamera:id/camera_switch_button"]')
-        currently_in_front = 'front' in switch_button.get_attribute("content-desc")
+        currently_in_front = 'front' not in switch_button.get_attribute("content-desc")
         if currently_in_front != front_camera:
             switch_button.click()
 #TODO remove main
 if __name__ == "__main__":
-    alice = GoogleCamera('32131JEHN38079')
+    alice = GoogleCamera('34281JEHN03866')
     alice.take_picture(front_camera=True)
     alice.record_video(2, True)
     alice.take_picture(front_camera=False)
