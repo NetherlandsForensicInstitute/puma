@@ -1,3 +1,5 @@
+from puma.state_graph.popup_handler import PopUpHandler
+
 # Contributing to the Appium Automation Project
 
 Thank you for considering contributing to our project! By following these guidelines, you will help ensure that our project remains consistent, maintainable, and easy to use.
@@ -289,6 +291,15 @@ appealing to the end user if the function handles the navigation themselves, for
 contact name as a parameter (see whatsapp.send_message()). However, performance-wise this is not really desirable, 
 as for each message sent navigation to the home screen and back into the chat is required. Thus, this is really 
 dependent on the situation. The example of WhatsApp mentioned above allows both, so this is a good solution.
+
+### PopUp handling
+By default Puma handles some predefined popups, most notably permission requests. However, specific apps can have their own popups.
+To make sure Puma can handle those you can add a PopUpHandler to your application implementation.
+This can be done in the following manner in the init of your application:
+```python
+self.add_popup_handler(PopUpHandler(['/xpath/for/recognition', '/xpath/recognition'], ['/xpath/for/dismissal']))
+```
+There is also a convenience method `simple_popup_handler`, which only requires a single xpath expression that is used for recognition and dismissal and returns a PopUpHandler.
 
 ### Case Sensitivity in XPATH:
 XPATH is case-sensitive by default. As the element attribute values regularly change, and sometimes the only change is casing, use case insensitivity as much as possible:
