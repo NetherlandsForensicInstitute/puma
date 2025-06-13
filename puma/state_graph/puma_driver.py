@@ -4,6 +4,10 @@ from appium.options.android import UiAutomator2Options
 from appium.webdriver.common.appiumby import AppiumBy
 from appium import webdriver
 from appium.webdriver.extensions.android.nativekey import AndroidKey
+from appium.webdriver.webdriver import WebDriver
+from urllib3.exceptions import MaxRetryError
+
+from puma.state_graph import logger
 
 
 class PumaClickException(Exception):
@@ -26,6 +30,28 @@ def _get_android_default_options() -> UiAutomator2Options:
     options.platform_name = 'Android'
     options.new_command_timeout = 1200
     return options
+
+
+__drivers: dict[str, WebDriver] = {}
+
+def _get_appium_driver(appium_server: str, udid: str, options) -> WebDriver:
+    key = f"{appium_server}${udid}"
+    if key not in __drivers.keys():
+        try:
+            __drivers[key] = webdriver.Remote(appium_server, options=options)
+        except MaxRetryError:
+            logger.error("Connecting to the Appium server has failed.\n"
+                         "Make sure that the appium server is running!\n"
+                         "This can be done by running the `appium` command from the command line.")
+            exit(1)
+    else:
+        logger.warning(f'WARNING: there already was an initialized driver for appium server {appium_server} and udid {udid}. '
+                       'This driver will be used, which might mean your appium capabilities are ignored as these cannot be'
+                       'altered for a driver that has already been initialized. If you need specific capabilities, please '
+                       'rewrite your Puma code to ensure the correct capabilities are loaded the first time you connect to '
+                       f'server {appium_server} and device {udid}.')
+    return __drivers[key]
+
 # TODO the PumaDriver misses some functionality compared to the driver initialisation part of appium actions, such as
 # logging that appium is not running., or adding desired capabilities, driver cache make sure we have the same functionality as
 # before!
@@ -51,7 +77,7 @@ class PumaDriver:
         self.options.udid = udid
         self.implicit_wait = implicit_wait
         self.app_package = app_package
-        self.driver = webdriver.Remote(appium_server, options=self.options)
+        self.driver = _get_appium_driver(appium_server, udid, self.options)
 
     def is_present(self, xpath: str, implicit_wait: int = 0) -> bool:
         """

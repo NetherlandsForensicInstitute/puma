@@ -1,5 +1,6 @@
 from appium.webdriver.common.appiumby import AppiumBy
 
+from puma.apps.android.state_graph.google_camera.google_camera import GoogleCamera
 from puma.apps.android.state_graph.teleguard import logger
 from puma.state_graph.puma_driver import PumaDriver
 from puma.state_graph.action import action
@@ -139,8 +140,13 @@ class TeleGuard(StateGraph):
 #TODO remove main
 if __name__ == '__main__':
     t = TeleGuard('34281JEHN03866')
+    c = GoogleCamera('34281JEHN03866')
     t.go_to_state(TeleGuard.settings_state)
     t.send_message("Hello Bob", conversation="bob")
+    c.take_picture(front_camera=True)
     t.send_message("Hello Bob second message")
+    c.take_picture()
     t.send_message("Test", conversation='TeleGuard')
+    c.record_video(2, True)
     t.go_to_state(TeleGuard.about_screen_state)
+    c.go_to_state(GoogleCamera.photo)
