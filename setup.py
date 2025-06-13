@@ -20,7 +20,7 @@ setup(
         "Pillow==10.4.0",
         "pytesseract==0.3.10",
         "geopy~=2.4.1",
-        "setuptools~=75.1.0",
+        "setuptools~=80.9.0",
         "gpxpy~=1.6.2",
         "adb_pywrapper~=1.0.3",
         "requests~=2.32.3"
