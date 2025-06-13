@@ -83,7 +83,6 @@ class TeleGuard(StateGraph):
     and handle unexpected states or errors.
     """
 
-    # TODO: Infer name from attribute name (here: state1)
     conversations_state = SimpleState( [CONVERSATION_STATE_TELEGUARD_HEADER, CONVERSATION_STATE_HAMBURGER_MENU, CONVERSATION_STATE_TELEGUARD_STATUS], initial_state=True)
     chat_state = TeleGuardChatState(parent_state=conversations_state)
     settings_state = SimpleState(['//android.view.View[@content-desc="Change TeleGuard ID"]'], parent_state=conversations_state)
@@ -103,7 +102,6 @@ class TeleGuard(StateGraph):
         :param device_udid: The unique device identifier for the Android device.
         """
         StateGraph.__init__(self, device_udid, APPLICATION_PACKAGE)
-        self.add_popup_handler(simple_popup_handler('bah'))
 
     @action(chat_state)
     def send_message(self, msg: str, conversation: str = None):
@@ -138,6 +136,7 @@ class TeleGuard(StateGraph):
         """
         self.driver.swipe_to_click_element('//android.view.View[contains(@content-desc, "You have been invited")]')
         self.driver.click('//android.widget.Button[@content-desc="ACCEPT INVITE"]')
+
 #TODO remove main
 if __name__ == '__main__':
     t = TeleGuard('34281JEHN03866')

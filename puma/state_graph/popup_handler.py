@@ -1,4 +1,7 @@
+from typing import List
+
 from puma.state_graph.puma_driver import PumaDriver
+from puma.state_graph.state import compose_clicks
 
 
 class PopUpHandler:
@@ -6,15 +9,15 @@ class PopUpHandler:
     Handler for popup windows in Android applications.
     """
 
-    def __init__(self, recognize_xpath: str, dismiss_xpath: str):
+    def __init__(self, recognize_xpaths: List[str], dismiss_xpaths: List[str]):
         """
         Popup handler.
 
         :param recognize_xpath: The XPath to use for recognizing popup windows.
         :param click: The XPath for the element to dismiss the popup.
         """
-        self.recognize_xpath = recognize_xpath
-        self.dismiss_xpath = dismiss_xpath
+        self.recognize_xpaths = recognize_xpaths
+        self.dismiss_xpaths = dismiss_xpaths
 
     def is_popup_window(self, driver: PumaDriver) -> bool:
         """
@@ -23,7 +26,7 @@ class PopUpHandler:
         :param driver: The PumaDriver instance to use for searching the window.
         return: Whether the popup window was found or not.
         """
-        return driver.is_present(self.recognize_xpath)
+        return all(driver.is_present(xpath) for xpath in self.recognize_xpaths)
 
     def dismiss_popup(self, driver: PumaDriver):
         """
@@ -31,7 +34,7 @@ class PopUpHandler:
 
         :param driver: The PumaDriver instance to use for searching and clicking the button.
         """
-        driver.click(self.dismiss_xpath)
+        compose_clicks(self.dismiss_xpaths)(driver)
 
 
 def simple_popup_handler(xpath: str):
@@ -40,7 +43,7 @@ def simple_popup_handler(xpath: str):
     :param xpath: xpath of the element to click
     :return: PopUpHandler for the provided xpath
     """
-    return PopUpHandler(xpath, xpath)
+    return PopUpHandler([xpath], [xpath])
 
 
 known_popups = [simple_popup_handler('//android.widget.ImageView[@content-desc="Dismiss update dialog"]'),

@@ -43,8 +43,8 @@ class GoogleCamera(StateGraph):
         :param device_udid: The unique device identifier for the Android device.
         """
         StateGraph.__init__(self, device_udid, APPLICATION_PACKAGE)
-        self.add_popup_handler(PopUpHandler('//android.widget.TextView[@text="Turned on by default"]', '//android.widget.Button[@text="Done"]'))
-        self.add_popup_handler(PopUpHandler('//android.widget.LinearLayout[@resource-id="com.google.android.GoogleCamera:id/bottomsheet_container"]', '//android.widget.Button[@resource-id="com.google.android.GoogleCamera:id/got_it_button"]'))
+        self.add_popup_handler(PopUpHandler(['//android.widget.TextView[@text="Turned on by default"]'], ['//android.widget.Button[@text="Done"]']))
+        self.add_popup_handler(PopUpHandler(['//android.widget.LinearLayout[@resource-id="com.google.android.GoogleCamera:id/bottomsheet_container"]'], ['//android.widget.Button[@resource-id="com.google.android.GoogleCamera:id/got_it_button"]']))
 
     @action(photo)
     def take_picture(self, front_camera=None):

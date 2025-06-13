@@ -46,6 +46,9 @@ class State(ABC):
         """
         pass
 
+    def __repr__(self):
+        return f"{self.id}"
+
 
 class ContextualState(State):
     @abstractmethod

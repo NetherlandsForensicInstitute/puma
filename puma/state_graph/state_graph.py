@@ -55,7 +55,7 @@ class StateGraphMeta(type):
         return new_class
 
     @staticmethod
-    def _validate_graph(states: List[State]):        # TODO: make unit test for this validation
+    def _validate_graph(states: List[State]):
         """
         Validates the state graph to ensure it meets specific criteria.
 
