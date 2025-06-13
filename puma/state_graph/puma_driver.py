@@ -1,5 +1,12 @@
+import os
 import time
+from datetime import datetime
+from pathlib import Path
+from typing import Dict
+from uuid import uuid4
 
+from adb_pywrapper.adb_device import AdbDevice
+from adb_pywrapper.adb_screen_recorder import AdbScreenRecorder
 from appium.options.android import UiAutomator2Options
 from appium.webdriver.common.appiumby import AppiumBy
 from appium import webdriver
@@ -7,7 +14,9 @@ from appium.webdriver.extensions.android.nativekey import AndroidKey
 from appium.webdriver.webdriver import WebDriver
 from urllib3.exceptions import MaxRetryError
 
+from puma.computer_vision import ocr
 from puma.state_graph import logger
+from puma.utils import CACHE_FOLDER
 
 
 class PumaClickException(Exception):
@@ -52,9 +61,13 @@ def _get_appium_driver(appium_server: str, udid: str, options) -> WebDriver:
                        f'server {appium_server} and device {udid}.')
     return __drivers[key]
 
-# TODO the PumaDriver misses some functionality compared to the driver initialisation part of appium actions, such as
-# logging that appium is not running., or adding desired capabilities, driver cache make sure we have the same functionality as
-# before!
+def supported_version(version: str):
+    def decorator(class_or_function):
+        class_or_function.supported_version = version
+        return class_or_function
+
+    return decorator
+
 class PumaDriver:
     """
     A driver class for interacting with Android applications using Appium.
@@ -64,7 +77,7 @@ class PumaDriver:
     remote control of the application.
     """
 
-    def __init__(self, udid: str, app_package: str, implicit_wait: int = 1, appium_server: str = 'http://localhost:4723'):
+    def __init__(self, udid: str, app_package: str, implicit_wait: int = 1, appium_server: str = 'http://localhost:4723', desired_capabilities: Dict[str, str] = None):
         """
         Initializes the PumaDriver with device and application details.
 
@@ -72,12 +85,20 @@ class PumaDriver:
         :param app_package: The package name of the application to interact with.
         :param implicit_wait: The implicit wait time for element searches, defaults to 1 second.
         :param appium_server: The address of the Appium server, defaults to 'http://localhost:4723'.
+        :param desired_capabilities: desired capabilities as passed to the Appium webdriver.
         """
         self.options = _get_android_default_options()
         self.options.udid = udid
-        self.implicit_wait = implicit_wait
         self.app_package = app_package
+        if desired_capabilities:
+            self.options.load_capabilities(desired_capabilities)
+        logger.info("Connecting to Appium driver...")
         self.driver = _get_appium_driver(appium_server, udid, self.options)
+        self.implicit_wait = implicit_wait
+        self.driver.implicitly_wait(implicit_wait)
+        self.udid = self.driver.capabilities.get("udid")
+        self.adb = AdbDevice(self.udid)
+        self._screen_recorder = None
 
     def is_present(self, xpath: str, implicit_wait: int = 0) -> bool:
         """
@@ -190,6 +211,60 @@ class PumaDriver:
         element = self.get_element(xpath)
         element.send_keys(keys)
 
+    def start_recording(self, output_directory: str):
+        if self._screen_recorder is None:
+            self._screen_recorder_output_directory = output_directory
+            self._screen_recorder = AdbScreenRecorder(self.adb)
+            self._screen_recorder.start_recording()
+
+    def stop_recording_and_save_video(self) -> [str]:
+        if self._screen_recorder is None:
+            return None
+        video_files = self._screen_recorder.stop_recording(self._screen_recorder_output_directory)
+        self._screen_recorder.__exit__(None, None, None)
+        self._screen_recorder = None
+        return video_files
+
+    def new_screenshot_name(self):
+        now = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+        device_name = self.options.device_name
+        return Path(CACHE_FOLDER) / f'{now}-{device_name}-{uuid4()}.png'
+
+    def find_text_ocr(self, text_to_find: str) -> [ocr.RecognizedText]:
+        path = self.new_screenshot_name()
+        screenshot_taken = False
+        try:
+            screenshot_taken = self.driver.get_screenshot_as_file(path)
+            if not screenshot_taken:
+                raise Exception(f'Screenshot could not be stored to {path}')
+            found_text = ocr.find_text(str(path), text_to_find)
+            return found_text
+        finally:
+            if screenshot_taken:
+                os.remove(path)
+
+    def click_text_ocr(self, text_to_click: str, click_first_when_multiple: bool = False):
+        found_text = self.find_text_ocr(text_to_click)
+        if len(found_text) == 0:
+            msg = f'Could not find text {text_to_click} on screen so could not click it'
+            raise PumaClickException(msg)
+        if len(found_text) > 1:
+            msg = f'Found multiple occurrences of text {text_to_click} on screen so could not determine what to click'
+            if not click_first_when_multiple:
+                raise PumaClickException(msg)
+            else:
+                logger.warning(f'Found multiple occurrences of text {text_to_click} on screen, clicking first one')
+        x = found_text[0].bounding_box.middle[0]
+        y = found_text[0].bounding_box.middle[1]
+        self.driver.execute_script('mobile: clickGesture', {'x': x, 'y': y})
+
+    def set_idle_timeout(self, timeout: int):
+        # https://github.com/appium/appium-uiautomator2-driver#poor-elements-interaction-performance
+        # https://github.com/appium/appium-uiautomator2-driver#settings-api
+        settings = self.driver.get_settings()
+        settings.update({"waitForIdleTimeout": timeout})
+        self.driver.update_settings(settings)
+
     def __repr__(self):
         """
         Returns a string representation of the PumaDriver instance.
@@ -197,3 +272,11 @@ class PumaDriver:
         :return: A string describing the PumaDriver instance.
         """
         return f"Puma Driver {self.options.udid} for app package {self.app_package}"
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        if self._screen_recorder is not None:
+            self.stop_recording_and_save_video()
+        self.driver.__exit__(exc_type, exc_val, exc_tb)

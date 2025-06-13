@@ -1,5 +1,5 @@
 from time import sleep
-from typing import List
+from typing import List, Dict
 
 from puma.state_graph import logger
 from puma.state_graph.popup_handler import known_popups, PopUpHandler
@@ -139,16 +139,17 @@ class StateGraph(metaclass=StateGraphMeta):
        methods to navigate between states, validate states, and handle unexpected states or errors.
 
    """
-    def __init__(self, device_udid: str, app_package: str, appium_server: str = 'http://localhost:4723'):
+    def __init__(self, device_udid: str, app_package: str, appium_server: str = 'http://localhost:4723', desired_capabilities: Dict[str, str] = None):
         """
         Initializes the StateGraph with a device and application package.
 
         :param device_udid: The unique device identifier.
         :param app_package: The package name of the application.
+        :param desired_capabilities: desired capabilities as passed to the Appium webdriver.
         """
 
         self.current_state = self.initial_state
-        self.driver = PumaDriver(device_udid, app_package, appium_server=appium_server)
+        self.driver = PumaDriver(device_udid, app_package, appium_server=appium_server, desired_capabilities=desired_capabilities)
         self.app_popups = []
         self.try_restart = True
 
