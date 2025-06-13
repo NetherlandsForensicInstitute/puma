@@ -1,6 +1,7 @@
 from time import sleep
 
 from puma.state_graph.action import action
+from puma.state_graph.popup_handler import PopUpHandler
 from puma.state_graph.state_graph import StateGraph
 from puma.state_graph.state import SimpleState, compose_clicks
 from puma.apps.android.appium_actions import supported_version
@@ -42,6 +43,8 @@ class GoogleCamera(StateGraph):
         :param device_udid: The unique device identifier for the Android device.
         """
         StateGraph.__init__(self, device_udid, APPLICATION_PACKAGE)
+        self.add_popup_handler(PopUpHandler('//android.widget.TextView[@text="Turned on by default"]', '//android.widget.Button[@text="Done"]'))
+        self.add_popup_handler(PopUpHandler('//android.widget.LinearLayout[@resource-id="com.google.android.GoogleCamera:id/bottomsheet_container"]', '//android.widget.Button[@resource-id="com.google.android.GoogleCamera:id/got_it_button"]'))
 
     @action(photo)
     def take_picture(self, front_camera=None):

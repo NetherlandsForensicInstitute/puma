@@ -18,7 +18,8 @@ CONVERSATION_STATE_SETTINGS_BUTTON = '//android.widget.ImageView[@content-desc="
 CONVERSATION_STATE_ABOUT_BUTTON = '//android.widget.ImageView[@content-desc="About"]'
 CONVERSATION_STATE_TELEGUARD_STATUS = '//android.view.View[@content-desc="Online"]|//android.view.View[contains(@content-desc, "Connection to server")]'
 
-CHAT_STATE_CONVERSATION_NAME = '//android.widget.FrameLayout[@resource-id="android:id/content"]/android.widget.FrameLayout/android.widget.FrameLayout/android.view.View/android.view.View/android.view.View/android.view.View/android.view.View[1]/android.view.View[2]/android.widget.ImageView[2][@content-desc]'
+CHAT_STATE_CONVERSATION_NAME = ('//android.widget.FrameLayout[@resource-id="android:id/content"]/android.widget.FrameLayout/android.widget.FrameLayout/android.view.View/android.view.View/android.view.View/android.view.View/android.view.View[1]/android.view.View[2]/android.widget.ImageView[2][@content-desc]|'
+                                '//android.widget.FrameLayout[@resource-id="android:id/content"]/android.widget.FrameLayout/android.widget.FrameLayout/android.view.View/android.view.View/android.view.View/android.view.View/android.view.View[1]/android.view.View[2]/android.view.View[1][@content-desc]')
 CHAT_STATE_TEXT_FIELD = '//android.widget.EditText'
 CHAT_STATE_MICROPHONE_BUTTON = '//android.widget.FrameLayout[@resource-id="android:id/content"]/android.widget.FrameLayout/android.widget.FrameLayout/android.view.View/android.view.View/android.view.View/android.view.View/android.widget.ImageView[4]'
 CHAT_STATE_SEND_BUTTON = '//android.widget.FrameLayout[@resource-id="android:id/content"]/android.widget.FrameLayout/android.widget.FrameLayout/android.view.View/android.view.View/android.view.View/android.view.View/android.widget.ImageView[3]'
