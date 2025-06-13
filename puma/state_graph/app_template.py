@@ -1,5 +1,4 @@
 from puma.state_graph.action import action
-from puma.state_graph.puma_driver import PumaDriver
 from puma.state_graph.state import SimpleState, compose_clicks
 from puma.state_graph.state_graph import StateGraph
 
@@ -20,8 +19,7 @@ class TemplateApp(StateGraph):
 
     # init
     def __init__(self, device_udid):
-        StateGraph.__init__(self, self.driver)
-        self.driver = PumaDriver(device_udid, APPLICATION_PACKAGE)
+        StateGraph.__init__(self, device_udid, APPLICATION_PACKAGE)
 
     # Define your actions
     @action(state1)

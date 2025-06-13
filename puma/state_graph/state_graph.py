@@ -160,15 +160,16 @@ class StateGraph(metaclass=StateGraphMeta):
         :param kwargs: Additional keyword arguments to pass to state validation and transition functions.
         :return: True if the transition to the desired state is successful.
         """
+        max_transitions = len(self.states) * 2 + 5
         counter = 0
         if to_state not in self.states:
-            raise ValueError(f"{to_state.name} is not a known state in this PumaUiGraph")
+            raise ValueError(f"{to_state.id} is not a known state in this PumaUiGraph")
         kwargs['driver'] = self.driver
         try:
             self._validate_state(self.current_state, **kwargs)
         except PumaClickException as pce:
             logger.warn(f"Initial state validation encountered a problem {pce}")
-        while self.current_state != to_state and counter < len(self.states) * 2 + 5:
+        while self.current_state != to_state and counter < max_transitions:
             counter += 1
             try:
                 transition = self._find_shortest_path(to_state)[0]
@@ -176,7 +177,7 @@ class StateGraph(metaclass=StateGraphMeta):
                 self._validate_state(transition.to_state, **kwargs)
             except PumaClickException as pce:
                 logger.warn(f"Transition or state validation failed, recover? {pce}")
-        if counter >= len(self.states) * 2 + 5:
+        if counter >= max_transitions:
             logger.error(f"Too many transitions, state is unrecoverable")
             raise ValueError(f"Too many transitions, unrecoverable")
         return True
@@ -200,7 +201,7 @@ class StateGraph(metaclass=StateGraphMeta):
         # handle validation results
         if not valid:
              # state is totally unexpected
-            self._recover_state(expected_state)
+            self.recover_state(expected_state)
             self._validate_state(self.current_state, **kwargs)
         elif not context_valid:
             # correct state, but wrong context (eg we want a conversation with Alice, but we're in a conversation with Bob)
@@ -209,7 +210,7 @@ class StateGraph(metaclass=StateGraphMeta):
         else:
             self.current_state = expected_state
 
-    def _recover_state(self, expected_state): #TODO extract methods? #TODO make non-private
+    def recover_state(self, expected_state):
         """
         Attempts to recover the expected state if the current state is not the expected state.
 
@@ -226,6 +227,15 @@ class StateGraph(metaclass=StateGraphMeta):
             return
 
         # popups
+        self._handle_popups()
+
+        if self.current_state.validate(self.driver):
+            return
+
+        # Search state
+        self._search_state(expected_state)
+
+    def _handle_popups(self):
         clicked = True
         while clicked:
             clicked = False
@@ -234,10 +244,7 @@ class StateGraph(metaclass=StateGraphMeta):
                     popup_handler.dismiss_popup(self.driver)
                     clicked = True
 
-        if self.current_state.validate(self.driver):
-            return
-
-        # Search state
+    def _search_state(self, expected_state: State):
         current_states = [s for s in self.states if s.validate(self.driver)]
         if len(current_states) != 1:
             if not self.try_restart:
@@ -250,7 +257,8 @@ class StateGraph(metaclass=StateGraphMeta):
             sleep(3)
             self.try_restart = False
             return
-        logger.info(f'Was in unknown state, expected {expected_state}. Recovered: now in state {current_states[0]}') # TODO improve this logging. make clear that the recovery entails just knowing in which state it is
+        logger.info(
+            f'Was in unknown state, expected {expected_state}. Recognized state, setting current state to: {current_states[0]}')
         self.current_state = current_states[0]
 
     def add_popup_handler(self, popup_handler: PopUpHandler):
