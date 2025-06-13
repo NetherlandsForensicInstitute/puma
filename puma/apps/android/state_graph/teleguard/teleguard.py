@@ -134,17 +134,3 @@ class TeleGuard(StateGraph):
         """
         self.driver.swipe_to_click_element('//android.view.View[contains(@content-desc, "You have been invited")]')
         self.driver.click('//android.widget.Button[@content-desc="ACCEPT INVITE"]')
-
-#TODO remove main
-if __name__ == '__main__':
-    t = TeleGuard('34281JEHN03866')
-    c = GoogleCamera('34281JEHN03866')
-    t.go_to_state(TeleGuard.settings_state)
-    t.send_message("Hello Bob", conversation="bob")
-    c.take_picture(front_camera=True)
-    t.send_message("Hello Bob second message")
-    c.take_picture()
-    t.send_message("Test", conversation='TeleGuard')
-    c.record_video(2, True)
-    t.go_to_state(TeleGuard.about_screen_state)
-    c.go_to_state(GoogleCamera.photo)
