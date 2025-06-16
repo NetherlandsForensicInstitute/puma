@@ -58,7 +58,7 @@ def supported_version(version: str):
     return decorator
 
 
-@deprecated
+@deprecated('AndroidAppiumActions is deprecated since Puma version 3.0.0. Use the StateGraph instead.')
 class AndroidAppiumActions:
 
     def __init__(self,
