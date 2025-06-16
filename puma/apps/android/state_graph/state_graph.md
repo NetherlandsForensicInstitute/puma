@@ -1,0 +1,2 @@
+In this directory, the apps that are using a state graph instead of the deprecated AppiumActions are listed.
+Since Puma 2.0, this is the preferred way to implement apps. The other apps still need to be refactored.
