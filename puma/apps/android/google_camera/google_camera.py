@@ -22,6 +22,7 @@ class GoogleCameraActions(AndroidAppiumActions):
                                       implicit_wait=implicit_wait,
                                       appium_server=appium_server)
 
+    @log_action
     def take_picture(self):
         """
         Takes a single picture.
@@ -29,6 +30,7 @@ class GoogleCameraActions(AndroidAppiumActions):
         xpath = '//android.widget.ImageButton[@resource-id="com.google.android.GoogleCamera:id/shutter_button"]'
         shutter = self.driver.find_element(by=AppiumBy.XPATH, value=xpath)
         shutter.click()
+
     @log_action
     def switch_camera(self):
         """
