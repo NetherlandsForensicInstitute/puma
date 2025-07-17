@@ -5,6 +5,7 @@ from typing import Dict, List, Union
 from appium.webdriver.common.appiumby import AppiumBy
 from selenium.webdriver.common.by import By
 
+from puma.apps.android import log_action
 from puma.apps.android.appium_actions import supported_version, AndroidAppiumActions
 
 WHATSAPP_PACKAGE = 'com.whatsapp'
@@ -51,6 +52,7 @@ class WhatsappActions(AndroidAppiumActions):
         return self.driver.find_elements(by=AppiumBy.XPATH,
                                          value=f"//*[contains(@resource-id,'com.whatsapp:id/conversations_row_contact_name') and @text='{subject}']")
 
+    @log_action
     def select_chat(self, subject):
         """
         Select the chat with subject x. For 1-on-1 chats, the subject is the name of the conversation partner. For group
@@ -66,6 +68,7 @@ class WhatsappActions(AndroidAppiumActions):
             raise Exception(f'Cannot find conversation with name {subject}')
         chats_of_interest[0].click()
 
+    @log_action
     def create_new_chat(self, contact, first_message):
         """
         Start a new 1-on-1 conversation with a contact and send a message.
@@ -86,6 +89,7 @@ class WhatsappActions(AndroidAppiumActions):
         if not self.currently_in_conversation():
             raise Exception('Expected to be in conversation screen now, but screen contents are unknown')
 
+    @log_action
     def send_message(self, message_text, chat: str = None, wait_until_sent=False):
         """
         Send a message in the current chat. If the message contains a mention, this is handled correctly.
@@ -142,6 +146,7 @@ class WhatsappActions(AndroidAppiumActions):
             sleep(10)
         return message_status_el
 
+    @log_action
     def delete_message_for_everyone(self, message_text: str, chat: str = None):
         """
         Remove a message with the message text. Should be recently sent, so it is still in view and still possible to
@@ -158,6 +163,7 @@ class WhatsappActions(AndroidAppiumActions):
         self.driver.find_element(by=AppiumBy.XPATH,
                                  value="//*[@resource-id='com.whatsapp:id/buttonPanel']//*[@text='Delete for everyone']").click()
 
+    @log_action
     def reply_to_message(self, message_to_reply_to: str, reply_text: str, chat: str = None):
         """
         Reply to a message. Assumes you are in the chat in which the message was sent.
@@ -175,6 +181,7 @@ class WhatsappActions(AndroidAppiumActions):
         text_box.send_keys(reply_text)
         self.driver.find_element(by=AppiumBy.ID, value="com.whatsapp:id/send").click()
 
+    @log_action
     def send_broadcast(self, receivers: [str], broadcast_text: str):
         """
         Broadcast a message.
@@ -197,6 +204,7 @@ class WhatsappActions(AndroidAppiumActions):
         text_box.send_keys(broadcast_text)
         self.driver.find_element(by=AppiumBy.ID, value="com.whatsapp:id/send").click()
 
+    @log_action
     def send_media(self, directory_name, caption=None, view_once=False, chat: str = None):
         """
         Send a photo or video with or without a caption in the current chat.
@@ -246,6 +254,7 @@ class WhatsappActions(AndroidAppiumActions):
         sleep(1)
         self.driver.find_element(by=AppiumBy.ID, value="com.whatsapp:id/send").click()
 
+    @log_action
     def send_sticker(self, chat: str = None):
         """
         Send the only sticker in the sticker menu. Assumes 1 sticker is present in WhatsApp.
@@ -268,6 +277,7 @@ class WhatsappActions(AndroidAppiumActions):
     def _click_coordinates(self, x, y):
         self.driver.execute_script('mobile: clickGesture', {'x': x, 'y': y})
 
+    @log_action
     def send_voice_recording(self, duration: int = 2000, chat: str = None):
         """
         Sends a voice message in the current conversation.
@@ -279,6 +289,7 @@ class WhatsappActions(AndroidAppiumActions):
         voice_button = self.driver.find_element(by=AppiumBy.ID, value="com.whatsapp:id/voice_note_btn")
         self._long_press_element(voice_button, duration=duration)
 
+    @log_action
     def send_current_location(self, chat: str = None):
         """
         Send the current location in the current chat.
@@ -291,6 +302,7 @@ class WhatsappActions(AndroidAppiumActions):
         sleep(5)  # it takes some time to fix the location
         self.driver.find_element(by=AppiumBy.ID, value="com.whatsapp:id/send_current_location_btn").click()
 
+    @log_action
     def send_live_location(self, caption=None, chat: str = None):
         """
         Send a live location in the current chat.
@@ -309,6 +321,7 @@ class WhatsappActions(AndroidAppiumActions):
             self.driver.find_element(by=AppiumBy.ID, value="com.whatsapp:id/comment").send_keys(caption)
         self.driver.find_element(by=AppiumBy.ID, value="com.whatsapp:id/send").click()
 
+    @log_action
     def stop_live_location(self, need_to_scroll=False, chat: str = None):
         """
         Stops the current live location sharing.
@@ -325,6 +338,7 @@ class WhatsappActions(AndroidAppiumActions):
         if self.is_present(popup_button_xpath):
             self.driver.find_element(by=AppiumBy.XPATH, value=popup_button_xpath).click()
 
+    @log_action
     def send_contact(self, contact_name: str, chat: str = None):
         """
         Send a contact in the current chat.
@@ -339,6 +353,7 @@ class WhatsappActions(AndroidAppiumActions):
         self.driver.find_element(by=AppiumBy.ID, value="com.whatsapp:id/next_btn").click()
         self.driver.find_element(by=AppiumBy.ID, value="com.whatsapp:id/send_btn").click()
 
+    @log_action
     def change_profile_picture(self, photo_dir_name: str = "profile_picture"):
         """
         Change profile picture. Selects the picture in the specified directory.
@@ -356,6 +371,7 @@ class WhatsappActions(AndroidAppiumActions):
         self.driver.find_element(by=By.CLASS_NAME, value="android.widget.ImageView").click()
         self.driver.find_element(by=AppiumBy.ID, value="com.whatsapp:id/ok_btn").click()
 
+    @log_action
     def set_status(self, caption: str = None):
         """
         Sets a status by taking a picture and setting the given caption.
@@ -379,6 +395,7 @@ class WhatsappActions(AndroidAppiumActions):
         # TODO: popup that can appear!
         self.return_to_homescreen()
 
+    @log_action
     def set_about(self, about_text: str):
         """
         Set the about section on the WhatsApp profile.
@@ -394,6 +411,7 @@ class WhatsappActions(AndroidAppiumActions):
         text_box.send_keys(about_text)
         self.driver.find_element(by=AppiumBy.ID, value="com.whatsapp:id/save_button").click()
 
+    @log_action
     def activate_disappearing_messages(self, chat=None):
         """
         Activates disappearing messages (auto delete) in the current or a given chat.
@@ -412,6 +430,7 @@ class WhatsappActions(AndroidAppiumActions):
         else:
             self.return_to_homescreen()
 
+    @log_action
     def deactivate_disappearing_messages(self, chat=None):
         """
         Disables disappearing messages (auto delete) in the current or a given chat.
@@ -429,6 +448,7 @@ class WhatsappActions(AndroidAppiumActions):
         else:
             self.return_to_homescreen()
 
+    @log_action
     def navigate_to_call_tab(self):
         """
         Navigates to the call tab. The 2 resource ids are necessary because they differ when you are or are not on the call tab.
@@ -440,6 +460,7 @@ class WhatsappActions(AndroidAppiumActions):
                                        'or @resource-id="com.whatsapp:id/navigation_bar_item_large_label_view" )'
                                        'and @text="Calls"]').click()
 
+    @log_action
     def call_contact(self, contact, video_call=False):
         """
         Make a WhatsApp call. The call is made to a given contact name
@@ -457,6 +478,7 @@ class WhatsappActions(AndroidAppiumActions):
         self.driver.find_element(by=AppiumBy.XPATH,
                                  value=f'(//android.widget.ImageView[@content-desc="{call_type}"])[1]').click()  # Take the top one without checking the name, since we already searched for the contact
 
+    @log_action
     def end_call(self):
         """
         Ends the current call. Assumes the call screen is open.
@@ -468,6 +490,7 @@ class WhatsappActions(AndroidAppiumActions):
             self.driver.find_element(by=AppiumBy.XPATH, value=background).click()
         self.driver.find_element(by=AppiumBy.XPATH, value=end_call_button).click()
 
+    @log_action
     def answer_call(self):
         """
         Answer when receiving a call via Whatsapp.
@@ -477,6 +500,7 @@ class WhatsappActions(AndroidAppiumActions):
         self.driver.find_element(by=AppiumBy.XPATH,
                                  value="//android.widget.Button[@content-desc='Answer' or @content-desc='Video']").click()
 
+    @log_action
     def decline_call(self):
         """
         Declines an incoming Whatsapp call.
@@ -485,6 +509,7 @@ class WhatsappActions(AndroidAppiumActions):
         sleep(2)
         self.driver.find_element(by=AppiumBy.XPATH, value="//android.widget.Button[@content-desc='Decline']").click()
 
+    @log_action
     def create_group(self, subject: str, participants: Union[str, List[str]]):
         """
         Create a new group. Assumes you are in homescreen.
@@ -528,6 +553,7 @@ class WhatsappActions(AndroidAppiumActions):
                         f"Could not create group after 20 attempts. Try restarting your emulator and try again.")
         self.return_to_homescreen()
 
+    @log_action
     def set_group_description(self, group_name, description):
         """
         Set the group description.
@@ -542,6 +568,7 @@ class WhatsappActions(AndroidAppiumActions):
         self.driver.find_element(by=AppiumBy.ID, value="com.whatsapp:id/ok_btn").click()
         self.return_to_homescreen()
 
+    @log_action
     def delete_group(self, group_name):
         """
         Leaves and deletes a given group.
@@ -555,6 +582,7 @@ class WhatsappActions(AndroidAppiumActions):
         self.driver.find_element(by=AppiumBy.XPATH, value="//*[contains(@text,'Delete group')]").click()
         self.return_to_homescreen()
 
+    @log_action
     def archive_conversation(self, subject):
         """
         Archives a given conversation.
@@ -588,6 +616,7 @@ class WhatsappActions(AndroidAppiumActions):
         y = location['y'] + size['height'] // 2
         self.driver.execute_script('mobile: longClickGesture', {'x': x, 'y': y, 'duration': duration})
 
+    @log_action
     def leave_group(self, group_name):
         """
         This method will leave the given group. It will not delete that group.
@@ -600,6 +629,7 @@ class WhatsappActions(AndroidAppiumActions):
         self.driver.find_element(by=AppiumBy.XPATH, value="//android.widget.Button[@text='Exit']").click()
         self.return_to_homescreen()
 
+    @log_action
     def remove_participant_from_group(self, group_name, participant):
         """
         Removes a given participant from a given group chat.
@@ -615,6 +645,7 @@ class WhatsappActions(AndroidAppiumActions):
         sleep(5)
         self.return_to_homescreen()
 
+    @log_action
     def forward_message(self, from_chat, message_contains, to_chat):
         """
         Forwards a message from one conversation to another.
@@ -634,6 +665,7 @@ class WhatsappActions(AndroidAppiumActions):
         f"//*[@resource-id='com.whatsapp:id/contact_list']//*[@text='{to_chat}']").click()
         self.driver.find_element(by=AppiumBy.ID, value="com.whatsapp:id/send").click()
 
+    @log_action
     def open_settings_you(self):
         """
         Open personal settings (or profile).
@@ -645,6 +677,7 @@ class WhatsappActions(AndroidAppiumActions):
         "/hierarchy/android.widget.FrameLayout/android.widget.FrameLayout/android.widget.ListView/android.widget.LinearLayout[5]/android.widget.LinearLayout").click()
         self.driver.find_element(by=AppiumBy.ACCESSIBILITY_ID, value="You").click()
 
+    @log_action
     def open_more_options(self):
         """
         Open more options (hamburger menu) in the home screen.
@@ -652,6 +685,7 @@ class WhatsappActions(AndroidAppiumActions):
         self.driver.find_element(by=AppiumBy.XPATH,
                                  value='//android.widget.ImageView[@content-desc="More options"]').click()
 
+    @log_action
     def open_view_once_photo(self, chat=None):
         """
         Open view once photo in the current or specified chat. Should be done right after the photo is sent, to ensure the correct photo is opened, this will be the lowest one.

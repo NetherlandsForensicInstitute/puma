@@ -4,6 +4,7 @@ from typing import Dict
 
 from appium.webdriver.common.appiumby import AppiumBy
 
+from puma.apps.android import log_action
 from puma.apps.android.appium_actions import supported_version, AndroidAppiumActions
 from puma.apps.android.teleguard import logger
 
@@ -41,7 +42,6 @@ class TeleguardActions(AndroidAppiumActions):
             if not self._currently_in_conversation(chat):
                 raise Exception('Expected to be in conversation screen now, but screen contents are unknown')
 
-
     def _currently_at_homescreen(self) -> bool:
         """
         Check whether currently at homescreen of the application.
@@ -73,6 +73,7 @@ class TeleguardActions(AndroidAppiumActions):
             raise Exception('Tried to return to homescreen but ran out of attempts...')
         sleep(0.5)
 
+    @log_action
     def select_chat(self, chat: str):
         """
         Opens a given conversation based on the (partial) name of a chat.
@@ -85,6 +86,7 @@ class TeleguardActions(AndroidAppiumActions):
 
         self.driver.find_element(by=AppiumBy.XPATH, value=xpath).click()
 
+    @log_action
     def send_message(self, message: str, chat: str = None):
         """
         Send a message in the current or given chat.
@@ -99,6 +101,7 @@ class TeleguardActions(AndroidAppiumActions):
         text_box_el.send_keys(message)
         self.driver.find_element(by=AppiumBy.XPATH, value='//android.widget.FrameLayout[@resource-id="android:id/content"]/android.widget.FrameLayout/android.widget.FrameLayout/android.view.View/android.view.View/android.view.View/android.view.View/android.widget.ImageView[3]').click()
 
+    @log_action
     def add_contact(self, id: str):
         """
         Add a contact by TeleGuard ID.
@@ -114,6 +117,7 @@ class TeleguardActions(AndroidAppiumActions):
         invite_btn = self.driver.find_element(by=AppiumBy.XPATH, value='//android.widget.Button[@content-desc="INVITE"]')
         invite_btn.click()
 
+    @log_action
     def accept_invite(self):
         """
         Accept an invite from another user. If you have multiple invites, only one invite will be accepted (the topmost

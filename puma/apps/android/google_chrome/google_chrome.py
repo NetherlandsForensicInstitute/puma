@@ -2,6 +2,7 @@ from typing import Dict
 
 from appium.webdriver.common.appiumby import AppiumBy
 
+from puma.apps.android import log_action
 from puma.apps.android.appium_actions import AndroidAppiumActions, supported_version
 
 GOOGLE_CHROME_PACKAGE = 'com.android.chrome'
@@ -20,6 +21,7 @@ class GoogleChromeActions(AndroidAppiumActions):
                                       implicit_wait=impicit_wait,
                                       appium_server=appium_server)
 
+    @log_action
     def go_to(self, url_string: str, new_tab: bool = False):
         """
         Enters the text as stated in the url_string parameter.
@@ -44,6 +46,7 @@ class GoogleChromeActions(AndroidAppiumActions):
         url_bar.send_keys(url_string)
         self.driver.press_keycode(66)
 
+    @log_action
     def bookmark_page(self):
         """
         Bookmarks the current page.
@@ -53,6 +56,7 @@ class GoogleChromeActions(AndroidAppiumActions):
         self.driver.find_element(by=AppiumBy.XPATH, value=three_dots_xpath).click()
         self.driver.find_element(by=AppiumBy.XPATH, value=bookmark_xpath).click()
 
+    @log_action
     def load_bookmark(self):
         """
         Load the first saved bookmark in the folder 'Mobile Bookmarks'.
@@ -67,6 +71,7 @@ class GoogleChromeActions(AndroidAppiumActions):
             self.driver.find_element(by=AppiumBy.XPATH, value=mobile_bookmarks_xpath).click()
         self.driver.find_element(by=AppiumBy.XPATH, value=first_bookmark_xpath).click()
 
+    @log_action
     def switch_to_tab(self, num_tab: int = 1):
         """
         Switches to another tab, by default the first open tab.
@@ -76,6 +81,7 @@ class GoogleChromeActions(AndroidAppiumActions):
         self.driver.find_element(by=AppiumBy.XPATH, value=switch_tab_xpath).click()
         self.driver.find_element(by=AppiumBy.XPATH, value=f'(//android.widget.FrameLayout[@resource-id="com.android.chrome:id/content_view"])[{num_tab}]').click()
 
+    @log_action
     def go_to_incognito(self, url_string: str):
         """
         Opens an incognito window and enters the url_string to the address bar.
