@@ -2,6 +2,7 @@ from typing import Dict
 
 from appium.webdriver.common.appiumby import AppiumBy
 
+from puma.apps.android import log_action, logger
 from puma.apps.android.appium_actions import AndroidAppiumActions, supported_version
 
 GOOGLE_CAMERA_PACKAGE = 'com.google.android.GoogleCamera'
@@ -28,7 +29,7 @@ class GoogleCameraActions(AndroidAppiumActions):
         xpath = '//android.widget.ImageButton[@resource-id="com.google.android.GoogleCamera:id/shutter_button"]'
         shutter = self.driver.find_element(by=AppiumBy.XPATH, value=xpath)
         shutter.click()
-
+    @log_action
     def switch_camera(self):
         """
         Switches between the front and rear camera.
