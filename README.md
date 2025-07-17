@@ -244,7 +244,7 @@ Puma uses Python’s standard `logging` library.
 
 - **As a CLI or main module:** Puma configures default logging so INFO and higher messages are visible.
 - **In Jupyter notebooks:** Puma enables default logging so logs are visible in notebook cells.
-- **As a library:** Puma does not configure logging; messages are only shown if your application configures logging.
+- **As a module in another project:** Puma does not configure logging; messages are only shown if your application configures logging.
 
 ### How to See Puma’s Logs
 
