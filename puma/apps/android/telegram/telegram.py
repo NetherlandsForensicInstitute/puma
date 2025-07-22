@@ -35,8 +35,22 @@ class TelegramActions(AndroidAppiumActions):
     def _currently_at_homescreen(self, **kwargs) -> bool:
         return self.is_present('//android.widget.FrameLayout[@content-desc="New Message"]', **kwargs)
 
-    def _currently_in_conversation(self, **kwargs) -> bool:
-        return self.is_present('//android.widget.ImageView[@content-desc="Emoji, stickers, and GIFs"]', **kwargs)
+    def _currently_in_conversation(self, chat: str = None, **kwargs) -> bool:
+        """
+        Checks if currently in a Telegram conversation screen.
+        If 'chat' is given, also checks for presence of an element with text matching 'chat', case-insensitive.
+        :param chat: Optional. The (partial) name of the chat to verify is open.
+        :param kwargs: Additional arguments passed to is_present (e.g., implicit_wait).
+        :return: True if in a conversation (and, if chat is supplied, in that chat), else False.
+        """
+        in_any_conversation = self.is_present('//android.widget.ImageView[@content-desc="Emoji, stickers, and GIFs"]',
+                                       **kwargs)
+        if not in_any_conversation:
+            return False
+        if chat is not None:
+            chat_xpath = f'//*[contains(lower-case(@text), "{chat.lower()}")]'
+            return self.is_present(chat_xpath, **kwargs)
+        return True
 
     def _currently_in_camera(self, **kwargs) -> bool:
         return self.is_present('//android.widget.Button[lower-case(@content-desc)="shutter"]', **kwargs)
@@ -354,6 +368,48 @@ class TelegramActions(AndroidAppiumActions):
         if not self._currently_in_call():
             raise Exception('Expected to be in a call, but could not detect call screen!')
         self.driver.find_element(by=AppiumBy.XPATH, value='//android.widget.FrameLayout[@content-desc="Flip"]').click()
+
+    @log_action
+    def delete_chat(self, chat: str):
+        """
+
+        :param chat:
+        :return:
+        """
+        self._if_chat_go_to_chat(chat)
+        # Go to chat popup menu
+        self.driver.find_element(by=AppiumBy.XPATH, value='//android.widget.ImageButton[@content-desc="More options"]/android.widget.ImageView').click()
+        self.driver.find_element(by=AppiumBy.XPATH, value='//android.widget.TextView[@text="Delete chat"]').click()
+        # Confirm
+        # self.driver.find_element(by=AppiumBy.XPATH, value='(// android.widget.TextView[@ text="Delete chat"])[2]').click()
+
+    @ log_action
+    def block_user(self, contact_name: str):
+        """
+        Will also delete chat, delete chat is automatically selected.
+        :param contact_name:
+        :return:
+        """
+        self._if_chat_go_to_chat(contact_name)
+        #TODO double check if in the correct chat
+        if not self._currently_in_conversation(chat=contact_name):
+            ... # TODO decide what to do
+        # The block user xpath below entails both BLOCK USER and Block user variants
+        block_user_xpath= '//android.widget.TextView[lower-case(@text)="block user"]'
+        if self.is_present(block_user_xpath):
+            self.driver.find_element(by=AppiumBy.XPATH, value=block_user_xpath).click()
+            # Confirm
+            # self.driver.find_element(by=AppiumBy.XPATH, value=block_user_xpath).click()
+        else:
+            # Navigate to user menu
+            self.driver.find_element(by=AppiumBy.XPATH, value=f'//android.widget.TextView[@text="{contact_name}"]').click()
+            self.driver.find_element(by=AppiumBy.XPATH, value='//android.widget.ImageButton[@content-desc="More options"]/android.widget.ImageView').click()
+
+            self.driver.find_element(by=AppiumBy.XPATH, value=block_user_xpath).click()
+            # Confirm
+            # self.driver.find_element(by=AppiumBy.XPATH, value=block_user_xpath).click()
+
+
 
     def _if_chat_go_to_chat(self, chat: str | int):
         if chat is not None:
