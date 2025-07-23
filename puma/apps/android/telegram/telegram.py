@@ -372,9 +372,8 @@ class TelegramActions(AndroidAppiumActions):
     @log_action
     def delete_chat(self, chat: str):
         """
-
-        :param chat:
-        :return:
+        Deletes a chat conversation.
+        :param chat: The chat to delete
         """
         self._if_chat_go_to_chat(chat)
         # Go to chat popup menu
@@ -384,16 +383,18 @@ class TelegramActions(AndroidAppiumActions):
         # self.driver.find_element(by=AppiumBy.XPATH, value='(// android.widget.TextView[@ text="Delete chat"])[2]').click()
 
     @ log_action
-    def block_user(self, contact_name: str):
+    def block_user_and_delete_chat(self, contact_name: str):
         """
-        Will also delete chat, delete chat is automatically selected.
-        :param contact_name:
-        :return:
+        Blocks a user in a chat and deletes the conversation.
+
+        Will also delete the chat, delete chat is automatically selected.
+       :param contact_name: The name of the contact to block.
+       :raises RuntimeError: If the conversation with the contact could not be opened.
         """
         self._if_chat_go_to_chat(contact_name)
-        #TODO double check if in the correct chat
+        # Double check if in the correct chat
         if not self._currently_in_conversation(chat=contact_name):
-            ... # TODO decide what to do
+            raise RuntimeError(f"Conversation with {contact_name} was not opened. Exiting...")
         # The block user xpath below entails both BLOCK USER and Block user variants
         block_user_xpath= '//android.widget.TextView[lower-case(@text)="block user"]'
         if self.is_present(block_user_xpath):
@@ -408,7 +409,6 @@ class TelegramActions(AndroidAppiumActions):
             self.driver.find_element(by=AppiumBy.XPATH, value=block_user_xpath).click()
             # Confirm
             # self.driver.find_element(by=AppiumBy.XPATH, value=block_user_xpath).click()
-
 
 
     def _if_chat_go_to_chat(self, chat: str | int):
