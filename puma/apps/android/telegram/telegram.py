@@ -66,8 +66,7 @@ class TelegramActions(AndroidAppiumActions):
 
     def _load_conversation_titles(self):
         while True:
-            xpath = "//androidx.recyclerview.widget.RecyclerView/android.view.ViewGroup[not(@content-desc)]"
-            convos = self.driver.find_elements(by=AppiumBy.XPATH, value=xpath)
+            convos = self.get_all_conversations()
             if len(convos) == 0:
                 break
             print('some conversations still do not have a title loaded, clicking...')
@@ -76,6 +75,14 @@ class TelegramActions(AndroidAppiumActions):
             if not self._currently_at_homescreen():
                 self.driver.back()
         print('all conversations loaded!')
+
+    def get_all_conversations(self): #TODO check return type
+        """
+        Get all conversation elements listed in the home screen.
+        :return: list of conversation elements
+        """
+        xpath = "//androidx.recyclerview.widget.RecyclerView/android.view.ViewGroup[not(@content-desc)]"
+        return self.driver.find_elements(by=AppiumBy.XPATH, value=xpath)
 
     def return_to_homescreen(self, attempts: int = 10, try_restart: bool = True):
         """
