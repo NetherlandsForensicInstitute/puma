@@ -117,6 +117,26 @@ class TelegramActions(AndroidAppiumActions):
                                  value=f'//android.view.ViewGroup[starts-with(lower-case(@text), "{chat.lower()}")]').click()
 
     @log_action
+    def create_group(self, group_name:str, members:list[str]):
+        self.return_to_homescreen()
+        self.driver.find_element(by=AppiumBy.XPATH,
+                                 value='//android.widget.FrameLayout[@content-desc="New Message"]').click()
+        self.driver.find_element(by=AppiumBy.XPATH,
+                                 value='//android.widget.TextView[@text="New Group"]').click()
+        for member in members:
+            sleep(2)
+            self.driver.find_element(by=AppiumBy.XPATH,
+                                     value='//android.widget.EditText[@text="Who would you like to add?"]').click()
+            self.driver.find_element(by=AppiumBy.XPATH,
+                                     value='//android.widget.EditText[@text="Search"]').send_keys(member)
+            self.driver.find_element(by=AppiumBy.XPATH,
+                                     value=f'//android.view.ViewGroup[starts-with(lower-case(@text), "{member.lower()}")]').click()
+        self.driver.find_element(by=AppiumBy.XPATH,
+                                 value='//android.widget.EditText[contains(@text, "")').send_keys(group_name)
+        self.driver.find_element(by=AppiumBy.XPATH,
+                                 value='//android.widget.FrameLayout[@content-desc="Done"]/android.widget.ImageView').click()
+
+    @log_action
     def select_chat(self, chat: str | int):
         """
         Opens a given conversation based on the (partial) name of a chat, or opens the chat at the passed index
