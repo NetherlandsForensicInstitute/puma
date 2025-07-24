@@ -128,6 +128,19 @@ class TestTelegram(unittest.TestCase):
     def test_select_chat_by_index(self):
         self.alice.select_chat(1)
 
+    def test_block_user(self):
+        self.alice.block_user_and_delete_chat()
+    #
+    def test_delete_chat(self):
+        #TODO create a one on one chat to delete
+        self.alice.delete_chat("Bob and Charlie")
+
+    def test_delete_chat_group(self):
+        #TODO create a group with bob
+        group_name="group_to_delete"
+        self.alice.create_group("group1", ["Charlie", "Charlie2"])
+        self.alice.delete_chat(group_name)
+
 
 if __name__ == '__main__':
     unittest.main()
