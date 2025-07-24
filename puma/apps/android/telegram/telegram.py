@@ -399,22 +399,34 @@ class TelegramActions(AndroidAppiumActions):
     @log_action
     def delete_chat(self, chat: str):
         """
-        Deletes a chat conversation.
+        Deletes a chat conversation. Both groups and one-on-one conversations are supported
         :param chat: The chat to delete
         """
         self._if_chat_go_to_chat(chat)
+        if not self._currently_in_conversation(chat=chat):
+            raise RuntimeError(f"Conversation with {chat} was not opened. Exiting...")
         # Go to chat popup menu
         self.driver.find_element(by=AppiumBy.XPATH, value='//android.widget.ImageButton[@content-desc="More options"]/android.widget.ImageView').click()
-        self.driver.find_element(by=AppiumBy.XPATH, value='//android.widget.TextView[@text="Delete chat"]').click()
-        # Confirm
-        # self.driver.find_element(by=AppiumBy.XPATH, value='(// android.widget.TextView[@ text="Delete chat"])[2]').click()
+        #TODO test
+        delete_chat_xpath = '//android.widget.TextView[@text="Delete chat"]'
+        if self.is_present(xpath=delete_chat_xpath):
+            self.driver.find_element(by=AppiumBy.XPATH, value=delete_chat_xpath).click()
+            # Confirm
+            # self.driver.find_element(by=AppiumBy.XPATH, value='(// android.widget.TextView[@ text="Delete chat"])[2]').click()
+
+        leave_group_xpath='//android.widget.TextView[contains(@text, "Leave group")]'
+        if self.is_present(xpath=leave_group_xpath):
+            self.driver.find_element(by=AppiumBy.XPATH, value=leave_group_xpath).click()
+            #Confirm
+            self.driver.find_element(by=AppiumBy.XPATH, value='//android.widget.TextView[@text="Delete Group"]').click()
 
     @ log_action
     def block_user_and_delete_chat(self, contact_name: str):
         """
         Blocks a user in a chat and deletes the conversation.
 
-        Will also delete the chat, delete chat is automatically selected.
+        Will also delete the chat, delete chat is automatically selected. There is no way to check this, so if the
+        automatic selection changes, the chat might not be deleted.
        :param contact_name: The name of the contact to block.
        :raises RuntimeError: If the conversation with the contact could not be opened.
         """
