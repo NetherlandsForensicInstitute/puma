@@ -129,16 +129,20 @@ class TestTelegram(unittest.TestCase):
         self.alice.select_chat(1)
 
     def test_block_user(self):
+        #TODO test thoroughly
         self.alice.block_user_and_delete_chat()
     #
     def test_delete_chat(self):
         #TODO create a one on one chat to delete
-        self.alice.delete_chat("Bob and Charlie")
+        self.alice.start_new_chat("Twocharlie")
+        self.alice.send_message("hi", None)
+        self.alice.block_user_and_delete_chat("Twocharlie")
+        # self.alice.delete_chat("Bob and Charlie")
 
     def test_delete_chat_group(self):
-        #TODO create a group with bob
+        #TODO create a group with charlie
         group_name="group_to_delete"
-        self.alice.create_group("group1", ["Charlie", "Charlie2"])
+        self.alice.create_group("group1", ["Twocharlie"])
         self.alice.delete_chat(group_name)
 
 

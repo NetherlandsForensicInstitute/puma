@@ -454,7 +454,7 @@ class TelegramActions(AndroidAppiumActions):
         if chat is not None:
             self.select_chat(chat)
             sleep(1)
-        if not self._currently_in_conversation():
+        if not self._currently_in_conversation(implicit_wait=1):
             raise Exception('Expected to be in conversation screen now, but screen contents are unknown')
 
     def _find_button_location(self, width_ratio: float, height_ratio: float, xpath: str):
