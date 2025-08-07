@@ -34,8 +34,8 @@ class GoogleChromeActions(AndroidAppiumActions):
             self.driver.find_element(by=AppiumBy.XPATH, value=search_box_xpath).click()
 
         if new_tab:
-            switch_tab_xpath = '//android.widget.ImageButton[contains(@content-desc, "Switch")]'
-            new_tab_xpath = '//android.widget.TextView[@resource-id="com.android.chrome:id/new_tab_view_desc"]'
+            switch_tab_xpath = '//android.widget.ImageButton[contains(@content-desc, "tabs")]'
+            new_tab_xpath = '//android.widget.Button[contains(@content-desc, "tab")]'
             self.driver.find_element(by=AppiumBy.XPATH, value=switch_tab_xpath).click()
             self.driver.find_element(by=AppiumBy.XPATH, value=new_tab_xpath).click()
             self.driver.find_element(by=AppiumBy.XPATH, value=search_box_xpath).click()
@@ -52,7 +52,7 @@ class GoogleChromeActions(AndroidAppiumActions):
         Bookmarks the current page.
         """
         three_dots_xpath = '//android.widget.ImageButton[@content-desc="Customize and control Google Chrome"]'
-        bookmark_xpath = '//android.widget.ImageButton[lower-case(@content-desc)="bookmark"]'
+        bookmark_xpath = '//android.widget.Button[lower-case(@content-desc)="bookmark"]'
         self.driver.find_element(by=AppiumBy.XPATH, value=three_dots_xpath).click()
         self.driver.find_element(by=AppiumBy.XPATH, value=bookmark_xpath).click()
 
