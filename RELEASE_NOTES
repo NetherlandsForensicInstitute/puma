@@ -1,3 +1,7 @@
+Version 2.9.1
+-------------
+113. Fix for bookmarking and creating a new tab in Chrome
+
 Version 2.9.0
 -------------
 110. Add ground truth logging
