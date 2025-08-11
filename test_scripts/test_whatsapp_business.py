@@ -2,6 +2,7 @@ import unittest
 from time import sleep
 
 from puma.apps.android.whatsapp.whatsapp import WhatsappActions
+from puma.apps.android.whatsapp_business.whatsapp_business import WhatsappBusinessActions
 
 # Fill in the udids below. Run ADB devices to see the udids.
 device_udids = {
@@ -33,7 +34,7 @@ class TestWhatsapp(unittest.TestCase):
         if not device_udids["Alice"]:
             print("No udid was configured for Alice. Please add at the top of the script.\nExiting....")
             exit(1)
-        self.alice = WhatsappActions(device_udids["Alice"]) # Assuming Phone class is already defined
+        self.alice = WhatsappBusinessActions(device_udids["Alice"]) # Assuming Phone class is already defined
 
         self.bob_configured = bool(device_udids["Bob"])
         if self.bob_configured:

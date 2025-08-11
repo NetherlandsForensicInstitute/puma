@@ -12,7 +12,7 @@ WHATSAPP_PACKAGE = 'com.whatsapp.w4b'
 
 
 @supported_version("2.24.25.78")
-class WhatsappActions(AndroidAppiumActions):
+class WhatsappBusinessActions(AndroidAppiumActions):
     def __init__(self,
                  device_udid,
                  desired_capabilities: Dict[str, str] = None,
@@ -29,7 +29,7 @@ class WhatsappActions(AndroidAppiumActions):
                                       appium_server=appium_server)
 
     def currently_at_homescreen(self) -> bool:
-        return self.is_present('//android.widget.FrameLayout[@content-desc="com.whatsapp:id/root_view"]')
+        return self.is_present('//android.widget.FrameLayout[@content-desc="com.whatsapp.w4b:id/root_view"]')
 
     def currently_in_conversation_overview(self) -> bool:
         # Send message occurs when no conversations are present yet. New chat when there are conversations.
@@ -37,7 +37,7 @@ class WhatsappActions(AndroidAppiumActions):
                                '//android.widget.Button[@content-desc="Send message"]')
 
     def currently_in_conversation(self) -> bool:
-        return self.is_present('//android.widget.LinearLayout[@resource-id="com.whatsapp:id/conversation_root_layout"]',
+        return self.is_present('//android.widget.LinearLayout[@resource-id="com.whatsapp.w4b:id/conversation_root_layout"]',
                                implicit_wait=1)
 
     def return_to_homescreen(self):
@@ -50,7 +50,7 @@ class WhatsappActions(AndroidAppiumActions):
     def get_conversation_row_elements(self, subject):
         self.return_to_homescreen()
         return self.driver.find_elements(by=AppiumBy.XPATH,
-                                         value=f"//*[contains(@resource-id,'com.whatsapp:id/conversations_row_contact_name') and @text='{subject}']")
+                                         value=f"//*[contains(@resource-id,'com.whatsapp.w4b:id/conversations_row_contact_name') and @text='{subject}']")
 
     @log_action
     def select_chat(self, subject):
@@ -77,9 +77,9 @@ class WhatsappActions(AndroidAppiumActions):
         """
         self.return_to_homescreen()
         self.driver.find_element(by=AppiumBy.XPATH, value=
-        f"//*[@resource-id='com.whatsapp:id/fab' or @resource-id='com.whatsapp:id/fabText']").click()
+        f"//*[@resource-id='com.whatsapp.w4b:id/fab' or @resource-id='com.whatsapp.w4b:id/fabText']").click()
         self.driver.find_element(by=AppiumBy.XPATH, value=
-        f"//*[@resource-id='com.whatsapp:id/contactpicker_text_container']//*[@text='{contact}']").click()
+        f"//*[@resource-id='com.whatsapp.w4b:id/contactpicker_text_container']//*[@text='{contact}']").click()
         self.send_message(first_message)
 
     def _if_chat_go_to_chat(self, chat: str):
@@ -98,11 +98,11 @@ class WhatsappActions(AndroidAppiumActions):
         :param message_text: The text that the message contains.
         """
         self._if_chat_go_to_chat(chat)
-        text_box = self.driver.find_element(by=AppiumBy.ID, value="com.whatsapp:id/entry")
+        text_box = self.driver.find_element(by=AppiumBy.ID, value="com.whatsapp.w4b:id/entry")
         self._handle_mention(message_text, text_box) if "@" in message_text else text_box.send_keys(message_text)
         if 'http' in message_text:
             sleep(2)
-        self.driver.find_element(by=AppiumBy.ID, value="com.whatsapp:id/send").click()
+        self.driver.find_element(by=AppiumBy.ID, value="com.whatsapp.w4b:id/send").click()
         if wait_until_sent:
             _ = self._ensure_message_sent(message_text)
 
@@ -129,7 +129,7 @@ class WhatsappActions(AndroidAppiumActions):
         backspace_keycode = 67
         self.driver.press_keycode(backspace_keycode)
         mentioned_person_el = \
-            [person for person in self.driver.find_elements(by=AppiumBy.ID, value="com.whatsapp:id/contact_photo")
+            [person for person in self.driver.find_elements(by=AppiumBy.ID, value="com.whatsapp.w4b:id/contact_photo")
              if person.tag_name.lower() == mentioned_name.lower()][0]
         mentioned_person_el.click()
         # Remove a space resulting from selecting the mention person
@@ -137,10 +137,10 @@ class WhatsappActions(AndroidAppiumActions):
 
     def _ensure_message_sent(self, message_text):
         message_status_el = self.driver.find_element(by=AppiumBy.XPATH, value=
-        f"//*[@resource-id='com.whatsapp:id/conversation_text_row']"
+        f"//*[@resource-id='com.whatsapp.w4b:id/conversation_text_row']"
         f"//*[@text='{message_text}']"  # Text field element containing message text
         f"/.."  # Parent of the message (i.e. conversation text row)
-        f"//*[@resource-id='com.whatsapp:id/status']")  # Status element
+        f"//*[@resource-id='com.whatsapp.w4b:id/status']")  # Status element
         while message_status_el.tag_name == "Pending":
             print("Message pending, waiting for the message to be sent.")
             sleep(10)
@@ -157,11 +157,11 @@ class WhatsappActions(AndroidAppiumActions):
         """
         self._if_chat_go_to_chat(chat)
         message_element = self.driver.find_element(by=AppiumBy.XPATH, value=
-        f"//*[@resource-id='com.whatsapp:id/conversation_text_row']//*[@text='{message_text}']")
+        f"//*[@resource-id='com.whatsapp.w4b:id/conversation_text_row']//*[@text='{message_text}']")
         self._long_press_element(message_element)
         self.driver.find_element(by=AppiumBy.XPATH, value='//*[@content-desc="Delete"]').click()
         self.driver.find_element(by=AppiumBy.XPATH,
-                                 value="//*[@resource-id='com.whatsapp:id/buttonPanel']//*[@text='Delete for everyone']").click()
+                                 value="//*[@resource-id='com.whatsapp.w4b:id/buttonPanel']//*[@text='Delete for everyone']").click()
 
     @log_action
     def reply_to_message(self, message_to_reply_to: str, reply_text: str, chat: str = None):
@@ -177,9 +177,9 @@ class WhatsappActions(AndroidAppiumActions):
         message_element = self.scroll_to_find_element(text_contains=message_to_reply_to)
         self._long_press_element(message_element)
         self.driver.find_element(by=AppiumBy.XPATH, value='//*[@content-desc="Reply"]').click()
-        text_box = self.driver.find_element(by=AppiumBy.ID, value="com.whatsapp:id/entry")
+        text_box = self.driver.find_element(by=AppiumBy.ID, value="com.whatsapp.w4b:id/entry")
         text_box.send_keys(reply_text)
-        self.driver.find_element(by=AppiumBy.ID, value="com.whatsapp:id/send").click()
+        self.driver.find_element(by=AppiumBy.ID, value="com.whatsapp.w4b:id/send").click()
 
     @log_action
     def send_broadcast(self, receivers: [str], broadcast_text: str):
@@ -194,15 +194,15 @@ class WhatsappActions(AndroidAppiumActions):
             return
         self.open_more_options()
         new_broadcast = self.driver.find_element(by=AppiumBy.XPATH, value=
-        f"//*[@resource-id='com.whatsapp:id/title' and @text='New broadcast']")
+        f"//*[@resource-id='com.whatsapp.w4b:id/title' and @text='New broadcast']")
         new_broadcast.click()
         for receiver in receivers:
             self.driver.find_element(by=AppiumBy.XPATH, value=
-            f"//*[@resource-id='com.whatsapp:id/chat_able_contacts_row_name' and @text='{receiver}']").click()
-        self.driver.find_element(by=AppiumBy.ID, value="com.whatsapp:id/next_btn").click()
-        text_box = self.driver.find_element(by=AppiumBy.ID, value="com.whatsapp:id/entry")
+            f"//*[@resource-id='com.whatsapp.w4b:id/chat_able_contacts_row_name' and @text='{receiver}']").click()
+        self.driver.find_element(by=AppiumBy.ID, value="com.whatsapp.w4b:id/next_btn").click()
+        text_box = self.driver.find_element(by=AppiumBy.ID, value="com.whatsapp.w4b:id/entry")
         text_box.send_keys(broadcast_text)
-        self.driver.find_element(by=AppiumBy.ID, value="com.whatsapp:id/send").click()
+        self.driver.find_element(by=AppiumBy.ID, value="com.whatsapp.w4b:id/send").click()
 
     @log_action
     def send_media(self, directory_name, caption=None, view_once=False, chat: str = None):
@@ -219,18 +219,18 @@ class WhatsappActions(AndroidAppiumActions):
         """
         self._if_chat_go_to_chat(chat)
         # Go to gallery
-        self.driver.find_element(by=AppiumBy.ID, value="com.whatsapp:id/input_attach_button").click()
-        self.driver.find_element(by=AppiumBy.ID, value="com.whatsapp:id/pickfiletype_gallery_holder").click()
+        self.driver.find_element(by=AppiumBy.ID, value="com.whatsapp.w4b:id/input_attach_button").click()
+        self.driver.find_element(by=AppiumBy.ID, value="com.whatsapp.w4b:id/pickfiletype_gallery_holder").click()
         if self.is_present('//android.widget.LinearLayout[@content-desc="Gallery"]'):
             self.driver.find_element(by=AppiumBy.XPATH,
                                      value='//android.widget.LinearLayout[@content-desc="Gallery"]').click()
-            directory_tile = f'//android.widget.TextView[@resource-id="com.whatsapp:id/title" and @text="{directory_name}"]'
+            directory_tile = f'//android.widget.TextView[@resource-id="com.whatsapp.w4b:id/title" and @text="{directory_name}"]'
             self.swipe_to_find_element(xpath=directory_tile).click()
             sleep(0.5)
             self.driver.find_element(by=By.CLASS_NAME, value="android.widget.ImageView").click()
-        elif self.is_present('//android.widget.TextView[@resource-id="com.whatsapp:id/title"]'):
+        elif self.is_present('//android.widget.TextView[@resource-id="com.whatsapp.w4b:id/title"]'):
             self.driver.find_element(by=AppiumBy.XPATH,
-                                     value='//android.widget.TextView[@resource-id="com.whatsapp:id/title"]').click()
+                                     value='//android.widget.TextView[@resource-id="com.whatsapp.w4b:id/title"]').click()
             sleep(0.5)
             self.driver.find_element(by=AppiumBy.XPATH, value='//android.widget.ListView/android.view.ViewGroup[last()]').click()
             directory_tile = f'//android.widget.TextView[@text="{directory_name}"]'
@@ -240,19 +240,19 @@ class WhatsappActions(AndroidAppiumActions):
             self.driver.find_element(by=AppiumBy.XPATH, value='//android.widget.Button[@resource-id="com.google.android.providers.media.module:id/button_add"]').click()
 
         if caption:
-            text_box = self.driver.find_element(by=AppiumBy.ID, value="com.whatsapp:id/caption")
+            text_box = self.driver.find_element(by=AppiumBy.ID, value="com.whatsapp.w4b:id/caption")
             text_box.send_keys(caption)
             # Clicking the text box after sending keys is required for Whatsapp to notice text has been inserted.
             text_box.click()
             self.driver.back()
 
         if view_once:
-            self.driver.find_element(by=AppiumBy.ID, value="com.whatsapp:id/view_once_toggle").click()
-            popup_button = '//android.widget.Button[@resource-id="com.whatsapp:id/vo_sp_bottom_sheet_ok_button"]'
+            self.driver.find_element(by=AppiumBy.ID, value="com.whatsapp.w4b:id/view_once_toggle").click()
+            popup_button = '//android.widget.Button[@resource-id="com.whatsapp.w4b:id/vo_sp_bottom_sheet_ok_button"]'
             if self.is_present(popup_button):
                 self.driver.find_element(by=AppiumBy.XPATH, value=popup_button).click()
         sleep(1)
-        self.driver.find_element(by=AppiumBy.ID, value="com.whatsapp:id/send").click()
+        self.driver.find_element(by=AppiumBy.ID, value="com.whatsapp.w4b:id/send").click()
 
     @log_action
     def send_sticker(self, chat: str = None):
@@ -263,7 +263,7 @@ class WhatsappActions(AndroidAppiumActions):
         :param chat: The chat conversation in which to send this sticker, if not currently in the desired chat.
         """
         self._if_chat_go_to_chat(chat)
-        self.driver.find_element(by=AppiumBy.ID, value="com.whatsapp:id/emoji_picker_btn").click()
+        self.driver.find_element(by=AppiumBy.ID, value="com.whatsapp.w4b:id/emoji_picker_btn").click()
         sleep(1)
         # Press sticker tab
         # TODO: make coordinates configurable or calculate what they should be
@@ -286,7 +286,7 @@ class WhatsappActions(AndroidAppiumActions):
         :param chat: The chat conversation in which to send this voice recording, if not currently in the desired chat.
         """
         self._if_chat_go_to_chat(chat)
-        voice_button = self.driver.find_element(by=AppiumBy.ID, value="com.whatsapp:id/voice_note_btn")
+        voice_button = self.driver.find_element(by=AppiumBy.ID, value="com.whatsapp.w4b:id/voice_note_btn")
         self._long_press_element(voice_button, duration=duration)
 
     @log_action
@@ -297,10 +297,10 @@ class WhatsappActions(AndroidAppiumActions):
         :param chat: The chat conversation in which to send the location, if not currently in the desired chat.
         """
         self._if_chat_go_to_chat(chat)
-        self.driver.find_element(by=AppiumBy.ID, value="com.whatsapp:id/input_attach_button").click()
-        self.driver.find_element(by=AppiumBy.ID, value="com.whatsapp:id/pickfiletype_location_holder").click()
+        self.driver.find_element(by=AppiumBy.ID, value="com.whatsapp.w4b:id/input_attach_button").click()
+        self.driver.find_element(by=AppiumBy.ID, value="com.whatsapp.w4b:id/pickfiletype_location_holder").click()
         sleep(5)  # it takes some time to fix the location
-        self.driver.find_element(by=AppiumBy.ID, value="com.whatsapp:id/send_current_location_btn").click()
+        self.driver.find_element(by=AppiumBy.ID, value="com.whatsapp.w4b:id/send_current_location_btn").click()
 
     @log_action
     def send_live_location(self, caption=None, chat: str = None):
@@ -311,15 +311,15 @@ class WhatsappActions(AndroidAppiumActions):
         :param chat: The chat conversation in which to start the live location sharing, if not currently in the desired chat.
         """
         self._if_chat_go_to_chat(chat)
-        self.driver.find_element(by=AppiumBy.ID, value="com.whatsapp:id/input_attach_button").click()
-        self.driver.find_element(by=AppiumBy.ID, value="com.whatsapp:id/pickfiletype_location_holder").click()
-        self.driver.find_element(by=AppiumBy.ID, value="com.whatsapp:id/live_location_btn").click()
-        dialog = '//android.widget.LinearLayout[@resource-id="com.whatsapp:id/location_new_user_dialog_container"]'
+        self.driver.find_element(by=AppiumBy.ID, value="com.whatsapp.w4b:id/input_attach_button").click()
+        self.driver.find_element(by=AppiumBy.ID, value="com.whatsapp.w4b:id/pickfiletype_location_holder").click()
+        self.driver.find_element(by=AppiumBy.ID, value="com.whatsapp.w4b:id/live_location_btn").click()
+        dialog = '//android.widget.LinearLayout[@resource-id="com.whatsapp.w4b:id/location_new_user_dialog_container"]'
         if self.is_present(dialog):
             self.driver.find_element(by=AppiumBy.XPATH, value="//android.widget.Button[@text='Continue']").click()
         if caption is not None:
-            self.driver.find_element(by=AppiumBy.ID, value="com.whatsapp:id/comment").send_keys(caption)
-        self.driver.find_element(by=AppiumBy.ID, value="com.whatsapp:id/send").click()
+            self.driver.find_element(by=AppiumBy.ID, value="com.whatsapp.w4b:id/comment").send_keys(caption)
+        self.driver.find_element(by=AppiumBy.ID, value="com.whatsapp.w4b:id/send").click()
 
     @log_action
     def stop_live_location(self, need_to_scroll=False, chat: str = None):
@@ -347,11 +347,11 @@ class WhatsappActions(AndroidAppiumActions):
         :param chat: The chat conversation in which to send the contact, if not currently in the desired chat.
         """
         self._if_chat_go_to_chat(chat)
-        self.driver.find_element(by=AppiumBy.ID, value="com.whatsapp:id/input_attach_button").click()
-        self.driver.find_element(by=AppiumBy.ID, value="com.whatsapp:id/pickfiletype_contact_holder").click()
-        self.swipe_to_find_element(f'//android.widget.TextView[@resource-id="com.whatsapp:id/name" and @text="{contact_name}"]').click()
-        self.driver.find_element(by=AppiumBy.ID, value="com.whatsapp:id/next_btn").click()
-        self.driver.find_element(by=AppiumBy.ID, value="com.whatsapp:id/send_btn").click()
+        self.driver.find_element(by=AppiumBy.ID, value="com.whatsapp.w4b:id/input_attach_button").click()
+        self.driver.find_element(by=AppiumBy.ID, value="com.whatsapp.w4b:id/pickfiletype_contact_holder").click()
+        self.swipe_to_find_element(f'//android.widget.TextView[@resource-id="com.whatsapp.w4b:id/name" and @text="{contact_name}"]').click()
+        self.driver.find_element(by=AppiumBy.ID, value="com.whatsapp.w4b:id/next_btn").click()
+        self.driver.find_element(by=AppiumBy.ID, value="com.whatsapp.w4b:id/send_btn").click()
 
     @log_action
     def change_profile_picture(self, photo_dir_name: str = "profile_picture"):
@@ -361,7 +361,7 @@ class WhatsappActions(AndroidAppiumActions):
         """
         self.return_to_homescreen()
         self.open_settings_you()
-        self.driver.find_element(by=AppiumBy.ID, value="com.whatsapp:id/change_photo_btn").click()
+        self.driver.find_element(by=AppiumBy.ID, value="com.whatsapp.w4b:id/change_photo_btn").click()
         self.driver.find_element(by=AppiumBy.XPATH, value="//*[@text='Gallery']").click()
         gallery_tab = '//android.widget.LinearLayout[@content-desc="Gallery"]'
         if self.is_present(gallery_tab):
@@ -369,7 +369,7 @@ class WhatsappActions(AndroidAppiumActions):
         self.scroll_to_find_element(text_contains=photo_dir_name).click()
         sleep(1)
         self.driver.find_element(by=By.CLASS_NAME, value="android.widget.ImageView").click()
-        self.driver.find_element(by=AppiumBy.ID, value="com.whatsapp:id/ok_btn").click()
+        self.driver.find_element(by=AppiumBy.ID, value="com.whatsapp.w4b:id/ok_btn").click()
 
     @log_action
     def set_status(self, caption: str = None):
@@ -380,18 +380,18 @@ class WhatsappActions(AndroidAppiumActions):
         self.return_to_homescreen()
         self.driver.find_element(by=AppiumBy.XPATH,
                                  value='//android.widget.TextView['
-                                       '( @resource-id="com.whatsapp:id/navigation_bar_item_small_label_view"'
-                                       'or @resource-id="com.whatsapp:id/navigation_bar_item_large_label_view" )'
-                                       'and @text="Updates"]').click()
+                                       '( @resource-id="com.whatsapp.w4b:id/navigation_bar_item_small_label_view"'
+                                       'or @resource-id="com.whatsapp.w4b:id/navigation_bar_item_large_label_view" )'
+                                       'and @text="Status"]').click()
         self.driver.find_element(by=AppiumBy.XPATH,
                                  value='//android.widget.ImageButton[@content-desc="New status update"]').click()
         open_camera = '//android.widget.Button[@content-desc="Camera"]'
         if self.is_present(open_camera):
             self.driver.find_element(by=AppiumBy.XPATH, value=open_camera).click()
-        self.driver.find_element(by=AppiumBy.ID, value="com.whatsapp:id/shutter").click()
+        self.driver.find_element(by=AppiumBy.ID, value="com.whatsapp.w4b:id/shutter").click()
         if caption:
-            self.driver.find_element(by=AppiumBy.ID, value="com.whatsapp:id/caption").send_keys(caption)
-        self.driver.find_element(by=AppiumBy.ID, value="com.whatsapp:id/send").click()
+            self.driver.find_element(by=AppiumBy.ID, value="com.whatsapp.w4b:id/caption").send_keys(caption)
+        self.driver.find_element(by=AppiumBy.ID, value="com.whatsapp.w4b:id/send").click()
         # TODO: popup that can appear!
         self.return_to_homescreen()
 
@@ -403,13 +403,13 @@ class WhatsappActions(AndroidAppiumActions):
         """
         self.return_to_homescreen()
         self.open_settings_you()
-        self.driver.find_element(by=AppiumBy.ID, value="com.whatsapp:id/profile_info_status_card").click()
-        self.driver.find_element(by=AppiumBy.ID, value="com.whatsapp:id/status_tv_edit_icon").click()
-        text_box = self.driver.find_element(by=AppiumBy.ID, value="com.whatsapp:id/edit_text")
+        self.driver.find_element(by=AppiumBy.ID, value="com.whatsapp.w4b:id/profile_info_status_card").click()
+        self.driver.find_element(by=AppiumBy.ID, value="com.whatsapp.w4b:id/status_tv_edit_icon").click()
+        text_box = self.driver.find_element(by=AppiumBy.ID, value="com.whatsapp.w4b:id/edit_text")
         text_box.click()
         text_box.clear()
         text_box.send_keys(about_text)
-        self.driver.find_element(by=AppiumBy.ID, value="com.whatsapp:id/save_button").click()
+        self.driver.find_element(by=AppiumBy.ID, value="com.whatsapp.w4b:id/save_button").click()
 
     @log_action
     def activate_disappearing_messages(self, chat=None):
@@ -421,7 +421,7 @@ class WhatsappActions(AndroidAppiumActions):
         :param chat: Optional: group for which disappearing messages should be activated.
         """
         self._if_chat_go_to_chat(chat)
-        self.driver.find_element(by=AppiumBy.ID, value="com.whatsapp:id/conversation_contact").click()
+        self.driver.find_element(by=AppiumBy.ID, value="com.whatsapp.w4b:id/conversation_contact").click()
         self.scroll_to_find_element(text_contains='Disappearing messages').click()
         self.driver.find_elements(by=AppiumBy.XPATH, value="//*[@class='android.widget.RadioButton']")[0].click()
         if chat is None:
@@ -439,7 +439,7 @@ class WhatsappActions(AndroidAppiumActions):
         :param chat: Optional: group for which disappearing messages should be activated.
         """
         self._if_chat_go_to_chat(chat)
-        self.driver.find_element(by=AppiumBy.ID, value="com.whatsapp:id/conversation_contact").click()
+        self.driver.find_element(by=AppiumBy.ID, value="com.whatsapp.w4b:id/conversation_contact").click()
         self.scroll_to_find_element(text_contains='Disappearing messages').click()
         self.driver.find_elements(by=AppiumBy.XPATH, value="//*[@class='android.widget.RadioButton']")[-1].click()
         if chat is None:
@@ -456,8 +456,8 @@ class WhatsappActions(AndroidAppiumActions):
         """
         self.driver.find_element(by=AppiumBy.XPATH,
                                  value='//android.widget.TextView['
-                                       '( @resource-id="com.whatsapp:id/navigation_bar_item_small_label_view"'
-                                       'or @resource-id="com.whatsapp:id/navigation_bar_item_large_label_view" )'
+                                       '( @resource-id="com.whatsapp.w4b:id/navigation_bar_item_small_label_view"'
+                                       'or @resource-id="com.whatsapp.w4b:id/navigation_bar_item_large_label_view" )'
                                        'and @text="Calls"]').click()
 
     @log_action
@@ -473,7 +473,7 @@ class WhatsappActions(AndroidAppiumActions):
         self.driver.find_element(by=AppiumBy.XPATH,
                                  value='//android.widget.ImageButton[@content-desc="Search"]').click()
         search_bar = self.driver.find_element(by=AppiumBy.XPATH,
-                                              value='//android.widget.EditText[@resource-id="com.whatsapp:id/search_view_edit_text"]')
+                                              value='//android.widget.EditText[@resource-id="com.whatsapp.w4b:id/search_view_edit_text"]')
         search_bar.send_keys(contact)
         self.driver.find_element(by=AppiumBy.XPATH,
                                  value=f'(//android.widget.ImageView[@content-desc="{call_type}"])[1]').click()  # Take the top one without checking the name, since we already searched for the contact
@@ -483,10 +483,10 @@ class WhatsappActions(AndroidAppiumActions):
         """
         Ends the current call. Assumes the call screen is open.
         """
-        end_call_button = '//*[@content-desc="Leave call" or @resource-id="com.whatsapp:id/end_call_button" or @resource-id="com.whatsapp:id/footer_end_call_btn"]'
+        end_call_button = '//*[@content-desc="Leave call" or @resource-id="com.whatsapp.w4b:id/end_call_button" or @resource-id="com.whatsapp.w4b:id/footer_end_call_btn"]'
         if not self.is_present(end_call_button, implicit_wait=1):
             # tap screen to make call button visible
-            background = '//android.widget.RelativeLayout[@resource-id="com.whatsapp:id/call_screen"]'
+            background = '//android.widget.RelativeLayout[@resource-id="com.whatsapp.w4b:id/call_screen"]'
             self.driver.find_element(by=AppiumBy.XPATH, value=background).click()
         self.driver.find_element(by=AppiumBy.XPATH, value=end_call_button).click()
 
@@ -527,8 +527,8 @@ class WhatsappActions(AndroidAppiumActions):
             participant_to_add = [contact for contact in contacts if contact.text.lower() == participant.lower()][0]
             participant_to_add.click()
 
-        self.driver.find_element(by=AppiumBy.ID, value="com.whatsapp:id/next_btn").click()
-        text_box = self.driver.find_element(by=AppiumBy.ID, value="com.whatsapp:id/group_name")
+        self.driver.find_element(by=AppiumBy.ID, value="com.whatsapp.w4b:id/next_btn").click()
+        text_box = self.driver.find_element(by=AppiumBy.ID, value="com.whatsapp.w4b:id/group_name")
         text_box.send_keys(subject)
         image_buttons = self.driver.find_elements(by=By.CLASS_NAME, value="android.widget.ImageButton")
         next_button = [button for button in image_buttons if button.tag_name == "Create"][0]
@@ -538,7 +538,7 @@ class WhatsappActions(AndroidAppiumActions):
         if self.currently_at_homescreen():
             print("On homescreen now")
             # Check if creating the group succeeded
-            top_conv = self.driver.find_element(by=AppiumBy.ID, value="com.whatsapp:id/single_msg_tv")
+            top_conv = self.driver.find_element(by=AppiumBy.ID, value="com.whatsapp.w4b:id/single_msg_tv")
             max_attempts = 20
             while "Creating" in top_conv.text or "Couldn't create" in top_conv.text:
                 if "Couldn't create" in top_conv.text:
@@ -562,10 +562,10 @@ class WhatsappActions(AndroidAppiumActions):
         """
         self.return_to_homescreen()
         self.select_chat(group_name)
-        self.driver.find_element(by=AppiumBy.ID, value="com.whatsapp:id/conversation_contact").click()
+        self.driver.find_element(by=AppiumBy.ID, value="com.whatsapp.w4b:id/conversation_contact").click()
         self.scroll_to_find_element(text_equals="Add group description").click()
-        self.driver.find_element(by=AppiumBy.ID, value="com.whatsapp:id/edit_text").send_keys(description)
-        self.driver.find_element(by=AppiumBy.ID, value="com.whatsapp:id/ok_btn").click()
+        self.driver.find_element(by=AppiumBy.ID, value="com.whatsapp.w4b:id/edit_text").send_keys(description)
+        self.driver.find_element(by=AppiumBy.ID, value="com.whatsapp.w4b:id/ok_btn").click()
         self.return_to_homescreen()
 
     @log_action
@@ -577,7 +577,7 @@ class WhatsappActions(AndroidAppiumActions):
         """
         self.leave_group(group_name)
         self.select_chat(group_name)
-        self.driver.find_element(by=AppiumBy.ID, value="com.whatsapp:id/conversation_contact").click()
+        self.driver.find_element(by=AppiumBy.ID, value="com.whatsapp.w4b:id/conversation_contact").click()
         self.driver.find_element(by=AppiumBy.XPATH, value="//*[contains(@text,'Delete group')]").click()
         self.driver.find_element(by=AppiumBy.XPATH, value="//*[contains(@text,'Delete group')]").click()
         self.return_to_homescreen()
@@ -591,14 +591,14 @@ class WhatsappActions(AndroidAppiumActions):
         self.return_to_homescreen()
         conversation = self.get_conversation_row_elements(subject)[0]
         self._long_press_element(conversation)
-        self.driver.find_element(by=AppiumBy.ID, value='com.whatsapp:id/menuitem_conversations_archive').click()
+        self.driver.find_element(by=AppiumBy.ID, value='com.whatsapp.w4b:id/menuitem_conversations_archive').click()
         # Wait until the archive popup disappeared
         archived_popup_present = True
         while archived_popup_present:
             print("waiting for archived popup to disappear")
             sleep(5)
             archived_popup_present = 'archived' in self.driver.find_elements(by=AppiumBy.XPATH, value=
-            "//*[contains(@text,'archived') or @resource-id='com.whatsapp:id/fab']")[0].text
+            "//*[contains(@text,'archived') or @resource-id='com.whatsapp.w4b:id/fab']")[0].text
         print("Archive pop-up gone!")
 
     def _long_press_element(self, element, duration=1000):
@@ -624,7 +624,7 @@ class WhatsappActions(AndroidAppiumActions):
         :param group_name: Name of the group we want to leave.
         """
         self.select_chat(group_name)
-        self.driver.find_element(by=AppiumBy.ID, value="com.whatsapp:id/conversation_contact").click()
+        self.driver.find_element(by=AppiumBy.ID, value="com.whatsapp.w4b:id/conversation_contact").click()
         self.scroll_to_find_element(text_equals="Exit group").click()
         self.driver.find_element(by=AppiumBy.XPATH, value="//android.widget.Button[@text='Exit']").click()
         self.return_to_homescreen()
@@ -638,7 +638,7 @@ class WhatsappActions(AndroidAppiumActions):
         :param participant: The participant to remove
         """
         self.select_chat(group_name)
-        self.driver.find_element(by=AppiumBy.ID, value="com.whatsapp:id/conversation_contact").click()
+        self.driver.find_element(by=AppiumBy.ID, value="com.whatsapp.w4b:id/conversation_contact").click()
         self.scroll_to_find_element(text_equals=participant).click()
         self.driver.find_element(by=AppiumBy.XPATH, value="//*[starts-with(@text, 'Remove')]").click()
         self.driver.find_element(by=AppiumBy.XPATH, value="//*[@class='android.widget.Button' and @text='OK']").click()
@@ -657,13 +657,13 @@ class WhatsappActions(AndroidAppiumActions):
         """
         self.select_chat(from_chat)
         chat_message = self.driver.find_element(by=AppiumBy.XPATH, value=
-        f"//*[@resource-id='com.whatsapp:id/conversation_text_row']//*[contains(@text,'{message_contains}')]")
+        f"//*[@resource-id='com.whatsapp.w4b:id/conversation_text_row']//*[contains(@text,'{message_contains}')]")
         self._long_press_element(chat_message)
         self.driver.find_element(by=AppiumBy.XPATH, value=
-        "//*[@resource-id='com.whatsapp:id/action_mode_bar']//*[@content-desc='Forward']").click()
+        "//*[@resource-id='com.whatsapp.w4b:id/action_mode_bar']//*[@content-desc='Forward']").click()
         self.driver.find_element(by=AppiumBy.XPATH, value=
-        f"//*[@resource-id='com.whatsapp:id/contact_list']//*[@text='{to_chat}']").click()
-        self.driver.find_element(by=AppiumBy.ID, value="com.whatsapp:id/send").click()
+        f"//*[@resource-id='com.whatsapp.w4b:id/contact_list']//*[@text='{to_chat}']").click()
+        self.driver.find_element(by=AppiumBy.ID, value="com.whatsapp.w4b:id/send").click()
 
     @log_action
     def open_settings_you(self):
@@ -674,7 +674,7 @@ class WhatsappActions(AndroidAppiumActions):
         self.open_more_options()
         # Improvement possible: get all elements and filter on text=settings
         self.driver.find_element(by=AppiumBy.XPATH, value=
-        "/hierarchy/android.widget.FrameLayout/android.widget.FrameLayout/android.widget.ListView/android.widget.LinearLayout[5]/android.widget.LinearLayout").click()
+        "/hierarchy/android.widget.FrameLayout/android.widget.FrameLayout/android.widget.ListView/android.widget.LinearLayout[7]/android.widget.LinearLayout").click()
         self.driver.find_element(by=AppiumBy.ACCESSIBILITY_ID, value="You").click()
 
     @log_action
