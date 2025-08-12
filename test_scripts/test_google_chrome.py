@@ -33,6 +33,7 @@ class TestGoogleChrome(unittest.TestCase):
         self.alice.go_to("www.google.com", new_tab=True)
 
     def test_save_bookmark(self):
+        self.alice.go_to("www.wikipedia.com")
         self.alice.bookmark_page()
 
     def test_load_bookmark(self):

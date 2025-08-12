@@ -34,10 +34,11 @@ class GoogleChromeActions(AndroidAppiumActions):
             self.driver.find_element(by=AppiumBy.XPATH, value=search_box_xpath).click()
 
         if new_tab:
-            switch_tab_xpath = '//android.widget.ImageButton[contains(@content-desc, "tabs")]'
+            switch_tab_xpath = '//android.widget.ImageButton[@resource-id="com.android.chrome:id/tab_switcher_button"]'
             new_tab_xpath = '//android.widget.Button[contains(@content-desc, "tab")]'
             self.driver.find_element(by=AppiumBy.XPATH, value=switch_tab_xpath).click()
             self.driver.find_element(by=AppiumBy.XPATH, value=new_tab_xpath).click()
+            self.is_present(xpath=switch_tab_xpath, implicit_wait=1)
             self.driver.find_element(by=AppiumBy.XPATH, value=search_box_xpath).click()
 
         url_bar_xpath = '//android.widget.EditText[@resource-id="com.android.chrome:id/url_bar"]'
