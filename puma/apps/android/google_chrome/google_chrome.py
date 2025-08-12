@@ -7,7 +7,7 @@ from puma.apps.android.appium_actions import AndroidAppiumActions, supported_ver
 
 GOOGLE_CHROME_PACKAGE = 'com.android.chrome'
 
-@supported_version("138.0.7204.179")
+@supported_version("139.0.7258.62")
 class GoogleChromeActions(AndroidAppiumActions):
     def __init__(self,
                  device_udid,
