@@ -32,14 +32,20 @@ class TestGoogleChrome(unittest.TestCase):
     def test_new_tab(self):
         self.alice.go_to("www.google.com", new_tab=True)
 
-    def test_save_bookmark(self):
+    def test_bookmarks(self):
         self.alice.go_to("www.wikipedia.com")
-        self.alice.bookmark_page()
+        # Clean up at the start, so we can be sure that both saving and deleting are properly tested.
+        self.alice.delete_bookmark()
 
-    def test_load_bookmark(self):
+        self.assertTrue(self.alice.bookmark_page())
+        self.assertFalse(self.alice.bookmark_page())
         self.alice.load_bookmark()
+        self.assertTrue(self.alice.delete_bookmark())
+        self.assertFalse(self.alice.delete_bookmark())
 
-    def test_incognito(self):
+    # This test contains 'zzz' to make sure it runs last. This should be fixed later.
+    # Other tests fail if Chrome is left in incognito mode. This should be made more robust.
+    def test_zzz_incognito(self):
         self.alice.go_to_incognito("www.wikipedia.com")
 
 

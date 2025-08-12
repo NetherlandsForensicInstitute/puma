@@ -51,11 +51,37 @@ class GoogleChromeActions(AndroidAppiumActions):
     def bookmark_page(self):
         """
         Bookmarks the current page.
+        :return: True if bookmark has been added, False if it already existed.
         """
         three_dots_xpath = '//android.widget.ImageButton[@content-desc="Customize and control Google Chrome"]'
         bookmark_xpath = '//android.widget.Button[lower-case(@content-desc)="bookmark"]'
+        edit_bookmark_xpath = '//android.widget.Button[lower-case(@content-desc)="edit bookmark"]'
         self.driver.find_element(by=AppiumBy.XPATH, value=three_dots_xpath).click()
-        self.driver.find_element(by=AppiumBy.XPATH, value=bookmark_xpath).click()
+        if self.is_present(edit_bookmark_xpath):
+            self.back()
+            return False
+        else:
+            self.driver.find_element(by=AppiumBy.XPATH, value=bookmark_xpath).click()
+            return True
+
+    @log_action
+    def delete_bookmark(self):
+        """
+        Delete the current bookmark.
+        :return: True if bookmark has been deleted, False if it wasn't bookmarked.
+        """
+        three_dots_xpath = '//android.widget.ImageButton[@content-desc="Customize and control Google Chrome"]'
+        bookmark_xpath = '//android.widget.Button[lower-case(@content-desc)="bookmark"]'
+        edit_bookmark_xpath = '//android.widget.Button[lower-case(@content-desc)="edit bookmark"]'
+        delete_bookmark_xpath = '//android.widget.Button[lower-case(@content-desc)="delete bookmarks"]'
+        self.driver.find_element(by=AppiumBy.XPATH, value=three_dots_xpath).click()
+        if self.is_present(bookmark_xpath):
+            self.back()
+            return False
+        else:
+            self.driver.find_element(by=AppiumBy.XPATH, value=edit_bookmark_xpath).click()
+            self.driver.find_element(by=AppiumBy.XPATH, value=delete_bookmark_xpath).click()
+            return True
 
     @log_action
     def load_bookmark(self):
