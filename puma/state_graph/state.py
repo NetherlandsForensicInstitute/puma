@@ -74,6 +74,8 @@ class SimpleState(State):
         :param parent_state: The parent state of this state, or None if it has no parent.
         """
         super().__init__(parent_state=parent_state, initial_state=initial_state)
+        if not xpaths:
+            raise ValueError(f'Cannot create a sSimpelState without any xpath validation expressions.')
         self.xpaths = xpaths
 
     def validate(self, driver: PumaDriver) -> bool:
