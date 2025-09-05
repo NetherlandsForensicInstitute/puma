@@ -1,6 +1,3 @@
-from appium.webdriver.common.appiumby import AppiumBy
-
-from puma.apps.android.state_graph.teleguard.teleguard import CHAT_STATE_SEND_BUTTON
 from puma.state_graph.action import action
 from puma.state_graph.puma_driver import supported_version, PumaDriver
 from puma.state_graph.state import SimpleState, ContextualState, State
