@@ -104,9 +104,10 @@ class GoogleChromeActions(AndroidAppiumActions):
         Switches to another tab, by default the first open tab.
         :param num_tab: the number of the tab to open
         """
-        switch_tab_xpath = '//android.widget.ImageButton[@content-desc="Switch or close tabs"]'
+        switch_tab_xpath = '//android.widget.ImageButton[@resource-id="com.android.chrome:id/tab_switcher_button"]'
         self.driver.find_element(by=AppiumBy.XPATH, value=switch_tab_xpath).click()
-        self.driver.find_element(by=AppiumBy.XPATH, value=f'(//android.widget.FrameLayout[@resource-id="com.android.chrome:id/content_view"])[{num_tab}]').click()
+        tab_list = '//*[@resource-id="com.android.chrome:id/tab_list_recycler_view"]'
+        self.driver.find_element(by=AppiumBy.XPATH, value=f'({tab_list}//*[@resource-id="com.android.chrome:id/content_view"])[{num_tab}]').click()
 
     @log_action
     def go_to_incognito(self, url_string: str):
