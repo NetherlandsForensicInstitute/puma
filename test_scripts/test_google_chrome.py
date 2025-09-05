@@ -5,7 +5,7 @@ from test_scripts.test_google_maps import device_udids
 
 # Fill in the udid below. Run ADB devices to see the udids.
 device_udids = {
-    "Alice": ""
+    "Alice": "34281JEHN03866"
 }
 
 
@@ -31,6 +31,13 @@ class TestGoogleChrome(unittest.TestCase):
 
     def test_new_tab(self):
         self.alice.go_to("www.google.com", new_tab=True)
+
+    def test_switch_tab(self):
+        self.alice.go_to("www.google.com", new_tab=True)
+        self.alice.go_to("www.bing.com", new_tab=True)
+        self.alice.switch_to_tab(1)
+        self.alice.switch_to_tab(2)
+        self.alice.switch_to_tab()
 
     def test_bookmarks(self):
         self.alice.go_to("www.wikipedia.com")
