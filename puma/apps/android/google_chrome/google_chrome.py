@@ -7,6 +7,11 @@ from puma.apps.android.appium_actions import AndroidAppiumActions, supported_ver
 
 GOOGLE_CHROME_PACKAGE = 'com.android.chrome'
 
+TAB_SWITCH_BUTTON = '//android.widget.ImageButton[@resource-id="com.android.chrome:id/tab_switcher_button"]'
+THREE_DOTS = '//android.widget.ImageButton[@content-desc="Customize and control Google Chrome"]'
+BOOKMARK_BUTTON = '//android.widget.Button[lower-case(@content-desc)="bookmark"]'
+EDIT_BOOKMARK_BUTTON = '//android.widget.Button[lower-case(@content-desc)="edit bookmark"]'
+
 @supported_version("139.0.7258.62")
 class GoogleChromeActions(AndroidAppiumActions):
     def __init__(self,
@@ -34,11 +39,10 @@ class GoogleChromeActions(AndroidAppiumActions):
             self.driver.find_element(by=AppiumBy.XPATH, value=search_box_xpath).click()
 
         if new_tab:
-            switch_tab_xpath = '//android.widget.ImageButton[@resource-id="com.android.chrome:id/tab_switcher_button"]'
             new_tab_xpath = '//android.widget.Button[contains(@content-desc, "tab")]'
-            self.driver.find_element(by=AppiumBy.XPATH, value=switch_tab_xpath).click()
+            self.driver.find_element(by=AppiumBy.XPATH, value=TAB_SWITCH_BUTTON).click()
             self.driver.find_element(by=AppiumBy.XPATH, value=new_tab_xpath).click()
-            self.is_present(xpath=switch_tab_xpath, implicit_wait=1)
+            self.is_present(xpath=TAB_SWITCH_BUTTON, implicit_wait=1)
             self.driver.find_element(by=AppiumBy.XPATH, value=search_box_xpath).click()
 
         url_bar_xpath = '//android.widget.EditText[@resource-id="com.android.chrome:id/url_bar"]'
@@ -53,15 +57,12 @@ class GoogleChromeActions(AndroidAppiumActions):
         Bookmarks the current page.
         :return: True if bookmark has been added, False if it already existed.
         """
-        three_dots_xpath = '//android.widget.ImageButton[@content-desc="Customize and control Google Chrome"]'
-        bookmark_xpath = '//android.widget.Button[lower-case(@content-desc)="bookmark"]'
-        edit_bookmark_xpath = '//android.widget.Button[lower-case(@content-desc)="edit bookmark"]'
-        self.driver.find_element(by=AppiumBy.XPATH, value=three_dots_xpath).click()
-        if self.is_present(edit_bookmark_xpath):
+        self.driver.find_element(by=AppiumBy.XPATH, value=THREE_DOTS).click()
+        if self.is_present(EDIT_BOOKMARK_BUTTON):
             self.back()
             return False
         else:
-            self.driver.find_element(by=AppiumBy.XPATH, value=bookmark_xpath).click()
+            self.driver.find_element(by=AppiumBy.XPATH, value=BOOKMARK_BUTTON).click()
             return True
 
     @log_action
@@ -70,16 +71,13 @@ class GoogleChromeActions(AndroidAppiumActions):
         Delete the current bookmark.
         :return: True if bookmark has been deleted, False if it wasn't bookmarked.
         """
-        three_dots_xpath = '//android.widget.ImageButton[@content-desc="Customize and control Google Chrome"]'
-        bookmark_xpath = '//android.widget.Button[lower-case(@content-desc)="bookmark"]'
-        edit_bookmark_xpath = '//android.widget.Button[lower-case(@content-desc)="edit bookmark"]'
         delete_bookmark_xpath = '//android.widget.Button[lower-case(@content-desc)="delete bookmarks"]'
-        self.driver.find_element(by=AppiumBy.XPATH, value=three_dots_xpath).click()
-        if self.is_present(bookmark_xpath):
+        self.driver.find_element(by=AppiumBy.XPATH, value=THREE_DOTS).click()
+        if self.is_present(BOOKMARK_BUTTON):
             self.back()
             return False
         else:
-            self.driver.find_element(by=AppiumBy.XPATH, value=edit_bookmark_xpath).click()
+            self.driver.find_element(by=AppiumBy.XPATH, value=EDIT_BOOKMARK_BUTTON).click()
             self.driver.find_element(by=AppiumBy.XPATH, value=delete_bookmark_xpath).click()
             return True
 
@@ -88,11 +86,10 @@ class GoogleChromeActions(AndroidAppiumActions):
         """
         Load the first saved bookmark in the folder 'Mobile Bookmarks'.
         """
-        three_dots_xpath = '//android.widget.ImageButton[@content-desc="Customize and control Google Chrome"]'
         bookmarks_xpath = '//android.widget.TextView[@resource-id="com.android.chrome:id/menu_item_text" and @text="Bookmarks"]'
         mobile_bookmarks_xpath = '//android.widget.TextView[@resource-id="com.android.chrome:id/title" and @text="Mobile bookmarks"]'
         first_bookmark_xpath = '//android.widget.LinearLayout[@resource-id="com.android.chrome:id/container"]'
-        self.driver.find_element(by=AppiumBy.XPATH, value=three_dots_xpath).click()
+        self.driver.find_element(by=AppiumBy.XPATH, value=THREE_DOTS).click()
         self.driver.find_element(by=AppiumBy.XPATH, value=bookmarks_xpath).click()
         if self.is_present(mobile_bookmarks_xpath):
             self.driver.find_element(by=AppiumBy.XPATH, value=mobile_bookmarks_xpath).click()
@@ -104,8 +101,7 @@ class GoogleChromeActions(AndroidAppiumActions):
         Switches to another tab, by default the first open tab.
         :param num_tab: the number of the tab to open
         """
-        switch_tab_xpath = '//android.widget.ImageButton[@resource-id="com.android.chrome:id/tab_switcher_button"]'
-        self.driver.find_element(by=AppiumBy.XPATH, value=switch_tab_xpath).click()
+        self.driver.find_element(by=AppiumBy.XPATH, value=TAB_SWITCH_BUTTON).click()
         tab_list = '//*[@resource-id="com.android.chrome:id/tab_list_recycler_view"]'
         self.driver.find_element(by=AppiumBy.XPATH, value=f'({tab_list}//*[@resource-id="com.android.chrome:id/content_view"])[{num_tab}]').click()
 
