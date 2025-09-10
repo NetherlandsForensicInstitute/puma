@@ -12,7 +12,7 @@ device_udids = {
 }
 
 
-class TestWhatsapp(unittest.TestCase):
+class TestWhatsappBusiness(unittest.TestCase):
     """
     With this test, you can check whether all Appium functionality works for the current version of Whatsapp. The test
     can only be run manually, as you need a setup with two phones
@@ -38,7 +38,7 @@ class TestWhatsapp(unittest.TestCase):
 
         self.bob_configured = bool(device_udids["Bob"])
         if self.bob_configured:
-            self.bob = WhatsappActions(device_udids["Bob"])
+            self.bob = WhatsappBusinessActions(device_udids["Bob"])
         else:
             print("WARNING: No udid configured for Bob. Some tests will fail as a result")
 
@@ -61,6 +61,7 @@ class TestWhatsapp(unittest.TestCase):
     def test_open_settings_you(self):
         self.alice.open_settings_you()
 
+    # TODO fix
     def test_change_profile_picture(self):
         self.alice.change_profile_picture(self.photo_directory_name)
 
@@ -87,6 +88,7 @@ class TestWhatsapp(unittest.TestCase):
         self.alice.send_message("message to delete", self.contact_bob)
         self.alice.delete_message_for_everyone("message to delete", self.contact_bob)
 
+    # TODO fix
     def test_forward_message(self):
         self.ensure_bob_conversation_present()
         message_to_forward = "message to forward"
@@ -99,9 +101,11 @@ class TestWhatsapp(unittest.TestCase):
         self.alice.send_message(message, self.contact_bob, True)
         self.alice.reply_to_message(message, "reply", self.contact_bob)
 
+    # TODO fix
     def test_send_media(self):
         self.alice.send_media(self.photo_directory_name, caption="caption", view_once=False, chat=self.contact_bob)
 
+    # TODO fix
     def test_send_media_view_once(self):
         self.alice.send_media(self.photo_directory_name, caption="caption", view_once=True, chat=self.contact_bob)
 
@@ -109,9 +113,11 @@ class TestWhatsapp(unittest.TestCase):
         self.ensure_bob_conversation_present()
         self.alice.send_contact(self.contact_bob, self.contact_bob)
 
+    # TODO fix - location disabled on Bob?
     def test_send_current_location(self):
         self.alice.send_current_location(self.contact_bob)
 
+    # TODO fix
     def test_send_and_stop_live_location(self):
         self.ensure_bob_conversation_present()
         self.alice.send_live_location("caption", chat=self.contact_bob)
