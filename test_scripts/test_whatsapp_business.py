@@ -6,8 +6,7 @@ from puma.apps.android.whatsapp_business.whatsapp_business import WhatsappBusine
 
 # Fill in the udids below. Run ADB devices to see the udids.
 device_udids = {
-    # "Alice": "32131JEHN38079", # regular
-    "Alice": "34281JEHN03866", # business
+    "Alice": "", # business
     "Bob": ""
 }
 
@@ -45,7 +44,7 @@ class TestWhatsappBusiness(unittest.TestCase):
         self.contact_alice = "Alice"
         self.contact_bob = "Bob"
         self.contact_charlie = "Charlie"
-        self.photo_directory_name = "photos"
+        self.photo_directory_name = "Downloads"
 
         self.alice.return_to_homescreen()
         if self.bob_configured:
@@ -61,7 +60,6 @@ class TestWhatsappBusiness(unittest.TestCase):
     def test_open_settings_you(self):
         self.alice.open_settings_you()
 
-    # TODO fix
     def test_change_profile_picture(self):
         self.alice.change_profile_picture(self.photo_directory_name)
 
@@ -101,23 +99,16 @@ class TestWhatsappBusiness(unittest.TestCase):
         self.alice.send_message(message, self.contact_bob, True)
         self.alice.reply_to_message(message, "reply", self.contact_bob)
 
-    # TODO fix
     def test_send_media(self):
-        self.alice.send_media(self.photo_directory_name, caption="caption", view_once=False, chat=self.contact_bob)
-
-    # TODO fix
-    def test_send_media_view_once(self):
-        self.alice.send_media(self.photo_directory_name, caption="caption", view_once=True, chat=self.contact_bob)
+        self.alice.send_media(self.photo_directory_name, index=100, caption="caption", chat=self.contact_bob)
 
     def test_send_contact(self):
         self.ensure_bob_conversation_present()
         self.alice.send_contact(self.contact_bob, self.contact_bob)
 
-    # TODO fix - location disabled on Bob?
     def test_send_current_location(self):
         self.alice.send_current_location(self.contact_bob)
 
-    # TODO fix
     def test_send_and_stop_live_location(self):
         self.ensure_bob_conversation_present()
         self.alice.send_live_location("caption", chat=self.contact_bob)
@@ -179,13 +170,6 @@ class TestWhatsappBusiness(unittest.TestCase):
         self.assert_bob_configured()
         self.alice.call_contact(self.contact_bob, video_call=True)
         self.bob.decline_call()
-
-    def test_open_view_once_photo(self):
-        self.assert_bob_configured()
-        self.bob.select_chat(self.contact_alice)
-        self.alice.send_media(self.photo_directory_name, view_once=True, chat=self.contact_bob)
-        sleep(1)
-        self.bob.open_view_once_photo()
 
     # For this test, both Bob and Charlie need to be in Alice's contacts
     def test_send_broadcast(self):

@@ -9,6 +9,7 @@ from selenium.webdriver.common.by import By
 from puma.apps.android import log_action
 from puma.apps.android.appium_actions import AndroidAppiumActions
 
+
 class WhatsAppCommon(AndroidAppiumActions, ABC):
 
     @abstractmethod
@@ -203,56 +204,6 @@ class WhatsAppCommon(AndroidAppiumActions, ABC):
         self.driver.find_element(by=AppiumBy.ID, value=f"{self.app_package}:id/send").click()
 
     @log_action
-    def send_media(self, directory_name, caption=None, view_once=False, chat: str = None):
-        """
-        Send a photo or video with or without a caption in the current chat.
-        :param directory_name: The name of the directory the media is located. Only one file should be present in the
-        directory with the same name.
-        For example, directory name tiger assumes a directory tiger with a picture tiger.<Extension>
-         ├── tiger
-         │    └── tiger.jpg
-        :param caption: Default False. Pass text if you want to set a caption.
-        :param view_once: Default False. True if you want to send a view_once photo.
-        :param chat: The chat conversation in which to send this media, if not currently in the desired chat.
-        """
-        self._if_chat_go_to_chat(chat)
-        # Go to gallery
-        self.driver.find_element(by=AppiumBy.ID, value=f"{self.app_package}:id/input_attach_button").click()
-        self.driver.find_element(by=AppiumBy.ID, value=f"{self.app_package}:id/pickfiletype_gallery_holder").click()
-        if self.is_present('//android.widget.LinearLayout[@content-desc="Gallery"]'):
-            self.driver.find_element(by=AppiumBy.XPATH,
-                                     value='//android.widget.LinearLayout[@content-desc="Gallery"]').click()
-            directory_tile = f'//android.widget.TextView[@resource-id="{self.app_package}:id/title" and @text="{directory_name}"]'
-            self.swipe_to_find_element(xpath=directory_tile).click()
-            sleep(0.5)
-            self.driver.find_element(by=By.CLASS_NAME, value="android.widget.ImageView").click()
-        elif self.is_present(f'//android.widget.TextView[@resource-id="{self.app_package}:id/title"]'):
-            self.driver.find_element(by=AppiumBy.XPATH,
-                                     value=f'//android.widget.TextView[@resource-id="{self.app_package}:id/title"]').click()
-            sleep(0.5)
-            self.driver.find_element(by=AppiumBy.XPATH, value='//android.widget.ListView/android.view.ViewGroup[last()]').click()
-            directory_tile = f'//android.widget.TextView[@text="{directory_name}"]'
-            self.swipe_to_find_element(xpath=directory_tile).click()
-            sleep(0.5)
-            self.driver.find_element(by=AppiumBy.XPATH, value='//android.widget.ImageView[@resource-id="com.google.android.providers.media.module:id/icon_thumbnail"]').click()
-            self.driver.find_element(by=AppiumBy.XPATH, value='//android.widget.Button[@resource-id="com.google.android.providers.media.module:id/button_add"]').click()
-
-        if caption:
-            text_box = self.driver.find_element(by=AppiumBy.ID, value=f"{self.app_package}:id/caption")
-            text_box.send_keys(caption)
-            # Clicking the text box after sending keys is required for Whatsapp to notice text has been inserted.
-            text_box.click()
-            self.driver.back()
-
-        if view_once:
-            self.driver.find_element(by=AppiumBy.ID, value=f"{self.app_package}:id/view_once_toggle").click()
-            popup_button = f'//android.widget.Button[@resource-id="{self.app_package}:id/vo_sp_bottom_sheet_ok_button"]'
-            if self.is_present(popup_button):
-                self.driver.find_element(by=AppiumBy.XPATH, value=popup_button).click()
-        sleep(1)
-        self.driver.find_element(by=AppiumBy.ID, value=f"{self.app_package}:id/send").click()
-
-    @log_action
     def send_sticker(self, chat: str = None):
         """
         Send the only sticker in the sticker menu. Assumes 1 sticker is present in WhatsApp.
@@ -351,23 +302,13 @@ class WhatsAppCommon(AndroidAppiumActions, ABC):
         self.driver.find_element(by=AppiumBy.ID, value=f"{self.app_package}:id/next_btn").click()
         self.driver.find_element(by=AppiumBy.ID, value=f"{self.app_package}:id/send_btn").click()
 
+    @abstractmethod
     @log_action
-    def change_profile_picture(self, photo_dir_name: str = "profile_picture"):
+    def change_profile_picture(self, photo_dir_name, index=1):
         """
         Change profile picture. Selects the picture in the specified directory.
         :param photo_dir_name: Name of the directory the profile photo is in.
         """
-        self.return_to_homescreen()
-        self.open_settings_you()
-        self.driver.find_element(by=AppiumBy.ID, value=f"{self.app_package}:id/change_photo_btn").click()
-        self.driver.find_element(by=AppiumBy.XPATH, value="//*[@text='Gallery']").click()
-        gallery_tab = '//android.widget.LinearLayout[@content-desc="Gallery"]'
-        if self.is_present(gallery_tab):
-            self.driver.find_element(by=AppiumBy.XPATH, value=gallery_tab).click()
-        self.scroll_to_find_element(text_contains=photo_dir_name).click()
-        sleep(1)
-        self.driver.find_element(by=By.CLASS_NAME, value="android.widget.ImageView").click()
-        self.driver.find_element(by=AppiumBy.ID, value=f"{self.app_package}:id/ok_btn").click()
 
     @log_action
     def set_status(self, caption: str = None):
@@ -393,21 +334,14 @@ class WhatsAppCommon(AndroidAppiumActions, ABC):
         # TODO: popup that can appear!
         self.return_to_homescreen()
 
+    @abstractmethod
     @log_action
     def set_about(self, about_text: str):
         """
         Set the about section on the WhatsApp profile.
         :param about_text: text in the about
         """
-        self.return_to_homescreen()
-        self.open_settings_you()
-        self.driver.find_element(by=AppiumBy.ID, value=f"{self.app_package}:id/profile_info_status_card").click()
-        self.driver.find_element(by=AppiumBy.ID, value=f"{self.app_package}:id/status_tv_edit_icon").click()
-        text_box = self.driver.find_element(by=AppiumBy.ID, value=f"{self.app_package}:id/edit_text")
-        text_box.click()
-        text_box.clear()
-        text_box.send_keys(about_text)
-        self.driver.find_element(by=AppiumBy.ID, value=f"{self.app_package}:id/save_button").click()
+        pass
 
     @log_action
     def activate_disappearing_messages(self, chat=None):
@@ -660,13 +594,23 @@ class WhatsAppCommon(AndroidAppiumActions, ABC):
         f"//*[@resource-id='{self.app_package}:id/contact_list']//*[@text='{to_chat}']").click()
         self.driver.find_element(by=AppiumBy.ID, value=f"{self.app_package}:id/send").click()
 
-    @log_action
-    @abstractmethod
+    # @log_action
+    # @abstractmethod
+    # def open_settings_you(self):
+    #     """
+    #     Open personal settings (or profile).
+    #     """
+    #     pass
+
     def open_settings_you(self):
-        """
-        Open personal settings (or profile).
-        """
-        pass
+        self.return_to_homescreen()
+        self.open_more_options()
+        # Improvement possible: get all elements and filter on text=settings
+        self.driver.find_element(by=AppiumBy.XPATH,
+                                 value=f'//android.widget.TextView[@resource-id="{self.app_package}:id/title" and @text="Settings"]').click()
+        # self.driver.find_element(by=AppiumBy.XPATH, value=
+        # "/hierarchy/android.widget.FrameLayout/android.widget.FrameLayout/android.widget.ListView/android.widget.LinearLayout[5]/android.widget.LinearLayout").click()
+        self.driver.find_element(by=AppiumBy.ACCESSIBILITY_ID, value="You").click()
 
     @log_action
     def open_more_options(self):
