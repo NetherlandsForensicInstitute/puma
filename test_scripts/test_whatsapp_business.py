@@ -99,7 +99,7 @@ class TestWhatsappBusiness(unittest.TestCase):
         self.alice.reply_to_message(message, "reply", self.contact_bob)
 
     def test_send_media(self):
-        self.alice.send_media(self.photo_directory_name, index=100, caption="caption", chat=self.contact_bob)
+        self.alice.send_media(self.photo_directory_name, index=1, caption="caption", chat=self.contact_bob)
 
     def test_send_contact(self):
         self.ensure_bob_conversation_present()

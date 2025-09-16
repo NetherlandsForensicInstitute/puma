@@ -60,7 +60,7 @@ class TestWhatsapp(unittest.TestCase):
         self.alice.open_settings_you()
 
     def test_change_profile_picture(self):
-        self.alice.change_profile_picture(self.photo_directory_name)
+        self.alice.change_profile_picture("Downloads")
 
     def test_currently_in_conversation_overview(self):
         self.alice.return_to_homescreen()
@@ -98,7 +98,7 @@ class TestWhatsapp(unittest.TestCase):
         self.alice.reply_to_message(message, "reply", self.contact_bob)
 
     def test_send_media(self):
-        self.alice.send_media(self.photo_directory_name, caption="caption", view_once=False, chat=self.contact_bob)
+        self.alice.send_media("Downloads", caption="caption", view_once=False, chat=self.contact_bob)
 
     def test_send_media_view_once(self):
         self.alice.send_media(self.photo_directory_name, caption="caption", view_once=True, chat=self.contact_bob)

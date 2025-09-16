@@ -4,6 +4,7 @@ from time import sleep
 from typing import Union, List
 
 from appium.webdriver.common.appiumby import AppiumBy
+from selenium.common import NoSuchElementException
 from selenium.webdriver.common.by import By
 
 from puma.apps.android import log_action
@@ -616,3 +617,18 @@ class WhatsAppCommon(AndroidAppiumActions, ABC):
             self.driver.find_elements(by=AppiumBy.XPATH, value='//*[contains(@resource-id, "view_once_media")]')[-1]
         most_recent_view_once.click()
         self.driver.back()
+
+    def _find_media_in_folder(self, directory_name, index):
+        try:
+            self.swipe_to_find_element(xpath=f'//android.widget.TextView[@text="{directory_name}"]')
+        except NoSuchElementException:
+            raise NoSuchElementException(f'The directory {directory_name} could not be found.')
+        self.driver.find_element(by=AppiumBy.XPATH,
+                                 value=f'//android.widget.TextView[@text="{directory_name}"]').click()
+        sleep(0.5)
+        try:
+            self.driver.find_element(by=AppiumBy.XPATH,
+                                     value=f'//androidx.compose.ui.platform.ComposeView/android.view.View/android.view.View/android.view.View[4]/android.view.View[{index}]/android.view.View[2]/android.view.View').click()
+        except NoSuchElementException:
+            raise NoSuchElementException(
+                f'The media at index {index} could not be found. The index is likely too large or negative.')

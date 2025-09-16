@@ -37,20 +37,14 @@ class WhatsappBusinessActions(WhatsAppCommon):
                                  value='//android.widget.TextView[@resource-id="com.whatsapp.w4b:id/row_text" and @text="Gallery"]').click()
         self.driver.find_element(by=AppiumBy.XPATH,
                                  value='//android.widget.ImageButton[@content-desc="Folders"]').click()
-        self.scroll_to_find_element(text_equals=photo_dir_name).click()
-        try:
-            self.driver.find_element(by=AppiumBy.XPATH,
-                                     value=f'//androidx.compose.ui.platform.ComposeView/android.view.View/android.view.View/android.view.View[4]/android.view.View[{index}]/android.view.View[2]/android.view.View').click()
-        except NoSuchElementException:
-            print(f'The media at index {index} could not be found. The index is likely too large or negative.')
-            return -1
+        WhatsAppCommon._find_media_in_folder(self, photo_dir_name, index)
         self.driver.find_element(by=AppiumBy.XPATH,
                                  value='//android.widget.Button[@resource-id="com.whatsapp.w4b:id/ok_btn"]').click()
 
     def set_about(self, about_text: str):
         self.return_to_homescreen()
         self.open_settings_you()
-        self.swipe_to_find_element(f'//android.widget.TextView[@content-desc="About about text"]').click()
+        self.swipe_to_find_element(f'//android.widget.TextView[@text="About"]').click()
         self.driver.find_element(by=AppiumBy.XPATH, value='//android.widget.ImageView[@content-desc="edit"]').click()
         text_box = self.driver.find_element(by=AppiumBy.ID, value=f"{self.app_package}:id/edit_text")
         text_box.click()
@@ -73,20 +67,7 @@ class WhatsappBusinessActions(WhatsAppCommon):
 
         self.driver.find_element(by=AppiumBy.XPATH,
                                  value='//android.widget.ImageButton[@content-desc="Folders"]').click()
-        try:
-            self.swipe_to_find_element(xpath=f'//android.widget.TextView[@text="{directory_name}"]')
-        except NoSuchElementException:
-            print(f'The directory {directory_name} could not be found.')
-            exit(-1)
-        self.driver.find_element(by=AppiumBy.XPATH,
-                                 value=f'//android.widget.TextView[@text="{directory_name}"]').click()
-        sleep(0.5)
-        try:
-            self.driver.find_element(by=AppiumBy.XPATH,
-                                     value=f'//androidx.compose.ui.platform.ComposeView/android.view.View/android.view.View/android.view.View[4]/android.view.View[{index}]/android.view.View[2]/android.view.View').click()
-        except NoSuchElementException:
-            print(f'The media at index {index} could not be found. The index is likely too large or negative.')
-            return -1
+        WhatsAppCommon._find_media_in_folder(self, directory_name, index)
         sleep(0.5)
         self.driver.find_element(by=AppiumBy.XPATH,
                                  value=f'//androidx.compose.ui.platform.ComposeView/android.view.View/android.view.View/android.view.View[5]/android.view.View[3]/android.widget.Button').click()
