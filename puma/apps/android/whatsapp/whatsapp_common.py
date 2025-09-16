@@ -17,6 +17,24 @@ class WhatsAppCommon(AndroidAppiumActions, ABC):
         super().__init__(device_udid, app_package)
         self.WHATSAPP_PACKAGE = app_package
 
+    @abstractmethod
+    @log_action
+    def change_profile_picture(self, photo_dir_name, index=1):
+        """
+        Change profile picture. Selects the picture in the specified directory.
+        :param photo_dir_name: Name of the directory the profile photo is in.
+        """
+        pass
+
+    @abstractmethod
+    @log_action
+    def set_about(self, about_text: str):
+        """
+        Set the about section on the WhatsApp profile.
+        :param about_text: text in the about
+        """
+        pass
+
     def currently_at_homescreen(self) -> bool:
         return self.is_present(f'//android.widget.FrameLayout[@content-desc="{self.app_package}:id/root_view"]')
 
@@ -295,15 +313,6 @@ class WhatsAppCommon(AndroidAppiumActions, ABC):
         self.driver.find_element(by=AppiumBy.ID, value=f"{self.app_package}:id/next_btn").click()
         self.driver.find_element(by=AppiumBy.ID, value=f"{self.app_package}:id/send_btn").click()
 
-    @abstractmethod
-    @log_action
-    def change_profile_picture(self, photo_dir_name, index=1):
-        """
-        Change profile picture. Selects the picture in the specified directory.
-        :param photo_dir_name: Name of the directory the profile photo is in.
-        """
-        pass
-
     @log_action
     def set_status(self, caption: str = None):
         """
@@ -327,15 +336,6 @@ class WhatsAppCommon(AndroidAppiumActions, ABC):
         self.driver.find_element(by=AppiumBy.ID, value=f"{self.app_package}:id/send").click()
         # TODO: popup that can appear!
         self.return_to_homescreen()
-
-    @abstractmethod
-    @log_action
-    def set_about(self, about_text: str):
-        """
-        Set the about section on the WhatsApp profile.
-        :param about_text: text in the about
-        """
-        pass
 
     @log_action
     def activate_disappearing_messages(self, chat=None):
@@ -588,6 +588,7 @@ class WhatsAppCommon(AndroidAppiumActions, ABC):
         f"//*[@resource-id='{self.app_package}:id/contact_list']//*[@text='{to_chat}']").click()
         self.driver.find_element(by=AppiumBy.ID, value=f"{self.app_package}:id/send").click()
 
+    @log_action
     def open_settings_you(self):
         self.return_to_homescreen()
         self.open_more_options()

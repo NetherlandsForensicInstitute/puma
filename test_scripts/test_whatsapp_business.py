@@ -20,7 +20,7 @@ class TestWhatsappBusiness(unittest.TestCase):
     - 2 phones with WhatsApp registered:
         - Alice:
             - Have Bob and Charlie in contacts
-            - Have a folder named "photos" with at least 1 photo on the location WhatsApp looks for media (for
+            - Have a folder named "Downloads" with at least 1 photo on the location WhatsApp looks for media (for
             example create the folder in Google Photos or the gallery app)
         - Bob: (If this device is not configured, you can still run most tests, but the lower ones will fail).
             - Have Alice in contacts.
