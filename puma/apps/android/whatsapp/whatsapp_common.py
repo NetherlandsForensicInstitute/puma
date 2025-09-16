@@ -20,17 +20,15 @@ class WhatsAppCommon(AndroidAppiumActions, ABC):
     def currently_at_homescreen(self) -> bool:
         return self.is_present(f'//android.widget.FrameLayout[@content-desc="{self.app_package}:id/root_view"]')
 
-
     def currently_in_conversation_overview(self) -> bool:
         # Send message occurs when no conversations are present yet. New chat when there are conversations.
         return self.is_present('//android.widget.ImageButton[@content-desc="New chat"] | '
                                '//android.widget.Button[@content-desc="Send message"]')
 
-
     def currently_in_conversation(self) -> bool:
-        return self.is_present(f'//android.widget.LinearLayout[@resource-id="{self.app_package}:id/conversation_root_layout"]',
-                               implicit_wait=1)
-
+        return self.is_present(
+            f'//android.widget.LinearLayout[@resource-id="{self.app_package}:id/conversation_root_layout"]',
+            implicit_wait=1)
 
     def return_to_homescreen(self):
         if self.driver.current_package != self.app_package:
@@ -39,12 +37,10 @@ class WhatsAppCommon(AndroidAppiumActions, ABC):
             self.driver.back()
         sleep(0.5)
 
-
     def get_conversation_row_elements(self, subject):
         self.return_to_homescreen()
         return self.driver.find_elements(by=AppiumBy.XPATH,
                                          value=f"//*[contains(@resource-id,'{self.app_package}:id/conversations_row_contact_name') and @text='{subject}']")
-
 
     @log_action
     def select_chat(self, subject):
@@ -62,7 +58,6 @@ class WhatsAppCommon(AndroidAppiumActions, ABC):
             raise Exception(f'Cannot find conversation with name {subject}')
         chats_of_interest[0].click()
 
-
     @log_action
     def create_new_chat(self, contact, first_message):
         """
@@ -77,14 +72,12 @@ class WhatsAppCommon(AndroidAppiumActions, ABC):
         f"//*[@resource-id='{self.app_package}:id/contactpicker_text_container']//*[@text='{contact}']").click()
         self.send_message(first_message)
 
-
     def _if_chat_go_to_chat(self, chat: str):
         if chat is not None:
             self.return_to_homescreen()
             self.select_chat(chat)
         if not self.currently_in_conversation():
             raise Exception('Expected to be in conversation screen now, but screen contents are unknown')
-
 
     @log_action
     def send_message(self, message_text, chat: str = None, wait_until_sent=False):
@@ -102,7 +95,6 @@ class WhatsAppCommon(AndroidAppiumActions, ABC):
         self.driver.find_element(by=AppiumBy.ID, value=f"{self.app_package}:id/send").click()
         if wait_until_sent:
             _ = self._ensure_message_sent(message_text)
-
 
     def _handle_mention(self, message, text_box):
         """
@@ -127,12 +119,12 @@ class WhatsAppCommon(AndroidAppiumActions, ABC):
         backspace_keycode = 67
         self.driver.press_keycode(backspace_keycode)
         mentioned_person_el = \
-            [person for person in self.driver.find_elements(by=AppiumBy.ID, value=f"{self.app_package}:id/contact_photo")
+            [person for person in
+             self.driver.find_elements(by=AppiumBy.ID, value=f"{self.app_package}:id/contact_photo")
              if person.tag_name.lower() == mentioned_name.lower()][0]
         mentioned_person_el.click()
         # Remove a space resulting from selecting the mention person
         self.driver.press_keycode(backspace_keycode)
-
 
     def _ensure_message_sent(self, message_text):
         message_status_el = self.driver.find_element(by=AppiumBy.XPATH, value=
@@ -298,7 +290,8 @@ class WhatsAppCommon(AndroidAppiumActions, ABC):
         self._if_chat_go_to_chat(chat)
         self.driver.find_element(by=AppiumBy.ID, value=f"{self.app_package}:id/input_attach_button").click()
         self.driver.find_element(by=AppiumBy.ID, value=f"{self.app_package}:id/pickfiletype_contact_holder").click()
-        self.swipe_to_find_element(f'//android.widget.TextView[@resource-id="{self.app_package}:id/name" and @text="{contact_name}"]').click()
+        self.swipe_to_find_element(
+            f'//android.widget.TextView[@resource-id="{self.app_package}:id/name" and @text="{contact_name}"]').click()
         self.driver.find_element(by=AppiumBy.ID, value=f"{self.app_package}:id/next_btn").click()
         self.driver.find_element(by=AppiumBy.ID, value=f"{self.app_package}:id/send_btn").click()
 
@@ -595,22 +588,12 @@ class WhatsAppCommon(AndroidAppiumActions, ABC):
         f"//*[@resource-id='{self.app_package}:id/contact_list']//*[@text='{to_chat}']").click()
         self.driver.find_element(by=AppiumBy.ID, value=f"{self.app_package}:id/send").click()
 
-    # @log_action
-    # @abstractmethod
-    # def open_settings_you(self):
-    #     """
-    #     Open personal settings (or profile).
-    #     """
-    #     pass
-
     def open_settings_you(self):
         self.return_to_homescreen()
         self.open_more_options()
         # Improvement possible: get all elements and filter on text=settings
         self.driver.find_element(by=AppiumBy.XPATH,
                                  value=f'//android.widget.TextView[@resource-id="{self.app_package}:id/title" and @text="Settings"]').click()
-        # self.driver.find_element(by=AppiumBy.XPATH, value=
-        # "/hierarchy/android.widget.FrameLayout/android.widget.FrameLayout/android.widget.ListView/android.widget.LinearLayout[5]/android.widget.LinearLayout").click()
         self.driver.find_element(by=AppiumBy.ACCESSIBILITY_ID, value="You").click()
 
     @log_action

@@ -31,10 +31,12 @@ class WhatsappActions(WhatsAppCommon):
         self.open_settings_you()
         self.driver.find_element(by=AppiumBy.ID, value=f'{self.app_package}:id/profile_info_edit_btn').click()
         self.driver.find_element(by=AppiumBy.XPATH, value="//*[@text='Gallery']").click()
-        self.driver.find_element(by=AppiumBy.XPATH, value='//android.widget.ImageButton[@content-desc="Folders"]').click()
+        self.driver.find_element(by=AppiumBy.XPATH,
+                                 value='//android.widget.ImageButton[@content-desc="Folders"]').click()
         self.scroll_to_find_element(text_contains=photo_dir_name).click()
         sleep(1)
-        self.driver.find_element(by=AppiumBy.XPATH, value=f'//androidx.compose.ui.platform.ComposeView/android.view.View/android.view.View/android.view.View[5]/android.view.View[{index}]/android.view.View[2]/android.view.View').click()
+        self.driver.find_element(by=AppiumBy.XPATH,
+                                 value=f'//androidx.compose.ui.platform.ComposeView/android.view.View/android.view.View/android.view.View[5]/android.view.View[{index}]/android.view.View[2]/android.view.View').click()
         self.driver.find_element(by=AppiumBy.ID, value=f"{self.app_package}:id/ok_btn").click()
 
     def set_about(self, about_text: str):
@@ -61,21 +63,25 @@ class WhatsappActions(WhatsAppCommon):
         self.driver.find_element(by=AppiumBy.ID, value=f"{self.app_package}:id/input_attach_button").click()
         self.driver.find_element(by=AppiumBy.ID, value=f"{self.app_package}:id/pickfiletype_gallery_holder").click()
 
-        self.driver.find_element(by=AppiumBy.XPATH, value='//android.widget.ImageButton[@content-desc="Folders"]').click()
+        self.driver.find_element(by=AppiumBy.XPATH,
+                                 value='//android.widget.ImageButton[@content-desc="Folders"]').click()
         try:
             self.swipe_to_find_element(xpath=f'//android.widget.TextView[@text="{directory_name}"]')
         except NoSuchElementException:
             print(f'The directory {directory_name} could not be found.')
             exit(-1)
-        self.driver.find_element(by=AppiumBy.XPATH, value=f'//android.widget.TextView[@text="{directory_name}"]').click()
+        self.driver.find_element(by=AppiumBy.XPATH,
+                                 value=f'//android.widget.TextView[@text="{directory_name}"]').click()
         sleep(0.5)
         try:
-            self.driver.find_element(by=AppiumBy.XPATH, value=f'//androidx.compose.ui.platform.ComposeView/android.view.View/android.view.View/android.view.View[4]/android.view.View[{index}]/android.view.View[2]/android.view.View').click()
+            self.driver.find_element(by=AppiumBy.XPATH,
+                                     value=f'//androidx.compose.ui.platform.ComposeView/android.view.View/android.view.View/android.view.View[4]/android.view.View[{index}]/android.view.View[2]/android.view.View').click()
         except NoSuchElementException:
             print(f'The media at index {index} could not be found. The index is likely too large or negative.')
             return -1
         sleep(0.5)
-        self.driver.find_element(by=AppiumBy.XPATH, value=f'//androidx.compose.ui.platform.ComposeView/android.view.View/android.view.View/android.view.View[5]/android.view.View[3]/android.widget.Button').click()
+        self.driver.find_element(by=AppiumBy.XPATH,
+                                 value=f'//androidx.compose.ui.platform.ComposeView/android.view.View/android.view.View/android.view.View[5]/android.view.View[3]/android.widget.Button').click()
 
         if caption:
             sleep(0.5)
