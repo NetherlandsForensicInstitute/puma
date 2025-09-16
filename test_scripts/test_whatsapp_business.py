@@ -1,7 +1,6 @@
 import unittest
 from time import sleep
 
-from puma.apps.android.whatsapp.whatsapp import WhatsappActions
 from puma.apps.android.whatsapp_business.whatsapp_business import WhatsappBusinessActions
 
 # Fill in the udids below. Run ADB devices to see the udids.
