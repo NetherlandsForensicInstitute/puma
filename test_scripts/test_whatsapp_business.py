@@ -6,7 +6,7 @@ from puma.apps.android.whatsapp_business.whatsapp_business import WhatsappBusine
 
 # Fill in the udids below. Run ADB devices to see the udids.
 device_udids = {
-    "Alice": "", # business
+    "Alice": "",
     "Bob": ""
 }
 

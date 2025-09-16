@@ -8,7 +8,7 @@ from puma.apps.android.appium_actions import supported_version, AndroidAppiumAct
 from puma.apps.android.whatsapp.whatsapp_common import WhatsAppCommon
 
 
-@supported_version("2.24.25.78")
+@supported_version("2.25.24.78")
 class WhatsappActions(WhatsAppCommon):
 
     def __init__(self,

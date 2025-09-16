@@ -8,7 +8,7 @@ from puma.apps.android.appium_actions import supported_version, AndroidAppiumAct
 from puma.apps.android.whatsapp.whatsapp_common import WhatsAppCommon
 
 
-@supported_version("2.24.25.78")
+@supported_version("2.25.24.78")
 class WhatsappBusinessActions(WhatsAppCommon):
 
     def __init__(self,
@@ -17,7 +17,7 @@ class WhatsappBusinessActions(WhatsAppCommon):
                  implicit_wait=1,
                  appium_server='http://localhost:4723'):
         """
-        Class with an API for WhatsApp Android using Appium. Can be used with an emulator or real device attached to the computer.
+        Class with an API for WhatsApp for Business Android using Appium. Can be used with an emulator or real device attached to the computer.
         """
         AndroidAppiumActions.__init__(self,
                                       device_udid,
@@ -40,7 +40,6 @@ class WhatsappBusinessActions(WhatsAppCommon):
             print(f'The media at index {index} could not be found. The index is likely too large or negative.')
             return -1
         self.driver.find_element(by=AppiumBy.XPATH, value='//android.widget.Button[@resource-id="com.whatsapp.w4b:id/ok_btn"]').click()
-
 
     def set_about(self, about_text: str):
         self.return_to_homescreen()

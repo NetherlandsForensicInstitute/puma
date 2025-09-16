@@ -309,6 +309,7 @@ class WhatsAppCommon(AndroidAppiumActions, ABC):
         Change profile picture. Selects the picture in the specified directory.
         :param photo_dir_name: Name of the directory the profile photo is in.
         """
+        pass
 
     @log_action
     def set_status(self, caption: str = None):
