@@ -74,7 +74,7 @@ which folder your desired picture or video is in, Puma will pick the first file 
 phone.select_chat("Bob")  # open the conversation with Bob 
 phone.send_media("Bird")  # will send the first picture or video in the folder "Bird"
 phone.send_media("Horse", chat="Charlie")  # First opens the correct conversation before sending the media
-phone.send_media("Fish", caption="look at this cool fish!")  # send media with a caption
+phone.send_media("Fish", index=2, caption="look at this cool fish!")  # send media from folder "Fish" at index 2, with a caption
 phone.send_media("Turtle", view_once=True)  # activate hte 'view once' option
 ```
 
