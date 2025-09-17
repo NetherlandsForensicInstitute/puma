@@ -7,7 +7,7 @@ from puma.apps.android.appium_actions import AndroidAppiumActions, supported_ver
 
 GOOGLE_CHROME_PACKAGE = 'com.android.chrome'
 
-@supported_version("138.0.7204.179")
+@supported_version("139.0.7258.62")
 class GoogleChromeActions(AndroidAppiumActions):
     def __init__(self,
                  device_udid,
@@ -34,10 +34,11 @@ class GoogleChromeActions(AndroidAppiumActions):
             self.driver.find_element(by=AppiumBy.XPATH, value=search_box_xpath).click()
 
         if new_tab:
-            switch_tab_xpath = '//android.widget.ImageButton[contains(@content-desc, "tabs")]'
+            switch_tab_xpath = '//android.widget.ImageButton[@resource-id="com.android.chrome:id/tab_switcher_button"]'
             new_tab_xpath = '//android.widget.Button[contains(@content-desc, "tab")]'
             self.driver.find_element(by=AppiumBy.XPATH, value=switch_tab_xpath).click()
             self.driver.find_element(by=AppiumBy.XPATH, value=new_tab_xpath).click()
+            self.is_present(xpath=switch_tab_xpath, implicit_wait=1)
             self.driver.find_element(by=AppiumBy.XPATH, value=search_box_xpath).click()
 
         url_bar_xpath = '//android.widget.EditText[@resource-id="com.android.chrome:id/url_bar"]'
@@ -50,11 +51,37 @@ class GoogleChromeActions(AndroidAppiumActions):
     def bookmark_page(self):
         """
         Bookmarks the current page.
+        :return: True if bookmark has been added, False if it already existed.
         """
         three_dots_xpath = '//android.widget.ImageButton[@content-desc="Customize and control Google Chrome"]'
         bookmark_xpath = '//android.widget.Button[lower-case(@content-desc)="bookmark"]'
+        edit_bookmark_xpath = '//android.widget.Button[lower-case(@content-desc)="edit bookmark"]'
         self.driver.find_element(by=AppiumBy.XPATH, value=three_dots_xpath).click()
-        self.driver.find_element(by=AppiumBy.XPATH, value=bookmark_xpath).click()
+        if self.is_present(edit_bookmark_xpath):
+            self.back()
+            return False
+        else:
+            self.driver.find_element(by=AppiumBy.XPATH, value=bookmark_xpath).click()
+            return True
+
+    @log_action
+    def delete_bookmark(self):
+        """
+        Delete the current bookmark.
+        :return: True if bookmark has been deleted, False if it wasn't bookmarked.
+        """
+        three_dots_xpath = '//android.widget.ImageButton[@content-desc="Customize and control Google Chrome"]'
+        bookmark_xpath = '//android.widget.Button[lower-case(@content-desc)="bookmark"]'
+        edit_bookmark_xpath = '//android.widget.Button[lower-case(@content-desc)="edit bookmark"]'
+        delete_bookmark_xpath = '//android.widget.Button[lower-case(@content-desc)="delete bookmarks"]'
+        self.driver.find_element(by=AppiumBy.XPATH, value=three_dots_xpath).click()
+        if self.is_present(bookmark_xpath):
+            self.back()
+            return False
+        else:
+            self.driver.find_element(by=AppiumBy.XPATH, value=edit_bookmark_xpath).click()
+            self.driver.find_element(by=AppiumBy.XPATH, value=delete_bookmark_xpath).click()
+            return True
 
     @log_action
     def load_bookmark(self):
@@ -77,9 +104,10 @@ class GoogleChromeActions(AndroidAppiumActions):
         Switches to another tab, by default the first open tab.
         :param num_tab: the number of the tab to open
         """
-        switch_tab_xpath = '//android.widget.ImageButton[@content-desc="Switch or close tabs"]'
+        switch_tab_xpath = '//android.widget.ImageButton[@resource-id="com.android.chrome:id/tab_switcher_button"]'
         self.driver.find_element(by=AppiumBy.XPATH, value=switch_tab_xpath).click()
-        self.driver.find_element(by=AppiumBy.XPATH, value=f'(//android.widget.FrameLayout[@resource-id="com.android.chrome:id/content_view"])[{num_tab}]').click()
+        tab_list = '//*[@resource-id="com.android.chrome:id/tab_list_recycler_view"]'
+        self.driver.find_element(by=AppiumBy.XPATH, value=f'({tab_list}//*[@resource-id="com.android.chrome:id/content_view"])[{num_tab}]').click()
 
     @log_action
     def go_to_incognito(self, url_string: str):
