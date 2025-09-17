@@ -47,13 +47,6 @@ class WhatsappActions(WhatsAppCommon):
         text_box.send_keys(about_text)
         self.driver.find_element(by=AppiumBy.ID, value=f"{self.app_package}:id/save_button").click()
 
-    def leave_group(self, group_name):
-        self.select_chat(group_name)
-        self.driver.find_element(by=AppiumBy.ID, value=f"{self.app_package}:id/conversation_contact").click()
-        self.scroll_to_find_element(text_equals="Exit group").click()
-        self.driver.find_element(by=AppiumBy.XPATH, value="//android.widget.Button[@text='Exit group']").click()
-        self.return_to_homescreen()
-
     def send_media(self, directory_name, index=1, caption=None, view_once=False, chat: str = None):
         self._if_chat_go_to_chat(chat)
         # Go to gallery

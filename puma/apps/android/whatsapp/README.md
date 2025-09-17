@@ -4,7 +4,7 @@ WhatsApp Messenger is an instant messaging VoIP service owned by Meta.
 Puma supports a wide range of actions in WhatsApp, listed below. Registration with a phone number is required.
 For detailed information on each method, see the method its PyDoc documentation.
 
-The application can be downloaded in [the Google PlayStore](https://play.google.com/store/apps/details?id=com.whatsapp).
+The application can be downloaded in [the Google PlayStore](https://play.google.com/store/apps/details?id=com.whatsapp.w4b&hl=nl).
 
 ### Prerequisites
 - The application installed on your device
@@ -67,8 +67,8 @@ phone.forward_message("Bob", "important message!",
 
 ### Sending media
 
-Sending picture or video is supported, but since the UI doesn't show full paths or filenames, you are required to know
-which folder your desired picture or video is in, Puma will pick the first file in that folder and send it.
+Sending a picture or video is supported, but since the UI doesn't show full paths or filenames, you are required to know
+which folder your desired picture or video is in. Puma will pick the first file in that folder and send it.
 
 ```python
 phone.select_chat("Bob")  # open the conversation with Bob 

@@ -10,10 +10,10 @@ from puma.apps.android.whatsapp.whatsapp import WhatsappActions
 from puma.apps.android.whatsapp_business.whatsapp_business import WhatsappBusinessActions
 
 all_app_actions = [
+    GoogleMapsActions,
     SnapchatActions,
     TelegramActions,
     WhatsappActions,
-    GoogleMapsActions,
     WhatsappBusinessActions
 ]
 APP_MODULE = 'puma.apps'
