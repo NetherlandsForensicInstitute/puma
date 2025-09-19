@@ -104,6 +104,7 @@ example implementations:
 * [Telegram](puma/apps/android/telegram/README.md)
 * [TeleGuard](puma/apps/android/teleguard/README.md)
 * [WhatsApp](puma/apps/android/whatsapp/README.md)
+* [WhatsApp for Business](puma/apps/android/whatsapp_business/README.md)
 
 Right now only Android is supported.
 
