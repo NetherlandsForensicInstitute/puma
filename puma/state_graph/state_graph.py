@@ -282,6 +282,9 @@ class StateGraph(metaclass=StateGraphMeta):
         return _shortest_path(self.current_state, destination)
 
 class DummyStateGraph(StateGraph):
+    """
+    A dummy stategraph to test the post-action hook for the @action decorator
+    """
     conversations_screen = SimpleState(['bla'], initial_state=True)
     chat_screen = SimpleState(['bla'], parent_state=conversations_screen)
     settings_screen = SimpleState(['bla'], parent_state=conversations_screen)
