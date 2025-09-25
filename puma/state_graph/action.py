@@ -2,6 +2,7 @@ import inspect
 
 from puma.state_graph import logger
 from puma.state_graph.state import State
+from puma.state_graph.utils import _safe_func_call
 
 
 def action(to_state: State):
@@ -25,6 +26,9 @@ def action(to_state: State):
             :param kwargs: Keyword arguments to pass to the decorated function.
             :return: The result of the decorated function.
             """
+            post_action = kwargs.pop('post_action') if 'post_action' in kwargs.keys() else None
+            # TODO: verify this is a callable
+
             bound_args = inspect.signature(func).bind(*args, **kwargs)
             bound_args.apply_defaults()
             arguments = bound_args.arguments
@@ -40,6 +44,10 @@ def action(to_state: State):
                 puma_ui_graph.recover_state(to_state)
                 puma_ui_graph.go_to_state(to_state, **arguments)
                 result = func(*args, **kwargs)
+            if post_action:
+                print('calling post action callable!')
+                # TODO: also pass the driver
+                _safe_func_call(post_action, **kwargs)
             puma_ui_graph.try_restart = True
             logger.info(f"[{puma_ui_graph.driver.options.udid}] Successfully executed action {func.__name__} with arguments: {args} and key word arguments: {kwargs} for application: {puma_ui_graph.__class__.__name__}")
             return result

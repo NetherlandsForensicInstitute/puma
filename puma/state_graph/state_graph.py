@@ -1,12 +1,14 @@
 from time import sleep
 from typing import List, Dict
+from unittest.mock import Mock
 
 from puma.state_graph import logger
+from puma.state_graph.action import action
 from puma.state_graph.popup_handler import known_popups, PopUpHandler
 from puma.state_graph.puma_driver import PumaDriver, PumaClickException
 
 from puma.state_graph.utils import _safe_func_call
-from puma.state_graph.state import State, ContextualState, Transition, _shortest_path
+from puma.state_graph.state import State, ContextualState, Transition, _shortest_path, SimpleState
 
 
 class StateGraphMeta(type):
@@ -278,3 +280,27 @@ class StateGraph(metaclass=StateGraphMeta):
         :return: A list of transitions representing the shortest path to the destination state, or None if no path is found.
         """
         return _shortest_path(self.current_state, destination)
+
+class DummyStateGraph(StateGraph):
+    conversations_screen = SimpleState(['bla'], initial_state=True)
+    chat_screen = SimpleState(['bla'], parent_state=conversations_screen)
+    settings_screen = SimpleState(['bla'], parent_state=conversations_screen)
+
+    conversations_screen.to(chat_screen, lambda: print('opening chat'))
+    conversations_screen.to(settings_screen, lambda: print('opening setting screen'))
+
+    def __init__(self):
+        self.current_state = self.initial_state
+        self.driver = Mock()
+        self.app_popups = []
+        self.try_restart = True
+
+    @action(chat_screen)
+    def send_message(self, msg: str):
+        print(f'sent message: {msg}')
+
+if __name__ == '__main__':
+    dummy = DummyStateGraph()
+    dummy.send_message(msg='This is message 1')
+    dummy.send_message(msg='This is message 2', post_action=lambda: print(f'Post action 1'))
+    dummy.send_message(msg='This is message 3', post_action=lambda msg: print(f'Post action 2, for message "{msg}"'))
