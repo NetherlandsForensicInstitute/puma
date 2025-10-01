@@ -1,5 +1,3 @@
-from puma.state_graph.popup_handler import PopUpHandler
-
 # Contributing to the Appium Automation Project
 
 Thank you for considering contributing to our project! By following these guidelines, you will help ensure that our project remains consistent, maintainable, and easy to use.
@@ -97,8 +95,8 @@ settings screen.
 
 ##### SimpleState
 
-States are usually defined using the SimpleState class, which requires a list of XPaths representing elements
-that identify the state. The initial_state parameter indicates the starting state of the application:
+States are usually defined using the `SimpleState` class, which requires a list of XPaths representing elements
+that identify the state. The `initial_state` parameter indicates the starting state of the application:
 
 ```python
 home_state = SimpleState(xpaths=['//android.widget.TextView[@content-desc="Home"]'],
@@ -107,15 +105,15 @@ home_state = SimpleState(xpaths=['//android.widget.TextView[@content-desc="Home"
 
 ##### Contextual states
 
-A ContextualState is a special kind of state that takes context into account when validating the UI. Imagine you're in a
+A `ContextualState` is a special kind of state that takes context into account when validating the UI. Imagine you're in a
 chat application where you have a chat screen for sending messages a contact. If you want to check whether
 you're in a chat screen, you can do so, but if you want to check whether you're in a chat screen with a specific person,
-you need the context. To achieve this, ContextualState expands the State class with an additional verification method
-named validate_context which has the additional input validation code needs to validate whether the current screen is
-indeed the exact screen we're looking for. Aside from validate_context, ContextualStates still have a validate method, which
+you need the context. To achieve this, `ContextualState` expands the `State` class with an additional verification method
+named `validate_context`, which has the additional input the validation code needs to validate whether the current screen is
+indeed the exact screen we're looking for. Aside from `validate_context`, `ContextualState`s still have a `validate` method, which
 should check whether the current screen matches the state, without any context. In the example of the chat state in a
-chat app, validate should return True if we're in ANY chat screen, while validate_context should return True if we're in the
-chat screen with the wanted person.
+chat app, `validate` should return `True` if we're in ANY chat screen, while `validate_context` should return `True` if we're in the
+chat screen with the specified person.
 
 ```python
 class ExampleAppChatState(SimpleState, ContextualState):
@@ -149,14 +147,14 @@ class ExampleAppChatState(SimpleState, ContextualState):
     return driver.is_present(f'//some_element[@text = "{conversation}"]')
 ```
 
-In this example, a chat state for a specific application is created by inheriting from both SimpleState and
-ContextualState. This dual inheritance allows the chat state to utilize the fundamental state capabilities provided by
-SimpleState, while also incorporating the context validation features of ContextualState. The validate_context method is
-crucial here; it ensures that the current context, such as a specific conversation, aligns with the expected context.
+In this example, a chat state for a specific application is created by inheriting from both `SimpleState` and
+`ContextualState`. This dual inheritance allows the chat state to utilize the fundamental state capabilities provided by
+`SimpleState`, while also incorporating the context validation features of `ContextualState`. The `validate_context` method is
+crucial here: it ensures that the current context, such as a specific conversation, aligns with the expected context.
 This method verifies whether the provided conversation name matches the name of the conversation currently shown on the
 screen. (Note: If you wish to implement your own validation method without using SimpleState, you don't need to inherit
-from SimpleState.)
-Here's how you can use the ChatState:
+from `SimpleState`.)
+Below, you can see how you can use the `ChatState`:
 ```python
 conversations_state = SimpleState(["xpath1", "xpath2"], initial_state=True)
 chat_state = ExampleAppChatState(parent_state=conversations_state)
@@ -168,15 +166,15 @@ Transitions specify the process of moving from one state to another. They are ge
 interface actions, such as clicking on specific elements that facilitate the transition to a different state, like
 clicking a settings button to navigate to the settings state. These transitions between states are defined using the `to`
 method. This method identifies the target state and outlines the necessary actions to achieve that transition.
-Typically, these actions are assembled using the compose_clicks function, which accepts a list of XPaths to define the
+Typically, these actions are assembled using the `compose_clicks` function, which accepts a list of XPaths to define the
 elements that need to be clicked to execute the transition.
 
 ```python
 home_state.to(to_state=settings_state, ui_actions=compose_clicks(['xpath_button1', 'xpath_button2']))
 ```
 
-If we're defining a transition to a ContextualState, the transition probably needs to know the context to be executed.
-In that case you need to define the transition method from scratch, rather than use compose_clicks, by defining a method
+If you're defining a transition to a `ContextualState`, the transition probably needs to know the context to be executed.
+In that case you need to define the transition method from scratch, rather than use `compose_clicks`, by defining a method
 that takes the required context as an argument: 
 
 ```python
@@ -189,15 +187,15 @@ chat_state = ExampleAppChatState(parent_state=conversations_state)
 conversations_state.to(chat_state, open_chat)
 ```
 It's crucial that the name(s) of the variable(s) that represent the context match exactly (in the example: the variable
-name conversation). 
+name `conversation`).
 
 #### Actions
 
 Actions are functions that perform specific tasks within a state, such as sending a message or taking a picture. Actions
 are associated with states and can be executed when the application is in the correct state. To define these actions,
-the action decorator is used. This decorator ties the action function to a specific state, allowing the function to
+the `@action` decorator is used. This decorator ties the action function to a specific state, allowing the function to
 perform its designated tasks within that state. With this decorator, you don't have to concern yourself with navigating
-to the correct state before performing an action, as it ensures the application is in the right state for execution.
+to the correct state before performing an action, as it ensures the application is in the right state for execution of a
 specific action.
 
 ```python
@@ -209,8 +207,8 @@ def update_settings(self):
   self.driver.click('//android.widget.Button[@content-desc="Update Settings"]')
 ```
 
-When actions are to be performed a ContextualState, you need to add the arguments to the method signature, using the
-exact same variable names as used in the transition method and the validate_context method. Adding a send_message method
+When actions are to be performed a `ContextualState`, you need to add the arguments to the method signature, using the
+exact same variable names as used in the transition method and the `validate_context` method. Adding a `send_message` method
 to our example above looks like this:
 
 ```python
@@ -223,12 +221,12 @@ def send_message(self, message:str, conversation:str):
   self.driver.click('//button[@content_desc="Send"]')
 ```
 
-In this example the argument conversation is not used inside the send_message method, but it will be used to properly
+In this example, the argument `conversation` is not used inside the `send_message` method, but it will be used to properly
 navigate to the correct conversation.
 
 ## How to add a new application
-When adding support for a new application, make sure to add a new class to the correct location(eg `apps/android`). All 
-components mentioned in the [Stategraph section](#stategraph) all come together in the following class template:
+When adding support for a new application, make sure to add a new class to the correct location (eg `apps/android`). All
+components mentioned in the [Stategraph section](#stategraph) come together in the following class template:
 ```python
 from puma.state_graph.state_graph import StateGraph
 from puma.state_graph.state import SimpleState, compose_clicks
@@ -266,8 +264,10 @@ class ExampleApp(StateGraph):
         self.driver.click('//android.widget.Button[@content-desc="Update Settings"]')
 
 ```
-Note that this is a simple example. For a more advanced example using ContextualStates, see the Teleguard 
-implementation.
+Note that this is a simple example. For a more advanced example using `ContextualState`s, see the [Teleguard
+implementation](puma/apps/android/teleguard).
+
+The following steps should be taken to implement support for a new application:
 - Add the desired functionality (see [the next section](#how-to-write-appium-actions))
 - Add a README for this app and add a link to the project README
 - Add a test script in the [test scripts directory](test_scripts), in which each function is tested.
@@ -326,18 +326,20 @@ contact name as a parameter (see whatsapp.send_message()). However, performance-
 as for each message sent navigation to the home screen and back into the chat is required. Thus, this is really 
 dependent on the situation. The example of WhatsApp mentioned above allows both, so this is a good solution.
 
-### PopUp handling
-By default Puma handles some predefined popups, most notably permission requests. However, specific apps can have their own popups.
-To make sure Puma can handle those you can add a PopUpHandler to your application implementation.
-This can be done in the following manner in the init of your application:
+### Pop-up handling
+By default, Puma handles some predefined pop-ups, most notably permission requests. However, specific apps can have
+their own pop-ups. To make sure Puma can handle those, you can add a `PopUpHandler` to your application implementation.
+This can be done in the following manner in the `init` of your application:
 ```python
 self.add_popup_handler(PopUpHandler(['/xpath/for/recognition', '/xpath/recognition'], ['/xpath/for/dismissal']))
 ```
-There is also a convenience method `simple_popup_handler`, which only requires a single xpath expression that is used for recognition and dismissal and returns a PopUpHandler.
+There is also a convenience method `simple_popup_handler`, which only requires a single XPath expression that is used
+for recognition and dismissal and returns a `PopUpHandler`.
 
-### Case Sensitivity in XPATH:
-XPATH is case-sensitive by default. As the element attribute values regularly change, and sometimes the only change is casing, use case insensitivity as much as possible:
-To make an XPATH expression case-insensitive, you can do the following:
+### Case Sensitivity in XPath:
+XPath is case-sensitive by default. As the element attribute values regularly change, and sometimes the only change is
+casing, use case insensitivity as much as possible. To make an XPath expression case-insensitive, you can do the
+following:
   ```xpath
   //*[lower-case(@attribute) = 'value']
   ```
@@ -348,7 +350,7 @@ For some apps, the elements do not have any identifying attributes. In that case
 coordinates. Note that this is not the preferred way, but sometimes this is inevitable.
 
 > :warning: The `click_text_ocr()` method can only click on single words, as the underlying OCR tool (tesseract) can only recognize single words and not sentences.
-> Keep this in mind when writing code: for example if you want to click the text `continue game`, you need to call `click_ocr(`continue`).
+> Keep this in mind when writing code: for example, if you want to click the text `continue game`, you need to call `click_ocr('continue')`.
 
 
 ## Supporting new app versions
