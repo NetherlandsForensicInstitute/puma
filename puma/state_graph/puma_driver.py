@@ -224,7 +224,7 @@ class PumaDriver:
             self._screen_recorder = AdbScreenRecorder(self.adb)
             self._screen_recorder.start_recording()
 
-    def _stop_recording_and_save_video(self) -> [str] | None:
+    def _stop_recording_and_save_video(self) -> list[str] | None:
         if self._screen_recorder is None:
             return None
         video_files = self._screen_recorder.stop_recording(self._screen_recorder_output_directory)
