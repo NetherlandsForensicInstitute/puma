@@ -1,8 +1,6 @@
 import functools
 import os
-import sys
 import time
-import warnings
 from datetime import datetime
 from pathlib import Path
 from typing import Dict
@@ -17,6 +15,7 @@ from appium.webdriver.common.appiumby import AppiumBy
 from appium.webdriver.extensions.android.nativekey import AndroidKey
 from appium.webdriver.webdriver import WebDriver
 from selenium.common import NoSuchElementException
+from typing_extensions import deprecated
 from urllib3.exceptions import MaxRetryError
 
 from puma.apps.android import logger
@@ -60,6 +59,7 @@ def supported_version(version: str):
     return decorator
 
 
+@deprecated('AndroidAppiumActions is deprecated since Puma version 3.0.0. Use the StateGraph instead.')
 class AndroidAppiumActions:
 
     def __init__(self,

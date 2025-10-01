@@ -9,10 +9,16 @@ Thank you for considering contributing to our project! By following these guidel
   * [Development Installation](#development-installation)
   * [Issues](#issues)
   * [Pull Requests](#pull-requests)
-  * [Development requirements](#development-requirements)
   * [Coding Standards](#coding-standards)
   * [Documentation](#documentation)
     * [App Version Support:](#app-version-support)
+  * [StateGraph](#stategraph)
+    * [Key Components](#key-components)
+      * [States](#states)
+        * [SimpleState](#simplestate)
+        * [Contextual states](#contextual-states)
+      * [Transitions](#transitions)
+      * [Actions](#actions)
   * [How to add a new application](#how-to-add-a-new-application)
   * [How to write Appium actions](#how-to-write-appium-actions)
     * [Example: writing new Appium actions](#example-writing-new-appium-actions)
@@ -72,35 +78,201 @@ pip install -r requirements.txt
 Any pull request to the `main` branch must **fully** support a specific version of the application. (See [Supporting new app versions](#supporting-new-app-versions)) This version should be
 newer than the version currently supported by the codebase.
 
+## StateGraph
+
+Puma uses a StateGraph framework for managing UI states and transitions in applications. This approach uses a
+state machine pattern to handle navigation and actions within an app, making it more robust and easier to manage
+complex interactions.
+The StateGraph framework is designed to model the user interface of an application as a graph of states, where each
+state represents a screen within the app. Transitions between these states are defined by actions that can be performed
+on the UI, such as clicking buttons or navigating menus.
+
+### Key Components
+#### States
+
+States represent different screens within the application, for example the conversations screen, the chat screen and the
+settings screen.
+
+##### SimpleState
+
+States are usually defined using the `SimpleState` class, which requires a list of XPaths representing elements
+that identify the state. The `initial_state` parameter indicates the starting state of the application:
+
+```python
+home_state = SimpleState(xpaths=['//android.widget.TextView[@content-desc="Home"]'],
+                         initial_state=True)
+```
+
+##### Contextual states
+
+A `ContextualState` is a special kind of state that takes context into account when validating the UI. Imagine you're in a
+chat application where you have a chat screen for sending messages a contact. If you want to check whether
+you're in a chat screen, you can do so, but if you want to check whether you're in a chat screen with a specific person,
+you need the context. To achieve this, `ContextualState` expands the `State` class with an additional verification method
+named `validate_context`, which has the additional input the validation code needs to validate whether the current screen is
+indeed the exact screen we're looking for. Aside from `validate_context`, `ContextualState`s still have a `validate` method, which
+should check whether the current screen matches the state, without any context. In the example of the chat state in a
+chat app, `validate` should return `True` if we're in ANY chat screen, while `validate_context` should return `True` if we're in the
+chat screen with the specified person.
+
+```python
+class ExampleAppChatState(SimpleState, ContextualState):
+  """
+  A state representing a chat screen in the application.
+  This class extends both SimpleState and ContextualState to represent a chat screen
+  and validate its context based on the conversation name.
+  """
+
+  def __init__(self, parent_state):
+    """
+    Initializes the ChatState with a parent state.
+
+    :param parent_state: The parent state of this chat state.
+    """
+    super().__init__(xpaths=["xpath1", "xpath2"],
+                     parent_state=parent_state)
+
+  def validate_context(self, driver, conversation=None):
+    """
+    Validates the context of the chat state.
+
+    This method checks if the current chat screen matches the expected conversation name.
+
+    :param driver: The driver instance used to interact with the application.
+    :param conversation: The name of the conversation to validate against.
+    :return: True if the context is valid, False otherwise.
+    """
+    if not conversation:
+      return True
+    return driver.is_present(f'//some_element[@text = "{conversation}"]')
+```
+
+In this example, a chat state for a specific application is created by inheriting from both `SimpleState` and
+`ContextualState`. This dual inheritance allows the chat state to utilize the fundamental state capabilities provided by
+`SimpleState`, while also incorporating the context validation features of `ContextualState`. The `validate_context` method is
+crucial here: it ensures that the current context, such as a specific conversation, aligns with the expected context.
+This method verifies whether the provided conversation name matches the name of the conversation currently shown on the
+screen. (Note: If you wish to implement your own validation method without using SimpleState, you don't need to inherit
+from `SimpleState`.)
+Below, you can see how you can use the `ChatState`:
+```python
+conversations_state = SimpleState(["xpath1", "xpath2"], initial_state=True)
+chat_state = ExampleAppChatState(parent_state=conversations_state)
+```
+
+#### Transitions
+
+Transitions specify the process of moving from one state to another. They are generally made up of a sequence of user
+interface actions, such as clicking on specific elements that facilitate the transition to a different state, like
+clicking a settings button to navigate to the settings state. These transitions between states are defined using the `to`
+method. This method identifies the target state and outlines the necessary actions to achieve that transition.
+Typically, these actions are assembled using the `compose_clicks` function, which accepts a list of XPaths to define the
+elements that need to be clicked to execute the transition.
+
+```python
+home_state.to(to_state=settings_state, ui_actions=compose_clicks(['xpath_button1', 'xpath_button2']))
+```
+
+If you're defining a transition to a `ContextualState`, the transition probably needs to know the context to be executed.
+In that case you need to define the transition method from scratch, rather than use `compose_clicks`, by defining a method
+that takes the required context as an argument: 
+
+```python
+def open_chat(driver:PumaDriver, conversation:str):
+    driver.click(f'//contact_row[@text="{conversation}"]')
+
+conversations_state = SimpleState(["xpath1", "xpath2"], initial_state=True)
+chat_state = ExampleAppChatState(parent_state=conversations_state)
+
+conversations_state.to(chat_state, open_chat)
+```
+It's crucial that the name(s) of the variable(s) that represent the context match exactly (in the example: the variable
+name `conversation`).
+
+#### Actions
+
+Actions are functions that perform specific tasks within a state, such as sending a message or taking a picture. Actions
+are associated with states and can be executed when the application is in the correct state. To define these actions,
+the `@action` decorator is used. This decorator ties the action function to a specific state, allowing the function to
+perform its designated tasks within that state. With this decorator, you don't have to concern yourself with navigating
+to the correct state before performing an action, as it ensures the application is in the right state for execution of a
+specific action.
+
+```python
+@action(settings_state)
+def update_settings(self):
+  """
+  Updates settings in the application.
+  """
+  self.driver.click('//android.widget.Button[@content-desc="Update Settings"]')
+```
+
+When actions are to be performed a `ContextualState`, you need to add the arguments to the method signature, using the
+exact same variable names as used in the transition method and the `validate_context` method. Adding a `send_message` method
+to our example above looks like this:
+
+```python
+@action(chat_state)
+def send_message(self, message:str, conversation:str):
+  """
+  Sends a message to a specific person
+  """
+  self.driver.send_keys('//text_field', message)
+  self.driver.click('//button[@content_desc="Send"]')
+```
+
+In this example, the argument `conversation` is not used inside the `send_message` method, but it will be used to properly
+navigate to the correct conversation.
 
 ## How to add a new application
-When adding support for a new application, make sure to add a new class to the correct location(eg `apps/android). Class template:
+When adding support for a new application, make sure to add a new class to the correct location (eg `apps/android`). All
+components mentioned in the [Stategraph section](#stategraph) come together in the following class template:
 ```python
-from puma.apps.android.appium_actions import supported_version, AndroidAppiumActions
+from puma.state_graph.state_graph import StateGraph
+from puma.state_graph.state import SimpleState, compose_clicks
+from puma.state_graph.action import action
 
-APPLICATION_PACKAGE = 'TODO'
+APPLICATION_PACKAGE = 'com.example.app'
 
-@supported_version("YOUR VERSION")
-class ApplicationActions(AndroidAppiumActions):
-    def __init__(self,
-                 device_udid,
-                 desired_capabilities: Dict[str, str] = None,
-                 implicit_wait=1,
-                 appium_server='http://localhost:4723'):
+class ExampleApp(StateGraph):
+    """
+    A class representing a state graph for managing UI states and transitions in an example application.
+    """
+
+    # Define states
+    home_state = SimpleState(xpaths=['//android.widget.TextView[@content-desc="Home"]'],
+                            initial_state=True)
+    settings_state = SimpleState(xpaths=['//android.widget.TextView[@content-desc="Settings"]'])
+
+    # Define transitions
+    home_state.to(settings_state, compose_clicks(['//android.widget.Button[@content-desc="Go to Settings"]']))
+
+    def __init__(self, device_udid):
         """
-        Class with an API for Application using Appium. Can be used with an emulator or real device attached to the computer.
+        Initializes the ExampleApp with a device UDID.
+
+        :param device_udid: The unique device identifier for the Android device.
         """
-        AndroidAppiumActions.__init__(self,
-                                      device_udid,
-                                      APPLICATION_PACKAGE,
-                                      desired_capabilities=desired_capabilities,
-                                      implicit_wait=implicit_wait,
-                                      appium_server=appium_server)
+        StateGraph.__init__(self, device_udid, APPLICATION_PACKAGE)
+
+    @action(settings_state)
+    def update_settings(self):
+        """
+        Updates settings in the application.
+        """
+        # Perform actions to update settings
+        self.driver.click('//android.widget.Button[@content-desc="Update Settings"]')
+
 ```
+Note that this is a simple example. For a more advanced example using `ContextualState`s, see the [Teleguard
+implementation](puma/apps/android/state_graph/teleguard).
+
+The following steps should be taken to implement support for a new application:
 - Add the desired functionality (see [the next section](#how-to-write-appium-actions))
 - Add a README for this app and add a link to the project README
 - Add a test script in the [test scripts directory](test_scripts), in which each function is tested.
 - Add your class to the list of apps in [publish_app_tags](.github/scripts/publish_app_tags.py)
+- Add the app name to the list of supported apps in the [README](README.md#supported-apps)
 
 ## How to write Appium actions
 Appium is a framework for testing applications, based on Selenium. In this project, we use Appium to execute actions on the device.
@@ -154,9 +326,20 @@ contact name as a parameter (see whatsapp.send_message()). However, performance-
 as for each message sent navigation to the home screen and back into the chat is required. Thus, this is really 
 dependent on the situation. The example of WhatsApp mentioned above allows both, so this is a good solution.
 
-### Case Sensitivity in XPATH:
-XPATH is case-sensitive by default. As the element attribute values regularly change, and sometimes the only change is casing, use case insensitivity as much as possible:
-To make an XPATH expression case-insensitive, you can do the following:
+### Pop-up handling
+By default, Puma handles some predefined pop-ups, most notably permission requests. However, specific apps can have
+their own pop-ups. To make sure Puma can handle those, you can add a `PopUpHandler` to your application implementation.
+This can be done in the following manner in the `init` of your application:
+```python
+self.add_popup_handler(PopUpHandler(['/xpath/for/recognition', '/xpath/recognition'], ['/xpath/for/dismissal']))
+```
+There is also a convenience method `simple_popup_handler`, which only requires a single XPath expression that is used
+for recognition and dismissal and returns a `PopUpHandler`.
+
+### Case Sensitivity in XPath:
+XPath is case-sensitive by default. As the element attribute values regularly change, and sometimes the only change is
+casing, use case insensitivity as much as possible. To make an XPath expression case-insensitive, you can do the
+following:
   ```xpath
   //*[lower-case(@attribute) = 'value']
   ```
@@ -167,7 +350,7 @@ For some apps, the elements do not have any identifying attributes. In that case
 coordinates. Note that this is not the preferred way, but sometimes this is inevitable.
 
 > :warning: The `click_text_ocr()` method can only click on single words, as the underlying OCR tool (tesseract) can only recognize single words and not sentences.
-Keep this in mind when writing code: for example if you want to click the text `continue game`, you need to call `click_ocr(`continue`).
+> Keep this in mind when writing code: for example, if you want to click the text `continue game`, you need to call `click_ocr('continue')`.
 
 
 ## Supporting new app versions

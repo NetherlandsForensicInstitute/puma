@@ -16,13 +16,14 @@ setup(
     packages=find_packages(include=['puma*']),
     test_suite="test",
     install_requires=[
+        "urllib3~=2.5.0",
         "appium-python-client~=4.3.0",
         "Pillow==10.4.0",
         "pytesseract==0.3.10",
         "geopy~=2.4.1",
         "setuptools~=80.9.0",
         "gpxpy~=1.6.2",
-        "adb_pywrapper~=1.0.3",
+        "adb_pywrapper~=1.0.4",
         "requests~=2.32.3"
     ],
 )
