@@ -3,6 +3,7 @@ from typing import Dict
 
 from appium.webdriver.common.appiumby import AppiumBy
 
+from puma.apps.android import log_action
 from puma.apps.android.appium_actions import AndroidAppiumActions, supported_version
 
 OPEN_CAMERA_PACKAGE = 'net.sourceforge.opencamera'
@@ -48,6 +49,7 @@ class OpenCameraActions(AndroidAppiumActions):
             button = self.driver.find_element(by=AppiumBy.XPATH, value=video_mode_button)
             button.click()
 
+    @log_action
     def take_picture(self):
         """
         Takes a picture.
@@ -55,6 +57,7 @@ class OpenCameraActions(AndroidAppiumActions):
         self._switch_to_photo_mode()
         self._click_shutter()
 
+    @log_action
     def switch_camera(self):
         """
         Switches between the front and back camera.
@@ -63,6 +66,7 @@ class OpenCameraActions(AndroidAppiumActions):
         switch_camera_button = self.driver.find_element(by=AppiumBy.XPATH, value=xpath)
         switch_camera_button.click()
 
+    @log_action
     def take_video(self, duration: int):
         """
         Takes a video of a given duration.
@@ -74,6 +78,7 @@ class OpenCameraActions(AndroidAppiumActions):
         finally:
             self._click_shutter()
 
+    @log_action
     def zoom(self, zoom_amount: float):
         """
         Zooms to a given level between 0.0 (zoomed out completely) and 1.0 (zoomed in completely).

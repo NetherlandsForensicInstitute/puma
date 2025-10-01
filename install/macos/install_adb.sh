@@ -18,7 +18,7 @@ echo "Setting environment variables"
 
 current_dir=$(dirname "$(realpath "$0")")
 source "$current_dir"/../common/get_shell.sh
-SHELL_PROFILE=$(shell_profile)
+SHELL_PROFILE=$(shell_profile) #TODO this does not work on Mac
 
 if [ -n "$SHELL_PROFILE" ]; then
     # Check if variables already exist in the profile
@@ -60,3 +60,5 @@ unzip -q "$TEMP_DIR"/platform-tools.zip -d "$ANDROID_SDK_DIR"
 
 echo "Cleaning up temporary files..."
 rm -rf "$TEMP_DIR"
+
+#TODO adb to path
