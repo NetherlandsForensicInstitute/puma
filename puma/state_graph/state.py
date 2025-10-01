@@ -11,6 +11,7 @@ class State(ABC):
     """
     Abstract class representing a state. Each state represents a window in the UI.
     """
+
     def __init__(self, parent_state: 'State' = None, initial_state: bool = False):
         """
         Initializes a new State instance.
@@ -65,7 +66,8 @@ class SimpleState(State):
     """
     Simple State. This is a standard state which can be validated by providing a list of XPaths.
     """
-    def __init__(self, xpaths: List[str], initial_state: bool = False, parent_state: 'State' = None, ):
+
+    def __init__(self, xpaths: List[str], initial_state: bool = False, parent_state: 'State' = None):
         """
         Initializes a new SimpleState instance.
 
@@ -79,8 +81,9 @@ class SimpleState(State):
     def validate(self, driver: PumaDriver) -> bool:
         """
         Validates if all XPaths are present on the screen.
-        :param driver: The PPumaDriver instance to use.
-        :return: a boolean
+
+        :param driver: The PumaDriver instance to use.
+        :return: True if all XPaths are present, otherwise False.
         """
         return all(driver.is_present(xpath) for xpath in self.xpaths)
 
@@ -88,7 +91,8 @@ class SimpleState(State):
 def back(driver: PumaDriver):
     """
     Utility method for calling the back action in Android devices.
-    :param driver: PumaDriver
+
+    :param driver: The PumaDriver instance to use.
     """
     logger.info(f'calling driver.back() with driver {driver}')
     driver.back()

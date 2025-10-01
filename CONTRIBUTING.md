@@ -265,7 +265,7 @@ class ExampleApp(StateGraph):
 
 ```
 Note that this is a simple example. For a more advanced example using `ContextualState`s, see the [Teleguard
-implementation](puma/apps/android/teleguard).
+implementation](puma/apps/android/state_graph/teleguard).
 
 The following steps should be taken to implement support for a new application:
 - Add the desired functionality (see [the next section](#how-to-write-appium-actions))

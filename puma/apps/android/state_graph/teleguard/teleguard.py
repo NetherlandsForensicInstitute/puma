@@ -1,6 +1,5 @@
 from appium.webdriver.common.appiumby import AppiumBy
 
-from puma.apps.android.state_graph.google_camera.google_camera import GoogleCamera
 from puma.apps.android.state_graph.teleguard import logger
 from puma.state_graph.puma_driver import PumaDriver, supported_version
 from puma.state_graph.action import action
@@ -9,7 +8,6 @@ from puma.state_graph.state import ContextualState, SimpleState, compose_clicks
 
 APPLICATION_PACKAGE = 'ch.swisscows.messenger.teleguardapp'
 
-# TODO: Move to separate xpaths file?
 CONVERSATION_STATE_TELEGUARD_HEADER = '//android.view.View[@content-desc="TeleGuard"]'
 CONVERSATION_STATE_HAMBURGER_MENU = '//android.widget.FrameLayout[@resource-id="android:id/content"]/android.widget.FrameLayout/android.widget.FrameLayout/android.view.View/android.view.View/android.view.View/android.view.View/android.view.View[1]/android.view.View[2]/android.view.View[3]'
 CONVERSATION_STATE_SETTINGS_BUTTON = '//android.widget.ImageView[@content-desc="Settings"]'
@@ -114,15 +112,15 @@ class TeleGuard(StateGraph):
         self.driver.click(CHAT_STATE_SEND_BUTTON)
 
     @action(conversations_state)
-    def add_contact(self, id: str):
+    def add_contact(self, teleguard_id: str):
         """
         Adds a contact by TeleGuard ID.
 
-        :param id: The TeleGuard ID of the contact to add.
+        :param teleguard_id: The TeleGuard ID of the contact to add.
         """
         self.driver.click(CONVERSATION_STATE_HAMBURGER_MENU)
         self.driver.click('//android.widget.ImageView[@content-desc="Add contact"]')
-        self.driver.send_keys('//android.widget.EditText', id)
+        self.driver.send_keys('//android.widget.EditText', teleguard_id)
         self.driver.click('//android.widget.Button[@content-desc="INVITE"]')
 
     @action(conversations_state)
