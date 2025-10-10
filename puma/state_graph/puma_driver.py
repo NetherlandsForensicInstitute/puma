@@ -19,6 +19,7 @@ from puma.computer_vision.ocr import RecognizedText
 from puma.state_graph import logger
 from puma.utils import CACHE_FOLDER
 
+KEYCODE_ENTER = 66
 
 class PumaClickException(Exception):
     """
@@ -212,6 +213,12 @@ class PumaDriver:
         """
         element = self.get_element(xpath)
         element.send_keys(keys)
+
+    def press_enter(self):
+        """
+        Presses the ENTER key.
+        """
+        self.driver.press_keycode(KEYCODE_ENTER)
 
     def start_recording(self, output_directory: str):
         """

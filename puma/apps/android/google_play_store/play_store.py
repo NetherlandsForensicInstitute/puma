@@ -1,0 +1,87 @@
+import time
+
+from puma.state_graph.action import action
+from puma.state_graph.popup_handler import PopUpHandler
+from puma.state_graph.puma_driver import supported_version, PumaDriver
+from puma.state_graph.state import SimpleState, compose_clicks, ContextualState
+from puma.state_graph.state_graph import StateGraph
+
+APPLICATION_PACKAGE = 'com.android.vending'
+
+PAYMENT_POPUP_HANDLER = PopUpHandler(['//android.widget.TextView[@text="Pay your way with Google Play"]',
+                                      '//android.widget.ImageView[@content-desc="close"]'],
+                                     ['//android.widget.ImageView[@content-desc="close"]'])
+LOCAL_RECOMMENDATIONS_POPUP_HANDLER = PopUpHandler(
+    ['//android.widget.TextView[@text="Want to see local recommendations in Google Play?"]',
+     '//android.widget.Button[@text="No thanks"]'], ['//android.widget.Button[@text="No thanks"]'])
+
+HOME_SCREEN_TABS = '(//android.view.View[count(.//android.widget.TextView[@text="Games" or @text="Apps" or @text="Search" or @text="Books"]) = 4])[last()]'
+APPS_TAB_SELECTED = '//android.view.View[.//android.widget.ImageView[@selected="true"] and ./android.widget.TextView[@text="Apps"]]'
+GAMES_TAB_SELECTED = '//android.view.View[.//android.widget.ImageView[@selected="true"] and ./android.widget.TextView[@text="Games"]]'
+SEARCH_TAB_SELECTED = '//android.view.View[.//android.widget.ImageView[@selected="true"] and ./android.widget.TextView[@text="Search"]]'
+BOOKS_TAB_SELECTED = '//android.view.View[.//android.widget.ImageView[@selected="true"] and ./android.widget.TextView[@text="Books"]]'
+
+APPS_TAB_BUTTON = '//android.view.View[./android.widget.TextView[@text="Apps"]]'
+SEARCH_TAB_BUTTON = '//android.view.View[./android.widget.TextView[@text="Search"]]'
+
+SEARCH_BAR_BUTTON = '//android.widget.TextView[@text="Search apps & games"]'
+SEARCH_BUTTON = '//android.view.View[@content-desc="Search Google Play"]'
+SEARCH_BAR_TEXTBOX = '//android.widget.EditText'
+
+APP_PAGE_REVIEWS_BADGE = '//android.view.View[starts-with(@content-desc, "Average rating") and ends-with(@content-desc, "reviews")]'
+APP_PAGE_DOWNLOADS_BADGE = '//android.view.View[starts-with(@content-desc, "Downloaded")]'
+APP_PAGE_CONTENT_RATING_BADGE = '//android.view.View[starts-with(@content-desc, "Content rating")]'
+APP_PAGE_INSTALL_BUTTON = '//android.view.View[@content-desc="Install"]'
+
+
+class AppPage(SimpleState, ContextualState):
+    def __init__(self, parent_state):
+        """
+        Initializes the App page state with a given parent state.
+
+        :param parent_state: The parent state of this app page state.
+        """
+        super().__init__(
+            xpaths=[HOME_SCREEN_TABS, APP_PAGE_INSTALL_BUTTON, APP_PAGE_REVIEWS_BADGE, APP_PAGE_DOWNLOADS_BADGE,
+                    APP_PAGE_CONTENT_RATING_BADGE],
+            parent_state=parent_state)
+
+    def validate_context(self, driver: PumaDriver, app_name: str = None) -> bool:
+        if not app_name:
+            return True
+        actual_app_name = driver.get_element('(//android.widget.TextView[@text])[1]').get_attribute('text')
+        return app_name.lower() in actual_app_name.lower()
+
+
+
+
+@supported_version("")
+class PlayStore(StateGraph):
+    apps_tab_state = SimpleState([HOME_SCREEN_TABS, APPS_TAB_SELECTED], initial_state=True)
+    search_tab_state = SimpleState([HOME_SCREEN_TABS, SEARCH_TAB_SELECTED], parent_state=apps_tab_state)
+    app_page_state = AppPage(search_tab_state)
+
+    apps_tab_state.to(search_tab_state, compose_clicks([SEARCH_TAB_BUTTON]))
+    search_tab_state.to(app_page_state, None) # TODO: transition: as action or somehow else?
+
+    def __init__(self, device_udid):
+        StateGraph.__init__(self, device_udid, APPLICATION_PACKAGE)
+        self.add_popup_handler(PAYMENT_POPUP_HANDLER)
+
+    @action(search_tab_state)
+    def search(self, app_name: str):
+        if self.driver.is_present(SEARCH_BAR_BUTTON):
+            self.driver.click(SEARCH_BAR_BUTTON)
+        elif self.driver.is_present(SEARCH_BUTTON):
+            self.driver.click(SEARCH_BUTTON)
+        self.driver.get_element(SEARCH_BAR_TEXTBOX).clear()
+        self.driver.send_keys(SEARCH_BAR_TEXTBOX, app_name)
+        self.driver.press_enter()
+
+
+if __name__ == '__main__':
+    store = PlayStore("34281JEHN03866")
+
+    store.search('chatgpt')
+    time.sleep(1)
+    store.search('test')
