@@ -31,12 +31,23 @@ class State(ABC):
 
     def to(self, to_state: 'State', ui_actions: Callable[..., None]):
         """
-        Transition to another state.
+        Define the transition from this state to another state.
 
         :param to_state: The next state to transition to.
         :param ui_actions: A list of UI action functions to perform the transition.
         """
         self.transitions.append(Transition(self, to_state, ui_actions))
+
+    def from_states(self, from_states: List['State'], ui_actions: Callable[..., None]):
+        """
+        Define the transition from a set of other states to this states.
+        This method is convenient when a state can be reached from many other states with the same UI actions.
+
+        :param from_states: The next state to transition to.
+        :param ui_actions: A list of UI action functions to perform the transition.
+        """
+        for s in from_states:
+            s.to(self, ui_actions)
 
     @abstractmethod
     def validate(self, driver: PumaDriver) -> bool:

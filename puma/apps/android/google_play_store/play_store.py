@@ -1,4 +1,4 @@
-import time
+import re
 
 from puma.state_graph.action import action
 from puma.state_graph.popup_handler import PopUpHandler
@@ -23,6 +23,8 @@ BOOKS_TAB_SELECTED = '//android.view.View[.//android.widget.ImageView[@selected=
 
 APPS_TAB_BUTTON = '//android.view.View[./android.widget.TextView[@text="Apps"]]'
 SEARCH_TAB_BUTTON = '//android.view.View[./android.widget.TextView[@text="Search"]]'
+GAMES_TAB_BUTTON = '//android.view.View[./android.widget.TextView[@text="Games"]]'
+BOOKS_TAB_BUTTON = '//android.view.View[./android.widget.TextView[@text="Books"]]'
 
 SEARCH_BAR_BUTTON = '//android.widget.TextView[@text="Search apps & games"]'
 SEARCH_BUTTON = '//android.view.View[@content-desc="Search Google Play"]'
@@ -53,16 +55,19 @@ class AppPage(SimpleState, ContextualState):
         return app_name.lower() in actual_app_name.lower()
 
 
-
-
 @supported_version("")
 class PlayStore(StateGraph):
     apps_tab_state = SimpleState([HOME_SCREEN_TABS, APPS_TAB_SELECTED], initial_state=True)
-    search_tab_state = SimpleState([HOME_SCREEN_TABS, SEARCH_TAB_SELECTED], parent_state=apps_tab_state)
-    app_page_state = AppPage(search_tab_state)
+    search_tab_state = SimpleState([HOME_SCREEN_TABS, SEARCH_TAB_SELECTED])
+    games_tab_state = SimpleState([HOME_SCREEN_TABS, GAMES_TAB_SELECTED])
+    books_tab_state = SimpleState([HOME_SCREEN_TABS, BOOKS_TAB_SELECTED])
+    # app_page_state = AppPage(search_tab_state)
 
-    apps_tab_state.to(search_tab_state, compose_clicks([SEARCH_TAB_BUTTON]))
-    search_tab_state.to(app_page_state, None) # TODO: transition: as action or somehow else?
+    apps_tab_state.from_states([search_tab_state, games_tab_state, books_tab_state], compose_clicks([APPS_TAB_BUTTON], name='click_apps_tab'))
+    search_tab_state.from_states([apps_tab_state, games_tab_state, books_tab_state], compose_clicks([SEARCH_TAB_BUTTON], name='click_search_tab'))
+    games_tab_state.from_states([apps_tab_state, search_tab_state, books_tab_state], compose_clicks([GAMES_TAB_BUTTON], name='click_games_tab'))
+    books_tab_state.from_states([apps_tab_state, search_tab_state, games_tab_state], compose_clicks([BOOKS_TAB_BUTTON], name='click_books_tab'))
+    # search_tab_state.to(app_page_state, None)  # TODO: transition: as action or somehow else? State accessible from anywhere by opening the URL?
 
     def __init__(self, device_udid):
         StateGraph.__init__(self, device_udid, APPLICATION_PACKAGE)
@@ -78,10 +83,13 @@ class PlayStore(StateGraph):
         self.driver.send_keys(SEARCH_BAR_TEXTBOX, app_name)
         self.driver.press_enter()
 
+    # TODO: do we want this kind of action that is not based on UI actions?
+    def _is_valid_package_name(package_name: str) -> bool:
+        pattern = r'^[a-z_][a-z0-9_]*(\.[a-z_][a-z0-9_]*)*$'
+        return bool(re.fullmatch(pattern, package_name)) and len(package_name) <= 100
 
-if __name__ == '__main__':
-    store = PlayStore("34281JEHN03866")
-
-    store.search('chatgpt')
-    time.sleep(1)
-    store.search('test')
+    def open_app_page(self, package_name: str):
+        if not self._is_valid_package_name(package_name):
+            raise ValueError(f'Invalid package name for app: {package_name}')
+        self.driver.open_url(f'https://play.google.com/store/apps/details?id={package_name}')
+        self.current_state = PlayStore.app_page_state

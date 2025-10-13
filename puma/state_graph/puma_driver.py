@@ -220,6 +220,12 @@ class PumaDriver:
         """
         self.driver.press_keycode(KEYCODE_ENTER)
 
+    def open_url(self, url: str):
+        """
+        Opens a given URL. This URl will open in the default app configured for that URL.
+        """
+        self.driver.get(url)
+
     def start_recording(self, output_directory: str):
         """
         Starts a screen recording.
