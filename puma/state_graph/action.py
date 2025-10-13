@@ -1,5 +1,6 @@
 import inspect
 
+from puma import gtl_logger
 from puma.state_graph import logger
 from puma.state_graph.state import State
 
@@ -33,16 +34,16 @@ def action(to_state: State):
             puma_ui_graph.go_to_state(to_state, **arguments)
 
             try:
-                logger.info(f"[{puma_ui_graph.driver.options.udid}] Executing action {func.__name__} with arguments: {args} and key word arguments: {kwargs} for application: {puma_ui_graph.__class__.__name__}")
-                # TODO GROUND TRUTH LOGGING: use GTL logger to record action call
+                gtl_logger.info(f"[{puma_ui_graph.driver.options.udid}] Executing action {func.__name__} with arguments: {args} and key word arguments: {kwargs} for application: {puma_ui_graph.__class__.__name__}")
                 result = func(*args, **kwargs)
             except:
-                logger.info(f"[{puma_ui_graph.driver.options.udid}] Failed to execute action {func.__name__}, retrying once.")
+                gtl_logger.info(f"[{puma_ui_graph.driver.options.udid}] Failed to execute action {func.__name__}.")
                 puma_ui_graph.recover_state(to_state)
                 puma_ui_graph.go_to_state(to_state, **arguments)
+                gtl_logger.info(f'Retrying action {func.__name__}')
                 result = func(*args, **kwargs)
             puma_ui_graph.try_restart = True
-            logger.info(f"[{puma_ui_graph.driver.options.udid}] Successfully executed action {func.__name__} with arguments: {args} and key word arguments: {kwargs} for application: {puma_ui_graph.__class__.__name__}")
+            gtl_logger.info(f"[{puma_ui_graph.driver.options.udid}] Successfully executed action {func.__name__} with arguments: {args} and key word arguments: {kwargs} for application: {puma_ui_graph.__class__.__name__}")
             return result
 
         return wrapper
