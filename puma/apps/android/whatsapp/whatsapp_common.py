@@ -6,11 +6,13 @@ from typing import Union, List
 from appium.webdriver.common.appiumby import AppiumBy
 from selenium.common import NoSuchElementException
 from selenium.webdriver.common.by import By
+from typing_extensions import deprecated
 
 from puma.apps.android import log_action
 from puma.apps.android.appium_actions import AndroidAppiumActions
 
 
+@deprecated('This class does not use the Puma state machine, and will therefore not be maintained.')
 class WhatsAppCommon(AndroidAppiumActions, ABC):
 
     @abstractmethod

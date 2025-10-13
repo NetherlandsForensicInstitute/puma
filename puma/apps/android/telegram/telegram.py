@@ -2,6 +2,7 @@ from time import sleep
 from typing import Dict, Optional
 
 from appium.webdriver.common.appiumby import AppiumBy
+from typing_extensions import deprecated
 
 from puma.apps.android import log_action
 from puma.apps.android.appium_actions import supported_version, AndroidAppiumActions
@@ -10,6 +11,7 @@ TELEGRAM_PACKAGE = 'org.telegram.messenger'
 TELEGRAM_WEB_PACKAGE = 'org.telegram.messenger.web'
 
 
+@deprecated('This class does not use the Puma state machine, and will therefore not be maintained.')
 @supported_version("11.9.0")
 class TelegramActions(AndroidAppiumActions):
 

@@ -2,6 +2,7 @@ from time import sleep
 from typing import Dict
 
 from appium.webdriver.common.appiumby import AppiumBy
+from typing_extensions import deprecated
 
 from puma.apps.android import log_action
 from puma.apps.android.appium_actions import AndroidAppiumActions, supported_version
@@ -9,6 +10,7 @@ from puma.apps.android.appium_actions import AndroidAppiumActions, supported_ver
 SNAPCHAT_PACKAGE = 'com.snapchat.android'
 
 
+@deprecated('This class does not use the Puma state machine, and will therefore not be maintained.')
 @supported_version("12.90.0.46")
 class SnapchatActions(AndroidAppiumActions):
     def __init__(self,

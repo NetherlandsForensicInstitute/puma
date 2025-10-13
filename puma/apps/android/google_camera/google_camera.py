@@ -1,13 +1,16 @@
 from typing import Dict
 
 from appium.webdriver.common.appiumby import AppiumBy
+from typing_extensions import deprecated
 
-from puma.apps.android import log_action, logger
+from puma.apps.android import log_action
 from puma.apps.android.appium_actions import AndroidAppiumActions, supported_version
 
 GOOGLE_CAMERA_PACKAGE = 'com.google.android.GoogleCamera'
 
 
+@deprecated('This class does not use the Puma state machine, and will therefore not be maintained. ' +
+            'Use google_camera.py in the state_graph package instead.')
 @supported_version("9.8.102")
 class GoogleCameraActions(AndroidAppiumActions):
     def __init__(self,

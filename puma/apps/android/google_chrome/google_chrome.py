@@ -1,6 +1,7 @@
 from typing import Dict
 
 from appium.webdriver.common.appiumby import AppiumBy
+from typing_extensions import deprecated
 
 from puma.apps.android import log_action
 from puma.apps.android.appium_actions import AndroidAppiumActions, supported_version
@@ -12,6 +13,8 @@ THREE_DOTS = '//android.widget.ImageButton[@content-desc="Customize and control 
 BOOKMARK_BUTTON = '//android.widget.Button[lower-case(@content-desc)="bookmark"]'
 EDIT_BOOKMARK_BUTTON = '//android.widget.Button[lower-case(@content-desc)="edit bookmark"]'
 
+
+@deprecated('This class does not use the Puma state machine, and will therefore not be maintained.')
 @supported_version("139.0.7258.62")
 class GoogleChromeActions(AndroidAppiumActions):
     def __init__(self,

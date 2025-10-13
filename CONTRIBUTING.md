@@ -274,6 +274,13 @@ The following steps should be taken to implement support for a new application:
 - Add your class to the list of apps in [publish_app_tags](.github/scripts/publish_app_tags.py)
 - Add the app name to the list of supported apps in the [README](README.md#supported-apps)
 
+## Legacy and deprecation
+In Puma 3.0.0, the `StateGraph` was introduced. Before that, a number of applications were already supported, using the
+old `AndroidAppiumActions` as an abstract base class. These classes are no longer maintained, and they are marked using
+the `@deprecated` decorator. If you want to add new functionality to these classes, please rewrite it to the Puma `StateGraph`,
+and add the functionality using the new framework. The classes using the new framework should be added in
+`puma/apps/android/state_graph`.
+
 ## How to write Appium actions
 Appium is a framework for testing applications, based on Selenium. In this project, we use Appium to execute actions on the device.
 In this context, we define functions in Python that exist of one or more `Appium actions`. An Appium action is a one

@@ -7,6 +7,12 @@ Puma supports taking pictures and video, switching between front and rear camera
 The app can be installed from [the Play Store](https://play.google.com/store/apps/details?id=net.sourceforge.opencamera)
 or [F-Droid](https://f-droid.org/packages/net.sourceforge.opencamera/).
 
+## Deprecation
+
+This class does not use `StateGraph` as its base class, and has therefore been deprecated since Puma 3.0.0. It can still
+be used, but it will not be maintained. If you want to add functionality, please rewrite this class using `StateGraph`
+as the abstract base class. Also see the [CONTRIBUTING.md](../../../../CONTRIBUTING.md).
+
 ## Prerequisites
 
 - The application is installed on your device
