@@ -34,6 +34,7 @@ def action(to_state: State):
 
             try:
                 logger.info(f"[{puma_ui_graph.driver.options.udid}] Executing action {func.__name__} with arguments: {args} and key word arguments: {kwargs} for application: {puma_ui_graph.__class__.__name__}")
+                # TODO GROUND TRUTH LOGGING: use GTL logger to record action call
                 result = func(*args, **kwargs)
             except:
                 logger.info(f"[{puma_ui_graph.driver.options.udid}] Failed to execute action {func.__name__}, retrying once.")

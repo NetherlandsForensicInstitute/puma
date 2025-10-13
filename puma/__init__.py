@@ -30,6 +30,7 @@ def _is_running_in_jupyter_notebook():
 
 
 configure_default_logging()
+gtl_logger = logging.getLogger("GTL")
 
 # Only configure logging when Puma is not run from another application
 if (
