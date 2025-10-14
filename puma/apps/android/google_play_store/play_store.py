@@ -15,6 +15,8 @@ LOCAL_RECOMMENDATIONS_POPUP_HANDLER = PopUpHandler(
     ['//android.widget.TextView[@text="Want to see local recommendations in Google Play?"]',
      '//android.widget.Button[@text="No thanks"]'], ['//android.widget.Button[@text="No thanks"]'])
 
+ACCOUNT_ICON = '//android.widget.FrameLayout[starts-with(@content-desc, "Signed in as")]'
+
 HOME_SCREEN_TABS = '(//android.view.View[count(.//android.widget.TextView[@text="Games" or @text="Apps" or @text="Search" or @text="Books"]) = 4])[last()]'
 APPS_TAB_SELECTED = '//android.view.View[.//android.widget.ImageView[@selected="true"] and ./android.widget.TextView[@text="Apps"]]'
 GAMES_TAB_SELECTED = '//android.view.View[.//android.widget.ImageView[@selected="true"] and ./android.widget.TextView[@text="Games"]]'
@@ -26,9 +28,8 @@ SEARCH_TAB_BUTTON = '//android.view.View[./android.widget.TextView[@text="Search
 GAMES_TAB_BUTTON = '//android.view.View[./android.widget.TextView[@text="Games"]]'
 BOOKS_TAB_BUTTON = '//android.view.View[./android.widget.TextView[@text="Books"]]'
 
-SEARCH_BAR_BUTTON = '//android.widget.TextView[@text="Search apps & games"]'
-SEARCH_BUTTON = '//android.view.View[@content-desc="Search Google Play"]'
-SEARCH_BAR_TEXTBOX = '//android.widget.EditText'
+SEARCH_STATE_SEARCH_BOX = '//android.widget.EditText'
+VOICE_SEARCH_BUTTON = '//android.view.View[@content-desc="Voice Search"]'
 
 APP_PAGE_REVIEWS_BADGE = '//android.view.View[starts-with(@content-desc, "Average rating") and ends-with(@content-desc, "reviews")]'
 APP_PAGE_DOWNLOADS_BADGE = '//android.view.View[starts-with(@content-desc, "Downloaded")]'
@@ -57,31 +58,25 @@ class AppPage(SimpleState, ContextualState):
 
 @supported_version("")
 class PlayStore(StateGraph):
-    apps_tab_state = SimpleState([HOME_SCREEN_TABS, APPS_TAB_SELECTED], initial_state=True)
-    search_tab_state = SimpleState([HOME_SCREEN_TABS, SEARCH_TAB_SELECTED])
-    games_tab_state = SimpleState([HOME_SCREEN_TABS, GAMES_TAB_SELECTED])
-    books_tab_state = SimpleState([HOME_SCREEN_TABS, BOOKS_TAB_SELECTED])
-    # app_page_state = AppPage(search_tab_state)
+    apps_tab_state = SimpleState([ACCOUNT_ICON, HOME_SCREEN_TABS, APPS_TAB_SELECTED], initial_state=True)
+    search_tab_state = SimpleState([ACCOUNT_ICON, HOME_SCREEN_TABS, SEARCH_TAB_SELECTED])
+    games_tab_state = SimpleState([ACCOUNT_ICON, HOME_SCREEN_TABS, GAMES_TAB_SELECTED])
+    books_tab_state = SimpleState([ACCOUNT_ICON, HOME_SCREEN_TABS, BOOKS_TAB_SELECTED])
+
+    search_page_state = SimpleState([SEARCH_STATE_SEARCH_BOX, VOICE_SEARCH_BUTTON], parent_state=search_tab_state)
 
     apps_tab_state.from_states([search_tab_state, games_tab_state, books_tab_state], compose_clicks([APPS_TAB_BUTTON], name='click_apps_tab'))
     search_tab_state.from_states([apps_tab_state, games_tab_state, books_tab_state], compose_clicks([SEARCH_TAB_BUTTON], name='click_search_tab'))
     games_tab_state.from_states([apps_tab_state, search_tab_state, books_tab_state], compose_clicks([GAMES_TAB_BUTTON], name='click_games_tab'))
     books_tab_state.from_states([apps_tab_state, search_tab_state, games_tab_state], compose_clicks([BOOKS_TAB_BUTTON], name='click_books_tab'))
+
+    search_tab_state.to(search_page_state, compose_clicks([SEARCH_TAB_BUTTON], name='click_search_tab'))
+
     # search_tab_state.to(app_page_state, None)  # TODO: transition: as action or somehow else? State accessible from anywhere by opening the URL?
 
     def __init__(self, device_udid):
         StateGraph.__init__(self, device_udid, APPLICATION_PACKAGE)
         self.add_popup_handler(PAYMENT_POPUP_HANDLER)
-
-    @action(search_tab_state)
-    def search(self, app_name: str):
-        if self.driver.is_present(SEARCH_BAR_BUTTON):
-            self.driver.click(SEARCH_BAR_BUTTON)
-        elif self.driver.is_present(SEARCH_BUTTON):
-            self.driver.click(SEARCH_BUTTON)
-        self.driver.get_element(SEARCH_BAR_TEXTBOX).clear()
-        self.driver.send_keys(SEARCH_BAR_TEXTBOX, app_name)
-        self.driver.press_enter()
 
     # TODO: do we want this kind of action that is not based on UI actions?
     def _is_valid_package_name(package_name: str) -> bool:
