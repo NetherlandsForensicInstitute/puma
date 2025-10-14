@@ -1,6 +1,6 @@
 # Google camera - Android
 
-Google Camera is a the camera application that is preinstalled on Google Pixel devices.
+Google Camera is the camera application that is preinstalled on Google Pixel devices.
 
 Currently, it is only possible to take a picture and to switch between the front and rear camera.
 

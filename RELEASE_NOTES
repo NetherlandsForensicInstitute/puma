@@ -1,5 +1,6 @@
 Version 3.0.0
 -------------
+125. Deprecate classes which do not use StateGraph as their abstract base class
 107. Define a state graph framework to represent app screens and transitions
 
 Version 2.10.0

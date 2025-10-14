@@ -3,6 +3,7 @@ from time import sleep
 from typing import Dict
 
 from appium.webdriver.common.appiumby import AppiumBy
+from typing_extensions import deprecated
 
 from puma.apps.android import log_action
 from puma.apps.android.appium_actions import AndroidAppiumActions, supported_version
@@ -16,6 +17,8 @@ class TransportType(Enum):
     BIKE = "bike"
 
 
+@deprecated('This class does not use the Puma state machine, and will therefore not be maintained. ' +
+            'If you want to add functionality, please rewrite this class using StateGraph as the abstract base class.')
 @supported_version("11.119.0101")
 class GoogleMapsActions(AndroidAppiumActions):
     def __init__(self,
