@@ -1,19 +1,9 @@
 import logging
 import sys
 
-from puma.utils import configure_default_logging
+from puma.utils import configure_default_logging, configure_gtl_logging
 
 MAIN_MODULE = sys.modules.get('__main__')
-
-class GtlFormatter(logging.Formatter):
-    def __init__(self, prefix, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.prefix = prefix
-
-    def format(self, record):
-        # Prepend the prefix to the message
-        record.msg = f"{self.prefix} {record.msg}"
-        return super().format(record)
 
 
 def _pattern_in_main(pattern):
@@ -39,16 +29,6 @@ def _is_running_in_jupyter_notebook():
             return True
     return False
 
-
-configure_default_logging()
-
-gtl_logger = logging.getLogger("GTL")
-# TODO: add actual phone ID here
-gtl_formatter = GtlFormatter(prefix='PhoneId')
-sh = logging.StreamHandler()
-sh.setFormatter(gtl_formatter)
-gtl_logger.addHandler(sh)
-
 # Only configure logging when Puma is not run from another application
 if (
         _is_running_as_main() or
@@ -56,6 +36,7 @@ if (
         _is_running_in_jupyter_notebook()
 ):
         configure_default_logging()
+        configure_gtl_logging()
 else:
     logger = logging.getLogger("puma")
     logger.addHandler(logging.NullHandler())
