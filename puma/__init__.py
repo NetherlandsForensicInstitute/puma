@@ -1,7 +1,7 @@
 import logging
 import sys
 
-from puma.utils import configure_default_logging, configure_gtl_logging
+from puma.utils import configure_default_logging
 
 MAIN_MODULE = sys.modules.get('__main__')
 
@@ -36,7 +36,6 @@ if (
         _is_running_in_jupyter_notebook()
 ):
         configure_default_logging()
-        configure_gtl_logging()
 else:
     logger = logging.getLogger("puma")
     logger.addHandler(logging.NullHandler())

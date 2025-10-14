@@ -19,6 +19,7 @@ from puma.computer_vision import ocr
 from puma.computer_vision.ocr import RecognizedText
 from puma.state_graph import logger
 from puma.utils import CACHE_FOLDER
+from puma.utils.action_logging import create_gtl_logger
 
 
 class PumaClickException(Exception):
@@ -102,6 +103,7 @@ class PumaDriver:
         self.adb = AdbDevice(self.udid)
         self._screen_recorder = None
         self._screen_recorder_output_directory = None
+        self.gtl_logger = create_gtl_logger(udid)
 
     def is_present(self, xpath: str, implicit_wait: int = 0) -> bool:
         """
@@ -120,14 +122,14 @@ class PumaDriver:
         """
         Activates the application on the device.
         """
-        gtl_logger.info(f'Activating app {self.app_package}')
+        self.gtl_logger.info(f'Activating app {self.app_package}')
         self.driver.activate_app(self.app_package)
 
     def terminate_app(self):
         """
         Terminates the application on the device.
         """
-        gtl_logger.info(f'Terminating app {self.app_package}')
+        self.gtl_logger.info(f'Terminating app {self.app_package}')
         self.driver.terminate_app(self.app_package)
 
     def restart_app(self):
@@ -149,7 +151,7 @@ class PumaDriver:
         """
         Simulates pressing the back button on the device.
         """
-        gtl_logger.info(f'Pressing back button')
+        self.gtl_logger.info(f'Pressing back button')
         self.driver.press_keycode(AndroidKey.BACK)
 
     def home(self):
