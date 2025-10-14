@@ -85,8 +85,3 @@ class GoogleCamera(StateGraph):
         currently_in_front = 'front' not in switch_button.get_attribute("content-desc")
         if currently_in_front != front_camera:
             switch_button.click()
-
-if __name__ == '__main__':
-    phone = GoogleCamera('32131JEHN38079')
-
-    phone.go_to_state(GoogleCamera.settings)
