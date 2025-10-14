@@ -1,6 +1,5 @@
 from typing import List
 
-from puma import gtl_logger
 from puma.state_graph.puma_driver import PumaDriver
 from puma.state_graph.state import compose_clicks
 
@@ -35,7 +34,7 @@ class PopUpHandler:
 
         :param driver: The PumaDriver instance to use for searching and clicking the button.
         """
-        gtl_logger.info('Dismissing pop-up')
+        driver.gtl_logger.info('Dismissing pop-up')
         compose_clicks(self.dismiss_xpaths)(driver)
 
 

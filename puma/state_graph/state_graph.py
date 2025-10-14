@@ -1,13 +1,11 @@
 from time import sleep
 from typing import Dict
 
-from puma import gtl_logger
 from puma.state_graph import logger
 from puma.state_graph.popup_handler import known_popups, PopUpHandler
 from puma.state_graph.puma_driver import PumaDriver, PumaClickException
 from puma.state_graph.state import State, ContextualState, Transition, _shortest_path
 from puma.state_graph.utils import safe_func_call
-from puma.utils.action_logging import create_gtl_logger
 
 
 class StateGraphMeta(type):
@@ -155,7 +153,7 @@ class StateGraph(metaclass=StateGraphMeta):
         self.driver = PumaDriver(device_udid, app_package, appium_server=appium_server, desired_capabilities=desired_capabilities)
         self.app_popups = []
         self.try_restart = True
-        self.gtl_logger = create_gtl_logger(device_udid)
+        self.gtl_logger = self.driver.gtl_logger
 
     def go_to_state(self, to_state: State | str, **kwargs) -> bool:
         """

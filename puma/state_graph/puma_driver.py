@@ -14,7 +14,6 @@ from appium.webdriver.extensions.android.nativekey import AndroidKey
 from appium.webdriver.webdriver import WebDriver
 from urllib3.exceptions import MaxRetryError
 
-from puma import gtl_logger
 from puma.computer_vision import ocr
 from puma.computer_vision.ocr import RecognizedText
 from puma.state_graph import logger
@@ -158,7 +157,7 @@ class PumaDriver:
         """
         Simulates pressing the home button on the device.
         """
-        gtl_logger.info(f'Pressing home button')
+        self.gtl_logger.info(f'Pressing home button')
         self.driver.press_keycode(AndroidKey.HOME)
 
     def click(self, xpath: str):
@@ -217,7 +216,7 @@ class PumaDriver:
         :param xpath: The XPath of the element to send keys to.
         :param text: The text to send to the element.
         """
-        gtl_logger.info(f'Entering text {text} in text box')
+        self.gtl_logger.info(f'Entering text {text} in text box')
         element = self.get_element(xpath)
         element.send_keys(text)
 
@@ -230,13 +229,13 @@ class PumaDriver:
         if self._screen_recorder is None:
             self._screen_recorder_output_directory = output_directory
             self._screen_recorder = AdbScreenRecorder(self.adb)
-            gtl_logger.info('Starting screen recording')
+            self.gtl_logger.info('Starting screen recording')
             self._screen_recorder.start_recording()
 
     def stop_recording_and_save_video(self) -> list[str] | None:
         if self._screen_recorder is None:
             return None
-        gtl_logger.info('Ending screen recording')
+        self.gtl_logger.info('Ending screen recording')
         video_files = self._screen_recorder.stop_recording(self._screen_recorder_output_directory)
         self._screen_recorder.__exit__(None, None, None)
         self._screen_recorder = None
@@ -254,7 +253,7 @@ class PumaDriver:
             screenshot_taken = self.driver.get_screenshot_as_file(path)
             if not screenshot_taken:
                 raise Exception(f'Screenshot could not be stored to {path}')
-            gtl_logger.info(f'Using OCR to find text {text_to_find}')
+            self.gtl_logger.info(f'Using OCR to find text {text_to_find}')
             found_text = ocr.find_text(str(path), text_to_find)
             return found_text
         finally:
@@ -281,7 +280,7 @@ class PumaDriver:
                 logger.warning(f'Found multiple occurrences of text {text_to_click} on screen, clicking first one')
         x = found_text[0].bounding_box.middle[0]
         y = found_text[0].bounding_box.middle[1]
-        gtl_logger.info(f'Clicking found text {found_text}')
+        self.gtl_logger.info(f'Clicking found text {found_text}')
         self.driver.execute_script('mobile: clickGesture', {'x': x, 'y': y})
 
     def set_idle_timeout(self, timeout: int):

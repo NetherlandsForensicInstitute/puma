@@ -22,4 +22,8 @@ def create_gtl_logger(udid: str) -> logging.Logger:
     gtl_logger.addHandler(file_handler)
     gtl_logger.addHandler(stream_handler)
 
+    # TODO: turn this on or off by default? make this a setting?
+    # propagate is True by default, which causes all gtl logs to also be in the default log file, additionally to being in the gtl log file
+    # gtl_logger.propagate = False
+
     return gtl_logger
