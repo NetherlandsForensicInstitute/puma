@@ -5,7 +5,9 @@ from os.path import dirname, abspath
 from pathlib import Path
 from sys import stdout
 
-from puma import PUMA_INIT_TIMESTAMP
+
+PUMA_INIT_TIMESTAMP = datetime.now().strftime('%Y-%m-%d_%H-%M-%S')
+
 
 logger = logging.getLogger(__name__)
 
@@ -31,7 +33,6 @@ def configure_default_logging():
         level=logging.INFO,
         format='%(asctime)s [%(levelname)s] [%(name)s] %(message)s',
         datefmt='%Y-%m-%d %H:%M:%S')
-
 
 
 def log_error_and_raise_exception(logger, msg):

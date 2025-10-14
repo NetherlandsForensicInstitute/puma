@@ -2,8 +2,7 @@ import logging
 from pathlib import Path
 from sys import stdout
 
-from puma import PUMA_INIT_TIMESTAMP
-from puma.utils import LOG_FOLDER
+from puma.utils import LOG_FOLDER, PUMA_INIT_TIMESTAMP
 
 
 def create_gtl_logger(udid: str) -> logging.Logger:
@@ -28,9 +27,5 @@ def create_gtl_logger(udid: str) -> logging.Logger:
 
     gtl_logger.addHandler(file_handler)
     gtl_logger.addHandler(stream_handler)
-
-    # TODO: make this a setting when we build the configuration of the GTL logger?
-    # propagate is True by default, which causes all gtl logs to also be in the default log file, additionally to being in the gtl log file
-    # gtl_logger.propagate = False
 
     return gtl_logger
