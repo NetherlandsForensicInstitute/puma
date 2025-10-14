@@ -2,7 +2,7 @@ import logging
 import sys
 from datetime import datetime
 
-PUMA_RUN_START_TIMESTAMP = datetime.now().strftime('%Y-%m-%d_%H-%M-%S')
+PUMA_INIT_TIMESTAMP = datetime.now().strftime('%Y-%m-%d_%H-%M-%S')
 from puma.utils import configure_default_logging
 
 MAIN_MODULE = sys.modules.get('__main__')

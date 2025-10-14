@@ -5,7 +5,7 @@ from os.path import dirname, abspath
 from pathlib import Path
 from sys import stdout
 
-from puma import PUMA_RUN_START_TIMESTAMP
+from puma import PUMA_INIT_TIMESTAMP
 
 logger = logging.getLogger(__name__)
 
@@ -25,7 +25,7 @@ makedirs(CACHE_FOLDER, exist_ok=True)
 def configure_default_logging():
     logging.basicConfig(
         handlers=[
-            logging.FileHandler(Path(LOG_FOLDER) / f'{PUMA_RUN_START_TIMESTAMP}.log'),
+            logging.FileHandler(Path(LOG_FOLDER) / f'{PUMA_INIT_TIMESTAMP}.log'),
             logging.StreamHandler(stdout)
         ],
         level=logging.INFO,
