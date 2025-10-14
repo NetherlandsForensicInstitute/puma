@@ -1,6 +1,7 @@
 from appium.webdriver.common.appiumby import AppiumBy
 
 from puma.apps.android.state_graph.snapchat import logger
+from puma.state_graph.action import action
 from puma.state_graph.app_template import APPLICATION_PACKAGE
 from puma.state_graph.puma_driver import PumaDriver
 from puma.state_graph.state import SimpleState, ContextualState, compose_clicks
@@ -62,7 +63,7 @@ class SnapchatChatState(SimpleState, ContextualState):
 
 class Snapchat(StateGraph):
     camera_state = SimpleState(['//android.widget.FrameLayout[@resource-id="com.snapchat.android:id/camera_page"]'], initial_state=True)
-    conversation_state = SimpleState(['//android.widget.FrameLayout[@resource-id="com.snapchat.android:id/feed_new_chat"]'])
+    conversation_state = SimpleState(['//android.widget.FrameLayout[@resource-id="com.snapchat.android:id/feed_new_chat"]'], parent_state=camera_state)
     chat_state = SnapchatChatState(parent_state=conversation_state)
 
     camera_state.to(conversation_state, compose_clicks(['//android.view.ViewGroup[@content-desc="Chat"]']))
@@ -73,5 +74,29 @@ class Snapchat(StateGraph):
     def __init__(self, device_udid):
         StateGraph.__init__(self, device_udid, APPLICATION_PACKAGE)
 
+    def _press_enter(self):
+        enter_keycode = 66
+        self.driver.press_keycode(enter_keycode)
+
+    @action(chat_state)
+    def send_message(self, msg: str, conversation: str = None):
+        """
+        Sends a message in the current chat conversation.
+
+        :param msg: The message to send.
+        :param conversation: The name of the conversation to send the message in.
+        """
+        self.driver.click(CHAT_STATE_TEXT_FIELD)
+        self.driver.send_keys(CHAT_STATE_TEXT_FIELD, msg)
+        self._press_enter()
+
+
+
+
 if __name__ == "__main__":
-        app = Snapchat(device_udid="34281JEHN03866")
+        bob = Snapchat(device_udid="34281JEHN03866")
+        contact_charlie = "Charlie"
+
+        def test(self):
+            bob.send_message(self, "hi", contact_charlie)
+
