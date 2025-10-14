@@ -12,7 +12,8 @@ from puma.apps.android import log_action
 from puma.apps.android.appium_actions import AndroidAppiumActions
 
 
-@deprecated('This class does not use the Puma state machine, and will therefore not be maintained.')
+@deprecated('This class does not use the Puma state machine, and will therefore not be maintained. ' +
+            'If you want to add functionality, please rewrite this class using StateGraph as the abstract base class.')
 class WhatsAppCommon(AndroidAppiumActions, ABC):
 
     @abstractmethod

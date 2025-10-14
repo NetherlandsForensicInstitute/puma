@@ -1,6 +1,6 @@
 from appium.webdriver.common.appiumby import AppiumBy
 
-from puma.apps.android.state_graph.teleguard import logger
+from puma.apps.android.teleguard import logger
 from puma.state_graph.puma_driver import PumaDriver, supported_version
 from puma.state_graph.action import action
 from puma.state_graph.state_graph import StateGraph

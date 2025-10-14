@@ -14,7 +14,8 @@ BOOKMARK_BUTTON = '//android.widget.Button[lower-case(@content-desc)="bookmark"]
 EDIT_BOOKMARK_BUTTON = '//android.widget.Button[lower-case(@content-desc)="edit bookmark"]'
 
 
-@deprecated('This class does not use the Puma state machine, and will therefore not be maintained.')
+@deprecated('This class does not use the Puma state machine, and will therefore not be maintained. ' +
+            'If you want to add functionality, please rewrite this class using StateGraph as the abstract base class.')
 @supported_version("139.0.7258.62")
 class GoogleChromeActions(AndroidAppiumActions):
     def __init__(self,
