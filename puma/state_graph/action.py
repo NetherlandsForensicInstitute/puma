@@ -35,7 +35,7 @@ def action(to_state: State):
             gtl_logger = puma_ui_graph.gtl_logger
             try:
                 gtl_logger.info(
-                    f"Executing action {func.__name__} with arguments: {args} and key word arguments: {kwargs} for application: {puma_ui_graph.__class__.__name__}")
+                    f"Executing action {func.__name__} with arguments: {args[1:]} and keyword arguments: {kwargs} for application: {puma_ui_graph.__class__.__name__}")
                 result = func(*args, **kwargs)
             except:
                 gtl_logger.info(f"Failed to execute action {func.__name__}.")
@@ -45,7 +45,7 @@ def action(to_state: State):
                 result = func(*args, **kwargs)
             puma_ui_graph.try_restart = True
             gtl_logger.info(
-                f"Successfully executed action {func.__name__} with arguments: {args} and key word arguments: {kwargs} for application: {puma_ui_graph.__class__.__name__}")
+                f"Successfully executed action {func.__name__} with arguments: {args[1:]} and keyword arguments: {kwargs} for application: {puma_ui_graph.__class__.__name__}")
             return result
 
         return wrapper

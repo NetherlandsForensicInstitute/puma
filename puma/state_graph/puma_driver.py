@@ -216,7 +216,7 @@ class PumaDriver:
         :param xpath: The XPath of the element to send keys to.
         :param text: The text to send to the element.
         """
-        self.gtl_logger.info(f'Entering text {text} in text box')
+        self.gtl_logger.info(f'Entering text "{text}" in text box')
         element = self.get_element(xpath)
         element.send_keys(text)
 
