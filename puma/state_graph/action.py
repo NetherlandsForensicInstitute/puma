@@ -1,7 +1,6 @@
 import inspect
 
 from puma.state_graph.state import State
-from puma.utils.action_logging import create_gtl_logger
 
 
 def action(to_state: State):
@@ -16,6 +15,7 @@ def action(to_state: State):
     :param to_state: The target state to ensure before executing the decorated function.
     :return: A decorator function that wraps the provided function with state assurance logic.
     """
+
     def decorator(func):
         def wrapper(*args, **kwargs):
             """
@@ -34,7 +34,8 @@ def action(to_state: State):
             # get the ground truth logger to log these actions
             gtl_logger = puma_ui_graph.gtl_logger
             try:
-                gtl_logger.info(f"Executing action {func.__name__} with arguments: {args} and key word arguments: {kwargs} for application: {puma_ui_graph.__class__.__name__}")
+                gtl_logger.info(
+                    f"Executing action {func.__name__} with arguments: {args} and key word arguments: {kwargs} for application: {puma_ui_graph.__class__.__name__}")
                 result = func(*args, **kwargs)
             except:
                 gtl_logger.info(f"Failed to execute action {func.__name__}.")
@@ -43,7 +44,8 @@ def action(to_state: State):
                 gtl_logger.info(f'Retrying action {func.__name__}')
                 result = func(*args, **kwargs)
             puma_ui_graph.try_restart = True
-            gtl_logger.info(f"Successfully executed action {func.__name__} with arguments: {args} and key word arguments: {kwargs} for application: {puma_ui_graph.__class__.__name__}")
+            gtl_logger.info(
+                f"Successfully executed action {func.__name__} with arguments: {args} and key word arguments: {kwargs} for application: {puma_ui_graph.__class__.__name__}")
             return result
 
         return wrapper

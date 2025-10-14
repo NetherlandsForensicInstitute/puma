@@ -18,7 +18,7 @@ from puma.computer_vision import ocr
 from puma.computer_vision.ocr import RecognizedText
 from puma.state_graph import logger
 from puma.utils import CACHE_FOLDER
-from puma.utils.action_logging import create_gtl_logger
+from puma.utils.gtl_logging import create_gtl_logger
 
 
 class PumaClickException(Exception):
