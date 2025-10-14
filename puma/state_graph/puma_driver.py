@@ -200,7 +200,7 @@ class PumaDriver:
                 self.click(xpath)
                 return
             else:
-                print(f"Attempt {attempt + 1}: Element not found, swiping down")
+                self.gtl_logger.warning(f"Attempt {attempt + 1}: Element not found, swiping down")
                 window_size = self.driver.get_window_size()
                 start_x = window_size['width'] / 2
                 start_y = window_size['height'] * 0.8
