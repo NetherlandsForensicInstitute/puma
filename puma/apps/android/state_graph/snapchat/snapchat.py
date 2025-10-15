@@ -58,7 +58,11 @@ class SnapchatChatState(SimpleState, ContextualState):
         if not conversation:
             return True
 
-        content_desc = (driver.get_element(CHAT_STATE_CONVERSATION_NAME).get_attribute('content-desc'))
+        logger.info('getting content_desc')
+        content_desc = driver.get_element('//android.widget.TextView').get_attribute('content-desc')
+        logger.info(f'getting content_desc {content_desc}')
+        logger.info(f'conversation is {conversation}')
+
         return conversation in content_desc
 
 class Snapchat(StateGraph):
@@ -97,6 +101,7 @@ if __name__ == "__main__":
         bob = Snapchat(device_udid="34281JEHN03866")
         contact_charlie = "Charlie"
 
-        def test(self):
-            bob.send_message(self, "hi", contact_charlie)
+        bob.go_to_state(bob.conversation_state)
+        bob.go_to_state(bob.chat_state, conversation=contact_charlie)
+        bob.send_message("hi", contact_charlie)
 
