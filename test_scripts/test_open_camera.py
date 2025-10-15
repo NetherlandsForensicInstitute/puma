@@ -20,7 +20,7 @@ class TestOpenCamera(unittest.TestCase):
     @classmethod
     def setUpClass(self):
         if not device_udids["Alice"]:
-            print("No udid was configured for Alice. Pleas add at the top of the script.\nExiting....")
+            print("No udid was configured for Alice. Please add at the top of the script.\nExiting....")
             exit(1)
         self.alice = OpenCameraActions(device_udids["Alice"])
 

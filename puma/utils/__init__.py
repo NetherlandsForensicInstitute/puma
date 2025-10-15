@@ -5,6 +5,10 @@ from os.path import dirname, abspath
 from pathlib import Path
 from sys import stdout
 
+
+PUMA_INIT_TIMESTAMP = datetime.now().strftime('%Y-%m-%d_%H-%M-%S')
+
+
 logger = logging.getLogger(__name__)
 
 
@@ -19,13 +23,11 @@ makedirs(LOG_FOLDER, exist_ok=True)
 CACHE_FOLDER = Path(PROJECT_ROOT) / 'cache'
 makedirs(CACHE_FOLDER, exist_ok=True)
 
-
 # logging helpers
 def configure_default_logging():
-    now = datetime.now().strftime('%Y-%m-%d_%H-%M-%S')
     logging.basicConfig(
         handlers=[
-            logging.FileHandler(Path(LOG_FOLDER) / f'{now}.log'),
+            logging.FileHandler(Path(LOG_FOLDER) / f'{PUMA_INIT_TIMESTAMP}.log'),
             logging.StreamHandler(stdout)
         ],
         level=logging.INFO,

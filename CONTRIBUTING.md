@@ -224,6 +224,40 @@ def send_message(self, message:str, conversation:str):
 In this example, the argument `conversation` is not used inside the `send_message` method, but it will be used to properly
 navigate to the correct conversation.
 
+### Ground Truth Logging
+
+The State Graph framework contains a Ground Truth Logger with the goal of logging all actions taken on the device. The
+framework itself already logs all navigation steps the framework takes, and when actions are called. Therefore, when
+implementing a simple application with simple transitions and actions, developers won't need to take the GTL logging
+into account.
+
+However, when an application contains complex actions and transitions, it is recommended that the developer logs the
+steps taken within these actions or transitions to provide a more granular overview in the logs of which UI actions were
+performed on the devices.
+
+For example, if a `take_picture` in a chat app needs to navigate through multiple screens and presses multiple buttons
+while also entering text (to include a caption), it is recommended to call the GTL logger to log these steps. Within
+a `StateGraph` class, the GTL logger is available by calling `self.gtl_logger`.
+
+The resulting code could look like this:
+```python
+@action(chat_state)
+def take_picture(self, conversation: str, caption: str=None, selfie: bool=False):
+    self.gtl_logger.info('Opening camera within chat')
+    self.click(ATTACHMENT_BUTTON)
+    self.click(CAMERA_BUTTON)
+    if selfie:
+        self.gtl_logger.info('Reversing camera')
+        self.click(SWITCH_CAMERA_BUTTON)
+    self.gtl_logger.info('Pressing shutter button to take picture')
+    self.click(SHUTTER_BUTTON)
+    if caption:
+        self.gtl_logger.info('Entering caption text')
+        self.enter_text(CAPTION_INPUT, caption)
+    self.gtl_logger.info('Pressing send button')
+    self.click(SEND_BUTTON)
+```
+
 ## How to add a new application
 When adding support for a new application, make sure to add a new class to the correct location (eg `apps/android`). All
 components mentioned in the [Stategraph section](#stategraph) come together in the following class template:
@@ -273,6 +307,12 @@ The following steps should be taken to implement support for a new application:
 - Add a test script in the [test scripts directory](test_scripts), in which each function is tested.
 - Add your class to the list of apps in [publish_app_tags](.github/scripts/publish_app_tags.py)
 - Add the app name to the list of supported apps in the [README](README.md#supported-apps)
+
+## Legacy and deprecation
+In Puma 3.0.0, the `StateGraph` was introduced. Before that, a number of applications were already supported, using the
+old `AndroidAppiumActions` as an abstract base class. These classes are no longer maintained, and they are marked using
+the `@deprecated` decorator. If you want to add new functionality to these classes, please rewrite it to the Puma `StateGraph`,
+and add the functionality using the new framework.
 
 ## How to write Appium actions
 Appium is a framework for testing applications, based on Selenium. In this project, we use Appium to execute actions on the device.

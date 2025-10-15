@@ -5,7 +5,7 @@ from puma.state_graph import logger
 from puma.state_graph.popup_handler import known_popups, PopUpHandler
 from puma.state_graph.puma_driver import PumaDriver, PumaClickException
 from puma.state_graph.state import State, ContextualState, Transition, _shortest_path
-from puma.state_graph.utils import safe_func_call
+from puma.state_graph.utils import safe_func_call, filter_arguments
 
 
 class StateGraphMeta(type):
@@ -153,6 +153,7 @@ class StateGraph(metaclass=StateGraphMeta):
         self.driver = PumaDriver(device_udid, app_package, appium_server=appium_server, desired_capabilities=desired_capabilities)
         self.app_popups = []
         self.try_restart = True
+        self.gtl_logger = self.driver.gtl_logger
 
     def go_to_state(self, to_state: State | str, **kwargs) -> bool:
         """
@@ -175,7 +176,10 @@ class StateGraph(metaclass=StateGraphMeta):
             counter += 1
             try:
                 transition = self._find_shortest_path(to_state)[0]
+
+                self.gtl_logger.info(f'Going from state {self.current_state} to {to_state}, calling transition {transition.ui_actions.__name__}')
                 safe_func_call(transition.ui_actions, **kwargs)
+
                 self._validate_state(transition.to_state, **kwargs)
             except PumaClickException as pce:
                 logger.warn(f"Transition or state validation failed, recover? {pce}")
@@ -202,14 +206,19 @@ class StateGraph(metaclass=StateGraphMeta):
 
         # handle validation results
         if not valid:
+            self.gtl_logger.error(f'Expected to be in state {expected_state}, but the validation failed')
+
              # state is totally unexpected
             self.recover_state(expected_state)
             self._validate_state(self.current_state, **kwargs)
         elif not context_valid:
+            relevant_kwargs = filter_arguments(expected_state.validate_context, **kwargs)
+            self.gtl_logger.error(f'Was in the expected state {expected_state}, but context {relevant_kwargs} did not match')
             # correct state, but wrong context (e.g. we want a conversation with Alice, but we're in a conversation with Bob)
             # recovery: always go back to the parent state
             self.go_to_state(expected_state.parent_state)
         else:
+            self.gtl_logger.info(f'Validated that current state is the expected state {expected_state}')
             self.current_state = expected_state
 
     def recover_state(self, expected_state):
@@ -221,6 +230,7 @@ class StateGraph(metaclass=StateGraphMeta):
 
         :param expected_state: The state that is expected to be the current state.
         """
+        self.gtl_logger.info(f"Recovering state to {expected_state}")
         # Ensure app active
         if not self.driver.app_open():
             self.driver.activate_app()
@@ -259,7 +269,7 @@ class StateGraph(metaclass=StateGraphMeta):
             sleep(3)
             self.try_restart = False
             return
-        logger.info(
+        self.gtl_logger.info(
             f'Was in unknown state, expected {expected_state}. Recognized state, setting current state to: {current_states[0]}')
         self.current_state = current_states[0]
 
