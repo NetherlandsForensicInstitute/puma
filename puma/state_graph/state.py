@@ -40,7 +40,7 @@ class State(ABC):
 
     def from_states(self, from_states: List['State'], ui_actions: Callable[..., None]):
         """
-        Define the transition from a set of other states to this states.
+        Define the transition from a set of other states to this state.
         This method is convenient when a state can be reached from many other states with the same UI actions.
 
         :param from_states: The next state to transition to.

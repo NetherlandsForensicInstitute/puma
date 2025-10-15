@@ -216,7 +216,11 @@ class StateGraph(metaclass=StateGraphMeta):
             self.gtl_logger.error(f'Was in the expected state {expected_state}, but context {relevant_kwargs} did not match')
             # correct state, but wrong context (e.g. we want a conversation with Alice, but we're in a conversation with Bob)
             # recovery: always go back to the parent state
-            self.go_to_state(expected_state.parent_state)
+            # TODO: Generically search for first parent state which is not a contextual state
+            if isinstance(expected_state.parent_state, ContextualState):
+                self.go_to_state(expected_state.parent_state.parent_state)
+            else:
+                self.go_to_state(expected_state.parent_state)
         else:
             self.gtl_logger.info(f'Validated that current state is the expected state {expected_state}')
             self.current_state = expected_state
