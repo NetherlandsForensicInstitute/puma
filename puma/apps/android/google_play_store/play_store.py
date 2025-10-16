@@ -50,6 +50,7 @@ APP_PAGE_OPEN_BUTTON = '//android.view.View[@content-desc="Open"]'
 APP_PAGE_UPDATE_BUTTON = '//android.view.View[@content-desc="Update"]'
 APP_PAGE_ABOUT_THIS_APP = '//android.widget.TextView[@text="About this app"]'
 APP_PAGE_THREE_DOTS = '//android.view.View[@content-desc="More options"]'
+APP_PAGE_NAVIGATE_UP = '//android.view.View[@content-desc="Navigate up"]'
 
 UPDATE_ALL_BUTTON = '//android.view.View[@content-desc="Update all"]'
 MANAGE_APP_STATE = '//android.widget.TextView[@text="Manage apps and device"]'
@@ -66,12 +67,14 @@ class AppPage(SimpleState, ContextualState):
         """
         super().__init__(
             xpaths=[HOME_SCREEN_TABS, APP_PAGE_THREE_DOTS],
-            parent_state=parent_state)
+            parent_state=parent_state,
+            parent_state_transition=compose_clicks([APP_PAGE_NAVIGATE_UP], "navigate_up"))
         # keep a dict that tracks which app pages were opened last on which device. This is to make the contextual
         # validation work in most cases.
         self.last_opened = {}
 
-    def _is_valid_package_name(self, package_name: str) -> bool:
+    @staticmethod
+    def _is_valid_package_name(package_name: str) -> bool:
         pattern = r'^[a-z_][a-z0-9_]*(\.[a-z_][a-z0-9_]*)*$'
         return bool(re.fullmatch(pattern, package_name)) and len(package_name) <= 100
 
@@ -86,7 +89,9 @@ class AppPage(SimpleState, ContextualState):
             return True
         # TODO: decide if we want to validate the package name based on the share menu
         # Doing so would allow us to ditch the map that keeps track of the opened pages
-        return self.last_opened[driver.udid] == package_name
+        current_udid = driver.udid
+        las_package_name = self.last_opened[current_udid]
+        return las_package_name == package_name
 
 
 @supported_version("")

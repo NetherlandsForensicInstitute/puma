@@ -93,6 +93,7 @@ class PumaDriver:
         self.options = _get_android_default_options()
         self.options.udid = udid
         self.app_package = app_package
+        self.options.app_package = app_package
         if desired_capabilities:
             self.options.load_capabilities(desired_capabilities)
         logger.info("Connecting to Appium driver...")
