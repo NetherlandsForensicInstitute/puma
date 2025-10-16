@@ -77,19 +77,14 @@ class AppPage(SimpleState, ContextualState):
     def validate_context(self, driver: PumaDriver, package_name: str = None) -> bool:
         if not package_name:
             return True
-        # TODO: decide if we want to validate the package name based on the share menu
-        # Doing so would allow us to ditch the map that keeps track of the opened pages
-        current_udid = driver.udid
-        las_package_name = self.last_opened[current_udid]
-        return las_package_name == package_name
+        return self.last_opened[driver.udid] == package_name
 
 
-@supported_version("")
+@supported_version("48.3.25-31")
 class PlayStore(StateGraph):
     apps_tab_state = SimpleState([ACCOUNT_ICON, HOME_SCREEN_TABS, APPS_TAB_SELECTED], initial_state=True)
     profile_state = SimpleState([], parent_state=apps_tab_state)
     manage_apps_state = SimpleState([MANAGE_APP_STATE, MANAGE_APP_STATE_SYNC], parent_state=apps_tab_state)
-    # TODO: Contextual state without parent state is not allowed. However, the app page state does not have a defined parent state.
     app_page_state = AppPage(parent_state=apps_tab_state)
 
     apps_tab_state.to(profile_state, compose_clicks([ACCOUNT_ICON], name='click_profile'))
