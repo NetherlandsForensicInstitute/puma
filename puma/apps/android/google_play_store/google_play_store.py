@@ -81,7 +81,7 @@ class AppPage(SimpleState, ContextualState):
 
 
 @supported_version("48.3.25-31")
-class PlayStore(StateGraph):
+class GooglePlayStore(StateGraph):
     apps_tab_state = SimpleState([ACCOUNT_ICON, HOME_SCREEN_TABS, APPS_TAB_SELECTED], initial_state=True)
     profile_state = SimpleState([], parent_state=apps_tab_state)
     manage_apps_state = SimpleState([MANAGE_APP_STATE, MANAGE_APP_STATE_SYNC], parent_state=apps_tab_state)
@@ -120,12 +120,14 @@ class PlayStore(StateGraph):
     def install_app(self, package_name: str = None):
         if self._get_app_state_internal() != AppState.NOT_INSTALLED:
             logger.warn(f'Tried to install app {package_name}, but it was already installed')
+            return
         self.driver.click(APP_PAGE_INSTALL_BUTTON)
 
     @action(app_page_state)
     def uninstall_app(self, package_name: str = None):
         if self._get_app_state_internal() not in [AppState.INSTALLED, AppState.UPDATE_AVAILABLE]:
             logger.warn(f'Tried to uninstall app {package_name}, but it was not installed')
+            return
         self.driver.click(APP_PAGE_UNINSTALL_BUTTON)
         self.driver.click(APP_PAGE_UNINSTALL_SURE_BUTTON)
 
@@ -133,6 +135,7 @@ class PlayStore(StateGraph):
     def update_app(self, package_name: str = None):
         if self._get_app_state_internal() == AppState.UPDATE_AVAILABLE:
             logger.warn(f'Tried to update app {package_name}, but there is no update available')
+            return
         self.driver.click(APP_PAGE_UPDATE_BUTTON)
 
     @action(manage_apps_state)
