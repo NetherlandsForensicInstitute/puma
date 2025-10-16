@@ -95,7 +95,6 @@ class SearchResult(SimpleState, ContextualState):
         if not app_name:
             return True
         actual_search_app_name = driver.get_element('//androidx.compose.ui.platform.ComposeView[@resource-id="com.android.vending:id/0_resource_name_obfuscated"]/android.view.View/android.view.View[1]/android.view.View/android.view.View/android.view.View/android.view.View/android.view.View[2]/android.view.View/android.view.View[2]/android.view.View[1]/android.widget.TextView').get_attribute('text')
-        driver.gtl_logger.warning(f'actual_search_app_name: {actual_search_app_name}')
         return app_name.lower() in actual_search_app_name.lower()
 
 
