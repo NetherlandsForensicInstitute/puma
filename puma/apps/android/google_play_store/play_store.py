@@ -1,5 +1,8 @@
 import re
+import time
+from enum import Enum
 
+from puma.apps.android.google_play_store import logger
 from puma.state_graph.action import action
 from puma.state_graph.popup_handler import PopUpHandler
 from puma.state_graph.puma_driver import supported_version, PumaDriver
@@ -48,6 +51,7 @@ APP_PAGE_UNINSTALL_BUTTON = '//android.view.View[@content-desc="Uninstall"]'
 APP_PAGE_UNINSTALL_SURE_BUTTON = '//android.view.View[@content-desc="Uninstall"]'
 APP_PAGE_OPEN_BUTTON = '//android.view.View[@content-desc="Open"]'
 APP_PAGE_UPDATE_BUTTON = '//android.view.View[@content-desc="Update"]'
+APP_PAGE_CANCEL_INSTALL_BUTTON = '//android.view.View[@content-desc="Cancel"]'
 APP_PAGE_ABOUT_THIS_APP = '//android.widget.TextView[@text="About this app"]'
 APP_PAGE_THREE_DOTS = '//android.view.View[@content-desc="More options"]'
 APP_PAGE_NAVIGATE_UP = '//android.view.View[@content-desc="Navigate up"]'
@@ -56,6 +60,15 @@ UPDATE_ALL_BUTTON = '//android.view.View[@content-desc="Update all"]'
 MANAGE_APP_STATE = '//android.widget.TextView[@text="Manage apps and device"]'
 MANAGE_APP_STATE_SYNC = '//android.widget.TextView[@text="Sync apps to devices"]'
 MANAGE_APPS_AND_DEVICES = '//android.widget.TextView[@resource-id="com.android.vending:id/0_resource_name_obfuscated" and @text="Manage apps and device"]'
+
+
+class AppState(Enum):
+    UNKNOWN = 0
+    NOT_INSTALLED = 1
+    INSTALLED = 2
+    UPDATE_AVAILABLE = 3
+    INSTALLING = 4
+    INSTALLING_UPDATE = 5
 
 
 class AppPage(SimpleState, ContextualState):
@@ -81,7 +94,7 @@ class AppPage(SimpleState, ContextualState):
     def open_app_page(self, driver: PumaDriver, package_name: str = None):
         if not self._is_valid_package_name(package_name):
             raise ValueError(f'Invalid package name: {package_name}')
-        driver.open_url(f'https://play.google.com/store/apps/details?id={package_name}')
+        driver.open_url(f'https://play.google.com/store/apps/details?id={package_name}', APPLICATION_PACKAGE)
         self.last_opened[driver.udid] = package_name
 
     def validate_context(self, driver: PumaDriver, package_name: str = None) -> bool:
@@ -112,21 +125,42 @@ class PlayStore(StateGraph):
         self.add_popup_handler(LOCAL_RECOMMENDATIONS_POPUP_HANDLER)
         self.add_popup_handler(TRY_GOOGLE_PASS_POPUP_HANDLER)
 
-    @action(app_page_state)
-    def open_app(self, app_name: str = None):
-        self.driver.click(APP_PAGE_OPEN_BUTTON)
+    def _get_app_state_internal(self):
+        if self.driver.is_present(APP_PAGE_INSTALL_BUTTON):
+            return AppState.NOT_INSTALLED
+        if self.driver.is_present(APP_PAGE_UPDATE_BUTTON):
+            return AppState.UPDATE_AVAILABLE
+        if self.driver.is_present(APP_PAGE_UNINSTALL_BUTTON):
+            return AppState.INSTALLED
+        if self.driver.is_present(APP_PAGE_CANCEL_INSTALL_BUTTON):
+            if self.driver.is_present(APP_PAGE_UNINSTALL_BUTTON):
+                return AppState.INSTALLING_UPDATE
+            else:
+                return AppState.INSTALLING
+        logger.error(f'Could not determine the install state of the current app.')
+        return AppState.UNKNOWN
 
     @action(app_page_state)
-    def install_app(self, app_name: str = None):
+    def get_app_state(self, package_name: str) -> AppState:
+        return self._get_app_state_internal()
+
+    @action(app_page_state)
+    def install_app(self, package_name: str = None):
+        if self._get_app_state_internal() != AppState.NOT_INSTALLED:
+            logger.warn(f'Tried to install app {package_name}, but it was already installed')
         self.driver.click(APP_PAGE_INSTALL_BUTTON)
 
     @action(app_page_state)
-    def uninstall_app(self, app_name: str = None):
+    def uninstall_app(self, package_name: str = None):
+        if self._get_app_state_internal() not in [AppState.INSTALLED, AppState.UPDATE_AVAILABLE]:
+            logger.warn(f'Tried to uninstall app {package_name}, but it was not installed')
         self.driver.click(APP_PAGE_UNINSTALL_BUTTON)
         self.driver.click(APP_PAGE_UNINSTALL_SURE_BUTTON)
 
     @action(app_page_state)
-    def update_app(self, app_name: str = None):
+    def update_app(self, package_name: str = None):
+        if self._get_app_state_internal() == AppState.UPDATE_AVAILABLE:
+            logger.warn(f'Tried to update app {package_name}, but there is no update available')
         self.driver.click(APP_PAGE_UPDATE_BUTTON)
 
     @action(manage_apps_state)
