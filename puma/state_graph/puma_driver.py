@@ -229,13 +229,10 @@ class PumaDriver:
 
     def open_url(self, url: str, package_name:str=None):
         """
-        Opens a given URL. This URl will open in the default app configured for that URL.
+        Opens a given URL. A package name can be opened to define an app to open the link with.
+        If not, the URl will open in the default app configured for that URL.
         """
-        # TODO: remove if/else when we can update to new ADBPY version
-        if package_name:
-            self.adb.shell(f"am start -a android.intent.action.VIEW -d '{url}' {package_name}")
-        else:
-            self.adb.open_intent(url)
+        self.adb.open_intent(url, package_name)
 
     def start_recording(self, output_directory: str):
         """
