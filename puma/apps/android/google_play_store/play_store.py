@@ -1,5 +1,4 @@
 import re
-import time
 from enum import Enum
 
 from puma.apps.android.google_play_store import logger
@@ -25,34 +24,12 @@ ACCOUNT_ICON = '//android.widget.FrameLayout[starts-with(@content-desc, "Signed 
 
 HOME_SCREEN_TABS = '(//android.view.View[count(.//android.widget.TextView[@text="Games" or @text="Apps" or @text="Search" or @text="Books"]) = 4])[last()]'
 APPS_TAB_SELECTED = '//android.view.View[.//android.widget.ImageView[@selected="true"] and ./android.widget.TextView[@text="Apps"]]'
-GAMES_TAB_SELECTED = '//android.view.View[.//android.widget.ImageView[@selected="true"] and ./android.widget.TextView[@text="Games"]]'
-SEARCH_TAB_SELECTED = '//android.view.View[.//android.widget.ImageView[@selected="true"] and ./android.widget.TextView[@text="Search"]]'
-BOOKS_TAB_SELECTED = '//android.view.View[.//android.widget.ImageView[@selected="true"] and ./android.widget.TextView[@text="Books"]]'
 
-APPS_TAB_BUTTON = '//android.view.View[./android.widget.TextView[@text="Apps"]]'
-SEARCH_TAB_BUTTON = '//android.view.View[./android.widget.TextView[@text="Search"]]'
-GAMES_TAB_BUTTON = '//android.view.View[./android.widget.TextView[@text="Games"]]'
-BOOKS_TAB_BUTTON = '//android.view.View[./android.widget.TextView[@text="Books"]]'
-
-SEARCH_RESULT_STATE_BOX = '//android.widget.TextView'
-SEARCH_RESULT_STATE_FIRST_RESULT_OPEN_OR_INSTALL = '//android.widget.TextView[@text="Open" or @text="Install"]'
-# TODO: Check if this works if the first result is sponsored
-SEARCH_RESULT_STATE_FIRST_RESULT = '//androidx.compose.ui.platform.ComposeView[@resource-id="com.android.vending:id/0_resource_name_obfuscated"]/android.view.View/android.view.View[1]/android.view.View/android.view.View/android.view.View/android.view.View/android.view.View[1]/android.view.View[2]/android.view.View[1]'
-
-SEARCH_STATE_SEARCH_ICON = '//android.view.View[@content-desc="Search Google Play"]'
-SEARCH_STATE_SEARCH_BOX = '//android.widget.EditText'
-VOICE_SEARCH_BUTTON = '//android.view.View[@content-desc="Voice Search"]'
-
-APP_PAGE_REVIEWS_BADGE = '//android.view.View[starts-with(@content-desc, "Average rating") and ends-with(@content-desc, "reviews")]'
-APP_PAGE_DOWNLOADS_BADGE = '//android.view.View[starts-with(@content-desc, "Downloaded")]'
-APP_PAGE_CONTENT_RATING_BADGE = '//android.view.View[starts-with(@content-desc, "Content rating")]'
 APP_PAGE_INSTALL_BUTTON = '//android.view.View[@content-desc="Install"]'
 APP_PAGE_UNINSTALL_BUTTON = '//android.view.View[@content-desc="Uninstall"]'
 APP_PAGE_UNINSTALL_SURE_BUTTON = '//android.view.View[@content-desc="Uninstall"]'
-APP_PAGE_OPEN_BUTTON = '//android.view.View[@content-desc="Open"]'
 APP_PAGE_UPDATE_BUTTON = '//android.view.View[@content-desc="Update"]'
 APP_PAGE_CANCEL_INSTALL_BUTTON = '//android.view.View[@content-desc="Cancel"]'
-APP_PAGE_ABOUT_THIS_APP = '//android.widget.TextView[@text="About this app"]'
 APP_PAGE_THREE_DOTS = '//android.view.View[@content-desc="More options"]'
 APP_PAGE_NAVIGATE_UP = '//android.view.View[@content-desc="Navigate up"]'
 
