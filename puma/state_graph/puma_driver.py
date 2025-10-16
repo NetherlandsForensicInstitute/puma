@@ -232,7 +232,7 @@ class PumaDriver:
         Opens a given URL. A package name can be opened to define an app to open the link with.
         If not, the URl will open in the default app configured for that URL.
         """
-        self.adb.open_intent(url, package_name)
+        self.adb.open_intent(url)
 
     def start_recording(self, output_directory: str):
         """

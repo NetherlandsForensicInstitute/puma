@@ -133,7 +133,7 @@ class GooglePlayStore(StateGraph):
 
     @action(app_page_state)
     def update_app(self, package_name: str = None):
-        if self._get_app_state_internal() == AppState.UPDATE_AVAILABLE:
+        if self._get_app_state_internal() != AppState.UPDATE_AVAILABLE:
             logger.warn(f'Tried to update app {package_name}, but there is no update available')
             return
         self.driver.click(APP_PAGE_UPDATE_BUTTON)
