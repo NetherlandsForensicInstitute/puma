@@ -1,4 +1,3 @@
-import re
 from enum import Enum
 
 from puma.apps.android.google_play_store import logger
@@ -7,6 +6,7 @@ from puma.state_graph.popup_handler import PopUpHandler
 from puma.state_graph.puma_driver import supported_version, PumaDriver
 from puma.state_graph.state import SimpleState, compose_clicks, ContextualState
 from puma.state_graph.state_graph import StateGraph
+from puma.state_graph.utils import is_valid_package_name
 
 APPLICATION_PACKAGE = 'com.android.vending'
 
@@ -19,6 +19,12 @@ LOCAL_RECOMMENDATIONS_POPUP_HANDLER = PopUpHandler(
 TRY_GOOGLE_PASS_POPUP_HANDLER = PopUpHandler(
     ['//android.widget.TextView[@resource-id="com.android.vending:id/0_resource_name_obfuscated" and @text="Try Google Play Pass"]'],
     ['//android.widget.Button[@resource-id="com.android.vending:id/0_resource_name_obfuscated" and @text="Not now"]'])
+GOOGLE_PLAY_POINTS_POPUP_HANDLER = PopUpHandler(
+    ['//*[@text="Introducing google play points"]'],
+    ['//*[@text="Not now"]'])
+COMPLETE_ACCOUNT_POPUP_HANDLER = PopUpHandler(
+    ['//*[@text="Complete account setup"]'],
+    ['//*[@text="Continue"]', '//*[@text="Skip"]'])
 
 ACCOUNT_ICON = '//android.widget.FrameLayout[starts-with(@content-desc, "Signed in as")]'
 
@@ -63,13 +69,8 @@ class AppPage(SimpleState, ContextualState):
         # validation work in most cases.
         self.last_opened = {}
 
-    @staticmethod
-    def _is_valid_package_name(package_name: str) -> bool:
-        pattern = r'^[a-z_][a-z0-9_]*(\.[a-z_][a-z0-9_]*)*$'
-        return bool(re.fullmatch(pattern, package_name)) and len(package_name) <= 100
-
     def open_app_page(self, driver: PumaDriver, package_name: str = None):
-        if not self._is_valid_package_name(package_name):
+        if not is_valid_package_name(package_name):
             raise ValueError(f'Invalid package name: {package_name}')
         driver.open_url(f'https://play.google.com/store/apps/details?id={package_name}', APPLICATION_PACKAGE)
         self.last_opened[driver.udid] = package_name
@@ -96,6 +97,8 @@ class GooglePlayStore(StateGraph):
         self.add_popup_handler(PAYMENT_POPUP_HANDLER)
         self.add_popup_handler(LOCAL_RECOMMENDATIONS_POPUP_HANDLER)
         self.add_popup_handler(TRY_GOOGLE_PASS_POPUP_HANDLER)
+        self.add_popup_handler(GOOGLE_PLAY_POINTS_POPUP_HANDLER)
+        self.add_popup_handler(COMPLETE_ACCOUNT_POPUP_HANDLER)
 
     def _get_app_state_internal(self):
         if self.driver.is_present(APP_PAGE_INSTALL_BUTTON):
