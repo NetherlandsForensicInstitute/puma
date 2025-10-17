@@ -11,7 +11,7 @@ The Play Store is not freely available and should come pre-installed on your dev
 - A Google account is needed to use the Play Store (no payment method required for free apps)
 - Device language needs to be set to English
 
-### Initialization
+## Initialization
 
 Initialization is done in the following way:
 
