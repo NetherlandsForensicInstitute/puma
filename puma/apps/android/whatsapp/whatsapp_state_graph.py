@@ -29,6 +29,7 @@ CHAT_STATE_ROOT_LAYOUT = '//android.widget.LinearLayout[@resource-id="com.whatsa
 CHAT_STATE_CONTACT_HEADER = '//android.widget.LinearLayout[@resource-id="com.whatsapp:id/conversation_contact"]'
 
 MESSAGE_TEXT_BOX = '//android.widget.EditText[@resource-id="com.whatsapp:id/entry"]'
+MENTION_SUGGESTIONS = '//android.widget.ImageView[@resource-id="com.whatsapp:id/contact_photo"]'
 SEND_BUTTON = '//android.widget.ImageButton[@content-desc="Send"]'
 REPLY_ACTION = '//*[@content-desc="Reply"]'
 DELETE_ACTION = '//*[@content-desc="Delete"]'
@@ -197,6 +198,31 @@ class WhatsApp(StateGraph):
         StateGraph.__init__(self, device_udid, app_package)
         self.WHATSAPP_PACKAGE = app_package
 
+    def _handle_mention(self, message):
+        """
+        Make sure to convert an @name to an actual mention. Only one mention is allowed.
+        :param message: The message containing the mention.
+        """
+        self.driver.send_keys(MESSAGE_TEXT_BOX, message)
+        sleep(1)
+        # Find the mentioned name in the message. Note that it will search until the last word character. This means for
+        # @jan-willem or @jan willem, only @jan will be found.
+        mention_match = re.search(r"@\w+", message)
+        mentioned_name = mention_match.group(0).strip("@")
+
+        self.driver.press_left_arrow()
+        while not (mention_suggestions := self.driver.get_elements(MENTION_SUGGESTIONS)):
+             self.driver.press_left_arrow()
+
+        mentioned_person_el = \
+            [person for person in
+             mention_suggestions
+             if mentioned_name.lower() in person.tag_name.lower()][0]
+        mentioned_person_el.click()
+
+        # Remove a space resulting from selecting the mention person
+        self.driver.press_backspace()
+
     @action(chat_state)
     def send_message(self, message_text, to_chat: str, wait_until_sent=False):
         """
@@ -206,9 +232,10 @@ class WhatsApp(StateGraph):
         :param message_text: The text that the message contains.
         """
         self.driver.click(MESSAGE_TEXT_BOX)
-        #TODO handle mention
-        # self._handle_mention(message_text, text_box) if "@" in message_text else text_box.send_keys(message_text)
-        self.driver.send_keys(MESSAGE_TEXT_BOX, message_text)
+        self._handle_mention(message_text) \
+            if "@" in message_text \
+            else self.driver.send_keys(MESSAGE_TEXT_BOX, message_text)
+
         #Allow time for the link preview to load
         if 'http' in message_text:
             sleep(2)
@@ -237,35 +264,7 @@ class WhatsApp(StateGraph):
     #     """
     #     pass
 
-    def _handle_mention(self, message, text_box):
-        """
-        Make sure to convert an @name to an actual mention. Only one mention is allowed.
-        :param message: The message containing the mention.
-        """
-        text_box.send_keys(message)
-        sleep(1)
-        # Find the mentioned name in the message. Note that it will search until the last word character. This means for
-        # @jan-willem, only @jan will be found.
-        mention_match = re.search(r"@\w+", message)
-        mention_end_pos = mention_match.span()[1]
-        mentioned_name = mention_match.group(0).strip("@")
 
-        for _ in range(mention_end_pos, len(message)):
-            # Move cursor to the end position of the mentioned name.
-            # Keycodes were found at https://developer.android.com/reference/android/view/KeyEvent.html
-            back_arrow_keycode = 21
-            self.driver.press_keycode(back_arrow_keycode)
-        # Removing the last character is necessary to trigger the pop-up to select the person
-        # so we press backspace (Keycode 67)
-        backspace_keycode = 67
-        self.driver.press_keycode(backspace_keycode)
-        mentioned_person_el = \
-            [person for person in
-             self.driver.find_elements(by=AppiumBy.ID, value=f"{self.app_package}:id/contact_photo")
-             if person.tag_name.lower() == mentioned_name.lower()][0]
-        mentioned_person_el.click()
-        # Remove a space resulting from selecting the mention person
-        self.driver.press_keycode(backspace_keycode)
 
     def currently_in_conversation_overview(self) -> bool:
         # Send message occurs when no conversations are present yet. New chat when there are conversations.

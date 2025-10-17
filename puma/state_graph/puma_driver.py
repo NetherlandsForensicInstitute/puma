@@ -8,6 +8,7 @@ from uuid import uuid4
 from adb_pywrapper.adb_device import AdbDevice
 from adb_pywrapper.adb_screen_recorder import AdbScreenRecorder
 from appium.options.android import UiAutomator2Options
+from appium.webdriver import WebElement
 from appium.webdriver.common.appiumby import AppiumBy
 from appium import webdriver
 from appium.webdriver.extensions.android.nativekey import AndroidKey
@@ -20,7 +21,10 @@ from puma.state_graph import logger
 from puma.utils import CACHE_FOLDER
 from puma.utils.gtl_logging import create_gtl_logger
 
+# Keycode constants, found at
+KEYCODE_LEFT_ARROW = 21
 KEYCODE_ENTER = 66
+KEYCODE_BACKSPACE = 67
 
 class PumaClickException(Exception):
     """
@@ -187,6 +191,19 @@ class PumaDriver:
                 return self.driver.find_element(by=AppiumBy.XPATH, value=xpath)
         raise PumaClickException(f'Could not find element with xpath {xpath}')
 
+    def get_elements(self, xpath: str) -> list[WebElement]:
+        """
+        Retrieves all elements matching the specified XPath.
+
+        :param xpath: The XPath of the elements to retrieve.
+        :return: A list of WebElements corresponding to the XPath.
+        :raises PumaClickException: If no elements can be found after multiple attempts.
+        """
+        for attempt in range(3):
+            if self.is_present(xpath, self.implicit_wait):
+                return self.driver.find_elements(by=AppiumBy.XPATH, value=xpath)
+        raise PumaClickException(f'Could not find elements with xpath {xpath}')
+
     def swipe_to_click_element(self, xpath: str, max_swipes: int = 10):
         """
         Swipes down to find and click an element specified by its XPath. This is necessary when the element you want to
@@ -226,6 +243,18 @@ class PumaDriver:
         Presses the ENTER key.
         """
         self.driver.press_keycode(KEYCODE_ENTER)
+
+    def press_backspace(self):
+        """
+        Presses the BACKSPACE key.
+        """
+        self.driver.press_keycode(KEYCODE_BACKSPACE)
+
+    def press_left_arrow(self):
+        """
+        Presses the LEFT ARROW key.
+        """
+        self.driver.press_keycode(KEYCODE_LEFT_ARROW)
 
     def open_url(self, url: str, package_name:str=None):
         """
