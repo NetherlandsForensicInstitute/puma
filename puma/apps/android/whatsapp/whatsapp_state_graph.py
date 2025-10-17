@@ -67,8 +67,6 @@ FORWARD_ACTION = "//*[@resource-id='com.whatsapp:id/action_mode_bar']//*[@conten
 CONVERSATION_ROW_BY_SUBJECT = "//*[contains(@resource-id,'com.whatsapp:id/conversations_row_contact_name') and @text='{subject}']"
 CONTACTPICKER_TEXT = "//*[@resource-id='com.whatsapp:id/contactpicker_text_container']//*[@text='{contact}']"
 CONVERSATION_TEXT_ROW_WITH_TEXT = "//*[@resource-id='com.whatsapp:id/conversation_text_row']//*[@text='{message_text}']"
-MESSAGE_STATUS = ("//*[@resource-id='com.whatsapp:id/conversation_text_row']"
-                  "//*[@text='{message_text}']/..//*[@resource-id='com.whatsapp:id/status']")
 BROADCAST_CONTACT_ROW = "//*[@resource-id='com.whatsapp:id/chat_able_contacts_row_name' and @text='{receiver}']"
 CONTACT_NAME_IN_PICKER = '//android.widget.TextView[@resource-id="com.whatsapp:id/name" and @text="{contact_name}"]'
 NAVIGATION_TAB_BY_TEXT = ('//android.widget.TextView['
@@ -98,7 +96,9 @@ def conversation_text_row_with_text(message_text: str) -> str:
 
 def message_status(message_text: str) -> str:
     return (f"//*[@resource-id='com.whatsapp:id/conversation_text_row']"
-            f"//*[@text='{message_text}']/..//*[@resource-id='com.whatsapp:id/status']")
+            f"//*[@text='{message_text}']"
+            f"/.."
+            f"//*[@resource-id='com.whatsapp:id/status']")
 
 def broadcast_contact_row(receiver: str) -> str:
     return f"//*[@resource-id='com.whatsapp:id/chat_able_contacts_row_name' and @text='{receiver}']"
@@ -240,8 +240,9 @@ class WhatsApp(StateGraph):
         if 'http' in message_text:
             sleep(2)
         self.driver.click(SEND_BUTTON)
-        # if wait_until_sent:
-        #     _ = self._ensure_message_sent(message_text)
+        if wait_until_sent:
+            _ = self._ensure_message_sent(message_text)
+
 
 
 
@@ -325,18 +326,13 @@ class WhatsApp(StateGraph):
         if not self.currently_in_conversation():
             raise Exception('Expected to be in conversation screen now, but screen contents are unknown')
 
-    @log_action
-
-
     def _ensure_message_sent(self, message_text):
-        message_status_el = self.driver.find_element(by=AppiumBy.XPATH, value=
-        f"//*[@resource-id='{self.app_package}:id/conversation_text_row']"
-        f"//*[@text='{message_text}']"  # Text field element containing message text
-        f"/.."  # Parent of the message (i.e. conversation text row)
-        f"//*[@resource-id='{self.app_package}:id/status']")  # Status element
+        message_status_el = self.driver.get_element(message_status(message_text))
         while message_status_el.tag_name == "Pending":
-            print("Message pending, waiting for the message to be sent.")
+            #TODO gtl logger?
+            logger.info("Message pending, waiting for the message to be sent.")
             sleep(10)
+        logger.info("Message sent.")
         return message_status_el
 
     @log_action
