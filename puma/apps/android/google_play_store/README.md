@@ -21,7 +21,7 @@ from puma.apps.android.google_play_store.google_play_store import PlayStore
 phone = PlayStore("emulator-5444")
 ```
 
-### Managing specific apps
+## Managing specific apps
 
 Puma supports installing, uninstalling, and updating specific apps. The package name of the app is required:
 ```python
