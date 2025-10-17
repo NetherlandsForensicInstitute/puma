@@ -4,7 +4,7 @@ Thank you for considering contributing to our project! By following these guidel
 
 ## Table of Contents
 <!-- TOC -->
-* [Contributing to the Appium Automation Project](#contributing-to-the-appium-automation-project)
+* [Contributing to PUMA](#contributing-to-puma)
   * [Table of Contents](#table-of-contents)
   * [Development Installation](#development-installation)
   * [Issues](#issues)
@@ -19,11 +19,14 @@ Thank you for considering contributing to our project! By following these guidel
         * [Contextual states](#contextual-states)
       * [Transitions](#transitions)
       * [Actions](#actions)
+    * [Ground Truth Logging](#ground-truth-logging)
   * [How to add a new application](#how-to-add-a-new-application)
+  * [Legacy and deprecation](#legacy-and-deprecation)
   * [How to write Appium actions](#how-to-write-appium-actions)
     * [Example: writing new Appium actions](#example-writing-new-appium-actions)
     * [Navigation](#navigation)
-    * [Case Sensitivity in XPATH:](#case-sensitivity-in-xpath)
+    * [Pop-up handling](#pop-up-handling)
+    * [Case Sensitivity in XPath:](#case-sensitivity-in-xpath)
     * [Elements that do not have identifying attributes](#elements-that-do-not-have-identifying-attributes)
   * [Supporting new app versions](#supporting-new-app-versions)
   * [Resources](#resources)
