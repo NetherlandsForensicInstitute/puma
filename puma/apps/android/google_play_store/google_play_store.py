@@ -55,6 +55,12 @@ class AppState(Enum):
 
 
 class AppPage(SimpleState, ContextualState):
+    """
+    A state representing the app page of a specific application.
+
+    This class extends both SimpleState and ContextualState,but the contextual aspect is an outlier. See the
+    validate_context method.
+    """
     def __init__(self, parent_state):
         """
         Initializes the App page state with a given parent state.
@@ -65,24 +71,45 @@ class AppPage(SimpleState, ContextualState):
             xpaths=[HOME_SCREEN_TABS, APP_PAGE_THREE_DOTS],
             parent_state=parent_state,
             parent_state_transition=compose_clicks([APP_PAGE_NAVIGATE_UP], "navigate_up"))
-        # keep a dict that tracks which app pages were opened last on which device. This is to make the contextual
-        # validation work in most cases.
+        # keep a dict that tracks which app pages were opened last on which device. See validate_context()
         self.last_opened = {}
 
+    def validate_context(self, driver: PumaDriver, package_name: str = None) -> bool:
+        """
+        The package name cannot be found in the UI, except by opening the share menu and checking the URL that can be
+        shared. We do not want to use this, because that would mean triggering UI actions every time this contextual
+        state is verified.
+        Therefore, we opted to store the last opened package name for each device in this State. This means that the
+        contextual state is not actually verified against the UI, but against the package name that was opened with the
+        open_app_page method. When switching between two app pages, this works as long as the user does not interrupt
+        Puma during these UI actions.
+        """
+        if not package_name:
+            return True
+        return self.last_opened[driver.udid] == package_name
+
     def open_app_page(self, driver: PumaDriver, package_name: str = None):
+        """
+        Opens the app page for a specific package name. This is done by opening an intent, opening the URL of the app
+        page in the play store application.
+        This method also stores which package name's app page was opened on which device, enabling contextual validation
+        in validate_context().
+        """
         if not is_valid_package_name(package_name):
             raise ValueError(f'Invalid package name: {package_name}')
         driver.open_url(f'https://play.google.com/store/apps/details?id={package_name}', APPLICATION_PACKAGE)
         self.last_opened[driver.udid] = package_name
 
-    def validate_context(self, driver: PumaDriver, package_name: str = None) -> bool:
-        if not package_name:
-            return True
-        return self.last_opened[driver.udid] == package_name
-
 
 @supported_version("48.3.25-31")
 class GooglePlayStore(StateGraph):
+    """
+    A class representing a state graph for managing UI states and transitions in the Google Play Store.
+
+    This class uses a state machine approach to manage transitions between different states
+    of the Play store UI. It provides methods to navigate between states, validate states,
+    and handle unexpected states or errors.
+    """
     apps_tab_state = SimpleState([ACCOUNT_ICON, HOME_SCREEN_TABS, APPS_TAB_SELECTED], initial_state=True)
     profile_state = SimpleState([], parent_state=apps_tab_state)
     manage_apps_state = SimpleState([MANAGE_APP_STATE, MANAGE_APP_STATE_SYNC], parent_state=apps_tab_state)
@@ -93,6 +120,11 @@ class GooglePlayStore(StateGraph):
     app_page_state.from_states([apps_tab_state, profile_state, manage_apps_state], app_page_state.open_app_page)
 
     def __init__(self, device_udid):
+        """
+        Initializes the Google Play Store with a device UDID.
+
+        :param device_udid: The unique device identifier for the Android device.
+        """
         StateGraph.__init__(self, device_udid, APPLICATION_PACKAGE)
         self.add_popup_handler(PAYMENT_POPUP_HANDLER)
         self.add_popup_handler(LOCAL_RECOMMENDATIONS_POPUP_HANDLER)
@@ -101,6 +133,10 @@ class GooglePlayStore(StateGraph):
         self.add_popup_handler(COMPLETE_ACCOUNT_POPUP_HANDLER)
 
     def _get_app_state_internal(self):
+        """
+        Util method for @action methods on the app_page_state.
+        Returns the AppState of the application page, based on found UI elements.
+        """
         if self.driver.is_present(APP_PAGE_INSTALL_BUTTON):
             return AppState.NOT_INSTALLED
         if self.driver.is_present(APP_PAGE_UPDATE_BUTTON):
@@ -117,10 +153,20 @@ class GooglePlayStore(StateGraph):
 
     @action(app_page_state)
     def get_app_state(self, package_name: str) -> AppState:
+        """
+        Returns the AppState of a given package name. Possible states are:
+        INSTALLED, NOT_INSTALLED, UPDATE_AVAILABLE, INSTALLING, INSTALL_UPDATE, and UNKNOWN.
+        :param package_name: The exact package name of the application.
+        """
         return self._get_app_state_internal()
 
     @action(app_page_state)
     def install_app(self, package_name: str = None):
+        """
+        Installs the given application. If the application is already installed (or is being installed) this method
+        will log a warning and do nothing.
+        :param package_name: The exact package name of the application.
+        """
         if self._get_app_state_internal() != AppState.NOT_INSTALLED:
             logger.warn(f'Tried to install app {package_name}, but it was already installed')
             return
@@ -128,6 +174,11 @@ class GooglePlayStore(StateGraph):
 
     @action(app_page_state)
     def uninstall_app(self, package_name: str = None):
+        """
+        Uninstalls the given application. If the application is not installed this method will log a warning and do
+        nothing.
+        :param package_name: The exact package name of the application.
+        """
         if self._get_app_state_internal() not in [AppState.INSTALLED, AppState.UPDATE_AVAILABLE]:
             logger.warn(f'Tried to uninstall app {package_name}, but it was not installed')
             return
@@ -136,6 +187,10 @@ class GooglePlayStore(StateGraph):
 
     @action(app_page_state)
     def update_app(self, package_name: str = None):
+        """
+        Updates the given application. If no update is available this method will log a warning and do nothing.
+        :param package_name: The exact package name of the application.
+        """
         if self._get_app_state_internal() != AppState.UPDATE_AVAILABLE:
             logger.warn(f'Tried to update app {package_name}, but there is no update available')
             return
@@ -143,6 +198,9 @@ class GooglePlayStore(StateGraph):
 
     @action(manage_apps_state)
     def update_all_apps(self):
+        """
+        Updates all applications. If no updates are available this method will log a warning and do nothing.
+        """
         if not self.driver.is_present(UPDATE_ALL_BUTTON):
             logger.warn('Tried to update all apps, but update button not visible. All apps are probably up-to-date.')
             return
