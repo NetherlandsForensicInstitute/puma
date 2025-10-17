@@ -50,8 +50,8 @@ class State(ABC):
         :param from_states: The next state to transition to.
         :param ui_actions: A list of UI action functions to perform the transition.
         """
-        for s in from_states:
-            s.to(self, ui_actions)
+        for state in from_states:
+            state.to(self, ui_actions)
 
     @abstractmethod
     def validate(self, driver: PumaDriver) -> bool:
