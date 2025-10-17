@@ -140,4 +140,7 @@ class GooglePlayStore(StateGraph):
 
     @action(manage_apps_state)
     def update_all_apps(self):
+        if not self.driver.is_present(UPDATE_ALL_BUTTON):
+            logger.warn('Tried to update all apps, but update button not visible. All apps are probably up-to-date.')
+            return
         self.driver.click(UPDATE_ALL_BUTTON)
