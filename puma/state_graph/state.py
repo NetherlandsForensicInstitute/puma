@@ -12,12 +12,13 @@ class State(ABC):
     Abstract class representing a state. Each state represents a window in the UI.
     """
 
-    def __init__(self, parent_state: 'State' = None, initial_state: bool = False):
+    def __init__(self, initial_state: bool = False, parent_state: 'State' = None, parent_state_transition: Callable[..., None] = None):
         """
         Initializes a new State instance.
 
-        :param parent_state: The parent state of this state, or None if it has no parent.
         :param initial_state: Whether this is the initial state of the FSM.
+        :param parent_state: The parent state of this state, or None if it has no parent.
+        :param parent_state_transition: How to transition back to the parent state. By default, this is a press on the back button.
         """
         self.id = None  # set in metaclass
         if initial_state and parent_state:
@@ -27,16 +28,30 @@ class State(ABC):
         self.transitions = []
 
         if parent_state:
-            self.to(parent_state, back)
+            if parent_state_transition is None:
+                self.to(parent_state, back)
+            else:
+                self.to(parent_state, parent_state_transition)
 
     def to(self, to_state: 'State', ui_actions: Callable[..., None]):
         """
-        Transition to another state.
+        Define the transition from this state to another state.
 
         :param to_state: The next state to transition to.
         :param ui_actions: A list of UI action functions to perform the transition.
         """
         self.transitions.append(Transition(self, to_state, ui_actions))
+
+    def from_states(self, from_states: List['State'], ui_actions: Callable[..., None]):
+        """
+        Define the transition from a set of other states to this state.
+        This method is convenient when a state can be reached from many other states with the same UI actions.
+
+        :param from_states: The next state to transition to.
+        :param ui_actions: A list of UI action functions to perform the transition.
+        """
+        for state in from_states:
+            state.to(self, ui_actions)
 
     @abstractmethod
     def validate(self, driver: PumaDriver) -> bool:
@@ -67,15 +82,16 @@ class SimpleState(State):
     Simple State. This is a standard state which can be validated by providing a list of XPaths.
     """
 
-    def __init__(self, xpaths: List[str], initial_state: bool = False, parent_state: 'State' = None):
+    def __init__(self, xpaths: List[str], initial_state: bool = False, parent_state: 'State' = None, parent_state_transition: Callable[..., None] = None):
         """
         Initializes a new SimpleState instance.
 
         :param xpaths: A list of XPaths which are all present on the state window.
         :param initial_state: Whether this is the initial state.
         :param parent_state: The parent state of this state, or None if it has no parent.
+        :param parent_state_transition: How to transition back to the parent state. By default, this is a press on the back button.
         """
-        super().__init__(parent_state=parent_state, initial_state=initial_state)
+        super().__init__(initial_state=initial_state, parent_state=parent_state, parent_state_transition=parent_state_transition)
         self.xpaths = xpaths
 
     def validate(self, driver: PumaDriver) -> bool:

@@ -20,6 +20,7 @@ from puma.state_graph import logger
 from puma.utils import CACHE_FOLDER
 from puma.utils.gtl_logging import create_gtl_logger
 
+KEYCODE_ENTER = 66
 
 class PumaClickException(Exception):
     """
@@ -219,6 +220,19 @@ class PumaDriver:
         self.gtl_logger.info(f'Entering text "{text}" in text box')
         element = self.get_element(xpath)
         element.send_keys(text)
+
+    def press_enter(self):
+        """
+        Presses the ENTER key.
+        """
+        self.driver.press_keycode(KEYCODE_ENTER)
+
+    def open_url(self, url: str, package_name:str=None):
+        """
+        Opens a given URL. A package name can be opened to define an app to open the link with.
+        If not, the URl will open in the default app configured for that URL.
+        """
+        self.adb.open_intent(url, package_name)
 
     def start_recording(self, output_directory: str):
         """

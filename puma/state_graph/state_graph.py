@@ -5,7 +5,7 @@ from puma.state_graph import logger
 from puma.state_graph.popup_handler import known_popups, PopUpHandler
 from puma.state_graph.puma_driver import PumaDriver, PumaClickException
 from puma.state_graph.state import State, ContextualState, Transition, _shortest_path
-from puma.state_graph.utils import safe_func_call, filter_arguments
+from puma.state_graph.utils import safe_func_call, filter_arguments, is_valid_package_name
 
 
 class StateGraphMeta(type):
@@ -132,13 +132,12 @@ class StateGraphMeta(type):
 
 class StateGraph(metaclass=StateGraphMeta):
     """
-       A class representing a state graph for managing UI states and transitions in an application.
+    A class representing a state graph for managing UI states and transitions in an application.
 
-       This class uses a state machine approach to manage transitions between different states
-       of a user interface. It initializes with a device and application package, and provides
-       methods to navigate between states, validate states, and handle unexpected states or errors.
-
-   """
+    This class uses a state machine approach to manage transitions between different states
+    of a user interface. It initializes with a device and application package, and provides
+    methods to navigate between states, validate states, and handle unexpected states or errors.
+    """
 
     def __init__(self, device_udid: str, app_package: str, appium_server: str = 'http://localhost:4723', desired_capabilities: Dict[str, str] = None):
         """
@@ -148,7 +147,8 @@ class StateGraph(metaclass=StateGraphMeta):
         :param app_package: The package name of the application.
         :param desired_capabilities: desired capabilities as passed to the Appium webdriver.
         """
-
+        if not is_valid_package_name(app_package):
+            raise ValueError(f'The provided package name is invalid: {app_package}')
         self.current_state = self.initial_state
         self.driver = PumaDriver(device_udid, app_package, appium_server=appium_server, desired_capabilities=desired_capabilities)
         self.app_popups = []
@@ -216,7 +216,11 @@ class StateGraph(metaclass=StateGraphMeta):
             self.gtl_logger.error(f'Was in the expected state {expected_state}, but context {relevant_kwargs} did not match')
             # correct state, but wrong context (e.g. we want a conversation with Alice, but we're in a conversation with Bob)
             # recovery: always go back to the parent state
-            self.go_to_state(expected_state.parent_state)
+            # Go to the first non-contextual parent state, context is lost when recovering from a contextual state
+            go_to_state = expected_state.parent_state
+            while isinstance(go_to_state, ContextualState):
+                go_to_state = go_to_state.parent_state
+            self.go_to_state(go_to_state)
         else:
             self.gtl_logger.info(f'Validated that current state is the expected state {expected_state}')
             self.current_state = expected_state
