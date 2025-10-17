@@ -1,4 +1,5 @@
 import inspect
+import re
 
 from puma.state_graph import logger
 from puma.state_graph.puma_driver import PumaClickException
@@ -33,3 +34,7 @@ def filter_arguments(func, **kwargs) -> inspect.BoundArguments:
     bound_args = signature.bind(**filtered_args)
     bound_args.apply_defaults()
     return bound_args
+
+def is_valid_package_name(package_name: str) -> bool:
+    pattern = r'^[a-z_][a-z0-9_]+(\.[a-z_][a-z0-9_]*)*$'
+    return bool(re.fullmatch(pattern, package_name)) and len(package_name) <= 100
