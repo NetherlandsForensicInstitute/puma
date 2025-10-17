@@ -5,7 +5,7 @@ Puma supports the basic features of the Play Store to install and manage apps.
 
 The Play Store is not freely available and should come pre-installed on your device.
 
-### Prerequisites
+## Prerequisites
 
 - The application installed on your device
 - A Google account is needed to use the Play Store (no payment method required for free apps)
