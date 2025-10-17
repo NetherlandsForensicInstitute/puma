@@ -58,7 +58,7 @@ class AppPage(SimpleState, ContextualState):
     """
     A state representing the app page of a specific application.
 
-    This class extends both SimpleState and ContextualState,but the contextual aspect is an outlier. See the
+    This class extends both SimpleState and ContextualState, but the contextual aspect is an outlier. See the
     validate_context method.
     """
     def __init__(self, parent_state):
@@ -83,6 +83,10 @@ class AppPage(SimpleState, ContextualState):
         contextual state is not actually verified against the UI, but against the package name that was opened with the
         open_app_page method. When switching between two app pages, this works as long as the user does not interrupt
         Puma during these UI actions.
+
+        :param driver: Puma driver
+        :param package_name: package name
+        :return boolean
         """
         if not package_name:
             return True
@@ -94,6 +98,9 @@ class AppPage(SimpleState, ContextualState):
         page in the play store application.
         This method also stores which package name's app page was opened on which device, enabling contextual validation
         in validate_context().
+
+        :param driver: Puma driver
+        :param package_name: package name
         """
         if not is_valid_package_name(package_name):
             raise ValueError(f'Invalid package name: {package_name}')
@@ -132,10 +139,10 @@ class GooglePlayStore(StateGraph):
         self.add_popup_handler(GOOGLE_PLAY_POINTS_POPUP_HANDLER)
         self.add_popup_handler(COMPLETE_ACCOUNT_POPUP_HANDLER)
 
-    def _get_app_state_internal(self):
+    def _get_app_state_internal(self) -> AppState:
         """
         Util method for @action methods on the app_page_state.
-        Returns the AppState of the application page, based on found UI elements.
+        :return the AppState of the application page, based on found UI elements.
         """
         if self.driver.is_present(APP_PAGE_INSTALL_BUTTON):
             return AppState.NOT_INSTALLED
@@ -154,9 +161,9 @@ class GooglePlayStore(StateGraph):
     @action(app_page_state)
     def get_app_state(self, package_name: str) -> AppState:
         """
-        Returns the AppState of a given package name. Possible states are:
+        Returns the AppState of the given application. Possible states are:
         INSTALLED, NOT_INSTALLED, UPDATE_AVAILABLE, INSTALLING, INSTALL_UPDATE, and UNKNOWN.
-        :param package_name: The exact package name of the application.
+        :return the AppState of the given application
         """
         return self._get_app_state_internal()
 
