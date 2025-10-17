@@ -1,4 +1,4 @@
-# Contributing to the Appium Automation Project
+# Contributing to PUMA
 
 Thank you for considering contributing to our project! By following these guidelines, you will help ensure that our project remains consistent, maintainable, and easy to use.
 
