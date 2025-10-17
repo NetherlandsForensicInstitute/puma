@@ -5,7 +5,7 @@ Puma supports the basic features of the Play Store to install and manage apps.
 
 The Play Store is not freely available and should come pre-installed on your device.
 
-### Prerequisites
+## Prerequisites
 
 - The application installed on your device
 - A Google account is needed to use the Play Store (no payment method required for free apps)
@@ -21,7 +21,7 @@ from puma.apps.android.google_play_store.google_play_store import PlayStore
 phone = PlayStore("emulator-5444")
 ```
 
-### Managing specific apps
+## Managing specific apps
 
 Puma supports installing, uninstalling, and updating specific apps. The package name of the app is required:
 ```python
