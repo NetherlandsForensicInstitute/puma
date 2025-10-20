@@ -24,7 +24,7 @@ class TestGoogleChrome(unittest.TestCase):
         if not device_udids["Alice"]:
             print("No udid was configured for Alice. Pleas add at the top of the script.\nExiting....")
             exit(1)
-        self.alice = GoogleChromeActions(device_udids["Alice"])
+        self.alice = GoogleChrome(device_udids["Alice"])
 
     def test_go_to(self):
         self.alice.go_to("www.wikipedia.com")
