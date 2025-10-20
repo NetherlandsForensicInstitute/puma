@@ -1,6 +1,6 @@
 from puma.state_graph.action import action
 from puma.state_graph.puma_driver import supported_version, PumaDriver
-from puma.state_graph.state import SimpleState, ContextualState, State
+from puma.state_graph.state import SimpleState, ContextualState, State, compose_clicks
 from puma.state_graph.state_graph import StateGraph
 
 TELEGRAM_PACKAGE = 'org.telegram.messenger'
@@ -21,6 +21,16 @@ CHAT_STATE_MESSAGE_TEXTBOX = '//android.widget.EditText[@text]'
 CHAT_STATE_MEDIA_BUTTON = '//android.widget.ImageView[@content-desc="Attach media"]'
 CHAT_STATE_RECORD_VIDEO_OR_AUDIO_MESSAGE = '//android.widget.FrameLayout[@content-desc="Record voice message" or @content-desc="Record video message"]'
 CHAT_STATE_SEND_BUTTON = '//android.view.View[@content-desc="Send"]'
+
+SEND_MEDIA_STATE_INSTANT_CAMERA_BUTTON = '//android.widget.FrameLayout[@content-desc="Instant camera"]/preceding-sibling::android.widget.FrameLayout[last()]'
+SEND_MEDIA_STATE_GALLERY_BUTTON = '//android.widget.FrameLayout[@text="Gallery"]'
+SEND_MEDIA_STATE_FILE_BUTTON = '//android.widget.FrameLayout[@text="File"]'
+SEND_MEDIA_STATE_LOCATION_BUTTON = '//android.widget.FrameLayout[@text="Location"]'
+
+SEND_FROM_GALLERY_STATE_BACK_BUTTON = '//android.widget.ImageView[@content-desc="Go back"]'
+SEND_FROM_GALLERY_THREE_DOTS_BUTTON = '//android.widget.ImageButton[@content-desc="More options"]'
+SEND_FROM_GALLERY_FOLDER_PICKER = '//android.widget.ImageView[@content-desc="Go back"]/following-sibling::*[1][@text]'
+SEND_FROM_GALLERY_MEDIA_SWITCH = '(//android.widget.Switch)[{index}]'
 
 CALL_STATE_END_CALL_BUTTON = '//android.widget.Button[@text="End Call"]'
 CALL_STATE_SPEAKER_BUTTON = '//android.widget.FrameLayout[@content-desc="Speaker"]'
@@ -60,9 +70,15 @@ class Telegram(StateGraph):
     chat_state = TeleGramChatState(parent_state=conversations_state)
     call_state = SimpleState([CALL_STATE_END_CALL_BUTTON, CALL_STATE_MUTE_BUTTON, CALL_STATE_SPEAKER_BUTTON],
                              parent_state=chat_state)
+    send_media_state = SimpleState([SEND_MEDIA_STATE_INSTANT_CAMERA_BUTTON, SEND_MEDIA_STATE_GALLERY_BUTTON, SEND_MEDIA_STATE_FILE_BUTTON, SEND_MEDIA_STATE_LOCATION_BUTTON],
+                                   parent_state=chat_state)
+    send_from_gallery_state = SimpleState([SEND_FROM_GALLERY_STATE_BACK_BUTTON, SEND_FROM_GALLERY_FOLDER_PICKER, SEND_FROM_GALLERY_THREE_DOTS_BUTTON],
+                                          parent_state=chat_state)  # pressing back goes back to the chat state
 
     conversations_state.to(chat_state, go_to_chat)
-    chat_state.to(call_state, lambda driver: driver.click(CHAT_STATE_CALL_BUTTON))
+    chat_state.to(call_state, compose_clicks([CHAT_STATE_CALL_BUTTON], name="press_call_button"))
+    chat_state.to(send_media_state, compose_clicks([CHAT_STATE_MEDIA_BUTTON], name="press_attachment_button"))
+    send_media_state.to(send_from_gallery_state, compose_clicks([SEND_MEDIA_STATE_GALLERY_BUTTON], name='press_gallery_button'))
 
     def __init__(self, device_udid, telegram_web_version: bool = False):
         package = TELEGRAM_WEB_PACKAGE if telegram_web_version else TELEGRAM_PACKAGE
@@ -89,13 +105,27 @@ class Telegram(StateGraph):
             self.driver.click(CHAT_STATE_RECORD_VIDEO_OR_AUDIO_MESSAGE)
         self.driver.press_and_hold(CHAT_STATE_RECORD_VIDEO_OR_AUDIO_MESSAGE, duration)
 
-    def _in_voice_message_mode(self):
-        return self.driver.get_element(CHAT_STATE_RECORD_VIDEO_OR_AUDIO_MESSAGE).get_attribute(
-            'content-desc') == 'Record voice message'
+    @action(send_from_gallery_state)
+    def send_media_from_gallery(self, media_index: int|list[int],caption:str = None, conversation: str = None):
+        if not media_index:
+            raise ValueError(f'Cannot send medai from gallery without a proper set of indices')
+        # select picture/video
+        if isinstance(media_index, int):
+            media_index = [media_index]
+        for i in media_index:
+            self.driver.click(SEND_FROM_GALLERY_MEDIA_SWITCH.format(index=i))  # TODO: thumbnail 2 cannot be selected, how to solve this?
+        if caption:
+            self.driver.send_keys('//android.widget.EditText[@text]', caption)
+        # send button
+        self.driver.click('//android.widget.Button')
 
     @action(chat_state)
     def start_call(self, conversation: str = None):
         self.driver.click(CHAT_STATE_CALL_BUTTON)
+
+    def _in_voice_message_mode(self):
+        return self.driver.get_element(CHAT_STATE_RECORD_VIDEO_OR_AUDIO_MESSAGE).get_attribute(
+            'content-desc') == 'Record voice message'
 
     def _find_button_location(self, width_ratio: float, height_ratio: float, xpath: str):
         send_button = self.driver.get_element(xpath)
