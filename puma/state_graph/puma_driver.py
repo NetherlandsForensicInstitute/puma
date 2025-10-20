@@ -15,9 +15,12 @@ from appium.webdriver.webdriver import WebDriver
 from urllib3.exceptions import MaxRetryError
 
 from puma.computer_vision import ocr
+from puma.computer_vision.ocr import RecognizedText
 from puma.state_graph import logger
 from puma.utils import CACHE_FOLDER
+from puma.utils.gtl_logging import create_gtl_logger
 
+KEYCODE_ENTER = 66
 
 class PumaClickException(Exception):
     """
@@ -54,8 +57,8 @@ def _get_appium_driver(appium_server: str, udid: str, options) -> WebDriver:
                          "This can be done by running the `appium` command from the command line.")
             exit(1)
     else:
-        logger.warning(f'WARNING: there already was an initialized driver for appium server {appium_server} and udid {udid}. '
-                       'This driver will be used, which might mean your appium capabilities are ignored as these cannot be'
+        logger.warning(f'WARNING: There already was an initialized driver for appium server {appium_server} and udid {udid}. '
+                       'This driver will be used, which might mean your Appium capabilities are ignored as these cannot be'
                        'altered for a driver that has already been initialized. If you need specific capabilities, please '
                        'rewrite your Puma code to ensure the correct capabilities are loaded the first time you connect to '
                        f'server {appium_server} and device {udid}.')
@@ -85,7 +88,7 @@ class PumaDriver:
         :param app_package: The package name of the application to interact with.
         :param implicit_wait: The implicit wait time for element searches, defaults to 1 second.
         :param appium_server: The address of the Appium server, defaults to 'http://localhost:4723'.
-        :param desired_capabilities: desired capabilities as passed to the Appium webdriver.
+        :param desired_capabilities: The desired capabilities as passed to the Appium webdriver.
         """
         self.options = _get_android_default_options()
         self.options.udid = udid
@@ -99,6 +102,8 @@ class PumaDriver:
         self.udid = self.driver.capabilities.get("udid")
         self.adb = AdbDevice(self.udid)
         self._screen_recorder = None
+        self._screen_recorder_output_directory = None
+        self.gtl_logger = create_gtl_logger(udid)
 
     def is_present(self, xpath: str, implicit_wait: int = 0) -> bool:
         """
@@ -117,12 +122,14 @@ class PumaDriver:
         """
         Activates the application on the device.
         """
+        self.gtl_logger.info(f'Activating app {self.app_package}')
         self.driver.activate_app(self.app_package)
 
     def terminate_app(self):
         """
         Terminates the application on the device.
         """
+        self.gtl_logger.info(f'Terminating app {self.app_package}')
         self.driver.terminate_app(self.app_package)
 
     def restart_app(self):
@@ -144,12 +151,14 @@ class PumaDriver:
         """
         Simulates pressing the back button on the device.
         """
+        self.gtl_logger.info(f'Pressing back button')
         self.driver.press_keycode(AndroidKey.BACK)
 
     def home(self):
         """
         Simulates pressing the home button on the device.
         """
+        self.gtl_logger.info(f'Pressing home button')
         self.driver.press_keycode(AndroidKey.HOME)
 
     def click(self, xpath: str):
@@ -192,7 +201,7 @@ class PumaDriver:
                 self.click(xpath)
                 return
             else:
-                print(f"Attempt {attempt + 1}: Element not found, swiping down")
+                self.gtl_logger.warning(f"Attempt {attempt + 1}: Element not found, swiping down")
                 window_size = self.driver.get_window_size()
                 start_x = window_size['width'] / 2
                 start_y = window_size['height'] * 0.8
@@ -201,42 +210,64 @@ class PumaDriver:
                 time.sleep(0.5)
         raise PumaClickException(f'After {max_swipes} swipes, cannot find element with xpath {xpath}')
 
-    def send_keys(self, xpath: str, keys: str):
+    def send_keys(self, xpath: str, text: str):
         """
         Sends keys to an element specified by its XPath.
 
         :param xpath: The XPath of the element to send keys to.
-        :param keys: The keys to send to the element.
+        :param text: The text to send to the element.
         """
+        self.gtl_logger.info(f'Entering text "{text}" in text box')
         element = self.get_element(xpath)
-        element.send_keys(keys)
+        element.send_keys(text)
+
+    def press_enter(self):
+        """
+        Presses the ENTER key.
+        """
+        self.driver.press_keycode(KEYCODE_ENTER)
+
+    def open_url(self, url: str, package_name:str=None):
+        """
+        Opens a given URL. A package name can be opened to define an app to open the link with.
+        If not, the URl will open in the default app configured for that URL.
+        """
+        self.adb.open_intent(url, package_name)
 
     def start_recording(self, output_directory: str):
+        """
+        Starts a screen recording.
+
+        :param output_directory: The directory the screen recording should be stored in.
+        """
         if self._screen_recorder is None:
             self._screen_recorder_output_directory = output_directory
             self._screen_recorder = AdbScreenRecorder(self.adb)
+            self.gtl_logger.info('Starting screen recording')
             self._screen_recorder.start_recording()
 
-    def stop_recording_and_save_video(self) -> [str]:
+    def stop_recording_and_save_video(self) -> list[str] | None:
         if self._screen_recorder is None:
             return None
+        self.gtl_logger.info('Ending screen recording')
         video_files = self._screen_recorder.stop_recording(self._screen_recorder_output_directory)
         self._screen_recorder.__exit__(None, None, None)
         self._screen_recorder = None
         return video_files
 
-    def new_screenshot_name(self):
+    def _new_screenshot_name(self):
         now = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
         device_name = self.options.device_name
         return Path(CACHE_FOLDER) / f'{now}-{device_name}-{uuid4()}.png'
 
-    def find_text_ocr(self, text_to_find: str) -> [ocr.RecognizedText]:
-        path = self.new_screenshot_name()
+    def _find_text_ocr(self, text_to_find: str) -> list[RecognizedText]:
+        path = self._new_screenshot_name()
         screenshot_taken = False
         try:
             screenshot_taken = self.driver.get_screenshot_as_file(path)
             if not screenshot_taken:
                 raise Exception(f'Screenshot could not be stored to {path}')
+            self.gtl_logger.info(f'Using OCR to find text {text_to_find}')
             found_text = ocr.find_text(str(path), text_to_find)
             return found_text
         finally:
@@ -244,7 +275,14 @@ class PumaDriver:
                 os.remove(path)
 
     def click_text_ocr(self, text_to_click: str, click_first_when_multiple: bool = False):
-        found_text = self.find_text_ocr(text_to_click)
+        """
+        Clicks a text if it can be found on a screen using OCR.
+
+        :param text_to_click: The text to click.
+        :param click_first_when_multiple: If True, the first occurrence of the string will be clicked if multiple are found.
+        If False, raises an PumaClickException if multiple occurrences are found. Defaults to False.
+        """
+        found_text = self._find_text_ocr(text_to_click)
         if len(found_text) == 0:
             msg = f'Could not find text {text_to_click} on screen so could not click it'
             raise PumaClickException(msg)
@@ -256,9 +294,15 @@ class PumaDriver:
                 logger.warning(f'Found multiple occurrences of text {text_to_click} on screen, clicking first one')
         x = found_text[0].bounding_box.middle[0]
         y = found_text[0].bounding_box.middle[1]
+        self.gtl_logger.info(f'Clicking found text {found_text}')
         self.driver.execute_script('mobile: clickGesture', {'x': x, 'y': y})
 
     def set_idle_timeout(self, timeout: int):
+        """
+        Sets a maximum time to wait while idle.
+
+        :param timeout: The maximum time to wait.
+        """
         # https://github.com/appium/appium-uiautomator2-driver#poor-elements-interaction-performance
         # https://github.com/appium/appium-uiautomator2-driver#settings-api
         settings = self.driver.get_settings()

@@ -5,7 +5,7 @@ from puma.state_graph.state_graph import StateGraph
 APPLICATION_PACKAGE = "INSERT YOUR PACKAGE HERE"
 
 
-# define here custom methods to navigate to a certain state
+# Define custom methods to navigate to a certain state here
 
 class TemplateApp(StateGraph):
     # Define states

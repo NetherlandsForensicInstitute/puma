@@ -2,12 +2,16 @@ from time import sleep
 from typing import Dict
 
 from appium.webdriver.common.appiumby import AppiumBy
+from typing_extensions import deprecated
 
+from puma.apps.android import log_action
 from puma.apps.android.appium_actions import AndroidAppiumActions, supported_version
 
 SNAPCHAT_PACKAGE = 'com.snapchat.android'
 
 
+@deprecated('This class does not use the Puma state machine, and will therefore not be maintained. ' +
+            'If you want to add functionality, please rewrite this class using StateGraph as the abstract base class.')
 @supported_version("12.90.0.46")
 class SnapchatActions(AndroidAppiumActions):
     def __init__(self,
@@ -75,6 +79,7 @@ class SnapchatActions(AndroidAppiumActions):
                                  value=f'//android.widget.LinearLayout[@resource-id="com.snapchat.android:id/ngs_navigation_bar"]/android.view.ViewGroup[@content-desc="{tab_name}"]').click()
 
     # TODO create a separate function for each tab, so the user cannot make any typos
+    @log_action
     def go_to_conversation_tab(self):
         """
         Navigate to the top of the conversation tab.
@@ -87,6 +92,7 @@ class SnapchatActions(AndroidAppiumActions):
         if not self._currently_on_top_of_conversation_overview():
             self._go_to_main_tab("Chat")
 
+    @log_action
     def go_to_camera_tab(self):
         """
         Navigate to camera tab.
@@ -94,6 +100,7 @@ class SnapchatActions(AndroidAppiumActions):
         if not self._currently_in_camera_tab():
             self._go_to_main_tab("Camera")
 
+    @log_action
     def select_chat(self, chat_subject: str):
         """
         Opens a given conversation.
@@ -110,6 +117,7 @@ class SnapchatActions(AndroidAppiumActions):
         if not self._currently_in_conversation():
             raise Exception('Expected to be in conversation screen now, but screen contents are unknown')
 
+    @log_action
     def send_message(self, message: str, chat: str = None):
         """
         Sends a text message, either in the current conversation, or in a given conversation.
@@ -127,6 +135,7 @@ class SnapchatActions(AndroidAppiumActions):
         enter_keycode = 66
         self.driver.press_keycode(enter_keycode)
 
+    @log_action
     def send_snap(self, recipients: [str] = None, caption: str = None, front_camera: bool = True):
         """
         Sends a snap (picture), either to one or more contacts, or posts it to `My story`

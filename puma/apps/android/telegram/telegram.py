@@ -2,13 +2,17 @@ from time import sleep
 from typing import Dict, Optional
 
 from appium.webdriver.common.appiumby import AppiumBy
+from typing_extensions import deprecated
 
+from puma.apps.android import log_action
 from puma.apps.android.appium_actions import supported_version, AndroidAppiumActions
 
 TELEGRAM_PACKAGE = 'org.telegram.messenger'
 TELEGRAM_WEB_PACKAGE = 'org.telegram.messenger.web'
 
 
+@deprecated('This class does not use the Puma state machine, and will therefore not be maintained. ' +
+            'If you want to add functionality, please rewrite this class using StateGraph as the abstract base class.')
 @supported_version("11.9.0")
 class TelegramActions(AndroidAppiumActions):
 
@@ -82,6 +86,7 @@ class TelegramActions(AndroidAppiumActions):
         self._load_conversation_titles()
         sleep(1)
 
+    @log_action
     def start_new_chat(self, chat: str):
         self.return_to_homescreen()
         self.driver.find_element(by=AppiumBy.XPATH,
@@ -93,6 +98,7 @@ class TelegramActions(AndroidAppiumActions):
         self.driver.find_element(by=AppiumBy.XPATH,
                                  value=f'//android.view.ViewGroup[starts-with(lower-case(@text), "{chat.lower()}")]').click()
 
+    @log_action
     def select_chat(self, chat: str | int):
         """
         Opens a given conversation based on the (partial) name of a chat, or opens the chat at the passed index
@@ -113,6 +119,7 @@ class TelegramActions(AndroidAppiumActions):
         if not self._currently_in_conversation(implicit_wait=1):
             raise RuntimeError("Conversation was not opened after clicking the conversation")
 
+    @log_action
     def select_group(self, group_name: str):
         """
         Opens a given conversation based on the exact name of a group.
@@ -120,6 +127,7 @@ class TelegramActions(AndroidAppiumActions):
         """
         self.select_chat(f'Group. {group_name}')
 
+    @log_action
     def select_channel(self, channel_name: str):
         """
         Opens a given conversation based on the exact name of a channel.
@@ -127,6 +135,7 @@ class TelegramActions(AndroidAppiumActions):
         """
         self.select_chat(f'Channel. {channel_name}')
 
+    @log_action
     def send_message(self, message: str, chat: str | int):
         """
         Send a message in the current or given chat
@@ -145,6 +154,7 @@ class TelegramActions(AndroidAppiumActions):
         location = self._find_button_location(0.75, 0.5, '//android.view.View[@content-desc="Send"]')
         self.driver.tap([(location)])
 
+    @log_action
     def reply_to_message(self, message_to_reply_to: str, reply: str, chat: str = None):
         """
         Send a text message as a reply to a previous message.
@@ -161,6 +171,7 @@ class TelegramActions(AndroidAppiumActions):
         self.driver.find_element(by=AppiumBy.XPATH, value='//android.widget.EditText').send_keys(reply)
         self.driver.find_element(by=AppiumBy.XPATH, value='//android.view.View[@content-desc="Send"]').click()
 
+    @log_action
     def emoji_reply_to_message(self, message_to_respond_to: str, emoji_to_respond_with: str = '👍', chat: str = None):
         """
         Send emoji response to a previous message.
@@ -186,6 +197,7 @@ class TelegramActions(AndroidAppiumActions):
         print(f'Tapping screen at ({x},{y})')
         self.driver.tap([(x, y)])
 
+    @log_action
     def take_and_send_picture(self,
                               chat: str = None,
                               caption: str = None,
@@ -243,6 +255,7 @@ class TelegramActions(AndroidAppiumActions):
 
         sleep(0.3)  # the animation after sending a picture might throw off the script
 
+    @log_action
     def start_call(self, chat: str = None, video: bool = False) -> bool:
         """
         Makes a call and ends the call after a given number of seconds.
@@ -265,6 +278,7 @@ class TelegramActions(AndroidAppiumActions):
         # wait a short while (max 2s) for the call to have started
         return self._currently_in_call(implicit_wait=2)
 
+    @log_action
     def get_call_status(self) -> Optional[str]:
         """
         Returns a string describing the status of the current call, which is a text visible on the call screen.
@@ -280,6 +294,7 @@ class TelegramActions(AndroidAppiumActions):
         status_element = self.driver.find_element(by=AppiumBy.XPATH, value=status_element)
         return status_element.get_attribute("text")
 
+    @log_action
     def end_call(self):
         """
         Ends the current call. Assumes the call screen is open.
@@ -289,6 +304,7 @@ class TelegramActions(AndroidAppiumActions):
         self.driver.find_element(by=AppiumBy.XPATH,
                                  value='//android.widget.Button[lower-case(@text)="end call"]').click()
 
+    @log_action
     def answer_call(self):
         """
         Answer when receiving a call via Telegram.
@@ -303,6 +319,7 @@ class TelegramActions(AndroidAppiumActions):
         if self.is_present(open_call_button):
             self.driver.find_element(by=AppiumBy.XPATH, value=open_call_button).click()
 
+    @log_action
     def decline_call(self):
         """
         Declines an incoming Telegram call.
@@ -315,6 +332,7 @@ class TelegramActions(AndroidAppiumActions):
                                  value='//android.widget.Button[lower-case(@content-desc)="decline"]').click()
         self.driver.back()
 
+    @log_action
     def toggle_video_in_call(self):
         """
         Toggles video in an ongoing call.
@@ -331,6 +349,7 @@ class TelegramActions(AndroidAppiumActions):
             self.driver.find_element(by=AppiumBy.XPATH,
                                      value='//android.widget.FrameLayout[@content-desc="Stop Video"]').click()
 
+    @log_action
     def flip_video_in_call(self):
         """
         Switches between the front camera and rear camera while in a video call.

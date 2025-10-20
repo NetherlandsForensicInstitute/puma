@@ -1,7 +1,7 @@
 import unittest
 from time import sleep
 
-from puma.apps.android.whatsapp.whatsapp import WhatsappActions
+from puma.apps.android.whatsapp_business.whatsapp_business import WhatsappBusinessActions
 
 # Fill in the udids below. Run ADB devices to see the udids.
 device_udids = {
@@ -10,7 +10,7 @@ device_udids = {
 }
 
 
-class TestWhatsapp(unittest.TestCase):
+class TestWhatsappBusiness(unittest.TestCase):
     """
     With this test, you can check whether all Appium functionality works for the current version of Whatsapp. The test
     can only be run manually, as you need a setup with two phones
@@ -20,7 +20,7 @@ class TestWhatsapp(unittest.TestCase):
     - 2 phones with WhatsApp registered:
         - Alice:
             - Have Bob and Charlie in contacts
-            - Have a folder named "photos" with at least 1 photo on the location WhatsApp looks for media (for
+            - Have a folder named "Downloads" with at least 1 photo on the location WhatsApp looks for media (for
             example create the folder in Google Photos or the gallery app)
         - Bob: (If this device is not configured, you can still run most tests, but the lower ones will fail).
             - Have Alice in contacts.
@@ -32,18 +32,18 @@ class TestWhatsapp(unittest.TestCase):
         if not device_udids["Alice"]:
             print("No udid was configured for Alice. Please add at the top of the script.\nExiting....")
             exit(1)
-        self.alice = WhatsappActions(device_udids["Alice"]) # Assuming Phone class is already defined
+        self.alice = WhatsappBusinessActions(device_udids["Alice"]) # Assuming Phone class is already defined
 
         self.bob_configured = bool(device_udids["Bob"])
         if self.bob_configured:
-            self.bob = WhatsappActions(device_udids["Bob"])
+            self.bob = WhatsappBusinessActions(device_udids["Bob"])
         else:
             print("WARNING: No udid configured for Bob. Some tests will fail as a result")
 
         self.contact_alice = "Alice"
         self.contact_bob = "Bob"
         self.contact_charlie = "Charlie"
-        self.photo_directory_name = "photos"
+        self.photo_directory_name = "Downloads"
 
         self.alice.return_to_homescreen()
         if self.bob_configured:
@@ -60,7 +60,7 @@ class TestWhatsapp(unittest.TestCase):
         self.alice.open_settings_you()
 
     def test_change_profile_picture(self):
-        self.alice.change_profile_picture("Downloads")
+        self.alice.change_profile_picture(self.photo_directory_name)
 
     def test_currently_in_conversation_overview(self):
         self.alice.return_to_homescreen()
@@ -85,6 +85,7 @@ class TestWhatsapp(unittest.TestCase):
         self.alice.send_message("message to delete", self.contact_bob)
         self.alice.delete_message_for_everyone("message to delete", self.contact_bob)
 
+    # TODO fix
     def test_forward_message(self):
         self.ensure_bob_conversation_present()
         message_to_forward = "message to forward"
@@ -98,10 +99,7 @@ class TestWhatsapp(unittest.TestCase):
         self.alice.reply_to_message(message, "reply", self.contact_bob)
 
     def test_send_media(self):
-        self.alice.send_media("Downloads", caption="caption", view_once=False, chat=self.contact_bob)
-
-    def test_send_media_view_once(self):
-        self.alice.send_media(self.photo_directory_name, caption="caption", view_once=True, chat=self.contact_bob)
+        self.alice.send_media(self.photo_directory_name, index=1, caption="caption", chat=self.contact_bob)
 
     def test_send_contact(self):
         self.ensure_bob_conversation_present()
@@ -171,13 +169,6 @@ class TestWhatsapp(unittest.TestCase):
         self.assert_bob_configured()
         self.alice.call_contact(self.contact_bob, video_call=True)
         self.bob.decline_call()
-
-    def test_open_view_once_photo(self):
-        self.assert_bob_configured()
-        self.bob.select_chat(self.contact_alice)
-        self.alice.send_media(self.photo_directory_name, view_once=True, chat=self.contact_bob)
-        sleep(1)
-        self.bob.open_view_once_photo()
 
     # For this test, both Bob and Charlie need to be in Alice's contacts
     def test_send_broadcast(self):

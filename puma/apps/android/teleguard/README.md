@@ -8,6 +8,7 @@ The application can be downloaded in
 [the Google PlayStore](https://play.google.com/store/apps/details?id=ch.swisscows.messenger.teleguardapp).
 
 ### Prerequisites
+
 - The application installed on your device
 - Registration (no personal information such as a phone number is required)
 
