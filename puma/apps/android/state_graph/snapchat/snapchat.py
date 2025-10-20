@@ -27,6 +27,7 @@ def go_to_chat(driver: PumaDriver, conversation: str):
     logger.info(f'Clicking on conversation {conversation} with driver {driver}')
     xpath = f'//androidx.recyclerview.widget.RecyclerView[@resource-id="com.snapchat.android:id/recycler_view"]//javaClass[@text="{conversation}"]'
     driver.driver.find_elements(by=AppiumBy.XPATH, value=xpath)[-1].click()
+    driver.click('//android.view.View[@resource-id="com.snapchat.android:id/friend_action_button2"]')
 
 class SnapchatChatState(SimpleState, ContextualState):
     """
@@ -42,7 +43,7 @@ class SnapchatChatState(SimpleState, ContextualState):
 
         :param parent_state: The parent state of this chat state.
         """
-        super().__init__(xpaths=[CHAT_STATE_CONVERSATION_NAME, CHAT_STATE_TEXT_FIELD],
+        super().__init__(xpaths=['//android.widget.EditText'], #CHAT_STATE_CONVERSATION_NAME, CHAT_STATE_TEXT_FIELD
                          parent_state=parent_state)
 
     def validate_context(self, driver: PumaDriver, conversation: str = None) -> bool:
@@ -59,7 +60,7 @@ class SnapchatChatState(SimpleState, ContextualState):
             return True
 
         logger.info('getting content_desc')
-        content_desc = driver.get_element('//android.widget.TextView').get_attribute('content-desc')
+        content_desc = driver.get_element('//android.widget.TextView[@resource-id="com.snapchat.android:id/conversation_title_text_view"]').get_attribute('text')
         logger.info(f'getting content_desc {content_desc}')
         logger.info(f'conversation is {conversation}')
 
