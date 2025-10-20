@@ -6,16 +6,19 @@ from puma.state_graph.state_graph import StateGraph
 TELEGRAM_PACKAGE = 'org.telegram.messenger'
 TELEGRAM_WEB_PACKAGE = 'org.telegram.messenger.web'
 
-CHAT_OVERVIEW_TITLE_HEADER = '//android.widget.TextView[@text="Telegram"]'
 CHAT_OVERVIEW_NEW_CONVERSATION_BUTTON = '//android.widget.FrameLayout[@content-desc="New Message"]'
 CHAT_OVERVIEW_NEW_STORY_BUTTON = '//android.widget.FrameLayout[@content-desc="Capture story"]'
+CHAT_OVERVIEW_SEARCH_BUTTON = '//android.widget.ImageButton[@content-desc="Search"]'
+
+SEARCH_INPUT_FIELD = '//android.widget.EditText[@text="Search"]'
+FIRST_SEARCH_HIT = '//androidx.recyclerview.widget.RecyclerView/android.view.ViewGroup[starts-with(lower-case(@text), lower-case("{conversation_name},"))]'
 
 CHAT_STATE_CALL_BUTTON = '//android.widget.ImageButton[@content-desc="Call"]'
 CHAT_STATE_BACK_BUTTON = '//android.widget.ImageView[@content-desc="Go back"]'
 CHAT_STATE_MESSAGE_TEXTBOX = '//android.widget.EditText[@text]'
 CHAT_STATE_MEDIA_BUTTON = '//android.widget.ImageView[@content-desc="Attach media"]'
 CHAT_STATE_GIF_BUTTON = '//android.widget.ImageView[@content-desc="Emoji, stickers, and GIFs"]'
-CHAT_STATE_CONVERSATION_NAME = '//android.widget.ImageView[@content-desc="Go back"]/../android.widget.FrameLayout/*[1]'
+CHAT_STATE_CONVERSATION_NAME = '//android.widget.ImageView[@content-desc="Go back"]/../android.widget.FrameLayout[starts-with(lower-case(@content-desc),lower-case("{conversation_name}\n"))]/android.widget.TextView[starts-with(lower-case(@text), lower-case("{conversation_name}"))]'
 
 CALL_STATE_END_CALL_BUTTON = '//android.widget.Button[@text="End Call"]'
 CALL_STATE_SPEAKER_BUTTON = '//android.widget.FrameLayout[@content-desc="Speaker"]'
@@ -25,21 +28,19 @@ CALL_STATE_MUTE_BUTTON = '//android.widget.FrameLayout[@content-desc="Mute"]'
 class TeleGramChatState(SimpleState, ContextualState):
 
     def __init__(self, parent_state: State):
-        super().__init__([CHAT_STATE_CALL_BUTTON, CHAT_STATE_MESSAGE_TEXTBOX, CHAT_STATE_GIF_BUTTON],
+        super().__init__([CHAT_STATE_MESSAGE_TEXTBOX, CHAT_STATE_GIF_BUTTON],
                          parent_state=parent_state)
 
     def validate_context(self, driver: PumaDriver, conversation: str = None) -> bool:
         if not conversation:
             return True
-        chat_title = (driver.get_element(CHAT_STATE_CONVERSATION_NAME).get_attribute('text'))
-        return conversation.lower() in chat_title.lower()
+        return driver.is_present(CHAT_STATE_CONVERSATION_NAME.format(conversation_name=conversation))
 
 
 def go_to_chat(driver: PumaDriver, conversation: str):
-    driver.click('//android.widget.ImageButton[@content-desc="Search"]')
-    driver.send_keys('//android.widget.EditText[@text="Search"]', conversation)
-    # TODO: check if no results, and validate if first result is good!
-    driver.click('//androidx.recyclerview.widget.RecyclerView/android.view.ViewGroup[1]')
+    driver.click(CHAT_OVERVIEW_SEARCH_BUTTON)
+    driver.send_keys(SEARCH_INPUT_FIELD, conversation)
+    driver.click(FIRST_SEARCH_HIT.format(conversation_name=conversation))
 
 
 @supported_version("12.0.1")
@@ -51,9 +52,8 @@ class Telegram(StateGraph):
     of the Telegram user interface. It provides methods to navigate between states, validate states,
     and handle unexpected states or errors.
     """
-    conversations_state = SimpleState(
-        [CHAT_OVERVIEW_TITLE_HEADER, CHAT_OVERVIEW_NEW_CONVERSATION_BUTTON, CHAT_OVERVIEW_NEW_STORY_BUTTON],
-        initial_state=True)
+    conversations_state = SimpleState([CHAT_OVERVIEW_NEW_CONVERSATION_BUTTON, CHAT_OVERVIEW_NEW_STORY_BUTTON],
+                                      initial_state=True)
     chat_state = TeleGramChatState(parent_state=conversations_state)
     call_state = SimpleState([CALL_STATE_END_CALL_BUTTON, CALL_STATE_MUTE_BUTTON, CALL_STATE_SPEAKER_BUTTON],
                              parent_state=chat_state)
@@ -69,12 +69,10 @@ class Telegram(StateGraph):
     def send_message(self, message: str, conversation: str = None):
         # self.driver.click(CHAT_STATE_MESSAGE_TEXTBOX)
         self.driver.send_keys(CHAT_STATE_MESSAGE_TEXTBOX, message)
-        print('sent keys')
         # send_button = self.driver.get_element('//android.view.View[@content-desc="Send"]')
         # Telegrma has a horrible UI; the bounds of the send button are defined incorrectly so we need to click off-center
         location = self._find_button_location(0.8, 0.5, '//android.view.View[@content-desc="Send"]')
         self.driver.driver.tap([(location)])
-        print('clicked send')
 
     @action(chat_state)
     def start_call(self, conversation: str = None):
@@ -85,5 +83,4 @@ class Telegram(StateGraph):
         top_left = send_button.location['x'], send_button.location['y']
         size = send_button.size['height'], send_button.size['width']
         location = int(top_left[0] + width_ratio * size[1]), int(top_left[1] + height_ratio * size[0])
-        print(f'clicking on {location}')
         return location
