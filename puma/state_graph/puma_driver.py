@@ -12,6 +12,7 @@ from appium.webdriver.common.appiumby import AppiumBy
 from appium import webdriver
 from appium.webdriver.extensions.android.nativekey import AndroidKey
 from appium.webdriver.webdriver import WebDriver
+from selenium.webdriver import ActionChains
 from urllib3.exceptions import MaxRetryError
 
 from puma.computer_vision import ocr
@@ -173,6 +174,18 @@ class PumaDriver:
                 self.driver.find_element(by=AppiumBy.XPATH, value=xpath).click()
                 return
         raise PumaClickException(f'Could not click on non present element with xpath {xpath}')
+
+    def press_and_hold(self, xpath: str, duration: int):
+        """
+        Clicks on a certain element, and hold for a given duration (in seconds)
+
+        :param xpath: The XPath of the element to click.
+        :param duration: how many seconds to hold the element before releasing
+        :raises PumaClickException: If the element cannot be found after multiple attempts.
+        """
+        element = self.get_element(xpath)
+        actions = ActionChains(self.driver)
+        actions.move_to_element(element).click_and_hold().pause(duration).release().perform()
 
     def get_element(self, xpath: str):
         """

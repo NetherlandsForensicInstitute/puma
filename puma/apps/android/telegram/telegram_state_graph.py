@@ -7,18 +7,20 @@ TELEGRAM_PACKAGE = 'org.telegram.messenger'
 TELEGRAM_WEB_PACKAGE = 'org.telegram.messenger.web'
 
 CHAT_OVERVIEW_NEW_CONVERSATION_BUTTON = '//android.widget.FrameLayout[@content-desc="New Message"]'
-CHAT_OVERVIEW_NEW_STORY_BUTTON = '//android.widget.FrameLayout[@content-desc="Capture story"]'
+CHAT_OVERVIEW_NAV_MENU_BUTTON = '//android.widget.ImageView[@content-desc="Open navigation menu"]'
 CHAT_OVERVIEW_SEARCH_BUTTON = '//android.widget.ImageButton[@content-desc="Search"]'
 
 SEARCH_INPUT_FIELD = '//android.widget.EditText[@text="Search"]'
 FIRST_SEARCH_HIT = '//androidx.recyclerview.widget.RecyclerView/android.view.ViewGroup[starts-with(lower-case(@text), lower-case("{conversation_name},"))]'
 
+CHAT_STATE_CONVERSATION_NAME = '//android.widget.ImageView[@content-desc="Go back"]/../android.widget.FrameLayout[starts-with(lower-case(@content-desc),lower-case("{conversation_name}\n"))]/android.widget.TextView[starts-with(lower-case(@text), lower-case("{conversation_name}"))]'
 CHAT_STATE_CALL_BUTTON = '//android.widget.ImageButton[@content-desc="Call"]'
 CHAT_STATE_BACK_BUTTON = '//android.widget.ImageView[@content-desc="Go back"]'
+CHAT_STATE_GIF_BUTTON = '//android.widget.ImageView[@content-desc="Emoji, stickers, and GIFs"]'
 CHAT_STATE_MESSAGE_TEXTBOX = '//android.widget.EditText[@text]'
 CHAT_STATE_MEDIA_BUTTON = '//android.widget.ImageView[@content-desc="Attach media"]'
-CHAT_STATE_GIF_BUTTON = '//android.widget.ImageView[@content-desc="Emoji, stickers, and GIFs"]'
-CHAT_STATE_CONVERSATION_NAME = '//android.widget.ImageView[@content-desc="Go back"]/../android.widget.FrameLayout[starts-with(lower-case(@content-desc),lower-case("{conversation_name}\n"))]/android.widget.TextView[starts-with(lower-case(@text), lower-case("{conversation_name}"))]'
+CHAT_STATE_RECORD_VIDEO_OR_AUDIO_MESSAGE = '//android.widget.FrameLayout[@content-desc="Record voice message" or @content-desc="Record video message"]'
+CHAT_STATE_SEND_BUTTON = '//android.view.View[@content-desc="Send"]'
 
 CALL_STATE_END_CALL_BUTTON = '//android.widget.Button[@text="End Call"]'
 CALL_STATE_SPEAKER_BUTTON = '//android.widget.FrameLayout[@content-desc="Speaker"]'
@@ -52,8 +54,9 @@ class Telegram(StateGraph):
     of the Telegram user interface. It provides methods to navigate between states, validate states,
     and handle unexpected states or errors.
     """
-    conversations_state = SimpleState([CHAT_OVERVIEW_NEW_CONVERSATION_BUTTON, CHAT_OVERVIEW_NEW_STORY_BUTTON],
-                                      initial_state=True)
+    conversations_state = SimpleState(
+        [CHAT_OVERVIEW_NEW_CONVERSATION_BUTTON, CHAT_OVERVIEW_SEARCH_BUTTON, CHAT_OVERVIEW_NAV_MENU_BUTTON],
+        initial_state=True)
     chat_state = TeleGramChatState(parent_state=conversations_state)
     call_state = SimpleState([CALL_STATE_END_CALL_BUTTON, CALL_STATE_MUTE_BUTTON, CALL_STATE_SPEAKER_BUTTON],
                              parent_state=chat_state)
@@ -70,9 +73,25 @@ class Telegram(StateGraph):
         # self.driver.click(CHAT_STATE_MESSAGE_TEXTBOX)
         self.driver.send_keys(CHAT_STATE_MESSAGE_TEXTBOX, message)
         # send_button = self.driver.get_element('//android.view.View[@content-desc="Send"]')
-        # Telegrma has a horrible UI; the bounds of the send button are defined incorrectly so we need to click off-center
-        location = self._find_button_location(0.8, 0.5, '//android.view.View[@content-desc="Send"]')
+        # Telegram has a horrible UI; the bounds of the send button are defined incorrectly so we need to click off-center
+        location = self._find_button_location(0.8, 0.5, CHAT_STATE_SEND_BUTTON)
         self.driver.driver.tap([(location)])
+
+    @action(chat_state)
+    def send_voice_message(self, duration: int, conversation: str = None):
+        if not self._in_voice_message_mode():
+            self.driver.click(CHAT_STATE_RECORD_VIDEO_OR_AUDIO_MESSAGE)
+        self.driver.press_and_hold(CHAT_STATE_RECORD_VIDEO_OR_AUDIO_MESSAGE, duration)
+
+    @action(chat_state)
+    def send_video_message(self, duration: int, conversation: str = None):
+        if self._in_voice_message_mode():
+            self.driver.click(CHAT_STATE_RECORD_VIDEO_OR_AUDIO_MESSAGE)
+        self.driver.press_and_hold(CHAT_STATE_RECORD_VIDEO_OR_AUDIO_MESSAGE, duration)
+
+    def _in_voice_message_mode(self):
+        return self.driver.get_element(CHAT_STATE_RECORD_VIDEO_OR_AUDIO_MESSAGE).get_attribute(
+            'content-desc') == 'Record voice message'
 
     @action(chat_state)
     def start_call(self, conversation: str = None):
