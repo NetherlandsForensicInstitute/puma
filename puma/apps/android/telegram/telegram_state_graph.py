@@ -29,6 +29,7 @@ SEND_MEDIA_STATE_INSTANT_CAMERA_BUTTON = '//android.widget.FrameLayout[@content-
 SEND_MEDIA_STATE_GALLERY_BUTTON = '//android.widget.FrameLayout[@text="Gallery"]'
 SEND_MEDIA_STATE_FILE_BUTTON = '//android.widget.FrameLayout[@text="File"]'
 SEND_MEDIA_STATE_LOCATION_BUTTON = '//android.widget.FrameLayout[@text="Location"]'
+SEND_MEDIA_STATE_MY_LOCATION_BUTTON = '//android.widget.ImageView[@content-desc="My location"]'
 
 SEND_FROM_GALLERY_STATE_BACK_BUTTON = '//android.widget.ImageView[@content-desc="Go back"]'
 SEND_FROM_GALLERY_THREE_DOTS_BUTTON = '//android.widget.ImageButton[@content-desc="More options"]'
@@ -38,6 +39,7 @@ SEND_FROM_GALLERY_MEDIA_SWITCH = '(//android.widget.Switch)[{index}]'
 CALL_STATE_END_CALL_BUTTON = '//android.widget.Button[@text="End Call"]'
 CALL_STATE_SPEAKER_BUTTON = '//android.widget.FrameLayout[@content-desc="Speaker"]'
 CALL_STATE_MUTE_BUTTON = '//android.widget.FrameLayout[@content-desc="Mute"]'
+CALL_STATE_STATUS = '//android.widget.LinearLayout[ends-with(@text, "Telegram Call")]/android.widget.FrameLayout/android.widget.TextView'
 
 
 class TeleGramChatState(SimpleState, ContextualState):
@@ -53,6 +55,8 @@ class TeleGramChatState(SimpleState, ContextualState):
 
 
 def go_to_chat(driver: PumaDriver, conversation: str):
+    if not conversation:
+        raise ValueError(f'Cannot open a conversation without a conversation name')
     driver.click(CHAT_OVERVIEW_SEARCH_BUTTON)
     driver.send_keys(SEARCH_INPUT_FIELD, conversation)
     driver.click(FIRST_SEARCH_HIT.format(conversation_name=conversation))
@@ -135,7 +139,7 @@ class Telegram(StateGraph):
         clicked = 0
         for i in media_index:
             try:
-                if i in [2,3]:  # these switches can be obscured by other UI elements. We do a long press for those
+                if i in [2, 3]:  # these switches can be obscured by other UI elements. We do a long press for those
                     self.driver.long_click(f'{SEND_FROM_GALLERY_MEDIA_SWITCH.format(index=i)}/..')
                 else:
                     self.driver.click(SEND_FROM_GALLERY_MEDIA_SWITCH.format(index=i))
@@ -156,6 +160,21 @@ class Telegram(StateGraph):
     @action(chat_state, end_state=call_state)
     def start_call(self, conversation: str = None):
         self.driver.click(CHAT_STATE_CALL_BUTTON)
+
+    @action(call_state)
+    def mute_mic(self):
+        self.driver.click(CALL_STATE_MUTE_BUTTON)
+
+    def end_call(self):
+        if self.current_state != Telegram.call_state:
+            logger.warn(f'Tried to end a call, but no call was in progress')
+        self.driver.click(CALL_STATE_END_CALL_BUTTON)
+
+    @action(send_media_state)
+    def send_location(self, conversation: str = None):
+        self.driver.click(SEND_MEDIA_STATE_LOCATION_BUTTON)
+        self.driver.click(SEND_MEDIA_STATE_MY_LOCATION_BUTTON)
+        self.driver.click('//android.widget.TextView[@text="Send selected location"]')
 
     def _in_voice_message_mode(self):
         return self.driver.get_element(CHAT_STATE_RECORD_VIDEO_OR_AUDIO_MESSAGE).get_attribute(
