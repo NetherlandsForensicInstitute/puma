@@ -12,6 +12,13 @@ APPLICATION_PACKAGE = 'com.snapchat.android'
 CHAT_STATE_CONVERSATION_NAME = '//android.widget.TextView[@resource-id="com.snapchat.android:id/conversation_title_text_view"]'
 CHAT_STATE_TEXT_FIELD = '//android.widget.EditText[@resource-id="com.snapchat.android:id/chat_input_text_field"]'
 
+def go_to_send_to(driver: PumaDriver, conversation: str):
+    logger.info(f'Selecting recipient {conversation} on the send screen')
+    xpath = f'//androidx.recyclerview.widget.RecyclerView[@resource-id="com.snapchat.android:id/send_to_recycler_view"]//javaClass[@text="{conversation}"]'
+    driver.driver.find_elements(by=AppiumBy.XPATH, value=xpath)[-1].click()
+    driver.click('/android.view.View[@content-desc="Send"]')
+
+
 def go_to_chat(driver: PumaDriver, conversation: str):
     """
     Navigates to a specific chat conversation in the application.
@@ -66,13 +73,23 @@ class SnapchatChatState(SimpleState, ContextualState):
 
         return conversation in content_desc
 
+
+class SnapchatChatSnapState(SimpleState, ContextualState):
+        pass
+
+
 class Snapchat(StateGraph):
     camera_state = SimpleState(['//android.widget.FrameLayout[@resource-id="com.snapchat.android:id/camera_page"]'], initial_state=True)
     conversation_state = SimpleState(['//android.widget.FrameLayout[@resource-id="com.snapchat.android:id/feed_new_chat"]'], parent_state=camera_state)
     chat_state = SnapchatChatState(parent_state=conversation_state)
+    snap_state = SnapchatChatSnapState()
+    # snapchat_state = SimpleState(['//android.view.View[@content-desc="New Story Button"]', ], parent_state=camera_state)
 
     camera_state.to(conversation_state, compose_clicks(['//android.view.ViewGroup[@content-desc="Chat"]']))
     conversation_state.to(chat_state, go_to_chat)
+    camera_state.to(snap_state, go_to_send_to)
+    # camera_state.to(snapchat_state, compose_clicks(['//android.widget.FrameLayout[@content-desc="Camera Capture"]','//android.widget.ImageButton[@content-desc="Send"]']))
+
 
     def __init__(self, device_udid):
         StateGraph.__init__(self, device_udid, APPLICATION_PACKAGE)
@@ -93,6 +110,9 @@ class Snapchat(StateGraph):
         self.driver.send_keys(CHAT_STATE_TEXT_FIELD, msg)
         self._press_enter()
 
+    def send_snap(self, conversation: str = None):
+        self.driver.click()
+
 # TODO: continue with send snap and add the rest from the template and contributing for adding a new application
 if __name__ == "__main__":
         bob = Snapchat(device_udid="34281JEHN03866")
@@ -101,4 +121,5 @@ if __name__ == "__main__":
         bob.go_to_state(bob.conversation_state)
         bob.go_to_state(bob.chat_state, conversation=contact_charlie)
         bob.send_message("hi", contact_charlie)
+        bob.send_snap(contact_charlie)
 
