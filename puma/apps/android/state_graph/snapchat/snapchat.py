@@ -75,14 +75,26 @@ class SnapchatChatState(SimpleState, ContextualState):
 
 
 class SnapchatChatSnapState(SimpleState, ContextualState):
-        pass
+    def __init__(self, parent_state):
+        super().__init__(xpaths=['//android.view.View[@content-desc="New Story Button"'],
+                         parent_state=parent_state)
 
+    def validate_context(self, driver: PumaDriver, conversation: str = None) -> bool:
+        if not conversation:
+            return True
+
+        logger.info('getting content_desc')
+        content_desc = driver.get_element('//androidx.recyclerview.widget.RecyclerView[@resource-id="com.snapchat.android:id/recycler_view"]').get_attribute('text')
+        logger.info(f'getting content_desc {content_desc}')
+        logger.info(f'conversation is {conversation}')
+
+        return conversation in content_desc
 
 class Snapchat(StateGraph):
     camera_state = SimpleState(['//android.widget.FrameLayout[@resource-id="com.snapchat.android:id/camera_page"]'], initial_state=True)
     conversation_state = SimpleState(['//android.widget.FrameLayout[@resource-id="com.snapchat.android:id/feed_new_chat"]'], parent_state=camera_state)
     chat_state = SnapchatChatState(parent_state=conversation_state)
-    snap_state = SnapchatChatSnapState()
+    snap_state = SnapchatChatSnapState(parent_state=camera_state)
     # snapchat_state = SimpleState(['//android.view.View[@content-desc="New Story Button"]', ], parent_state=camera_state)
 
     camera_state.to(conversation_state, compose_clicks(['//android.view.ViewGroup[@content-desc="Chat"]']))
@@ -121,5 +133,6 @@ if __name__ == "__main__":
         bob.go_to_state(bob.conversation_state)
         bob.go_to_state(bob.chat_state, conversation=contact_charlie)
         bob.send_message("hi", contact_charlie)
-        bob.send_snap(contact_charlie)
+        bob.go_to_state(bob.camera_state)
+        bob.send_snap(contact_charlie) # TODO: finish send_snap and test it
 
