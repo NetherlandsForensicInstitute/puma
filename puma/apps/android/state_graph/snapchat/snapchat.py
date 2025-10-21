@@ -43,7 +43,7 @@ class SnapchatChatState(SimpleState, ContextualState):
 
         :param parent_state: The parent state of this chat state.
         """
-        super().__init__(xpaths=['//android.widget.EditText'], #CHAT_STATE_CONVERSATION_NAME, CHAT_STATE_TEXT_FIELD
+        super().__init__(xpaths=[CHAT_STATE_CONVERSATION_NAME, CHAT_STATE_TEXT_FIELD],
                          parent_state=parent_state)
 
     def validate_context(self, driver: PumaDriver, conversation: str = None) -> bool:
@@ -74,14 +74,12 @@ class Snapchat(StateGraph):
     camera_state.to(conversation_state, compose_clicks(['//android.view.ViewGroup[@content-desc="Chat"]']))
     conversation_state.to(chat_state, go_to_chat)
 
-    # TODO: continue with send snap and add the rest from the template and contributing for adding a new application
-
     def __init__(self, device_udid):
         StateGraph.__init__(self, device_udid, APPLICATION_PACKAGE)
 
     def _press_enter(self):
         enter_keycode = 66
-        self.driver.press_keycode(enter_keycode)
+        self.driver.driver.press_keycode(enter_keycode)
 
     @action(chat_state)
     def send_message(self, msg: str, conversation: str = None):
@@ -95,9 +93,7 @@ class Snapchat(StateGraph):
         self.driver.send_keys(CHAT_STATE_TEXT_FIELD, msg)
         self._press_enter()
 
-
-
-
+# TODO: continue with send snap and add the rest from the template and contributing for adding a new application
 if __name__ == "__main__":
         bob = Snapchat(device_udid="34281JEHN03866")
         contact_charlie = "Charlie"
