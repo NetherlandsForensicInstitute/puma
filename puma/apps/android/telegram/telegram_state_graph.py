@@ -206,6 +206,7 @@ class Telegram(StateGraph):
     def stop_live_location_sharing(self, conversation: str = None):
         if not self.driver.is_present(CHAT_STATE_STOP_LIVE_LOCATION_SHARING_BUTTON):
             logger.warning(f'Could not stop sharing live location as it wasn\'t shared.')
+            return
         self.driver.click(CHAT_STATE_STOP_LIVE_LOCATION_SHARING_BUTTON)
         self.driver.click(CHAT_STATE_STOP_LIVE_LOCATION_CONFIRM_BUTTON)
 
