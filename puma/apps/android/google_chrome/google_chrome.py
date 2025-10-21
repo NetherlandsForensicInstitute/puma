@@ -1,10 +1,4 @@
-from typing import Dict
-
-from appium.webdriver.common.appiumby import AppiumBy
-from typing_extensions import deprecated
-
-from puma.apps.android import log_action
-from puma.apps.android.appium_actions import AndroidAppiumActions, supported_version
+from puma.apps.android.appium_actions import supported_version
 from puma.apps.android.google_chrome import logger
 from puma.state_graph.action import action
 from puma.state_graph.popup_handler import PopUpHandler
@@ -20,7 +14,7 @@ THREE_DOTS = '//android.widget.ImageButton[@resource-id="com.android.chrome:id/m
 # Tab overview
 SEARCH_TABS_XPATH = '//android.widget.EditText[@resource-id="com.android.chrome:id/search_box_text" and @text="Search your tabs"]'
 SEARCH_INCOGNITO_TABS_XPATH = '//android.widget.EditText[@resource-id="com.android.chrome:id/search_box_text" and @text="Search your Incognito tabs"]'
-STANDARD_TAB_OVERVIEW_BUTTON = '//android.widget.LinearLayout[@content-desc="3 standard tabs"]'
+STANDARD_TAB_OVERVIEW_BUTTON = '//android.widget.LinearLayout[contains(@content-desc,"standard tabs")]'
 NEW_TAB_XPATH_TAB_OVERVIEW = '//android.widget.Button[@content-desc="New tab"]'
 TAB_LIST = '//*[@resource-id="com.android.chrome:id/tab_list_recycler_view"]'
 # Tab
@@ -31,10 +25,43 @@ PROFILE_XPATH = '//android.widget.ImageButton[contains(@content-desc, "Signed in
 NEW_TAB_XPATH_CURRENT_TAB = '//android.widget.ImageButton[@content-desc="New tab"]'
 NEW_TAB_INCOGNITO_TITLE = '//android.widget.TextView[@resource-id="com.android.chrome:id/new_tab_incognito_title"]'
 # Menu
-BOOKMARK_BUTTON = '//android.widget.Button[lower-case(@content-desc)="bookmark"]'
+BOOKMARK_THIS_PAGE_BUTTON = '//android.widget.Button[lower-case(@content-desc)="bookmark"]'
 EDIT_BOOKMARK_BUTTON = '//android.widget.Button[lower-case(@content-desc)="edit bookmark"]'
 NEW_INCOGNITO_TAB_BUTTON = '//android.widget.TextView[@resource-id="com.android.chrome:id/title" and @text="New Incognito tab"]'
+OPEN_BOOKMARKS_XPATH = '//android.widget.TextView[@resource-id="com.android.chrome:id/menu_item_text" and @text="Bookmarks"]'
+# Bookmarks
+MOBILE_BOOKMARKS_XPATH = '//android.widget.TextView[@resource-id="com.android.chrome:id/title" and @text="Mobile bookmarks"]'
+DELETE_BOOKMARK_XPATH = '//android.widget.Button[lower-case(@content-desc)="delete bookmarks"]'
+CLOSE_BOOKMARKS = '//android.widget.Button[@resource_id="com.android.chrome:id/close_menu_id"]'
+FIRST_BOOKMARK_XPATH = '//android.widget.LinearLayout[@resource-id="com.android.chrome:id/container"]'
+BOOKMARKS_PAGE_TITLE = '//android.widget.TextView[@text="Bookmarks"]'
+BOOKMARKS_SORT_VIEW = '//android.widget.Button[@content-desc="Sort and view options"]'
+BOOKMARKS_CREATE_FOLDER = '//android.widget.Button[@content-desc="Create new folder"]'
+BOOKMARKS_GO_BACK = '//android.widget.ImageButton[@content-desc="Go back"]'
 
+class BookmarksFolder(SimpleState, ContextualState):
+    def __init__(self, parent_state):
+        """
+        Initializes the BookmarksFolder state with a given parent state.
+
+        :param parent_state: The parent state of this state
+        """
+        super().__init__(xpaths=[BOOKMARKS_SORT_VIEW, BOOKMARKS_GO_BACK, BOOKMARKS_CREATE_FOLDER],
+                         parent_state=parent_state,
+                         parent_state_transition=compose_clicks([BOOKMARKS_GO_BACK]))
+
+    def validate_context(self, driver: PumaDriver, folder_name: str = None) -> bool:
+        """
+        Validates if we are in the correct bookmarks folder.
+        :param driver: Puma driver
+        :param folder_name: Name of the bookmarks folder
+        :return: boolean
+        """
+        #TODO check
+        return driver.is_present(f'//android.view.ViewGroup[@resource-id="com.android.chrome:id/action_bar"]//android.widget.TextView[@text="{folder_name}"]')
+
+    def go_to_bookmarks_folder(self, driver: PumaDriver, folder_name: str):
+        driver.click(f'//android.widget.TextView[@resource-id="com.android.chrome:id/title" and @text="{folder_name}"]')
 
 class CurrentTab(SimpleState, ContextualState):
     """
@@ -107,13 +134,18 @@ class GoogleChrome(StateGraph):
     new_incognito_tab_state = SimpleState(xpaths=[URL_BAR_XPATH, NEW_TAB_INCOGNITO_TITLE],
                                           parent_state=incognito_tab_overview_state,
                                           parent_state_transition=compose_clicks([TAB_SWITCH_BUTTON]))
+    bookmarks_state = SimpleState(xpaths=[BOOKMARKS_SORT_VIEW, BOOKMARKS_CREATE_FOLDER, BOOKMARKS_PAGE_TITLE],
+                                  parent_state=current_tab_state,
+                                  parent_state_transition=compose_clicks([CLOSE_BOOKMARKS]))
+    bookmarks_folder_state = BookmarksFolder(parent_state=bookmarks_state)
 
     # Transitions
     tab_overview_state.to(new_tab_state, compose_clicks([NEW_TAB_XPATH_TAB_OVERVIEW], name='go_to_tab_overview'))
     tab_overview_state.to(current_tab_state, current_tab_state.switch_to_tab)
     tab_overview_state.to(new_incognito_tab_state, compose_clicks([THREE_DOTS, NEW_INCOGNITO_TAB_BUTTON], name='go_to_incognito_state'))
     current_tab_state.to(new_tab_state, compose_clicks([NEW_TAB_XPATH_CURRENT_TAB]))
-
+    current_tab_state.to(bookmarks_state, compose_clicks([THREE_DOTS, OPEN_BOOKMARKS_XPATH]))
+    bookmarks_state.to(bookmarks_folder_state, bookmarks_folder_state.go_to_bookmarks_folder)
 
     def __init__(self, device_udid):
         """
@@ -139,15 +171,11 @@ class GoogleChrome(StateGraph):
         self._enter_url(url_string, URL_BAR_XPATH)
         #TODO handle situation where tab n is a new tab, make sure the state recovers
 
-    def _enter_url(self, url_string: str, url_bar_xpath):
-        self.driver.send_keys(url_bar_xpath, url_string)
-        self.driver.press_enter()
-
     @action(new_tab_state)
     def go_to_new_tab(self, url_string): #TODO rename to more sensible name
         """
-        TODO
-        :param url_string:
+        Creates a new tab and enters the url string text.
+        :param url_string: Url to navigate to
         :return:
         """
         self.driver.send_keys(SEARCH_BOX_XPATH, url_string)
@@ -165,22 +193,20 @@ class GoogleChrome(StateGraph):
             logger.info("This page was already bookmarked, skipping...")
             return False
         else:
-            self.driver.click(BOOKMARK_BUTTON)
+            self.driver.click(BOOKMARK_THIS_PAGE_BUTTON)
             return True
 
-    @action(current_tab_state)
-    def load_first_bookmark(self, tab_index: int): #TODO make nb configurable?
+    @action(bookmarks_folder_state)
+    def load_first_bookmark(self, folder_name: str): #TODO make nb configurable?
         """
-        Load the first saved bookmark in the folder 'Mobile Bookmarks'.
+        Load the first saved bookmark in the specified folder.
+        :param folder_name: The name of the folder to load the first bookmark from.
         """
-        bookmarks_xpath = '//android.widget.TextView[@resource-id="com.android.chrome:id/menu_item_text" and @text="Bookmarks"]'
-        mobile_bookmarks_xpath = '//android.widget.TextView[@resource-id="com.android.chrome:id/title" and @text="Mobile bookmarks"]'
-        first_bookmark_xpath = '//android.widget.LinearLayout[@resource-id="com.android.chrome:id/container"]'
         self.driver.click(THREE_DOTS)
 
-        self.driver.click(bookmarks_xpath)
-        self.driver.click(mobile_bookmarks_xpath)
-        self.driver.click(first_bookmark_xpath)
+        self.driver.click(OPEN_BOOKMARKS_XPATH)
+        self.driver.click(MOBILE_BOOKMARKS_XPATH)
+        self.driver.click(FIRST_BOOKMARK_XPATH)
 
     @action(current_tab_state)
     def delete_bookmark(self, tab_index: int):
@@ -188,15 +214,14 @@ class GoogleChrome(StateGraph):
         Delete the current bookmark.
         :return: True if bookmark has been deleted, False if it wasn't bookmarked.
         """
-        delete_bookmark_xpath = '//android.widget.Button[lower-case(@content-desc)="delete bookmarks"]'
         self.driver.click(THREE_DOTS)
 
-        if self.driver.is_present(BOOKMARK_BUTTON):
+        if self.driver.is_present(BOOKMARK_THIS_PAGE_BUTTON):
             logger.info("This page was not bookmarked, skipping...")
             return False
         else:
             self.driver.click(EDIT_BOOKMARK_BUTTON)
-            self.driver.click(delete_bookmark_xpath)
+            self.driver.click(DELETE_BOOKMARK_XPATH)
             return True
 
     @action(new_incognito_tab_state)
@@ -208,4 +233,16 @@ class GoogleChrome(StateGraph):
         self.driver.click(THREE_DOTS)
         self.driver.click(NEW_INCOGNITO_TAB_BUTTON)
         self._enter_url(url_string, URL_BAR_XPATH)
+
+    def _enter_url(self, url_string: str, url_bar_xpath):
+        self.driver.send_keys(url_bar_xpath, url_string)
+        self.driver.press_enter()
+
+
+
+
+
+
+
+
 

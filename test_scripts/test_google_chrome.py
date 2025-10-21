@@ -26,30 +26,23 @@ class TestGoogleChrome(unittest.TestCase):
         self.alice = GoogleChrome(device_udids["Alice"])
 
     def test_go_to(self):
-        self.alice.go_to("www.google.com", 2)
+        self.alice.go_to("www.google.com", 1)
 
-    def test_new_tab(self):
+    def test_go_to_new_tab(self):
         self.alice.go_to_new_tab("wikipedia.org")
 
-    def test_bookmark_page(self):
-        self.alice.bookmark_page(1)
-
-    def test_delete_bookmark_page(self):
-        #TODO make sure there already is a bookmark
+    def test_bookmarks(self):
+        self.alice.go_to("www.wikipedia.com", 1)
+        # Clean up at the start, so we can be sure that both saving and deleting are properly tested.
         self.alice.delete_bookmark(1)
 
-    def test_bookmarks(self):
-        self.alice.go_to("www.wikipedia.com", False)
-        # Clean up at the start, so we can be sure that both saving and deleting are properly tested.
-        # self.alice.delete_bookmark()
+        self.assertTrue(self.alice.bookmark_page(1))
+        self.assertFalse(self.alice.bookmark_page(1))
+        self.alice.load_first_bookmark("Mobile bookmarks")
+        self.assertTrue(self.alice.delete_bookmark(1))
+        self.assertFalse(self.alice.delete_bookmark(1))
 
-        # self.assertTrue(self.alice.bookmark_page())
-        # self.assertFalse(self.alice.bookmark_page())
-        self.alice.load_first_bookmark(1)
-        # self.assertTrue(self.alice.delete_bookmark())
-        # self.assertFalse(self.alice.delete_bookmark())
-
-    def test_incognito(self):
+    def test_go_to_incognito(self):
         self.alice.go_to_incognito("www.wikipedia.com")
 
 
