@@ -14,9 +14,9 @@ CHAT_OVERVIEW_NAV_MENU_BUTTON = '//android.widget.ImageView[@content-desc="Open 
 CHAT_OVERVIEW_SEARCH_BUTTON = '//android.widget.ImageButton[@content-desc="Search"]'
 
 SEARCH_INPUT_FIELD = '//android.widget.EditText[@text="Search"]'
-FIRST_SEARCH_HIT = '//androidx.recyclerview.widget.RecyclerView/android.view.ViewGroup[starts-with(lower-case(@text), lower-case("{conversation_name},"))]'
+FIRST_SEARCH_HIT = '//androidx.recyclerview.widget.RecyclerView/android.view.ViewGroup[starts-with(lower-case(@text), lower-case("{conversation},"))]'
 
-CHAT_STATE_CONVERSATION_NAME = '//android.widget.ImageView[@content-desc="Go back"]/../android.widget.FrameLayout[starts-with(lower-case(@content-desc),lower-case("{conversation_name}\n"))]/android.widget.TextView[starts-with(lower-case(@text), lower-case("{conversation_name}"))]'
+CHAT_STATE_CONVERSATION_NAME = '//android.widget.ImageView[@content-desc="Go back"]/../android.widget.FrameLayout[starts-with(lower-case(@content-desc),lower-case("{conversation}\n"))]/android.widget.TextView[starts-with(lower-case(@text), lower-case("{conversation}"))]'
 CHAT_STATE_CALL_BUTTON = '//android.widget.ImageButton[@content-desc="Call"]'
 CHAT_STATE_BACK_BUTTON = '//android.widget.ImageView[@content-desc="Go back"]'
 CHAT_STATE_GIF_BUTTON = '//android.widget.ImageView[@content-desc="Emoji, stickers, and GIFs"]'
@@ -60,9 +60,18 @@ NEW_GROUP_NAME_INPUT = '//android.widget.EditText'
 NEW_GROUP_AUTO_DELETE_OPTION = '//android.widget.TextView[@text="Auto-Delete Messages"]'
 NEW_GROUP_DONE_BUTTON = '//android.widget.FrameLayout[@content-desc="Done"]'
 
+CHAT_SETTINGS_STATE_BACK = '//android.widget.ImageView[@content-desc="Go back"]'
+CHAT_SETTINGS_STATE_THREE_DOTS = '//android.widget.ImageButton[@content-desc="More options"]'
+CHAT_SETTINGS_STATE_CONVERSATION_NAME = '(//android.widget.TextView[@text and @text!=""])[2]'
+CHAT_SETTINGS_STATE_CONVERSATION_NAME_CONTEXT = '(//android.widget.TextView[lower-case(@text)=lower-case("{conversation}")])[2]'
+CHAT_SETTINGS_STATE_CONVERSATION_STATUS_CONTEXT = '(//android.widget.TextView[lower-case(@text)=lower-case("{conversation}")])[2]/following-sibling::*[1][@text and @text!=""]'
+CHAT_SETTINGS_STATE_ADD_MEMBERS = '//android.widget.TextView[@text="Add Members"]'
+CHAT_SETTINGS_STATE_ADD_MEMBERS_SEARCH = '//android.widget.EditText[@text]'
+CHAT_SETTINGS_STATE_MEMBER_CONTEXT = '//androidx.recyclerview.widget.RecyclerView/android.widget.FrameLayout[android.view.View and count(android.widget.TextView) >= 2 and android.widget.TextView[lower-case(@text)=lower-case("{member}")]]'
+CHAT_SETTINGS_STATE_REMOVE_MEMBER_BUTTON = '//android.widget.TextView[@text="Remove from group"]'
+
 
 class TeleGramChatState(SimpleState, ContextualState):
-
     def __init__(self, parent_state: State):
         super().__init__([CHAT_STATE_MESSAGE_TEXTBOX, CHAT_STATE_GIF_BUTTON],
                          parent_state=parent_state)
@@ -70,7 +79,29 @@ class TeleGramChatState(SimpleState, ContextualState):
     def validate_context(self, driver: PumaDriver, conversation: str = None) -> bool:
         if not conversation:
             return True
-        return driver.is_present(CHAT_STATE_CONVERSATION_NAME.format(conversation_name=conversation))
+        return driver.is_present(CHAT_STATE_CONVERSATION_NAME.format(conversation=conversation))
+
+
+class TelegramChatSettingsState(SimpleState, ContextualState):
+    def __init__(self, parent_state: State):
+        super().__init__(
+            [CHAT_SETTINGS_STATE_BACK, CHAT_SETTINGS_STATE_THREE_DOTS, CHAT_SETTINGS_STATE_CONVERSATION_NAME],
+            parent_state=parent_state)
+
+    def validate_context(self, driver: PumaDriver, conversation: str = None) -> bool:
+        if conversation is None:
+            return True
+        return driver.is_present(CHAT_SETTINGS_STATE_CONVERSATION_NAME_CONTEXT.format(conversation=conversation))
+
+    def can_edit(self, driver: PumaDriver):
+        return driver.is_present('//android.widget.ImageButton[@content-desc="Edit"]')
+
+    def is_group_chat(self, driver: PumaDriver, conversation: str):
+        return driver.get_element(CHAT_SETTINGS_STATE_CONVERSATION_STATUS_CONTEXT.format(conversation=conversation))
+
+
+def open_chat_settings(driver: PumaDriver, conversation: str):
+    driver.click(CHAT_STATE_CONVERSATION_NAME.format(conversation=conversation))
 
 
 def go_to_chat(driver: PumaDriver, conversation: str):
@@ -78,7 +109,7 @@ def go_to_chat(driver: PumaDriver, conversation: str):
         raise ValueError(f'Cannot open a conversation without a conversation name')
     driver.click(CHAT_OVERVIEW_SEARCH_BUTTON)
     driver.send_keys(SEARCH_INPUT_FIELD, conversation)
-    driver.click(FIRST_SEARCH_HIT.format(conversation_name=conversation))
+    driver.click(FIRST_SEARCH_HIT.format(conversation=conversation))
 
 
 @supported_version("12.0.1")
@@ -94,6 +125,7 @@ class Telegram(StateGraph):
         [CHAT_OVERVIEW_NEW_MESSAGE_BUTTON, CHAT_OVERVIEW_SEARCH_BUTTON, CHAT_OVERVIEW_NAV_MENU_BUTTON],
         initial_state=True)
     chat_state = TeleGramChatState(parent_state=conversations_state)
+    chat_settings_state = TelegramChatSettingsState(parent_state=chat_state)
     call_state = SimpleState([CALL_STATE_END_CALL_BUTTON, CALL_STATE_MUTE_BUTTON, CALL_STATE_SPEAKER_BUTTON],
                              parent_state=chat_state)
     send_media_state = SimpleState(
@@ -111,6 +143,7 @@ class Telegram(StateGraph):
 
     conversations_state.to(chat_state, go_to_chat)
     chat_state.to(call_state, compose_clicks([CHAT_STATE_CALL_BUTTON], name="press_call_button"))
+    chat_state.to(chat_settings_state, open_chat_settings)
     chat_state.to(send_media_state, compose_clicks([CHAT_STATE_MEDIA_BUTTON], name="press_attachment_button"))
     send_media_state.to(send_from_gallery_state,
                         compose_clicks([SEND_MEDIA_STATE_GALLERY_BUTTON], name='press_gallery_button'))
@@ -243,6 +276,25 @@ class Telegram(StateGraph):
             self.driver.click(NEW_GROUP_AUTO_DELETE_OPTION)
             self.driver.click(f'//android.widget.LinearLayout/android.widget.FrameLayout[{auto_delete}]')
         self.driver.click(NEW_GROUP_DONE_BUTTON)
+
+    @action(chat_settings_state)
+    def add_members(self, new_members: list[str], conversation: str = None):
+        self.driver.click(CHAT_SETTINGS_STATE_ADD_MEMBERS)
+        for name in new_members:
+            self.driver.send_keys(CHAT_SETTINGS_STATE_ADD_MEMBERS_SEARCH, name)
+            try:
+                self.driver.click(
+                    f'//androidx.recyclerview.widget.RecyclerView//android.widget.TextView[lower-case(@text)=lower-case("{name}")]')
+            except PumaClickException:
+                raise PumaClickException(
+                    f'Could not add member {name} as it could not be found in the UI after a search')
+        self.driver.click('//android.widget.ImageView[@content-desc="Next"]')
+        self.driver.click('//android.widget.TextView[@text="Add"]')
+
+    @action(chat_settings_state)
+    def remove_member(self, member: str, conversation: str = None):
+        self.driver.long_click(CHAT_SETTINGS_STATE_MEMBER_CONTEXT.format(member=member))
+        self.driver.click(CHAT_SETTINGS_STATE_REMOVE_MEMBER_BUTTON)
 
     def _in_voice_message_mode(self):
         return self.driver.get_element(CHAT_STATE_RECORD_VIDEO_OR_AUDIO_MESSAGE).get_attribute(
