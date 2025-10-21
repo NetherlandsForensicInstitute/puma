@@ -9,7 +9,7 @@ from puma.state_graph.state_graph import StateGraph
 TELEGRAM_PACKAGE = 'org.telegram.messenger'
 TELEGRAM_WEB_PACKAGE = 'org.telegram.messenger.web'
 
-CHAT_OVERVIEW_NEW_CONVERSATION_BUTTON = '//android.widget.FrameLayout[@content-desc="New Message"]'
+CHAT_OVERVIEW_NEW_MESSAGE_BUTTON = '//android.widget.FrameLayout[@content-desc="New Message"]'
 CHAT_OVERVIEW_NAV_MENU_BUTTON = '//android.widget.ImageView[@content-desc="Open navigation menu"]'
 CHAT_OVERVIEW_SEARCH_BUTTON = '//android.widget.ImageButton[@content-desc="Search"]'
 
@@ -49,6 +49,17 @@ CALL_STATE_SPEAKER_BUTTON = '//android.widget.FrameLayout[@content-desc="Speaker
 CALL_STATE_MUTE_BUTTON = '//android.widget.FrameLayout[@content-desc="Mute"]'
 CALL_STATE_STATUS = '//android.widget.LinearLayout[ends-with(@text, "Telegram Call")]/android.widget.FrameLayout/android.widget.TextView'
 
+NEW_MESSAGE_STATE_NEW_GROUP_BUTTON = '//android.widget.FrameLayout[@text="New Group"]'
+NEW_MESSAGE_STATE_NEW_CONTACT_BUTTON = '//android.widget.FrameLayout[@text="New Contact"]'
+NEW_MESSAGE_STATE_NEW_CHANNEL_BUTTON = '//android.widget.FrameLayout[@text="New Channel"]'
+NEW_MESSAGE_STATE_CREATE_NEW_CONTACT_BUTTON = '//android.widget.FrameLayout[@content-desc="Create New Contact"]'
+
+NEW_GROUP_MEMBER = '//android.widget.FrameLayout/android.widget.TextView[lower-case(@text)=lower-case("{member}")]'
+NEW_GROUP_NEXT = '//android.widget.ImageView[@content-desc="Next"]'
+NEW_GROUP_NAME_INPUT = '//android.widget.EditText'
+NEW_GROUP_AUTO_DELETE_OPTION = '//android.widget.TextView[@text="Auto-Delete Messages"]'
+NEW_GROUP_DONE_BUTTON = '//android.widget.FrameLayout[@content-desc="Done"]'
+
 
 class TeleGramChatState(SimpleState, ContextualState):
 
@@ -80,7 +91,7 @@ class Telegram(StateGraph):
     and handle unexpected states or errors.
     """
     conversations_state = SimpleState(
-        [CHAT_OVERVIEW_NEW_CONVERSATION_BUTTON, CHAT_OVERVIEW_SEARCH_BUTTON, CHAT_OVERVIEW_NAV_MENU_BUTTON],
+        [CHAT_OVERVIEW_NEW_MESSAGE_BUTTON, CHAT_OVERVIEW_SEARCH_BUTTON, CHAT_OVERVIEW_NAV_MENU_BUTTON],
         initial_state=True)
     chat_state = TeleGramChatState(parent_state=conversations_state)
     call_state = SimpleState([CALL_STATE_END_CALL_BUTTON, CALL_STATE_MUTE_BUTTON, CALL_STATE_SPEAKER_BUTTON],
@@ -93,12 +104,18 @@ class Telegram(StateGraph):
         [SEND_FROM_GALLERY_STATE_BACK_BUTTON, SEND_FROM_GALLERY_FOLDER_PICKER,
          SEND_FROM_GALLERY_THREE_DOTS_BUTTON, SEND_FROM_GALLERY_MEDIA_SWITCH.format(index=1)],
         parent_state=chat_state)  # pressing back goes to the chat state
+    new_message_state = SimpleState(
+        [NEW_MESSAGE_STATE_NEW_GROUP_BUTTON, NEW_MESSAGE_STATE_NEW_CONTACT_BUTTON, NEW_MESSAGE_STATE_NEW_CHANNEL_BUTTON,
+         NEW_MESSAGE_STATE_CREATE_NEW_CONTACT_BUTTON],
+        parent_state=conversations_state)
 
     conversations_state.to(chat_state, go_to_chat)
     chat_state.to(call_state, compose_clicks([CHAT_STATE_CALL_BUTTON], name="press_call_button"))
     chat_state.to(send_media_state, compose_clicks([CHAT_STATE_MEDIA_BUTTON], name="press_attachment_button"))
     send_media_state.to(send_from_gallery_state,
                         compose_clicks([SEND_MEDIA_STATE_GALLERY_BUTTON], name='press_gallery_button'))
+    conversations_state.to(new_message_state,
+                           compose_clicks([CHAT_OVERVIEW_NEW_MESSAGE_BUTTON], name='press_new_message_button'))
 
     def __init__(self, device_udid, telegram_web_version: bool = False):
         package = TELEGRAM_WEB_PACKAGE if telegram_web_version else TELEGRAM_PACKAGE
@@ -136,7 +153,8 @@ class Telegram(StateGraph):
         if folder:
             self.driver.click(SEND_FROM_GALLERY_FOLDER_PICKER)
             if isinstance(folder, str):
-                logger.warning(f'Using OCR to click on media folder {folder}. OCR is unreliable, if possible use the folder index number!')
+                logger.warning(
+                    f'Using OCR to click on media folder {folder}. OCR is unreliable, if possible use the folder index number!')
                 time.sleep(1)
                 self.driver.click_text_ocr(folder)
             else:
@@ -209,6 +227,22 @@ class Telegram(StateGraph):
             return
         self.driver.click(CHAT_STATE_STOP_LIVE_LOCATION_SHARING_BUTTON)
         self.driver.click(CHAT_STATE_STOP_LIVE_LOCATION_CONFIRM_BUTTON)
+
+    @action(new_message_state, end_state=chat_state)
+    def create_new_group(self, group_name: str, members: list[str] = [], auto_delete: int = None):
+        if auto_delete is not None and auto_delete not in [1, 2, 3]:
+            raise ValueError(f'Unsupported auto-delete option: {auto_delete}')
+        self.driver.click(NEW_MESSAGE_STATE_NEW_GROUP_BUTTON)
+        for member in members:
+            self.gtl_logger.info(f'adding group member {member}')
+            self.driver.click(NEW_GROUP_MEMBER.format(member=member))
+        self.driver.click(NEW_GROUP_NEXT)
+        self.gtl_logger.info(f'Entering group name "{group_name}" and setting auto-delete option')
+        self.driver.send_keys(NEW_GROUP_NAME_INPUT, group_name)
+        if auto_delete:
+            self.driver.click(NEW_GROUP_AUTO_DELETE_OPTION)
+            self.driver.click(f'//android.widget.LinearLayout/android.widget.FrameLayout[{auto_delete}]')
+        self.driver.click(NEW_GROUP_DONE_BUTTON)
 
     def _in_voice_message_mode(self):
         return self.driver.get_element(CHAT_STATE_RECORD_VIDEO_OR_AUDIO_MESSAGE).get_attribute(
