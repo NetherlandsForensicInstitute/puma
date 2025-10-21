@@ -24,12 +24,20 @@ CHAT_STATE_MESSAGE_TEXTBOX = '//android.widget.EditText[@text]'
 CHAT_STATE_MEDIA_BUTTON = '//android.widget.ImageView[@content-desc="Attach media"]'
 CHAT_STATE_RECORD_VIDEO_OR_AUDIO_MESSAGE = '//android.widget.FrameLayout[@content-desc="Record voice message" or @content-desc="Record video message"]'
 CHAT_STATE_SEND_BUTTON = '//android.view.View[@content-desc="Send"]'
+CHAT_STATE_STOP_LIVE_LOCATION_SHARING_BUTTON = '//android.widget.ImageView[@content-desc="Stop sharing live location"]'
+CHAT_STATE_STOP_LIVE_LOCATION_CONFIRM_BUTTON = '//android.widget.TextView[@text="Stop"]'
 
 SEND_MEDIA_STATE_INSTANT_CAMERA_BUTTON = '//android.widget.FrameLayout[@content-desc="Instant camera"]/preceding-sibling::android.widget.FrameLayout[last()]'
 SEND_MEDIA_STATE_GALLERY_BUTTON = '//android.widget.FrameLayout[@text="Gallery"]'
 SEND_MEDIA_STATE_FILE_BUTTON = '//android.widget.FrameLayout[@text="File"]'
 SEND_MEDIA_STATE_LOCATION_BUTTON = '//android.widget.FrameLayout[@text="Location"]'
+
+SEND_MEDIA_STATE_SEND_CURRENT_LOCATION_BUTTON = '//android.widget.TextView[@text="Send selected location"]'
 SEND_MEDIA_STATE_MY_LOCATION_BUTTON = '//android.widget.ImageView[@content-desc="My location"]'
+SEND_MEDIA_STATE_LIVE_LOCATION_BUTTON = '//android.widget.TextView[@text="Share My Live Location for..."]'
+SEND_MEDIA_STATE_LIVE_LOCATION_DURATION_OPTION_INDEX = '(//android.widget.RadioButton/android.widget.TextView[@text])[{duration}]'
+SEND_MEDIA_STATE_LIVE_LOCATION_DURATION_OPTION_TEXT = '//android.widget.RadioButton/android.widget.TextView[contains(lower-case(@text), lower-case("{duration}"))]'
+SEND_MEDIA_STATE_LIVE_LOCATION_SHARE_BUTTON = '//android.widget.TextView[@text="Share"]'
 
 SEND_FROM_GALLERY_STATE_BACK_BUTTON = '//android.widget.ImageView[@content-desc="Go back"]'
 SEND_FROM_GALLERY_THREE_DOTS_BUTTON = '//android.widget.ImageButton[@content-desc="More options"]'
@@ -128,7 +136,7 @@ class Telegram(StateGraph):
         if folder:
             self.driver.click(SEND_FROM_GALLERY_FOLDER_PICKER)
             if isinstance(folder, str):
-                logger.warn(f'Using OCR to click on media folder {folder}. OCR is unreliable, if possible use the folder index number!')
+                logger.warning(f'Using OCR to click on media folder {folder}. OCR is unreliable, if possible use the folder index number!')
                 time.sleep(1)
                 self.driver.click_text_ocr(folder)
             else:
@@ -146,7 +154,7 @@ class Telegram(StateGraph):
                 self.gtl_logger.info(f'Selected gallery item with index {i}')
                 clicked += 1
             except PumaClickException as e:
-                logger.warn(f'Could not select media with index {i}. Are enough media files present?')
+                logger.warning(f'Could not select media with index {i}. Are enough media files present?')
         if clicked == 0:
             raise PumaClickException(
                 f'Tried to select gallery items with indexes {media_index}, but could not select any of them.')
@@ -167,14 +175,39 @@ class Telegram(StateGraph):
 
     def end_call(self):
         if self.current_state != Telegram.call_state:
-            logger.warn(f'Tried to end a call, but no call was in progress')
+            logger.warning(f'Tried to end a call, but no call was in progress')
         self.driver.click(CALL_STATE_END_CALL_BUTTON)
 
-    @action(send_media_state)
+    @action(send_media_state, end_state=chat_state)
     def send_location(self, conversation: str = None):
         self.driver.click(SEND_MEDIA_STATE_LOCATION_BUTTON)
         self.driver.click(SEND_MEDIA_STATE_MY_LOCATION_BUTTON)
-        self.driver.click('//android.widget.TextView[@text="Send selected location"]')
+        self.driver.click(SEND_MEDIA_STATE_SEND_CURRENT_LOCATION_BUTTON)
+
+    @action(send_media_state, end_state=chat_state)
+    def send_live_location(self, conversation: str = None, duration_option: int | str = 1):
+        self.driver.click(SEND_MEDIA_STATE_LOCATION_BUTTON)
+        if not self.driver.is_present(SEND_MEDIA_STATE_LIVE_LOCATION_BUTTON, implicit_wait=1):
+            logger.warning(f'Could not share live location, was live location already being shared?')
+            self.driver.back()
+            return
+        self.driver.click(SEND_MEDIA_STATE_LIVE_LOCATION_BUTTON)
+        if isinstance(duration_option, int):
+            self.driver.click(SEND_MEDIA_STATE_LIVE_LOCATION_DURATION_OPTION_INDEX.format(duration=duration_option))
+        else:
+            xpath = SEND_MEDIA_STATE_LIVE_LOCATION_DURATION_OPTION_TEXT.format(duration=duration_option)
+            if not self.driver.is_present(xpath, implicit_wait=1):
+                raise PumaClickException(
+                    f'Could not select option for live location sharing with name "{duration_option}". Is this option present in the UI?')
+            self.driver.click(xpath)
+        self.driver.click(SEND_MEDIA_STATE_LIVE_LOCATION_SHARE_BUTTON)
+
+    @action(chat_state)
+    def stop_live_location_sharing(self, conversation: str = None):
+        if not self.driver.is_present(CHAT_STATE_STOP_LIVE_LOCATION_SHARING_BUTTON):
+            logger.warning(f'Could not stop sharing live location as it wasn\'t shared.')
+        self.driver.click(CHAT_STATE_STOP_LIVE_LOCATION_SHARING_BUTTON)
+        self.driver.click(CHAT_STATE_STOP_LIVE_LOCATION_CONFIRM_BUTTON)
 
     def _in_voice_message_mode(self):
         return self.driver.get_element(CHAT_STATE_RECORD_VIDEO_OR_AUDIO_MESSAGE).get_attribute(
