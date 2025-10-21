@@ -210,6 +210,23 @@ class PumaDriver:
                 time.sleep(0.5)
         raise PumaClickException(f'After {max_swipes} swipes, cannot find element with xpath {xpath}')
 
+
+    def long_press_element(self, xpath: str, duration:int = 1000):
+        """
+        Press some element for some duration.
+        :param xpath: Xpath of the element to long press.
+        :param duration: Duration of the press in millisec.
+        :return:
+        """
+        element = self.get_element(xpath)
+        location = element.location
+        size = element.size
+
+        # Calculate the center of the element
+        x = location['x'] + size['width'] // 2
+        y = location['y'] + size['height'] // 2
+        self.driver.execute_script('mobile: longClickGesture', {'x': x, 'y': y, 'duration': duration})
+
     def send_keys(self, xpath: str, text: str):
         """
         Sends keys to an element specified by its XPath.
@@ -219,6 +236,7 @@ class PumaDriver:
         """
         self.gtl_logger.info(f'Entering text "{text}" in text box')
         element = self.get_element(xpath)
+        element.click() # TODO checkall usages
         element.send_keys(text)
 
     def press_enter(self):

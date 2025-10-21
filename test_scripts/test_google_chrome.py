@@ -21,15 +21,15 @@ class TestGoogleChrome(unittest.TestCase):
     @classmethod
     def setUpClass(self):
         if not device_udids["Alice"]:
-            print("No udid was configured for Alice. Pleas add at the top of the script.\nExiting....")
+            print("No udid was configured for Alice. Please add at the top of the script.\nExiting....")
             exit(1)
         self.alice = GoogleChrome(device_udids["Alice"])
 
     def test_go_to(self):
-        self.alice.go_to("www.wikipedia.com", 2)
+        self.alice.go_to("www.google.com", 2)
 
     def test_new_tab(self):
-        self.alice.go_to("www.google.com", tab_index=True)
+        self.alice.go_to_new_tab("wikipedia.org")
 
     def test_switch_tab(self):
         self.alice.go_to("www.google.com", tab_index=True)
@@ -37,6 +37,9 @@ class TestGoogleChrome(unittest.TestCase):
         self.alice.switch_to_tab(1)
         self.alice.switch_to_tab(2)
         self.alice.switch_to_tab()
+
+    def test_bookmark_page(self):
+        self.alice.bookmark_page(1)
 
     def test_bookmarks(self):
         self.alice.go_to("www.wikipedia.com", False)

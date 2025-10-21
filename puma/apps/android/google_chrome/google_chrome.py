@@ -7,6 +7,7 @@ from puma.apps.android import log_action
 from puma.apps.android.appium_actions import AndroidAppiumActions, supported_version
 from puma.apps.android.google_chrome import logger
 from puma.state_graph.action import action
+from puma.state_graph.popup_handler import PopUpHandler
 from puma.state_graph.puma_driver import PumaDriver
 from puma.state_graph.state import SimpleState, compose_clicks, ContextualState
 from puma.state_graph.state_graph import StateGraph
@@ -16,7 +17,7 @@ GOOGLE_CHROME_PACKAGE = 'com.android.chrome'
 SEARCH_BOX_XPATH = '//android.widget.EditText[@resource-id="com.android.chrome:id/search_box_text"]'
 SEARCH_BOX_ENGINE_ICON = '//android.widget.ImageView[@resource-id="com.android.chrome:id/search_box_engine_icon"]'
 TAB_SWITCH_BUTTON = '//android.widget.ImageButton[@resource-id="com.android.chrome:id/tab_switcher_button"]'
-THREE_DOTS = '//android.widget.ImageButton[@content-desc="Customize and control Google Chrome"]'
+THREE_DOTS = '//android.widget.ImageButton[@resource-id="com.android.chrome:id/menu_button"]'
 BOOKMARK_BUTTON = '//android.widget.Button[lower-case(@content-desc)="bookmark"]'
 EDIT_BOOKMARK_BUTTON = '//android.widget.Button[lower-case(@content-desc)="edit bookmark"]'
 URL_BAR_XPATH = '//android.widget.EditText[@resource-id="com.android.chrome:id/url_bar"]'
@@ -78,7 +79,7 @@ class CurrentTab(SimpleState, ContextualState):
         """
         logger.info(f'Clicking on tab at index {tab_index}.')
         driver.click(
-            f'({TAB_LIST}//*[@resource-id="com.android.chrome:id/content_view"])[{tab_index}]')# TODO extract?
+            f'({TAB_LIST}//*[@resource-id="com.android.chrome:id/content_view"])[{tab_index}]') #TODO extract constant
         self.last_opened[driver.udid] = tab_index
 
 # TODO add class current tab state
@@ -94,6 +95,7 @@ class GoogleChrome(StateGraph):
     tab_overview_state.to(current_tab_state, current_tab_state.switch_to_tab)
     current_tab_state.to(new_tab_state, compose_clicks([NEW_TAB_XPATH_CURRENT_TAB]))
 
+
     def __init__(self, device_udid):
         """
         Initializes Google Chrome with a device UDID.
@@ -101,12 +103,11 @@ class GoogleChrome(StateGraph):
         :param device_udid: The unique device identifier for the Android device.
         """
         StateGraph.__init__(self, device_udid, GOOGLE_CHROME_PACKAGE)
+        self.add_popup_handler(PopUpHandler(['//android.widget.TextView[@text="New ads privacy feature now available"]'],
+                                            ['//android.widget.Button[@resource-id="com.android.chrome:id/ack_button"]']))
 
-    def _enter_url(self, url_string: str):
-        self.driver.click(URL_BAR_XPATH) #TODO chceck if click is necessary
-        self.driver.send_keys(URL_BAR_XPATH, url_string)
-        self.driver.press_enter()  # TODO build into puma driver
-
+        self.add_popup_handler(PopUpHandler(['//android.widget.TextView[@text="Turn on an ad privacy feature"]'],
+                                            ['//android.widget.Button[@resource-id="com.android.chrome:id/ack_button"]']))
     @action(current_tab_state)
     def go_to(self, url_string: str, tab_index: int):
         """
@@ -114,25 +115,33 @@ class GoogleChrome(StateGraph):
         :param url_string: the argument to pass to the address bar
         :param tab_index: which tab to open
         """
-        self._enter_url(url_string)
+        self.driver.send_keys(URL_BAR_XPATH, url_string)
+        self.driver.press_enter()
         #TODO handle situation where tab n is a new tab, make sure the state recovers
 
     @action(new_tab_state)
-    def go_to_new_tab(self, url_string):
+    def go_to_new_tab(self, url_string): #TODO rename to more sensible name
         """
         TODO
         :param url_string:
         :return:
         """
-        new_tab_xpath = '//android.widget.Button[contains(@content-desc, "tab")]'
-        self.driver.find_element(by=AppiumBy.XPATH, value=TAB_SWITCH_BUTTON).click()
-        self.driver.find_element(by=AppiumBy.XPATH, value=new_tab_xpath).click()
-        self.is_present(xpath=TAB_SWITCH_BUTTON, implicit_wait=1)
-        self.driver.find_element(by=AppiumBy.XPATH, value=SEARCH_BOX_XPATH).click()
-        self._enter_url(url_string)
+        self.driver.send_keys(SEARCH_BOX_XPATH, url_string)
+        self.driver.press_enter()
 
-
-
+    @action(current_tab_state)
+    def bookmark_page(self, tab_index: int):
+        """
+        Bookmarks the current page.
+        :return: True if bookmark has been added, False if it already existed.
+        """
+        self.driver.click(THREE_DOTS)
+        if self.driver.is_present(EDIT_BOOKMARK_BUTTON):
+            self.driver.back()
+            return False
+        else:
+            self.driver.click(BOOKMARK_BUTTON)
+            return True
 
 
 class GoogleChromeActions(AndroidAppiumActions):
@@ -151,34 +160,7 @@ class GoogleChromeActions(AndroidAppiumActions):
 
 
     @log_action
-    def bookmark_page(self):
-        """
-        Bookmarks the current page.
-        :return: True if bookmark has been added, False if it already existed.
-        """
-        self.driver.find_element(by=AppiumBy.XPATH, value=THREE_DOTS).click()
-        if self.is_present(EDIT_BOOKMARK_BUTTON):
-            self.back()
-            return False
-        else:
-            self.driver.find_element(by=AppiumBy.XPATH, value=BOOKMARK_BUTTON).click()
-            return True
 
-    @log_action
-    def delete_bookmark(self):
-        """
-        Delete the current bookmark.
-        :return: True if bookmark has been deleted, False if it wasn't bookmarked.
-        """
-        delete_bookmark_xpath = '//android.widget.Button[lower-case(@content-desc)="delete bookmarks"]'
-        self.driver.find_element(by=AppiumBy.XPATH, value=THREE_DOTS).click()
-        if self.is_present(BOOKMARK_BUTTON):
-            self.back()
-            return False
-        else:
-            self.driver.find_element(by=AppiumBy.XPATH, value=EDIT_BOOKMARK_BUTTON).click()
-            self.driver.find_element(by=AppiumBy.XPATH, value=delete_bookmark_xpath).click()
-            return True
 
     @log_action
     def load_bookmark(self):
