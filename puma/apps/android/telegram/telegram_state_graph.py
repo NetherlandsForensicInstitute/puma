@@ -1,5 +1,8 @@
+import time
+
+from puma.apps.android.telegram import logger
 from puma.state_graph.action import action
-from puma.state_graph.puma_driver import supported_version, PumaDriver
+from puma.state_graph.puma_driver import supported_version, PumaDriver, PumaClickException
 from puma.state_graph.state import SimpleState, ContextualState, State, compose_clicks
 from puma.state_graph.state_graph import StateGraph
 
@@ -70,15 +73,20 @@ class Telegram(StateGraph):
     chat_state = TeleGramChatState(parent_state=conversations_state)
     call_state = SimpleState([CALL_STATE_END_CALL_BUTTON, CALL_STATE_MUTE_BUTTON, CALL_STATE_SPEAKER_BUTTON],
                              parent_state=chat_state)
-    send_media_state = SimpleState([SEND_MEDIA_STATE_INSTANT_CAMERA_BUTTON, SEND_MEDIA_STATE_GALLERY_BUTTON, SEND_MEDIA_STATE_FILE_BUTTON, SEND_MEDIA_STATE_LOCATION_BUTTON],
-                                   parent_state=chat_state)
-    send_from_gallery_state = SimpleState([SEND_FROM_GALLERY_STATE_BACK_BUTTON, SEND_FROM_GALLERY_FOLDER_PICKER, SEND_FROM_GALLERY_THREE_DOTS_BUTTON],
-                                          parent_state=chat_state)  # pressing back goes back to the chat state
+    send_media_state = SimpleState(
+        [SEND_MEDIA_STATE_INSTANT_CAMERA_BUTTON, SEND_MEDIA_STATE_GALLERY_BUTTON, SEND_MEDIA_STATE_FILE_BUTTON,
+         SEND_MEDIA_STATE_LOCATION_BUTTON],
+        parent_state=chat_state)
+    send_from_gallery_state = SimpleState(
+        [SEND_FROM_GALLERY_STATE_BACK_BUTTON, SEND_FROM_GALLERY_FOLDER_PICKER,
+         SEND_FROM_GALLERY_THREE_DOTS_BUTTON, SEND_FROM_GALLERY_MEDIA_SWITCH.format(index=1)],
+        parent_state=chat_state)  # pressing back goes to the chat state
 
     conversations_state.to(chat_state, go_to_chat)
     chat_state.to(call_state, compose_clicks([CHAT_STATE_CALL_BUTTON], name="press_call_button"))
     chat_state.to(send_media_state, compose_clicks([CHAT_STATE_MEDIA_BUTTON], name="press_attachment_button"))
-    send_media_state.to(send_from_gallery_state, compose_clicks([SEND_MEDIA_STATE_GALLERY_BUTTON], name='press_gallery_button'))
+    send_media_state.to(send_from_gallery_state,
+                        compose_clicks([SEND_MEDIA_STATE_GALLERY_BUTTON], name='press_gallery_button'))
 
     def __init__(self, device_udid, telegram_web_version: bool = False):
         package = TELEGRAM_WEB_PACKAGE if telegram_web_version else TELEGRAM_PACKAGE
@@ -105,21 +113,47 @@ class Telegram(StateGraph):
             self.driver.click(CHAT_STATE_RECORD_VIDEO_OR_AUDIO_MESSAGE)
         self.driver.press_and_hold(CHAT_STATE_RECORD_VIDEO_OR_AUDIO_MESSAGE, duration)
 
-    @action(send_from_gallery_state)
-    def send_media_from_gallery(self, media_index: int|list[int],caption:str = None, conversation: str = None):
+    @action(send_from_gallery_state, end_state=chat_state)
+    def send_media_from_gallery(self, media_index: int | list[int],
+                                caption: str = None,
+                                folder: str | int = None,
+                                conversation: str = None):
         if not media_index:
-            raise ValueError(f'Cannot send medai from gallery without a proper set of indices')
+            raise ValueError(f'Cannot send media from gallery without a proper set of indices')
+        # open folder if needed
+        if folder:
+            self.driver.click(SEND_FROM_GALLERY_FOLDER_PICKER)
+            if isinstance(folder, str):
+                logger.warn(f'Using OCR to click on media folder {folder}. OCR is unreliable, if possible use the folder index number!')
+                time.sleep(1)
+                self.driver.click_text_ocr(folder)
+            else:
+                self.driver.click(f'//android.widget.LinearLayout/android.view.View[{folder}]')
         # select picture/video
         if isinstance(media_index, int):
             media_index = [media_index]
+        clicked = 0
         for i in media_index:
-            self.driver.click(SEND_FROM_GALLERY_MEDIA_SWITCH.format(index=i))  # TODO: thumbnail 2 cannot be selected, how to solve this?
+            try:
+                if i in [2,3]:  # these switches can be obscured by other UI elements. We do a long press for those
+                    self.driver.long_click(f'{SEND_FROM_GALLERY_MEDIA_SWITCH.format(index=i)}/..')
+                else:
+                    self.driver.click(SEND_FROM_GALLERY_MEDIA_SWITCH.format(index=i))
+                self.gtl_logger.info(f'Selected gallery item with index {i}')
+                clicked += 1
+            except PumaClickException as e:
+                logger.warn(f'Could not select media with index {i}. Are enough media files present?')
+        if clicked == 0:
+            raise PumaClickException(
+                f'Tried to select gallery items with indexes {media_index}, but could not select any of them.')
         if caption:
             self.driver.send_keys('//android.widget.EditText[@text]', caption)
+            self.gtl_logger.info(f'Entered caption {caption}')
         # send button
         self.driver.click('//android.widget.Button')
+        self.gtl_logger.info(f'Pressed send button')
 
-    @action(chat_state)
+    @action(chat_state, end_state=call_state)
     def start_call(self, conversation: str = None):
         self.driver.click(CHAT_STATE_CALL_BUTTON)
 

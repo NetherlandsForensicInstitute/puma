@@ -175,6 +175,9 @@ class PumaDriver:
                 return
         raise PumaClickException(f'Could not click on non present element with xpath {xpath}')
 
+    def long_click(self, xpath:str):
+        self.press_and_hold(xpath, 1)
+
     def press_and_hold(self, xpath: str, duration: int):
         """
         Clicks on a certain element, and hold for a given duration (in seconds)
@@ -295,6 +298,7 @@ class PumaDriver:
         :param click_first_when_multiple: If True, the first occurrence of the string will be clicked if multiple are found.
         If False, raises an PumaClickException if multiple occurrences are found. Defaults to False.
         """
+        self.gtl_logger.info(f'Using OCR to click on text "{text_to_click}"')
         found_text = self._find_text_ocr(text_to_click)
         if len(found_text) == 0:
             msg = f'Could not find text {text_to_click} on screen so could not click it'
@@ -307,7 +311,7 @@ class PumaDriver:
                 logger.warning(f'Found multiple occurrences of text {text_to_click} on screen, clicking first one')
         x = found_text[0].bounding_box.middle[0]
         y = found_text[0].bounding_box.middle[1]
-        self.gtl_logger.info(f'Clicking found text {found_text}')
+        self.gtl_logger.info(f'Clicking found text {found_text} at coordinates {(x,y)}')
         self.driver.execute_script('mobile: clickGesture', {'x': x, 'y': y})
 
     def set_idle_timeout(self, timeout: int):
