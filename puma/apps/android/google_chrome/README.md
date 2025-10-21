@@ -27,9 +27,9 @@ phone = GoogleChromeActions("emulator-5554")
 You can go to a new web page, add a bookmark and enter incognito mode:
 
 ```python
-phone.go_to("google.com")
+phone.go_to("google.com", False)
 phone.bookmark_page()
-phone.go_to("www.imdb.com", new_tab=True)
+phone.go_to("www.imdb.com", tab_index=True)
 phone.load_bookmark()
 phone.switch_to_tab()
 phone.go_to_incognito("DFRWS is awesome!")

@@ -1,7 +1,6 @@
 import unittest
 
-from puma.apps.android.google_chrome.google_chrome import GoogleChromeActions
-from test_scripts.test_google_maps import device_udids
+from puma.apps.android.google_chrome.google_chrome import GoogleChromeActions, GoogleChrome
 
 # Fill in the udid below. Run ADB devices to see the udids.
 device_udids = {
@@ -27,20 +26,20 @@ class TestGoogleChrome(unittest.TestCase):
         self.alice = GoogleChrome(device_udids["Alice"])
 
     def test_go_to(self):
-        self.alice.go_to("www.wikipedia.com")
+        self.alice.go_to("www.wikipedia.com", 2)
 
     def test_new_tab(self):
-        self.alice.go_to("www.google.com", new_tab=True)
+        self.alice.go_to("www.google.com", tab_index=True)
 
     def test_switch_tab(self):
-        self.alice.go_to("www.google.com", new_tab=True)
-        self.alice.go_to("www.bing.com", new_tab=True)
+        self.alice.go_to("www.google.com", tab_index=True)
+        self.alice.go_to("www.bing.com", tab_index=True)
         self.alice.switch_to_tab(1)
         self.alice.switch_to_tab(2)
         self.alice.switch_to_tab()
 
     def test_bookmarks(self):
-        self.alice.go_to("www.wikipedia.com")
+        self.alice.go_to("www.wikipedia.com", False)
         # Clean up at the start, so we can be sure that both saving and deleting are properly tested.
         self.alice.delete_bookmark()
 

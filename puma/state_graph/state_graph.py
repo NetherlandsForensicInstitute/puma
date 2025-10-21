@@ -103,6 +103,7 @@ class StateGraphMeta(type):
         unreachable_states = [s for s in states if not s.initial_state and not (
                     bool(_shortest_path(initial_state, s)) and bool(_shortest_path(s, initial_state)))]
         if unreachable_states:
+            # TODO make this error message more specific: exactly log which transition cannot be done (to or from the initial state)
             raise ValueError(
                 f'Some states cannot be reached from the initial state, or cannot go back to the initial state: {unreachable_states}')
 

@@ -20,8 +20,9 @@ THREE_DOTS = '//android.widget.ImageButton[@content-desc="Customize and control 
 BOOKMARK_BUTTON = '//android.widget.Button[lower-case(@content-desc)="bookmark"]'
 EDIT_BOOKMARK_BUTTON = '//android.widget.Button[lower-case(@content-desc)="edit bookmark"]'
 URL_BAR_XPATH = '//android.widget.EditText[@resource-id="com.android.chrome:id/url_bar"]'
-PROFILE_XPATH = '//android.widget.ImageButton[contains(@content-desc, "Signed in as"]'
-NEW_TAB_XPATH = '//android.widget.ImageButton[@content-desc="New tab"]'
+PROFILE_XPATH = '//android.widget.ImageButton[contains(@content-desc, "Signed in as")]'
+NEW_TAB_XPATH_CURRENT_TAB = '//android.widget.ImageButton[@content-desc="New tab"]'
+NEW_TAB_XPATH_TAB_OVERVIEW = ' //android.widget.Button[@content-desc="New tab"]'
 TAB_LIST = '//*[@resource-id="com.android.chrome:id/tab_list_recycler_view"]'
 
 
@@ -40,14 +41,14 @@ class CurrentTab(SimpleState, ContextualState):
         :param parent_state: The parent state of this current tab state.
         """
         super().__init__(
-            xpaths=[URL_BAR_XPATH, NEW_TAB_XPATH],
+            xpaths=[URL_BAR_XPATH, NEW_TAB_XPATH_CURRENT_TAB],
             parent_state=parent_state,
             parent_state_transition=compose_clicks([TAB_SWITCH_BUTTON]))
         # Keep a dict that tracks which tab indices were opened last on which device. See validate_context()
         self.last_opened = {}
 
 
-    def validate_context(self, driver: PumaDriver, tab_index: str = None) -> bool:
+    def validate_context(self, driver: PumaDriver, tab_index: int = None) -> bool:
         """
         We can not validate if we are in the nth tab from the tab overview, while in the tab contextual state, as this
         index is not available in the state.
@@ -60,9 +61,14 @@ class CurrentTab(SimpleState, ContextualState):
         :param tab_index: Index of the tab last opened
         :return: boolean
         """
-        return self.last_opened[driver.udid] == tab_index
+        if not tab_index:
+            return True
+        try:
+            return self.last_opened[driver.udid] == tab_index
+        except:
+            return False
 
-    def switch_to_tab(self, driver: PumaDriver, tab_index):
+    def switch_to_tab(self, driver: PumaDriver, tab_index: int):
         """
         Navigate to the tab at the specified index in the tab overview. This method also stores which tab index was
         opened on which device, enabling contextual validation in validate_context().
@@ -71,39 +77,47 @@ class CurrentTab(SimpleState, ContextualState):
         :param tab_index: Index of the tab to navigate to
         """
         logger.info(f'Clicking on tab at index {tab_index}.')
-        driver.click(TAB_SWITCH_BUTTON)
         driver.click(
-            f'({TAB_LIST}//*[@resource-id="com.android.chrome:id/content_view"])[{tab_index}]')  # TODO extract?
+            f'({TAB_LIST}//*[@resource-id="com.android.chrome:id/content_view"])[{tab_index}]')# TODO extract?
         self.last_opened[driver.udid] = tab_index
 
 # TODO add class current tab state
 @supported_version("141.0.7390.111")
 class GoogleChrome(StateGraph):
-    new_tab = SimpleState(xpaths=[SEARCH_BOX_XPATH, PROFILE_XPATH, SEARCH_BOX_ENGINE_ICON], initial_state=True)
-    tab_overview = SimpleState(xpaths=[TAB_LIST]) #TODO add search apps field
-    current_tab = CurrentTab(parent_state=tab_overview) #TODO move to tab state class
-    #
-    new_tab.to(tab_overview, compose_clicks([TAB_SWITCH_BUTTON], name='go_to_tab_overview'))
-    tab_overview.to(current_tab, compose_clicks([TAB_SWITCH_BUTTON], name='go_to_tab_overview'))
-    #Multiple states to 1: to_state.from(state1, state2)
+    tab_overview_state = SimpleState(xpaths=[TAB_LIST]) #TODO add search apps field
+    new_tab_state = SimpleState(xpaths=[SEARCH_BOX_XPATH, PROFILE_XPATH, SEARCH_BOX_ENGINE_ICON],
+                                initial_state=True,
+                                parent_state=tab_overview_state,
+                                parent_state_transition=compose_clicks([TAB_SWITCH_BUTTON]))
+    current_tab_state = CurrentTab(parent_state=tab_overview_state) #TODO move to tab state class
+    tab_overview_state.to(new_tab_state, compose_clicks([NEW_TAB_XPATH_TAB_OVERVIEW], name='go_to_tab_overview'))
+    tab_overview_state.to(current_tab_state, current_tab_state.switch_to_tab)
+    current_tab_state.to(new_tab_state, compose_clicks([NEW_TAB_XPATH_CURRENT_TAB]))
+
+    def __init__(self, device_udid):
+        """
+        Initializes Google Chrome with a device UDID.
+
+        :param device_udid: The unique device identifier for the Android device.
+        """
+        StateGraph.__init__(self, device_udid, GOOGLE_CHROME_PACKAGE)
 
     def _enter_url(self, url_string: str):
-        url_bar_xpath = '//android.widget.EditText[@resource-id="com.android.chrome:id/url_bar"]'
-        self.driver.click(url_bar_xpath) #TODO chceck if click is necessary
-        self.driver.send_keys(url_bar_xpath, url_string)
+        self.driver.click(URL_BAR_XPATH) #TODO chceck if click is necessary
+        self.driver.send_keys(URL_BAR_XPATH, url_string)
         self.driver.press_enter()  # TODO build into puma driver
 
-    @action(current_tab)
-    def go_to(self, url_string: str, new_tab: bool = False):
+    @action(current_tab_state)
+    def go_to(self, url_string: str, tab_index: int):
         """
         Enters the text as stated in the url_string parameter in a current tab
         :param url_string: the argument to pass to the address bar
-        :param new_tab: whether to open a new tab first
+        :param tab_index: which tab to open
         """
-        self.driver.click(SEARCH_BOX_XPATH)
         self._enter_url(url_string)
+        #TODO handle situation where tab n is a new tab, make sure the state recovers
 
-    @action(new_tab)
+    @action(new_tab_state)
     def go_to_new_tab(self, url_string):
         """
         TODO
