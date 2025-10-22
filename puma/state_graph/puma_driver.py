@@ -211,7 +211,7 @@ class PumaDriver:
         raise PumaClickException(f'After {max_swipes} swipes, cannot find element with xpath {xpath}')
 
 
-    def long_press_element(self, xpath: str, duration:int = 1000):
+    def long_press_element(self, xpath: str, duration: int = 1000):
         """
         Press some element for some duration.
         :param xpath: Xpath of the element to long press.
