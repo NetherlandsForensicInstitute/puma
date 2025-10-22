@@ -44,6 +44,10 @@ class OpenCamera(StateGraph):
 
     @action(take_photo_state)
     def take_picture(self, front_camera: bool):
+        """
+        Takes a picture using the camera.
+        :param front_camera: If True, uses the front-facing camera; otherwise, uses the rear camera.
+        """
         self._ensure_correct_view(front_camera)
         self._click_shutter()
 
