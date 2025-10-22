@@ -4,7 +4,7 @@ THREE_DOTS = '//android.widget.ImageButton[@resource-id="com.android.chrome:id/m
 # Tab overview
 SEARCH_TABS = '//android.widget.EditText[@resource-id="com.android.chrome:id/search_box_text" and @text="Search your tabs"]'
 SEARCH_INCOGNITO_TABS = '//android.widget.EditText[@resource-id="com.android.chrome:id/search_box_text" and @text="Search your Incognito tabs"]'
-STANDARD_TAB_OVERVIEW_BUTTON = '//android.widget.LinearLayout[contains(@content-desc,"standard tabs")]'
+STANDARD_TAB_OVERVIEW_BUTTON = '//android.widget.LinearLayout[contains(@content-desc,"standard tab")]'
 NEW_TAB_XPATH_TAB_OVERVIEW = '//android.widget.Button[@content-desc="New tab"]'
 TAB_LIST = '//*[@resource-id="com.android.chrome:id/tab_list_recycler_view"]'
 # Tab
@@ -21,7 +21,7 @@ OPEN_BOOKMARKS = '//android.widget.TextView[@resource-id="com.android.chrome:id/
 # Bookmarks
 MOBILE_BOOKMARKS = '//android.widget.TextView[@resource-id="com.android.chrome:id/title" and @text="Mobile bookmarks"]'
 DELETE_BOOKMARK = '//android.widget.Button[lower-case(@content-desc)="delete bookmarks"]'
-CLOSE_BOOKMARKS = '//android.widget.Button[@resource_id="com.android.chrome:id/close_menu_id"]'
+CLOSE_BOOKMARKS = '//android.widget.Button[@resource-id="com.android.chrome:id/close_menu_id"]'
 FIRST_BOOKMARK = '//android.widget.LinearLayout[@resource-id="com.android.chrome:id/container"]'
 BOOKMARKS_PAGE_TITLE = '//android.widget.TextView[@text="Bookmarks"]'
 BOOKMARKS_SORT_VIEW = '//android.widget.Button[@content-desc="Sort and view options"]'

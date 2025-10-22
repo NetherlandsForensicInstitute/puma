@@ -23,6 +23,8 @@ class BookmarksFolder(SimpleState, ContextualState):
         :param folder_name: Name of the bookmarks folder
         :return: boolean
         """
+        if folder_name is None:
+            return True
         return driver.is_present(f'//android.view.ViewGroup[@resource-id="com.android.chrome:id/action_bar"]//android.widget.TextView[@text="{folder_name}"]')
 
     @staticmethod

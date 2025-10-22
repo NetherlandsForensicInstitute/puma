@@ -37,7 +37,7 @@ class StateGraphMeta(type):
             return new_class
 
         # collect states and transitions
-        states = []
+        states: list[State] = []
         transitions = []
         for key, value in namespace.items():
             if isinstance(value, State):

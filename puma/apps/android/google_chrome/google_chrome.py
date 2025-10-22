@@ -42,7 +42,6 @@ class GoogleChrome(StateGraph):
                                   parent_state=current_tab_state,
                                   parent_state_transition=compose_clicks([CLOSE_BOOKMARKS]))
     bookmarks_folder_state = BookmarksFolder(parent_state=bookmarks_state)
-
     # Transitions
     tab_overview_state.to(new_tab_state, compose_clicks([NEW_TAB_XPATH_TAB_OVERVIEW], name='go_to_tab_overview'))
     tab_overview_state.to(current_tab_state, current_tab_state.switch_to_tab)

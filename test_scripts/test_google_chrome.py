@@ -1,6 +1,6 @@
 import unittest
 
-from puma.apps.android.google_chrome.google_chrome import GoogleChromeActions, GoogleChrome
+from puma.apps.android.google_chrome.google_chrome import GoogleChrome
 
 # Fill in the udid below. Run ADB devices to see the udids.
 device_udids = {
@@ -46,6 +46,11 @@ class TestGoogleChrome(unittest.TestCase):
 
     def test_go_to_incognito(self):
         self.alice.visit_url_incognito("www.wikipedia.com")
+
+    def test_transitions(self):
+        for to_state in self.alice.states:
+            self.alice.go_to_state(to_state, tab_index=1, folder_name="Mobile bookmarks")
+        self.alice.go_to_state(self.alice.initial_state)
 
 
 if __name__ == '__main__':
