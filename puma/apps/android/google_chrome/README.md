@@ -29,7 +29,7 @@ You can go to a new web page, add a bookmark and enter incognito mode:
 ```python
 phone.visit_url("google.com", False)
 phone.bookmark_page()
-phone.visit_url("www.imdb.com", tab_index=True)
+phone.visit_url("www.imdb.com", tab_index=1)
 phone.load_first_bookmark("Mobile bookmarks")
 phone.visit_url_incognito("DFRWS is awesome!")
 ```
