@@ -215,7 +215,7 @@ class PumaDriver:
         """
         Press some element for some duration.
         :param xpath: Xpath of the element to long press.
-        :param duration: Duration of the press in millisec.
+        :param duration: Duration of the press in milliseconds.
         :return:
         """
         element = self.get_element(xpath)
