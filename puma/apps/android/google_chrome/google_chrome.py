@@ -6,7 +6,9 @@ from puma.apps.android.google_chrome.xpaths import TAB_SWITCH_BUTTON, THREE_DOTS
     SEARCH_BOX_ENGINE_ICON, URL_BAR, NEW_TAB_FROM_CURRENT_TAB, NEW_TAB_INCOGNITO_TITLE, \
     BOOKMARK_THIS_PAGE_BUTTON, EDIT_BOOKMARK_BUTTON, NEW_INCOGNITO_TAB_BUTTON, OPEN_BOOKMARKS, \
     MOBILE_BOOKMARKS, DELETE_BOOKMARK, CLOSE_BOOKMARKS, FIRST_BOOKMARK, BOOKMARKS_PAGE_TITLE, \
-    BOOKMARKS_SORT_VIEW, BOOKMARKS_CREATE_FOLDER
+    BOOKMARKS_SORT_VIEW, BOOKMARKS_CREATE_FOLDER, NEW_ADS_PRIVACY_TEXT_XPATH, ACK_BUTTON_XPATH, \
+    OTHER_ADS_PRIVACY_TEXT_XPATH, MORE_BUTTON_XPATH, TURN_ON_AD_PRIVACY_TEXT_XPATH, CHROME_NOTIFICATIONS_TEXT_XPATH, \
+    NEGATIVE_BUTTON_XPATH
 from puma.state_graph.action import action
 from puma.state_graph.popup_handler import PopUpHandler
 from puma.state_graph.state import SimpleState, compose_clicks
@@ -58,18 +60,11 @@ class GoogleChrome(StateGraph):
         :param device_udid: The unique device identifier for the Android device.
         """
         StateGraph.__init__(self, device_udid, GOOGLE_CHROME_PACKAGE)
-        self.add_popup_handler(
-            PopUpHandler(['//android.widget.TextView[@text="New ads privacy feature now available"]'],
-                         ['//android.widget.Button[@resource-id="com.android.chrome:id/ack_button"]']))
-        self.add_popup_handler(
-            PopUpHandler(['//android.widget.TextView[@text="Other ad privacy features now available"]'],
-                         ['//android.widget.Button[@resource-id="com.android.chrome:id/more_button"]',
-                          '//android.widget.Button[@resource-id="com.android.chrome:id/ack_button"]']))
-
-        self.add_popup_handler(PopUpHandler(['//android.widget.TextView[@text="Turn on an ad privacy feature"]'],
-                                            ['//android.widget.Button[@resource-id="com.android.chrome:id/ack_button"]']))
-        self.add_popup_handler(PopUpHandler(['//android.widget.TextView[@text="Chrome notifications make things easier"]'],
-                                            ['//android.widget.Button[@resource-id="com.android.chrome:id/negative_button"]']))
+        self.add_popup_handlers(PopUpHandler([NEW_ADS_PRIVACY_TEXT_XPATH], [ACK_BUTTON_XPATH]),
+                                PopUpHandler([OTHER_ADS_PRIVACY_TEXT_XPATH], [MORE_BUTTON_XPATH, ACK_BUTTON_XPATH]),
+                                PopUpHandler([TURN_ON_AD_PRIVACY_TEXT_XPATH], [ACK_BUTTON_XPATH]),
+                                PopUpHandler([CHROME_NOTIFICATIONS_TEXT_XPATH], [NEGATIVE_BUTTON_XPATH]),
+                                )
 
     @action(current_tab_state)
     def visit_url(self, url_string: str, tab_index: int):
@@ -124,10 +119,6 @@ class GoogleChrome(StateGraph):
         Load the first saved bookmark in the specified folder.
         :param folder_name: The name of the folder to load the first bookmark from.
         """
-        self.driver.click(THREE_DOTS)
-
-        self.driver.click(OPEN_BOOKMARKS)
-        self.driver.click(MOBILE_BOOKMARKS)
         self.driver.click(FIRST_BOOKMARK)
 
     @action(current_tab_state)

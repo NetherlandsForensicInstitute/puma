@@ -286,6 +286,14 @@ class StateGraph(metaclass=StateGraphMeta):
         """
         self.app_popups.append(popup_handler)
 
+    def add_popup_handlers(self, *popup_handlers: PopUpHandler):
+        """
+        Adds multiple pop-up handlers to manage application pop-ups.
+
+        :param popup_handlers: The pop-up handlers to be added.
+        """
+        self.app_popups.extend(popup_handlers)
+
     def _find_shortest_path(self, destination: State | str) -> list[Transition] | None:
         """
         Finds the shortest path in terms of transitions to the desired state.
