@@ -71,7 +71,7 @@ class CurrentTab(SimpleState, ContextualState):
             return True
         try:
             return self.last_opened[driver.udid] == tab_index
-        except:
+        except KeyError:
             return False
 
     def switch_to_tab(self, driver: PumaDriver, tab_index: int):
