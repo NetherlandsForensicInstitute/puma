@@ -163,6 +163,18 @@ conversations_state = SimpleState(["xpath1", "xpath2"], initial_state=True)
 chat_state = ExampleAppChatState(parent_state=conversations_state)
 ```
 
+###### Special case: Contextual states that cannot be validated from the UI
+
+For some contextual states, the information that is required for validation is not present in the app UI. For example,
+the app page in the PlayStore does not include the package name, which was used to navigate to the page. In these
+cases the State implementation must explicitly store the intended context per device (for example a `last_opened` dict
+keyed by `driver.udid`) at the moment the transition/navigation is performed. The `validate_context` method should then
+consult this stored value instead of inspecting the UI.
+
+See for examples of this case the `AppPage` class
+in [google_play_store.py](puma/apps/android/google_play_store/google_play_store.py) and the `CurrentTab` class in
+[google_chrome/states.py](puma/apps/android/google_chrome/states.py).
+
 #### Transitions
 
 Transitions specify the process of moving from one state to another. They are generally made up of a sequence of user
