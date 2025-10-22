@@ -9,9 +9,12 @@ from puma.apps.android.appium_actions import AndroidAppiumActions, supported_ver
 
 OPEN_CAMERA_PACKAGE = 'net.sourceforge.opencamera'
 
+TAKE_PHOTO_XPATH = '//android.widget.ImageButton[@resource-id="net.sourceforge.opencamera:id/take_photo"]'
+PHOTO_MODE_XPATH = '//android.widget.ImageButton[@content-desc="Switch to photo mode"]'
+VIDEO_MODE_XPATH = '//android.widget.ImageButton[@content-desc="Switch to video mode"]'
+SWITCH_CAMERA_XPATH = '//android.widget.ImageButton[@resource-id="net.sourceforge.opencamera:id/switch_camera"]'
+ZOOM_SEEKBAR_XPATH = '//android.widget.SeekBar[@content-desc="Zoom"]'
 
-@deprecated('This class does not use the Puma state machine, and will therefore not be maintained. ' +
-            'If you want to add functionality, please rewrite this class using StateGraph as the abstract base class.')
 @supported_version("1.53.1")
 class OpenCameraActions(AndroidAppiumActions):
     def __init__(self,
@@ -30,26 +33,23 @@ class OpenCameraActions(AndroidAppiumActions):
         """
         Presses the shutter to take a picture or start/stop recording.
         """
-        xpath = '//android.widget.ImageButton[@resource-id="net.sourceforge.opencamera:id/take_photo"]'
-        shutter = self.driver.find_element(by=AppiumBy.XPATH, value=xpath)
+        shutter = self.driver.find_element(by=AppiumBy.XPATH, value=TAKE_PHOTO_XPATH)
         shutter.click()
 
     def _switch_to_photo_mode(self):
         """
         If in video mode, switches to photo mode.
         """
-        photo_mode_button = '//android.widget.ImageButton[@content-desc="Switch to photo mode"]'
-        if self.is_present(photo_mode_button):
-            button = self.driver.find_element(by=AppiumBy.XPATH, value=photo_mode_button)
+        if self.is_present(PHOTO_MODE_XPATH):
+            button = self.driver.find_element(by=AppiumBy.XPATH, value=PHOTO_MODE_XPATH)
             button.click()
 
     def _switch_to_video_mode(self):
         """
         If in photo mode, switches to video mode.
         """
-        video_mode_button = '//android.widget.ImageButton[@content-desc="Switch to video mode"]'
-        if self.is_present(video_mode_button):
-            button = self.driver.find_element(by=AppiumBy.XPATH, value=video_mode_button)
+        if self.is_present(VIDEO_MODE_XPATH):
+            button = self.driver.find_element(by=AppiumBy.XPATH, value=VIDEO_MODE_XPATH)
             button.click()
 
     @log_action
@@ -65,8 +65,7 @@ class OpenCameraActions(AndroidAppiumActions):
         """
         Switches between the front and back camera.
         """
-        xpath = '//android.widget.ImageButton[@resource-id="net.sourceforge.opencamera:id/switch_camera"]'
-        switch_camera_button = self.driver.find_element(by=AppiumBy.XPATH, value=xpath)
+        switch_camera_button = self.driver.find_element(by=AppiumBy.XPATH, value=SWITCH_CAMERA_XPATH)
         switch_camera_button.click()
 
     @log_action
@@ -88,8 +87,7 @@ class OpenCameraActions(AndroidAppiumActions):
         """
         if zoom_amount < 0 or zoom_amount > 1:
             raise ValueError(f'Invalid zoom level: {zoom_amount}. Zoom level needs to be between 0.0 and 1.0')
-        xpath = '//android.widget.SeekBar[@content-desc="Zoom"]'
-        zoom_slider = self.driver.find_element(by=AppiumBy.XPATH, value=xpath)
+        zoom_slider = self.driver.find_element(by=AppiumBy.XPATH, value=ZOOM_SEEKBAR_XPATH)
         x = zoom_slider.location.get('x')
         y = zoom_slider.location.get('y')
         width = zoom_slider.size.get('width')
