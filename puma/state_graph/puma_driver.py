@@ -236,7 +236,7 @@ class PumaDriver:
         """
         self.gtl_logger.info(f'Entering text "{text}" in text box')
         element = self.get_element(xpath)
-        element.click() # TODO checkall usages
+        element.click() # TODO check all usages
         element.send_keys(text)
 
     def press_enter(self):
