@@ -12,12 +12,14 @@ APPLICATION_PACKAGE = 'com.snapchat.android'
 CHAT_STATE_CONVERSATION_NAME = '//android.widget.TextView[@resource-id="com.snapchat.android:id/conversation_title_text_view"]'
 CHAT_STATE_TEXT_FIELD = '//android.widget.EditText[@resource-id="com.snapchat.android:id/chat_input_text_field"]'
 
-def go_to_send_to(driver: PumaDriver, conversation: str):
-    logger.info(f'Selecting recipient {conversation} on the send screen')
-    xpath = f'//androidx.recyclerview.widget.RecyclerView[@resource-id="com.snapchat.android:id/send_to_recycler_view"]//javaClass[@text="{conversation}"]'
-    driver.driver.find_elements(by=AppiumBy.XPATH, value=xpath)[-1].click()
-    driver.click('/android.view.View[@content-desc="Send"]')
-
+# def go_to_send_to(driver: PumaDriver, conversation: str):
+#     logger.info(f'Selecting recipient {conversation} on the send screen')
+#     driver.click('//android.widget.FrameLayout[@content-desc="Camera Capture"]')
+#     driver.click('//android.view.View[@content-desc="Send"]')
+#     xpath = f'//androidx.recyclerview.widget.RecyclerView[@resource-id="com.snapchat.android:id/send_to_recycler_view"]//javaClass[@text="{conversation}"]'
+#     elements = driver.driver.find_elements(by=AppiumBy.XPATH, value=xpath)
+#     logger.info(f"Found {len(elements)} elements matching the XPath.")
+#     elements[-1].click()
 
 def go_to_chat(driver: PumaDriver, conversation: str):
     """
@@ -76,7 +78,7 @@ class SnapchatChatState(SimpleState, ContextualState):
 
 class SnapchatChatSnapState(SimpleState, ContextualState):
     def __init__(self, parent_state):
-        super().__init__(xpaths=['//android.view.View[@content-desc="New Story Button"'],
+        super().__init__(xpaths=['//android.view.View[@content-desc="New Story Button"]'],
                          parent_state=parent_state)
 
     def validate_context(self, driver: PumaDriver, conversation: str = None) -> bool:
@@ -95,13 +97,12 @@ class Snapchat(StateGraph):
     conversation_state = SimpleState(['//android.widget.FrameLayout[@resource-id="com.snapchat.android:id/feed_new_chat"]'], parent_state=camera_state)
     chat_state = SnapchatChatState(parent_state=conversation_state)
     snap_state = SnapchatChatSnapState(parent_state=camera_state)
-    # snapchat_state = SimpleState(['//android.view.View[@content-desc="New Story Button"]', ], parent_state=camera_state)
+    photo_state = SimpleState(['//android.view.ViewGroup[@resource-id="com.snapchat.android:id/sent_to_button_label_mode_view"]'])
 
     camera_state.to(conversation_state, compose_clicks(['//android.view.ViewGroup[@content-desc="Chat"]']))
     conversation_state.to(chat_state, go_to_chat)
-    camera_state.to(snap_state, go_to_send_to)
-    # camera_state.to(snapchat_state, compose_clicks(['//android.widget.FrameLayout[@content-desc="Camera Capture"]','//android.widget.ImageButton[@content-desc="Send"]']))
-
+    camera_state.to(photo_state, compose_clicks(['//android.widget.FrameLayout[@content-desc="Camera Capture"]']))
+    photo_state.to(snap_state, compose_clicks(['//android.view.ViewGroup[@resource-id="com.snapchat.android:id/sent_to_button_label_mode_view"]']))
 
     def __init__(self, device_udid):
         StateGraph.__init__(self, device_udid, APPLICATION_PACKAGE)
@@ -122,17 +123,17 @@ class Snapchat(StateGraph):
         self.driver.send_keys(CHAT_STATE_TEXT_FIELD, msg)
         self._press_enter()
 
-    def send_snap(self, conversation: str = None):
-        self.driver.click()
+    @action(snap_state)
+    def send_snap_to(self, conversation: str = None):
+        self.driver.click(f'(//javaClass[@text="{conversation}"])[1]')
+
 
 # TODO: continue with send snap and add the rest from the template and contributing for adding a new application
 if __name__ == "__main__":
         bob = Snapchat(device_udid="34281JEHN03866")
         contact_charlie = "Charlie"
 
-        bob.go_to_state(bob.conversation_state)
-        bob.go_to_state(bob.chat_state, conversation=contact_charlie)
-        bob.send_message("hi", contact_charlie)
-        bob.go_to_state(bob.camera_state)
-        bob.send_snap(contact_charlie) # TODO: finish send_snap and test it
+        # bob.send_message("hi", contact_charlie)
+
+        bob.send_snap_to(contact_charlie)
 
