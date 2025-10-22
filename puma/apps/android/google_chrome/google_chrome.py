@@ -75,13 +75,13 @@ class GoogleChrome(StateGraph):
     def visit_url(self, url_string: str, tab_index: int):
         """
         Visits a url in an existing tab.
-        Note that if you supply a tab index that is a new tab, the action will fail. Use go_to_new_tab instead. #TODO can we catch this situation neatly in the framework?
+        Note that if you supply a tab index that is a new tab, the action will fail. Use go_to_new_tab instead.
         :param url_string: The argument to pass to the address bar
         :param tab_index: which tab to open
         """
         logger.warn(
-            "In Chrome version 141.0.7390.111, we have noticed clicking on a tab with index n might not open the tab."
-            "Hopefully this will be fixed in future Chrome versions.")
+            "In Chrome version 141.0.7390.111, we have noticed clicking on a tab with index might not open the tab on "
+            "some devices. Hopefully this will be fixed in future Chrome versions.")
         self._enter_url(url_string, URL_BAR)
 
     @action(new_tab_state)

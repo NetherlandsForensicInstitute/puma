@@ -21,8 +21,6 @@ class State(ABC):
         :param parent_state_transition: How to transition back to the parent state. By default, this is a press on the back button.
         """
         self.id = None  # set in metaclass
-        # if initial_state and parent_state:
-        #     raise ValueError(f'Error creating state: initial state cannot have a parent state')
         self.initial_state = initial_state
         self.parent_state = parent_state
         self.transitions = []
