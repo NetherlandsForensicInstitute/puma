@@ -1,0 +1,30 @@
+# General
+TAB_SWITCH_BUTTON = '//android.widget.ImageButton[@resource-id="com.android.chrome:id/tab_switcher_button"]'
+THREE_DOTS = '//android.widget.ImageButton[@resource-id="com.android.chrome:id/menu_button"]'
+# Tab overview
+SEARCH_TABS = '//android.widget.EditText[@resource-id="com.android.chrome:id/search_box_text" and @text="Search your tabs"]'
+SEARCH_INCOGNITO_TABS = '//android.widget.EditText[@resource-id="com.android.chrome:id/search_box_text" and @text="Search your Incognito tabs"]'
+STANDARD_TAB_OVERVIEW_BUTTON = '//android.widget.LinearLayout[contains(@content-desc,"standard tabs")]'
+NEW_TAB_XPATH_TAB_OVERVIEW = '//android.widget.Button[@content-desc="New tab"]'
+TAB_LIST = '//*[@resource-id="com.android.chrome:id/tab_list_recycler_view"]'
+# Tab
+SEARCH_BOX = '//android.widget.EditText[@resource-id="com.android.chrome:id/search_box_text"]'
+SEARCH_BOX_ENGINE_ICON = '//android.widget.ImageView[@resource-id="com.android.chrome:id/search_box_engine_icon"]'
+URL_BAR = '//android.widget.EditText[@resource-id="com.android.chrome:id/url_bar"]'
+PROFILE = '//android.widget.ImageButton[contains(@content-desc, "Signed in as")]'
+NEW_TAB_FROM_CURRENT_TAB = '//android.widget.ImageButton[@content-desc="New tab"]'
+# Menu
+NEW_TAB_INCOGNITO_TITLE = '//android.widget.TextView[@resource-id="com.android.chrome:id/new_tab_incognito_title"]'
+BOOKMARK_THIS_PAGE_BUTTON = '//android.widget.Button[lower-case(@content-desc)="bookmark"]'
+EDIT_BOOKMARK_BUTTON = '//android.widget.Button[lower-case(@content-desc)="edit bookmark"]'
+NEW_INCOGNITO_TAB_BUTTON = '//android.widget.TextView[@resource-id="com.android.chrome:id/title" and @text="New Incognito tab"]'
+OPEN_BOOKMARKS = '//android.widget.TextView[@resource-id="com.android.chrome:id/menu_item_text" and @text="Bookmarks"]'
+# Bookmarks
+MOBILE_BOOKMARKS = '//android.widget.TextView[@resource-id="com.android.chrome:id/title" and @text="Mobile bookmarks"]'
+DELETE_BOOKMARK = '//android.widget.Button[lower-case(@content-desc)="delete bookmarks"]'
+CLOSE_BOOKMARKS = '//android.widget.Button[@resource_id="com.android.chrome:id/close_menu_id"]'
+FIRST_BOOKMARK = '//android.widget.LinearLayout[@resource-id="com.android.chrome:id/container"]'
+BOOKMARKS_PAGE_TITLE = '//android.widget.TextView[@text="Bookmarks"]'
+BOOKMARKS_SORT_VIEW = '//android.widget.Button[@content-desc="Sort and view options"]'
+BOOKMARKS_CREATE_FOLDER = '//android.widget.Button[@content-desc="Create new folder"]'
+BOOKMARKS_GO_BACK = '//android.widget.ImageButton[@content-desc="Go back"]'
