@@ -23,10 +23,10 @@ class BookmarksFolder(SimpleState, ContextualState):
         :param folder_name: Name of the bookmarks folder
         :return: boolean
         """
-        #TODO check
         return driver.is_present(f'//android.view.ViewGroup[@resource-id="com.android.chrome:id/action_bar"]//android.widget.TextView[@text="{folder_name}"]')
 
-    def go_to_bookmarks_folder(self, driver: PumaDriver, folder_name: str):
+    @staticmethod
+    def go_to_bookmarks_folder(driver: PumaDriver, folder_name: str):
         driver.click(f'//android.widget.TextView[@resource-id="com.android.chrome:id/title" and @text="{folder_name}"]')
 
 

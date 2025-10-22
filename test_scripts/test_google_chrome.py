@@ -26,13 +26,13 @@ class TestGoogleChrome(unittest.TestCase):
         self.alice = GoogleChrome(device_udids["Alice"])
 
     def test_go_to(self):
-        self.alice.go_to("www.google.com", 1)
+        self.alice.visit_url("www.google.com", 1)
 
     def test_go_to_new_tab(self):
-        self.alice.go_to_new_tab("wikipedia.org")
+        self.alice.visit_url_new_tab("wikipedia.org")
 
     def test_bookmarks(self):
-        self.alice.go_to("www.wikipedia.com", 1)
+        self.alice.visit_url("www.wikipedia.com", 1)
         # Clean up at the start, so we can be sure that both saving and deleting are properly tested.
         self.alice.delete_bookmark(1)
 

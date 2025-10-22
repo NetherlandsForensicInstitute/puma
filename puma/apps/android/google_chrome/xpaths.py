@@ -11,7 +11,6 @@ TAB_LIST = '//*[@resource-id="com.android.chrome:id/tab_list_recycler_view"]'
 SEARCH_BOX = '//android.widget.EditText[@resource-id="com.android.chrome:id/search_box_text"]'
 SEARCH_BOX_ENGINE_ICON = '//android.widget.ImageView[@resource-id="com.android.chrome:id/search_box_engine_icon"]'
 URL_BAR = '//android.widget.EditText[@resource-id="com.android.chrome:id/url_bar"]'
-PROFILE = '//android.widget.ImageButton[contains(@content-desc, "Signed in as")]'
 NEW_TAB_FROM_CURRENT_TAB = '//android.widget.ImageButton[@content-desc="New tab"]'
 # Menu
 NEW_TAB_INCOGNITO_TITLE = '//android.widget.TextView[@resource-id="com.android.chrome:id/new_tab_incognito_title"]'
