@@ -62,17 +62,22 @@ class GoogleChrome(StateGraph):
         self.add_popup_handler(
             PopUpHandler(['//android.widget.TextView[@text="New ads privacy feature now available"]'],
                          ['//android.widget.Button[@resource-id="com.android.chrome:id/ack_button"]']))
+        self.add_popup_handler(
+            PopUpHandler(['//android.widget.TextView[@text="Other ad privacy features now available"]'],
+                         ['//android.widget.Button[@resource-id="com.android.chrome:id/more_button"]',
+                          '//android.widget.Button[@resource-id="com.android.chrome:id/ack_button"]']))
 
         self.add_popup_handler(PopUpHandler(['//android.widget.TextView[@text="Turn on an ad privacy feature"]'],
-                                            [
-                                                '//android.widget.Button[@resource-id="com.android.chrome:id/ack_button"]']))
+                                            ['//android.widget.Button[@resource-id="com.android.chrome:id/ack_button"]']))
+        self.add_popup_handler(PopUpHandler(['//android.widget.TextView[@text="Chrome notifications make things easier"]'],
+                                            ['//android.widget.Button[@resource-id="com.android.chrome:id/negative_button"]']))
 
     @action(current_tab_state)
     def visit_url(self, url_string: str, tab_index: int):
         """
-        Visits a url in an existing tab
-        Note that if you supply a tab index that is a new tab, the action will fail. Use go_to_new_tab instead.
-        :param url_string: the argument to pass to the address bar
+        Visits a url in an existing tab.
+        Note that if you supply a tab index that is a new tab, the action will fail. Use go_to_new_tab instead. #TODO can we catch this situation neatly in the framework?
+        :param url_string: The argument to pass to the address bar
         :param tab_index: which tab to open
         """
         logger.warn(
@@ -83,11 +88,21 @@ class GoogleChrome(StateGraph):
     @action(new_tab_state)
     def visit_url_new_tab(self, url_string):
         """
-        Creates a new tab and enters the url string text.
-        :param url_string: Url to navigate to
+        Creates a new tab and visits the url.
+        :param url_string: Url to visit
         """
         self.driver.send_keys(SEARCH_BOX, url_string)
         self.driver.press_enter()
+
+    @action(new_incognito_tab_state)
+    def visit_url_incognito(self, url_string: str):
+        """
+        Opens an incognito tab and enters the url_string to the address bar.
+        :param url_string: the input to pass to the address bar
+        """
+        self.driver.click(THREE_DOTS)
+        self.driver.click(NEW_INCOGNITO_TAB_BUTTON)
+        self._enter_url(url_string, URL_BAR)
 
     @action(current_tab_state)
     def bookmark_page(self, tab_index: int):
@@ -132,16 +147,6 @@ class GoogleChrome(StateGraph):
             self.driver.click(EDIT_BOOKMARK_BUTTON)
             self.driver.click(DELETE_BOOKMARK)
             return True
-
-    @action(new_incognito_tab_state)
-    def go_to_incognito(self, url_string: str):
-        """
-        Opens an incognito window and enters the url_string to the address bar.
-        :param url_string: the input to pass to the address bar
-        """
-        self.driver.click(THREE_DOTS)
-        self.driver.click(NEW_INCOGNITO_TAB_BUTTON)
-        self._enter_url(url_string, URL_BAR)
 
     def _enter_url(self, url_string: str, url_bar_xpath):
         self.driver.send_keys(url_bar_xpath, url_string)

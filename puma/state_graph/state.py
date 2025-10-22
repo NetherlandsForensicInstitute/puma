@@ -178,3 +178,9 @@ def _shortest_path(start: State, destination: State | str) -> list[Transition] |
         for transition in state.transitions:
             queue.append((transition.to_state, path + [transition]))
     return None
+
+class TransitionError(Exception):
+    """
+    Exception raised when there is an error in state transition.
+    """
+    pass

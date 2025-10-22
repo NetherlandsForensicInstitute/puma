@@ -2,7 +2,7 @@ from puma.apps.android.google_chrome import logger
 from puma.apps.android.google_chrome.xpaths import TAB_SWITCH_BUTTON, TAB_LIST, URL_BAR, \
     NEW_TAB_FROM_CURRENT_TAB, BOOKMARKS_SORT_VIEW, BOOKMARKS_CREATE_FOLDER, BOOKMARKS_GO_BACK
 from puma.state_graph.puma_driver import PumaDriver
-from puma.state_graph.state import SimpleState, ContextualState, compose_clicks
+from puma.state_graph.state import SimpleState, ContextualState, compose_clicks, TransitionError
 
 
 class BookmarksFolder(SimpleState, ContextualState):
@@ -32,7 +32,7 @@ class BookmarksFolder(SimpleState, ContextualState):
 
 class CurrentTab(SimpleState, ContextualState):
     """
-    A state repesenting an existing tab in the application.
+    A state representing an existing tab in the application.
 
     This class extends both SimpleState and ContextualState to represent a tab screen. The contextual state is an outlier,
     see the validate_context method.
@@ -81,6 +81,12 @@ class CurrentTab(SimpleState, ContextualState):
         :param tab_index: Index of the tab to navigate to
         """
         logger.info(f'Clicking on tab at index {tab_index}.')
-        driver.click(
-            f'({TAB_LIST}//*[@resource-id="com.android.chrome:id/content_view"])[{tab_index}]') #TODO extract constant
+        tab_content_view = f'({TAB_LIST}//*[@resource-id="com.android.chrome:id/content_view"])[{tab_index}]'
+        if driver.is_present(f'{tab_content_view}'
+                             f'//*'
+                             f'[@resource-id="com.android.chrome:id/tab_title" and @text="New tab"]'):
+            logger.error(f"The tab at index {tab_index} is a new tab, not an existing tab. Use the new tab action "
+                         f"instead.")
+            raise TransitionError()
+        driver.click(tab_content_view)
         self.last_opened[driver.udid] = tab_index

@@ -16,6 +16,7 @@ class TestGoogleChrome(unittest.TestCase):
     Prerequisites:
     - All prerequisites mentioned in the README.
     - Phone or emulator with Google Chrome installed
+    - At least one tab with a url entered in the tab overview
     """
 
     @classmethod
@@ -25,10 +26,11 @@ class TestGoogleChrome(unittest.TestCase):
             exit(1)
         self.alice = GoogleChrome(device_udids["Alice"])
 
-    def test_go_to(self):
+
+    def test_visit_url(self):
         self.alice.visit_url("www.google.com", 1)
 
-    def test_go_to_new_tab(self):
+    def test_visit_url_new_tab(self):
         self.alice.visit_url_new_tab("wikipedia.org")
 
     def test_bookmarks(self):
@@ -43,7 +45,7 @@ class TestGoogleChrome(unittest.TestCase):
         self.assertFalse(self.alice.delete_bookmark(1))
 
     def test_go_to_incognito(self):
-        self.alice.go_to_incognito("www.wikipedia.com")
+        self.alice.visit_url_incognito("www.wikipedia.com")
 
 
 if __name__ == '__main__':

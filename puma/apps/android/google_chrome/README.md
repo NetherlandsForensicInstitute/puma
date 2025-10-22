@@ -32,5 +32,5 @@ phone.bookmark_page()
 phone.visit_url("www.imdb.com", tab_index=True)
 phone.load_bookmark()
 phone.switch_to_tab()
-phone.go_to_incognito("DFRWS is awesome!")
+phone.visit_url_incognito("DFRWS is awesome!")
 ```
