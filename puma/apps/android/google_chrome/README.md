@@ -18,8 +18,8 @@ as the abstract base class. Also see the [CONTRIBUTING.md](../../../../CONTRIBUT
 ### Initialization is standard:
 
 ```python
-from puma.apps.android.google_chrome.google_chrome import GoogleChromeActions
-phone = GoogleChromeActions("emulator-5554")
+from puma.apps.android.google_chrome.google_chrome import GoogleChrome
+phone = GoogleChrome("emulator-5554")
 ```
 
 ### Navigating the UI
@@ -27,9 +27,10 @@ phone = GoogleChromeActions("emulator-5554")
 You can go to a new web page, add a bookmark and enter incognito mode:
 
 ```python
-phone.visit_url("google.com", False)
-phone.bookmark_page()
-phone.visit_url("www.imdb.com", tab_index=1)
-phone.load_first_bookmark("Mobile bookmarks")
+phone.visit_url("google.com", tab_index=1)
+phone.visit_url_new_tab("google.com", tab_index=1)
 phone.visit_url_incognito("DFRWS is awesome!")
+phone.bookmark_page(tab_index=1)
+phone.load_first_bookmark(folder_name="Mobile bookmarks")
+phone.delete_bookmark(tab_index=1)
 ```
