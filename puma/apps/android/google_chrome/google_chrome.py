@@ -74,7 +74,7 @@ class GoogleChrome(StateGraph):
         :param url_string: The argument to pass to the address bar
         :param tab_index: which tab to open
         """
-        logger.warn(
+        logger.warning(
             "In Chrome version 141.0.7390.111, we have noticed clicking on a tab with index might not open the tab on "
             "some devices. Hopefully this will be fixed in future Chrome versions.")
         self._enter_url(url_string, URL_BAR)
