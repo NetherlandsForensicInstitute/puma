@@ -24,9 +24,8 @@ SWITCH_CAMERA_XPATH = '//android.widget.ImageButton[@resource-id="net.sourceforg
 ZOOM_SEEKBAR_XPATH = '//android.widget.SeekBar[@content-desc="Zoom"]'
 
 # Popups
-CAMERA_PERMISSION_POPUP = (
-    '//android.widget.TextView[@resource-id="com.android.permissioncontroller:id/permission_message" '
-    'and @text="Allow Open Camera to take pictures and record video?"]')
+POPUP_TITLE = '//android.widget.TextView[@resource-id="android:id/alertTitle" and @text="Open Camera"]'
+POPUP_OK_BUTTON = '//android.widget.Button[@resource-id="android:id/button1" and @text="OK"]'
 
 
 @supported_version("1.55")
@@ -41,6 +40,7 @@ class OpenCamera(StateGraph):
 
     def __init__(self, device_udid):
         StateGraph.__init__(self, device_udid, OPEN_CAMERA_PACKAGE)
+        self.add_popup_handler(PopUpHandler([POPUP_TITLE], [POPUP_OK_BUTTON]))
 
     @action(take_photo_state)
     def take_picture(self, front_camera: bool = False, zoom_amount: float = 0.0):
