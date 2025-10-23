@@ -1,4 +1,5 @@
-from enum import Enum
+from enum import Enum, StrEnum
+from time import sleep
 
 from puma.apps.android.google_play_store import logger
 from puma.state_graph.action import action
@@ -44,8 +45,7 @@ MANAGE_APP_STATE = '//android.widget.TextView[@text="Manage apps and device"]'
 MANAGE_APP_STATE_SYNC = '//android.widget.TextView[@text="Sync apps to devices"]'
 MANAGE_APPS_AND_DEVICES = '//android.widget.TextView[@resource-id="com.android.vending:id/0_resource_name_obfuscated" and @text="Manage apps and device"]'
 
-
-class AppState(Enum):
+class AppStatus(Enum):
     UNKNOWN = 0
     NOT_INSTALLED = 1
     INSTALLED = 2
@@ -53,6 +53,12 @@ class AppState(Enum):
     INSTALLING = 4
     INSTALLING_UPDATE = 5
 
+class AllAppsStatus(StrEnum):
+    CHECKING_FOR_UPDATES = "Checking for updates..."
+    UPDATES_AVAILABLE = "Updates available"
+    UPDATING_APPS = "Updating apps…"
+    ALL_APPS_UP_TO_DATE = "All apps up to date"
+    UNKNOWN = "Unknown"
 
 class AppPage(SimpleState, ContextualState):
     """
@@ -139,33 +145,33 @@ class GooglePlayStore(StateGraph):
         self.add_popup_handler(GOOGLE_PLAY_POINTS_POPUP_HANDLER)
         self.add_popup_handler(COMPLETE_ACCOUNT_POPUP_HANDLER)
 
-    def _get_app_state_internal(self) -> AppState:
+    def _get_app_status_internal(self) -> AppStatus:
         """
         Util method for @action methods on the app_page_state.
         :return the AppState of the application page, based on found UI elements.
         """
         if self.driver.is_present(APP_PAGE_INSTALL_BUTTON):
-            return AppState.NOT_INSTALLED
+            return AppStatus.NOT_INSTALLED
         if self.driver.is_present(APP_PAGE_UPDATE_BUTTON):
-            return AppState.UPDATE_AVAILABLE
+            return AppStatus.UPDATE_AVAILABLE
         if self.driver.is_present(APP_PAGE_UNINSTALL_BUTTON):
-            return AppState.INSTALLED
+            return AppStatus.INSTALLED
         if self.driver.is_present(APP_PAGE_CANCEL_INSTALL_BUTTON):
             if self.driver.is_present(APP_PAGE_UNINSTALL_BUTTON):
-                return AppState.INSTALLING_UPDATE
+                return AppStatus.INSTALLING_UPDATE
             else:
-                return AppState.INSTALLING
+                return AppStatus.INSTALLING
         logger.error(f'Could not determine the install state of the current app.')
-        return AppState.UNKNOWN
+        return AppStatus.UNKNOWN
 
     @action(app_page_state)
-    def get_app_state(self, package_name: str) -> AppState:
+    def get_app_status(self, package_name: str) -> AppStatus:
         """
         Returns the AppState of the given application. Possible states are:
         INSTALLED, NOT_INSTALLED, UPDATE_AVAILABLE, INSTALLING, INSTALL_UPDATE, and UNKNOWN.
         :return the AppState of the given application
         """
-        return self._get_app_state_internal()
+        return self._get_app_status_internal()
 
     @action(app_page_state)
     def install_app(self, package_name: str = None):
@@ -174,10 +180,16 @@ class GooglePlayStore(StateGraph):
         will log a warning and do nothing.
         :param package_name: The exact package name of the application.
         """
-        if self._get_app_state_internal() != AppState.NOT_INSTALLED:
+        #TODO add check that the install button is present
+        if self._get_app_status_internal() != AppStatus.NOT_INSTALLED:
             logger.warn(f'Tried to install app {package_name}, but it was already installed')
             return
-        self.driver.click(APP_PAGE_INSTALL_BUTTON)
+        if self.driver.is_present(APP_PAGE_INSTALL_BUTTON):
+            self.driver.click(APP_PAGE_INSTALL_BUTTON)
+        else:
+            logger.error(f"Could not install the application {package_name} because the install button was not present. "
+                         f"Skipping...")
+            return
 
     @action(app_page_state)
     def uninstall_app(self, package_name: str = None):
@@ -186,7 +198,7 @@ class GooglePlayStore(StateGraph):
         nothing.
         :param package_name: The exact package name of the application.
         """
-        if self._get_app_state_internal() not in [AppState.INSTALLED, AppState.UPDATE_AVAILABLE]:
+        if self._get_app_status_internal() not in [AppStatus.INSTALLED, AppStatus.UPDATE_AVAILABLE]:
             logger.warn(f'Tried to uninstall app {package_name}, but it was not installed')
             return
         self.driver.click(APP_PAGE_UNINSTALL_BUTTON)
@@ -198,7 +210,7 @@ class GooglePlayStore(StateGraph):
         Updates the given application. If no update is available this method will log a warning and do nothing.
         :param package_name: The exact package name of the application.
         """
-        if self._get_app_state_internal() != AppState.UPDATE_AVAILABLE:
+        if self._get_app_status_internal() != AppStatus.UPDATE_AVAILABLE:
             logger.warn(f'Tried to update app {package_name}, but there is no update available')
             return
         self.driver.click(APP_PAGE_UPDATE_BUTTON)
@@ -208,7 +220,66 @@ class GooglePlayStore(StateGraph):
         """
         Updates all applications. If no updates are available this method will log a warning and do nothing.
         """
-        if not self.driver.is_present(UPDATE_ALL_BUTTON):
-            logger.warn('Tried to update all apps, but update button not visible. All apps are probably up-to-date.')
+        if self.updates_available_all_apps:
+            self.driver.click(UPDATE_ALL_BUTTON)
+        else:
+            if self.updating_all_apps:
+                logger.warn('Tried to update all apps, but the updating was already in progress.')
+            if self.all_apps_up_to_date:
+                logger.warn('Tried to update all apps, but update button not visible. All apps are already up-to-date.')
             return
-        self.driver.click(UPDATE_ALL_BUTTON)
+
+    @action(manage_apps_state)
+    def get_update_all_apps_status(self):
+        """
+        Get the status of the update. Can be 'Updates available', 'Updating...' or 'All apps up to date'
+        """
+        if self.updates_available_all_apps():
+            return AllAppsStatus.UPDATES_AVAILABLE
+        if self.all_apps_up_to_date():
+            return AllAppsStatus.ALL_APPS_UP_TO_DATE
+        if self.checking_for_updates_all_apps():
+            return AllAppsStatus.CHECKING_FOR_UPDATES
+        if self.updating_all_apps():
+            return AllAppsStatus.UPDATING_APPS
+        logger.error('The status could not be determined.')
+        return AllAppsStatus.UNKNOWN
+
+    @action(manage_apps_state)
+    def updates_available_all_apps(self) -> bool:
+        """
+        Checks whether there are updates available for all apps.
+        :return: whether there are updates available
+        """
+        while self.driver.is_present(self._status_xpath(AllAppsStatus.CHECKING_FOR_UPDATES)):
+            logger.info('Status is checking for updates, waiting...')
+            sleep(2)
+        return self.driver.is_present(self._status_xpath(AllAppsStatus.UPDATES_AVAILABLE))
+
+    @action(manage_apps_state)
+    def checking_for_updates_all_apps(self)-> bool:
+        """
+        Checks whether the status for all apps is checking for updates.
+        :return: Whether the status is checking for updates
+        """
+        return self.driver.is_present(self._status_xpath(AllAppsStatus.CHECKING_FOR_UPDATES))
+
+    @action(manage_apps_state)
+    def updating_all_apps(self) -> bool:
+        """
+        Checks whether the status for all apps is updating.
+        :return: Whether the status is updating
+        """
+        return self.driver.is_present(self._status_xpath(AllAppsStatus.UPDATING_APPS))
+
+    @action(manage_apps_state)
+    def all_apps_up_to_date(self) -> bool:
+        """
+        Checks whether all apps are up to date.
+        :return: Whether all apps are up to date
+        """
+        return self.driver.is_present(self._status_xpath(AllAppsStatus.ALL_APPS_UP_TO_DATE))
+
+    @staticmethod
+    def _status_xpath(xpath: str) -> str:
+        return f'//*[@text="{xpath}"]'

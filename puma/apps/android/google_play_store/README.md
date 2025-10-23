@@ -40,7 +40,7 @@ phone.update_app('com.whatsapp')
 
 Aside from executing actions, you can also look up the state of an app:
 ```python
-state = phone.get_app_state('com.whatsapp')
+state = phone.get_app_status('com.whatsapp')
 ```
 
 This state can have the following values:
