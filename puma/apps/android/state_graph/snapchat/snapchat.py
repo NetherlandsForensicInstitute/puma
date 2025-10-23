@@ -12,15 +12,6 @@ APPLICATION_PACKAGE = 'com.snapchat.android'
 CHAT_STATE_CONVERSATION_NAME = '//android.widget.TextView[@resource-id="com.snapchat.android:id/conversation_title_text_view"]'
 CHAT_STATE_TEXT_FIELD = '//android.widget.EditText[@resource-id="com.snapchat.android:id/chat_input_text_field"]'
 
-# def go_to_send_to(driver: PumaDriver, conversation: str):
-#     logger.info(f'Selecting recipient {conversation} on the send screen')
-#     driver.click('//android.widget.FrameLayout[@content-desc="Camera Capture"]')
-#     driver.click('//android.view.View[@content-desc="Send"]')
-#     xpath = f'//androidx.recyclerview.widget.RecyclerView[@resource-id="com.snapchat.android:id/send_to_recycler_view"]//javaClass[@text="{conversation}"]'
-#     elements = driver.driver.find_elements(by=AppiumBy.XPATH, value=xpath)
-#     logger.info(f"Found {len(elements)} elements matching the XPath.")
-#     elements[-1].click()
-
 def go_to_chat(driver: PumaDriver, conversation: str):
     """
     Navigates to a specific chat conversation in the application.
