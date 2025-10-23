@@ -1,6 +1,6 @@
 Version 3.0.0
 -------------
-11. Add Releasenotes test
+11. Add Release notes test
 105. Google play Store: Add support for installing, updating, and uninstalling apps
 127. Add MVP of ground truth logging in the Puma state graph framework
 125. Deprecate classes which do not use StateGraph as their abstract base class
