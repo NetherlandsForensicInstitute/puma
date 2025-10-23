@@ -6,12 +6,6 @@ This does not include interacting with websites.
 
 The application can be downloaded in [the Google PlayStore](https://play.google.com/store/apps/details?id=com.android.chrome)
 
-## Deprecation
-
-This class does not use `StateGraph` as its base class, and has therefore been deprecated since Puma 3.0.0. It can still
-be used, but it will not be maintained. If you want to add functionality, please rewrite this class using `StateGraph`
-as the abstract base class. Also see the [CONTRIBUTING.md](../../../../CONTRIBUTING.md).
-
 ## Prerequisites
 - The application is installed on your device
 
