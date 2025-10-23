@@ -43,46 +43,38 @@ class OpenCamera(StateGraph):
         StateGraph.__init__(self, device_udid, OPEN_CAMERA_PACKAGE)
 
     @action(take_photo_state)
-    def take_picture(self, front_camera: bool):
+    def take_picture(self, front_camera: bool = False, zoom_amount: float = 0.0):
         """
         Takes a picture using the camera.
-        :param front_camera: If True, uses the front-facing camera; otherwise, uses the rear camera.
+        :param front_camera: Default False. If True, uses the front-facing camera; otherwise, uses the rear camera.
+        :param zoom_amount: The zoom amount between 0.0 and 1.0. This is not the true zoom level on the phone, but the
+        fraction of the scroll bar.
         """
         self._ensure_correct_view(front_camera)
+        self._zoom(zoom_amount)
         self._click_shutter()
 
     @action(take_video_state)
-    def take_video(self, duration: int, front_camera: bool):
+    def take_video(self, duration: int, front_camera: bool = False, zoom_amount: float = 0.0):
         """
         Takes a video of a given duration.
+        :param duration: The duration of the video in seconds.
+        :param front_camera: Whether the front or back camera should be used
+        :param zoom_amount: The zoom level between 0.0 and 1.0
         """
         self._ensure_correct_view(front_camera)
+        self._zoom(zoom_amount)
         self._click_shutter()
         try:
             sleep(duration)
         finally:
             self._click_shutter()
 
-    @action(take_photo_state)
-    def zoom_picture_mode(self, zoom_amount: float):
-        """
-        Zooms to a given level between 0.0 (zoomed out completely) and 1.0 (zoomed in completely) in picture mode.
-        :param zoom_amount: The zoom level between 0.0 and 1.0
-        """
-        self._zoom(zoom_amount)
-
-    @action(take_video_state)
-    def zoom_video_mode(self, zoom_amount: float):
-        """
-        Zooms to a given level between 0.0 (zoomed out completely) and 1.0 (zoomed in completely) in video mode.
-        :param zoom_amount: The zoom level between 0.0 and 1.0
-        """
-        self._zoom(zoom_amount)
-
     def _zoom(self, zoom_amount: float):
         """
         Zooms to a given level between 0.0 (zoomed out completely) and 1.0 (zoomed in completely).
-        :param zoom_amount: The zoom level between 0.0 and 1.0
+        :param zoom_amount: The zoom level between 0.0 and 1.0. This is not the true zoom level on the phone, but the
+        fraction of the scroll bar.
         """
         if zoom_amount < 0 or zoom_amount > 1:
             raise ValueError(f'Invalid zoom level: {zoom_amount}. Zoom level needs to be between 0.0 and 1.0')

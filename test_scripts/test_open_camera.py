@@ -34,6 +34,12 @@ class TestOpenCamera(unittest.TestCase):
         self.alice.take_video(0, front_camera=True)
         self.alice.take_video(2, front_camera=True)
 
+    def test_zoom(self):
+        self.alice.take_picture(front_camera=True, zoom_amount=1.0)
+        self.alice.take_picture(front_camera=True, zoom_amount=0.5)
+        self.alice.take_picture(front_camera=True, zoom_amount=0.75)
+        self.assertRaises(ValueError, lambda: self.alice.take_picture(front_camera=True, zoom_amount=2.0))
+
     def test_take_video_back(self):
         self.alice.take_video(2, front_camera=False)
 
@@ -44,13 +50,6 @@ class TestOpenCamera(unittest.TestCase):
         self.alice._ensure_correct_view(front_camera=False)
         self.alice._ensure_correct_view(front_camera=True)
         self.alice._ensure_correct_view(front_camera=False)
-
-    def test_zoom_video(self):
-        self.alice.zoom_video_mode(1)
-        self.alice.zoom_video_mode(0)
-        self.alice.zoom_picture_mode(0.5)
-        self.assertRaises(ValueError, lambda: self.alice.zoom_video_mode(2))
-        self.assertRaises(ValueError, lambda: self.alice.zoom_picture_mode(-1))
 
 
 if __name__ == '__main__':
