@@ -59,7 +59,12 @@ CHAT_SETTINGS_STATE_CONVERSATION_NAME = '(//android.widget.TextView[@text and @t
 CHAT_SETTINGS_STATE_CONVERSATION_NAME_CONTEXT = '(//android.widget.TextView[lower-case(@text)=lower-case("{conversation}")])[2]'
 CHAT_SETTINGS_STATE_CONVERSATION_STATUS_CONTEXT = '(//android.widget.TextView[lower-case(@text)=lower-case("{conversation}")])[2]/following-sibling::*[1][@text and @text!=""]'
 # group settings
+CHAT_SETTINGS_EDIT_GROUP_BUTTON = '//android.widget.ImageButton[@content-desc="Edit"]'
 CHAT_SETTINGS_STATE_ADD_MEMBERS = '//android.widget.TextView[@text="Add Members"]'
 CHAT_SETTINGS_STATE_ADD_MEMBERS_SEARCH = '//android.widget.EditText[@text]'
 CHAT_SETTINGS_STATE_MEMBER_CONTEXT = '//androidx.recyclerview.widget.RecyclerView/android.widget.FrameLayout[android.view.View and count(android.widget.TextView) >= 2 and android.widget.TextView[lower-case(@text)=lower-case("{member}")]]'
 CHAT_SETTINGS_STATE_REMOVE_MEMBER_BUTTON = '//android.widget.TextView[@text="Remove from group"]'
+
+EDIT_GROUP_NAME= '//android.widget.EditText[1]'
+EDIT_GROUP_DESCRIPTION= '//android.widget.EditText[2]'
+EDIT_GROUP_DONE= '//android.widget.ImageButton[@content-desc="Done"]'

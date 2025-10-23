@@ -34,10 +34,10 @@ class TelegramChatSettingsState(SimpleState, ContextualState):
         return driver.is_present(CHAT_SETTINGS_STATE_CONVERSATION_NAME_CONTEXT.format(conversation=conversation))
 
     def can_edit(self, driver: PumaDriver):
-        return driver.is_present('//android.widget.ImageButton[@content-desc="Edit"]')
+        return driver.is_present(CHAT_SETTINGS_EDIT_GROUP_BUTTON)
 
-    def is_group_chat(self, driver: PumaDriver, conversation: str):
-        return driver.get_element(CHAT_SETTINGS_STATE_CONVERSATION_STATUS_CONTEXT.format(conversation=conversation))
+    def can_add_members(self, driver: PumaDriver):
+        return driver.is_present(CHAT_SETTINGS_STATE_ADD_MEMBERS)
 
 
 def open_chat_settings(driver: PumaDriver, conversation: str):
@@ -219,6 +219,9 @@ class Telegram(StateGraph):
 
     @action(chat_settings_state)
     def add_members(self, new_members: list[str], conversation: str = None):
+        if not Telegram.chat_settings_state.can_add_members(self.driver):
+            raise PumaClickException(f"Cannot add members in conversation {conversation}. "
+                                     f"Check whether it is a group and whether permissions are setup correctly.")
         self.driver.click(CHAT_SETTINGS_STATE_ADD_MEMBERS)
         for name in new_members:
             self.driver.send_keys(CHAT_SETTINGS_STATE_ADD_MEMBERS_SEARCH, name)
@@ -233,11 +236,32 @@ class Telegram(StateGraph):
 
     @action(chat_settings_state)
     def remove_member(self, member: str, conversation: str = None):
+        if not Telegram.chat_settings_state.can_add_members(self.driver):
+            raise PumaClickException(f"Cannot remove members in conversation {conversation}. "
+                                     f"Check whether it is a group and whether permissions are setup correctly.")
         self.driver.long_click(CHAT_SETTINGS_STATE_MEMBER_CONTEXT.format(member=member))
         self.driver.click(CHAT_SETTINGS_STATE_REMOVE_MEMBER_BUTTON)
 
+    @action(chat_settings_state)
+    def edit_group_name(self, conversation: str, new_group_name: str):
+        if not Telegram.chat_settings_state.can_add_members(self.driver):
+            raise PumaClickException(f"Cannot rename conversation {conversation}. "
+                                     f"Check whether it is a group and whether permissions are setup correctly.")
+        self.driver.click(CHAT_SETTINGS_EDIT_GROUP_BUTTON)
+        self.driver.send_keys(EDIT_GROUP_NAME, new_group_name)
+        self.driver.click(EDIT_GROUP_DONE)
+
+    @action(chat_settings_state)
+    def edit_group_description(self, conversation: str, description:str):
+        if not Telegram.chat_settings_state.can_add_members(self.driver):
+            raise PumaClickException(f"Cannot rename conversation {conversation}. "
+                                     f"Check whether it is a group and whether permissions are setup correctly.")
+        self.driver.click(CHAT_SETTINGS_EDIT_GROUP_BUTTON)
+        self.driver.send_keys(EDIT_GROUP_DESCRIPTION, description)
+        self.driver.click(EDIT_GROUP_DONE)
+
     @action(chat_state)
-    def delete_and_leave_group(self, conversation:str):
+    def delete_and_leave_group(self, conversation: str):
         self.driver.click(CHAT_STATE_THREE_DOTS)
         self.driver.click(CHAT_STATE_DELETE_AND_LEAVE_GROUP)
         if self.driver.is_present(CHAT_STATE_DELETE_AND_LEAVE_GROUP_FOR_ALL):
