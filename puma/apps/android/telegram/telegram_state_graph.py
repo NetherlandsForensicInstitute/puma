@@ -236,6 +236,14 @@ class Telegram(StateGraph):
         self.driver.long_click(CHAT_SETTINGS_STATE_MEMBER_CONTEXT.format(member=member))
         self.driver.click(CHAT_SETTINGS_STATE_REMOVE_MEMBER_BUTTON)
 
+    @action(chat_state)
+    def delete_and_leave_group(self, conversation:str):
+        self.driver.click(CHAT_STATE_THREE_DOTS)
+        self.driver.click(CHAT_STATE_DELETE_AND_LEAVE_GROUP)
+        if self.driver.is_present(CHAT_STATE_DELETE_AND_LEAVE_GROUP_FOR_ALL):
+            self.driver.click(CHAT_STATE_DELETE_AND_LEAVE_GROUP_FOR_ALL)
+        self.driver.click(CHAT_STATE_DELETE_AND_LEAVE_GROUP_CONFIRM_BUTTON)
+
     def _in_voice_message_mode(self):
         return self.driver.get_element(CHAT_STATE_RECORD_VIDEO_OR_AUDIO_MESSAGE).get_attribute(
             'content-desc') == 'Record voice message'

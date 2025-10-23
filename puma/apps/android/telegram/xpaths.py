@@ -8,6 +8,7 @@ FIRST_SEARCH_HIT = '//androidx.recyclerview.widget.RecyclerView/android.view.Vie
 CHAT_STATE_CONVERSATION_NAME = '//android.widget.ImageView[@content-desc="Go back"]/../android.widget.FrameLayout[starts-with(lower-case(@content-desc),lower-case("{conversation}\n"))]/android.widget.TextView[starts-with(lower-case(@text), lower-case("{conversation}"))]'
 CHAT_STATE_CALL_BUTTON = '//android.widget.ImageButton[@content-desc="Call"]'
 CHAT_STATE_BACK_BUTTON = '//android.widget.ImageView[@content-desc="Go back"]'
+CHAT_STATE_THREE_DOTS = '//android.widget.ImageButton[@content-desc="More options"]'
 CHAT_STATE_GIF_BUTTON = '//android.widget.ImageView[@content-desc="Emoji, stickers, and GIFs"]'
 CHAT_STATE_MESSAGE_TEXTBOX = '//android.widget.EditText[@text]'
 CHAT_STATE_MEDIA_BUTTON = '//android.widget.ImageView[@content-desc="Attach media"]'
@@ -15,6 +16,9 @@ CHAT_STATE_RECORD_VIDEO_OR_AUDIO_MESSAGE = '//android.widget.FrameLayout[@conten
 CHAT_STATE_SEND_BUTTON = '//android.view.View[@content-desc="Send"]'
 CHAT_STATE_STOP_LIVE_LOCATION_SHARING_BUTTON = '//android.widget.ImageView[@content-desc="Stop sharing live location"]'
 CHAT_STATE_STOP_LIVE_LOCATION_CONFIRM_BUTTON = '//android.widget.TextView[@text="Stop"]'
+CHAT_STATE_DELETE_AND_LEAVE_GROUP = '//android.widget.TextView[@text="Delete and Leave Group"]'
+CHAT_STATE_DELETE_AND_LEAVE_GROUP_FOR_ALL = '//android.widget.CheckBox[@text="Delete the group for all members"]'
+CHAT_STATE_DELETE_AND_LEAVE_GROUP_CONFIRM_BUTTON = '//android.widget.TextView[@text="Delete Group"]'
 
 SEND_MEDIA_STATE_INSTANT_CAMERA_BUTTON = '//android.widget.FrameLayout[@content-desc="Instant camera"]/preceding-sibling::android.widget.FrameLayout[last()]'
 SEND_MEDIA_STATE_GALLERY_BUTTON = '//android.widget.FrameLayout[@text="Gallery"]'
@@ -54,6 +58,7 @@ CHAT_SETTINGS_STATE_THREE_DOTS = '//android.widget.ImageButton[@content-desc="Mo
 CHAT_SETTINGS_STATE_CONVERSATION_NAME = '(//android.widget.TextView[@text and @text!=""])[2]'
 CHAT_SETTINGS_STATE_CONVERSATION_NAME_CONTEXT = '(//android.widget.TextView[lower-case(@text)=lower-case("{conversation}")])[2]'
 CHAT_SETTINGS_STATE_CONVERSATION_STATUS_CONTEXT = '(//android.widget.TextView[lower-case(@text)=lower-case("{conversation}")])[2]/following-sibling::*[1][@text and @text!=""]'
+# group settings
 CHAT_SETTINGS_STATE_ADD_MEMBERS = '//android.widget.TextView[@text="Add Members"]'
 CHAT_SETTINGS_STATE_ADD_MEMBERS_SEARCH = '//android.widget.EditText[@text]'
 CHAT_SETTINGS_STATE_MEMBER_CONTEXT = '//androidx.recyclerview.widget.RecyclerView/android.widget.FrameLayout[android.view.View and count(android.widget.TextView) >= 2 and android.widget.TextView[lower-case(@text)=lower-case("{member}")]]'
