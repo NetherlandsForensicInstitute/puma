@@ -1,7 +1,7 @@
 import time
 import unittest
 
-from puma.apps.android.telegram.telegram_state_graph import Telegram
+from puma.apps.android.telegram.telegram import Telegram
 
 # Fill in the udids below. Run ADB devices to see the udids.
 device_udids = {
