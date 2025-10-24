@@ -91,11 +91,23 @@ class Telegram(StateGraph):
                            compose_clicks([CHAT_OVERVIEW_NEW_MESSAGE_BUTTON], name='press_new_message_button'))
 
     def __init__(self, device_udid, telegram_web_version: bool = False):
+        """
+        Initializes Telegram messenger with a device UDID.
+
+        :param device_udid: The unique device identifier for the Android device.
+        """
         package = TELEGRAM_WEB_PACKAGE if telegram_web_version else TELEGRAM_PACKAGE
         StateGraph.__init__(self, device_udid, package)
 
     @action(chat_state)
     def send_message(self, message: str, conversation: str = None):
+        """
+        Sends a regular text based message.
+        Can be done in a given conversation or the current conversation.
+
+        :param message: the message to send
+        :param conversation: the conversation (group or 1 on 1) to send the message in. Not needed when already in a conversation.
+        """
         # self.driver.click(CHAT_STATE_MESSAGE_TEXTBOX)
         self.driver.send_keys(CHAT_STATE_MESSAGE_TEXTBOX, message)
         # send_button = self.driver.get_element('//android.view.View[@content-desc="Send"]')
@@ -104,12 +116,26 @@ class Telegram(StateGraph):
 
     @action(chat_state)
     def send_voice_message(self, duration: int, conversation: str = None):
+        """
+        Sends a voice message. This is a short audio clip that can be recorded in the chat screen.
+        Can be done in a given conversation or the current conversation.
+
+        :param duration: the duration of the voice message.
+        :param conversation: the conversation (group or 1 on 1) to send the message in. Not needed when already in a conversation.
+        """
         if not self._in_voice_message_mode():
             self.driver.click(CHAT_STATE_RECORD_VIDEO_OR_AUDIO_MESSAGE)
         self.driver.press_and_hold(CHAT_STATE_RECORD_VIDEO_OR_AUDIO_MESSAGE, duration)
 
     @action(chat_state)
     def send_video_message(self, duration: int, conversation: str = None):
+        """
+        Sends a video message. This is a short video clip that can be recorded in the chat screen.
+        Can be done in a given conversation or the current conversation.
+
+        :param duration: the duration of the video message.
+        :param conversation: the conversation (group or 1 on 1) to send the message in. Not needed when already in a conversation.
+        """
         if self._in_voice_message_mode():
             self.driver.click(CHAT_STATE_RECORD_VIDEO_OR_AUDIO_MESSAGE)
         self.driver.press_and_hold(CHAT_STATE_RECORD_VIDEO_OR_AUDIO_MESSAGE, duration)
@@ -119,6 +145,18 @@ class Telegram(StateGraph):
                                 caption: str = None,
                                 folder: str | int = None,
                                 conversation: str = None):
+        """
+        Sends one or more video or picture. This is a short audio clip that can be recorded in the chat screen.
+        Can be done in a given conversation or the current conversation.
+
+        :param media_index: the index or indices of the media files to send. This is the 1-based index of the thumbnails
+        seen in the media picker.
+        :param caption: An optional text message attached to the media file(s)
+        :param folder: The name of the folder in which the files are stored. Optional: if none given the default
+        'Gallery' section is used.
+        :param conversation: the conversation (group or 1 on 1) to send the media in. Not needed when already in a
+        conversation.
+        """
         if not media_index:
             raise ValueError(f'Cannot send media from gallery without a proper set of indices')
         # open folder if needed
@@ -157,6 +195,12 @@ class Telegram(StateGraph):
 
     @action(chat_state, end_state=call_state)
     def start_call(self, conversation: str = None):
+        """
+        Starts a voice call in the current or given conversation.
+
+        :param conversation: the conversation (group or 1 on 1) to make the call in. Not needed when already in a
+        conversation.
+        """
         self.driver.click(CHAT_STATE_CALL_BUTTON)
 
     def answer_call(self):
@@ -172,21 +216,41 @@ class Telegram(StateGraph):
 
     @action(call_state)
     def mute_mic(self):
+        """
+        Mutes or unmutes the microphone when in a call.
+        """
         self.driver.click(CALL_STATE_MUTE_BUTTON)
 
     def end_call(self):
+        """
+        Ends the current Telegram call. If no call is in progress, this will log a warning but not raise an error.
+        """
         if self.current_state != Telegram.call_state:
             logger.warning(f'Tried to end a call, but no call was in progress')
         self.driver.click(CALL_STATE_END_CALL_BUTTON)
 
     @action(send_media_state, end_state=chat_state)
     def send_location(self, conversation: str = None):
+        """
+        Sends the current location.
+        Can be done in a given conversation or the current conversation.
+
+        :param conversation: the conversation (group or 1 on 1) to send the message in. Not needed when already in a conversation.
+        """
         self.driver.click(SEND_MEDIA_STATE_LOCATION_BUTTON)
         self.driver.click(SEND_MEDIA_STATE_MY_LOCATION_BUTTON)
         self.driver.click(SEND_MEDIA_STATE_SEND_CURRENT_LOCATION_BUTTON)
 
     @action(send_media_state, end_state=chat_state)
     def send_live_location(self, conversation: str = None, duration_option: int | str = 1):
+        """
+        Sends a live location, updating the chat participants of the location for a given amount of time.
+        Can be done in a given conversation or the current conversation.
+
+        :param duration_option: the duration option to pick. You can use a 1-based index to select the desired option,
+        or use the UI text. The latter might change, do an index is probably more stable.
+        :param conversation: the conversation (group or 1 on 1) to send the message in. Not needed when already in a conversation.
+        """
         self.driver.click(SEND_MEDIA_STATE_LOCATION_BUTTON)
         if not self.driver.is_present(SEND_MEDIA_STATE_LIVE_LOCATION_BUTTON, implicit_wait=1):
             logger.warning(f'Could not share live location, was live location already being shared?')
@@ -205,6 +269,11 @@ class Telegram(StateGraph):
 
     @action(chat_state)
     def stop_live_location_sharing(self, conversation: str = None):
+        """
+        Stops live location sharing in a conversation.
+
+        :param conversation: the conversation (group or 1 on 1) to send the message in. Not needed when already in a conversation.
+        """
         if not self.driver.is_present(CHAT_STATE_STOP_LIVE_LOCATION_SHARING_BUTTON):
             logger.warning(f'Could not stop sharing live location as it wasn\'t shared.')
             return
@@ -213,6 +282,13 @@ class Telegram(StateGraph):
 
     @action(new_message_state, end_state=chat_state)
     def create_new_group(self, group_name: str, members: list[str] = [], auto_delete: int = None):
+        """
+        Create a new chat group.
+
+        :param group_name: the name of the new chat group
+        :param members: Optional: a list of members to add when creating the group.
+        :param auto_delete: optional: select the auto-delete option to use (1-based index). Off by default.
+        """
         if auto_delete is not None and auto_delete not in [1, 2, 3]:
             raise ValueError(f'Unsupported auto-delete option: {auto_delete}')
         self.driver.click(NEW_MESSAGE_STATE_NEW_GROUP_BUTTON)
@@ -228,7 +304,15 @@ class Telegram(StateGraph):
         self.driver.click(NEW_GROUP_DONE_BUTTON)
 
     @action(chat_settings_state)
-    def add_members(self, new_members: list[str], conversation: str = None):
+    def add_members(self, new_members: list[str], conversation: str):
+        """
+        Adds members to a given chat group.
+
+        :param new_members: a list of members to add to the group.
+        :param conversation: the chat group name to add the members to.
+        :raises PumaClickException: If not a valid group chat, or if the current user does not have permissions to
+        add members.
+        """
         if not Telegram.chat_settings_state.can_add_members(self.driver):
             raise PumaClickException(f"Cannot add members in conversation {conversation}. "
                                      f"Check whether it is a group and whether permissions are setup correctly.")
@@ -246,6 +330,14 @@ class Telegram(StateGraph):
 
     @action(chat_settings_state)
     def remove_member(self, member: str, conversation: str = None):
+        """
+        Removes a member from a chat group.
+
+        :param member: the member to remove.
+        :param conversation: the group chat to remove the user from. Not needed when already in a group chat.
+        :raises PumaClickException: If not a valid group chat, or if the current user does not have permissions to
+        remove members.
+        """
         if not Telegram.chat_settings_state.can_add_members(self.driver):
             raise PumaClickException(f"Cannot remove members in conversation {conversation}. "
                                      f"Check whether it is a group and whether permissions are setup correctly.")
@@ -254,6 +346,14 @@ class Telegram(StateGraph):
 
     @action(chat_settings_state)
     def edit_group_name(self, conversation: str, new_group_name: str):
+        """
+        Changes the name af a chat group.
+
+        :param conversation: the chat group to rename
+        :param new_group_name: the new chat group name
+        :raises PumaClickException: If not a valid group chat, or if the current user does not have permissions to
+        rename the group.
+        """
         if not Telegram.chat_settings_state.can_add_members(self.driver):
             raise PumaClickException(f"Cannot rename conversation {conversation}. "
                                      f"Check whether it is a group and whether permissions are setup correctly.")
@@ -262,7 +362,15 @@ class Telegram(StateGraph):
         self.driver.click(EDIT_GROUP_DONE)
 
     @action(chat_settings_state)
-    def edit_group_description(self, conversation: str, description:str):
+    def edit_group_description(self, conversation: str, description: str):
+        """
+        Changes the description af a chat group.
+
+        :param conversation: the chat group to rename
+        :param description: the new description of the chat group
+        :raises PumaClickException: If not a valid group chat, or if the current user does not have permissions to
+        add members.
+        """
         if not Telegram.chat_settings_state.can_add_members(self.driver):
             raise PumaClickException(f"Cannot rename conversation {conversation}. "
                                      f"Check whether it is a group and whether permissions are setup correctly.")
@@ -272,6 +380,11 @@ class Telegram(StateGraph):
 
     @action(chat_state)
     def delete_and_leave_group(self, conversation: str):
+        """
+        Leaves the group and deletes it from the conversations overview.
+
+        :param conversation: the name of the group chat to leave.
+        """
         self.driver.click(CHAT_STATE_THREE_DOTS)
         self.driver.click(CHAT_STATE_DELETE_AND_LEAVE_GROUP)
         if self.driver.is_present(CHAT_STATE_DELETE_AND_LEAVE_GROUP_FOR_ALL):
