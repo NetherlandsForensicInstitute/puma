@@ -26,7 +26,7 @@ class TelegramChatSettingsState(SimpleState, ContextualState):
     def __init__(self, parent_state: State):
         super().__init__(
             [CHAT_SETTINGS_STATE_BACK, CHAT_SETTINGS_STATE_THREE_DOTS, CHAT_SETTINGS_STATE_CONVERSATION_NAME],
-            parent_state=parent_state)
+            parent_state=parent_state, invalid_xpaths=[SEND_FROM_GALLERY_MEDIA_SWITCH.format(index=1)])
 
     def validate_context(self, driver: PumaDriver, conversation: str = None) -> bool:
         if conversation is None:
