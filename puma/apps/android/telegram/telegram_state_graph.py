@@ -159,6 +159,17 @@ class Telegram(StateGraph):
     def start_call(self, conversation: str = None):
         self.driver.click(CHAT_STATE_CALL_BUTTON)
 
+    def answer_call(self):
+        """
+        Answer when receiving a call via Telegram.
+        """
+        self.driver.driver.open_notifications()
+        ANSWER_CALL_NOTIFICATION_BUTTON = '//android.widget.Button[lower-case(@content-desc)="answer"]'
+        if not self.driver.is_present(ANSWER_CALL_NOTIFICATION_BUTTON, implicit_wait=5):
+            self.driver.back()
+            raise PumaClickException('Tried to answer call, but couldn\'t find notification to answer any calls')
+        self.driver.click(ANSWER_CALL_NOTIFICATION_BUTTON)
+
     @action(call_state)
     def mute_mic(self):
         self.driver.click(CALL_STATE_MUTE_BUTTON)

@@ -18,7 +18,7 @@ CHAT_STATE_STOP_LIVE_LOCATION_SHARING_BUTTON = '//android.widget.ImageView[@cont
 CHAT_STATE_STOP_LIVE_LOCATION_CONFIRM_BUTTON = '//android.widget.TextView[@text="Stop"]'
 CHAT_STATE_DELETE_AND_LEAVE_GROUP = '//android.widget.TextView[@text="Delete and Leave Group"]'
 CHAT_STATE_DELETE_AND_LEAVE_GROUP_FOR_ALL = '//android.widget.CheckBox[@text="Delete the group for all members"]'
-CHAT_STATE_DELETE_AND_LEAVE_GROUP_CONFIRM_BUTTON = '//android.widget.TextView[@text="Delete Group"]'
+CHAT_STATE_DELETE_AND_LEAVE_GROUP_CONFIRM_BUTTON = '//android.widget.TextView[@text="Delete Group" or @text="Delete chat"]'
 
 SEND_MEDIA_STATE_INSTANT_CAMERA_BUTTON = '//android.widget.FrameLayout[@content-desc="Instant camera"]/preceding-sibling::android.widget.FrameLayout[last()]'
 SEND_MEDIA_STATE_GALLERY_BUTTON = '//android.widget.FrameLayout[@text="Gallery"]'
@@ -39,7 +39,7 @@ SEND_FROM_GALLERY_MEDIA_SWITCH = '(//android.widget.Switch)[{index}]'
 
 CALL_STATE_END_CALL_BUTTON = '//android.widget.Button[@text="End Call"]'
 CALL_STATE_SPEAKER_BUTTON = '//android.widget.FrameLayout[@content-desc="Speaker"]'
-CALL_STATE_MUTE_BUTTON = '//android.widget.FrameLayout[@content-desc="Mute"]'
+CALL_STATE_MUTE_BUTTON = '//android.widget.FrameLayout[@content-desc="Mute" or @content-desc="Unmute"]'
 CALL_STATE_STATUS = '//android.widget.LinearLayout[ends-with(@text, "Telegram Call")]/android.widget.FrameLayout/android.widget.TextView'
 
 NEW_MESSAGE_STATE_NEW_GROUP_BUTTON = '//android.widget.FrameLayout[@text="New Group"]'
