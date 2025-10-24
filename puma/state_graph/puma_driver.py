@@ -175,6 +175,22 @@ class PumaDriver:
                 return
         raise PumaClickException(f'Could not click on non present element with xpath {xpath}')
 
+    def click_within(self, xpath:str, width_ratio:float=0.5, height_ratio:float=0.5):
+        """
+        Clicks on a location within a given element, based on a specified width and height ratio.
+        While the click() method will always click in the middle, this method can be used to click off-center.
+
+        :param xpath: The XPath of the element to click.
+        :param width_ratio: defines the x
+        :param height_ratio:
+        :raises PumaClickException: If the element cannot be found after multiple attempts.
+        """
+        send_button = self.get_element(xpath)
+        top_left = send_button.location['x'], send_button.location['y']
+        size = send_button.size['height'], send_button.size['width']
+        location = int(top_left[0] + width_ratio * size[1]), int(top_left[1] + height_ratio * size[0])
+        self.driver.tap([(location)])
+
     def long_click(self, xpath:str):
         self.press_and_hold(xpath, 1)
 

@@ -100,8 +100,7 @@ class Telegram(StateGraph):
         self.driver.send_keys(CHAT_STATE_MESSAGE_TEXTBOX, message)
         # send_button = self.driver.get_element('//android.view.View[@content-desc="Send"]')
         # Telegram has a horrible UI; the bounds of the send button are defined incorrectly so we need to click off-center
-        location = self._find_button_location(0.8, 0.5, CHAT_STATE_SEND_BUTTON)
-        self.driver.driver.tap([(location)])
+        self.driver.click_within(CHAT_STATE_SEND_BUTTON, 0.8, 0.5)
 
     @action(chat_state)
     def send_voice_message(self, duration: int, conversation: str = None):
@@ -271,10 +270,3 @@ class Telegram(StateGraph):
     def _in_voice_message_mode(self):
         return self.driver.get_element(CHAT_STATE_RECORD_VIDEO_OR_AUDIO_MESSAGE).get_attribute(
             'content-desc') == 'Record voice message'
-
-    def _find_button_location(self, width_ratio: float, height_ratio: float, xpath: str):
-        send_button = self.driver.get_element(xpath)
-        top_left = send_button.location['x'], send_button.location['y']
-        size = send_button.size['height'], send_button.size['width']
-        location = int(top_left[0] + width_ratio * size[1]), int(top_left[1] + height_ratio * size[0])
-        return location
