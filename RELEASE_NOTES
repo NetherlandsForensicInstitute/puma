@@ -1,5 +1,6 @@
 Version 3.0.0
 -------------
+134. Telegram: Rewrite to Puma State Machine
 105. Google play Store: Add support for installing, updating, and uninstalling apps
 127. Add MVP of ground truth logging in the Puma state graph framework
 125. Deprecate classes which do not use StateGraph as their abstract base class
