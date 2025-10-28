@@ -354,7 +354,7 @@ class Telegram(StateGraph):
     @action(chat_settings_state)
     def edit_group_name(self, conversation: str, new_group_name: str):
         """
-        Changes the name af a chat group.
+        Changes the name of a chat group.
 
         :param conversation: the chat group to rename
         :param new_group_name: the new chat group name
