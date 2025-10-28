@@ -182,7 +182,7 @@ class PumaDriver:
 
         The ratios are values between 0 and 1 that determine where the element needs to be clicked, where (0,0)
         corresponds to the top-left and (1,1) corresponds to the bottom right.
-        TYhe width_ratio determines the x coordinate, the height_ratio the y coordinate.
+        The width_ratio determines the x coordinate, the height_ratio the y coordinate.
 
         :param xpath: The XPath of the element to click.
         :param width_ratio: Determines the x coordinate, relative within the element, from 0 to 1 (left to right).
