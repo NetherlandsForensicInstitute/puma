@@ -255,7 +255,7 @@ class Telegram(StateGraph):
         Can be done in a given conversation or the current conversation.
 
         :param duration_option: the duration option to pick. You can use a 1-based index to select the desired option,
-        or use the UI text. The latter might change, do an index is probably more stable.
+        or use the UI text. The latter might change, so an index is probably more stable.
         :param conversation: the conversation (group or 1 on 1) to send the message in. Not needed when already in a conversation.
         """
         self.driver.click(SEND_MEDIA_STATE_LOCATION_BUTTON)
