@@ -162,38 +162,33 @@ class PumaDriver:
         self.gtl_logger.info(f'Pressing home button')
         self.driver.press_keycode(AndroidKey.HOME)
 
-    def click(self, xpath: str):
+    def click(self, xpath: str, width_ratio:float=0.5, height_ratio:float=0.5):
         """
         Clicks on an element specified by its XPath.
 
-        :param xpath: The XPath of the element to click.
-        :raises PumaClickException: If the element cannot be clicked after multiple attempts.
-        """
-        for attempt in range(3):
-            if self.is_present(xpath, self.implicit_wait):
-                self.driver.find_element(by=AppiumBy.XPATH, value=xpath).click()
-                return
-        raise PumaClickException(f'Could not click on non present element with xpath {xpath}')
-
-    def click_within(self, xpath:str, width_ratio:float=0.5, height_ratio:float=0.5):
-        """
-        Clicks on a location within a given element, based on a specified width and height ratio.
-        While the click() method will always click in the middle, this method can be used to click off-center.
-
+        By default, this method clicks in the center of the element selected by the given XPath.
+        If you want to click off-center, you can use the width and heigh ratio.
         The ratios are values between 0 and 1 that determine where the element needs to be clicked, where (0,0)
         corresponds to the top-left and (1,1) corresponds to the bottom right.
         The width_ratio determines the x coordinate, the height_ratio the y coordinate.
 
         :param xpath: The XPath of the element to click.
-        :param width_ratio: Determines the x coordinate, relative within the element, from 0 to 1 (left to right).
-        :param height_ratio: Determines the y coordinate, relative within the element, from 0 to 1 (top to bottom).
-        :raises PumaClickException: If the element cannot be found after multiple attempts.
+        :param width_ratio: Optional. Determines the x coordinate, relative within the element, from 0 to 1 (left to right).
+        :param height_ratio: Optional. Determines the y coordinate, relative within the element, from 0 to 1 (top to bottom).
+        :raises PumaClickException: If the element cannot be clicked after multiple attempts.
         """
-        send_button = self.get_element(xpath)
-        top_left = send_button.location['x'], send_button.location['y']
-        size = send_button.size['height'], send_button.size['width']
-        location = int(top_left[0] + width_ratio * size[1]), int(top_left[1] + height_ratio * size[0])
-        self.driver.tap([(location)])
+        for attempt in range(3):
+            if self.is_present(xpath, self.implicit_wait):
+                if (width_ratio, height_ratio) == (0.5, 0.5):
+                    self.driver.find_element(by=AppiumBy.XPATH, value=xpath).click()
+                else:
+                    element = self.get_element(xpath)
+                    top_left = element.location['x'], element.location['y']
+                    size = element.size['height'], element.size['width']
+                    location = int(top_left[0] + width_ratio * size[1]), int(top_left[1] + height_ratio * size[0])
+                    self.driver.tap([(location)])
+                return
+        raise PumaClickException(f'Could not click on non present element with xpath {xpath}')
 
     def long_click(self, xpath:str):
         """

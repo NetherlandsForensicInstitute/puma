@@ -15,6 +15,7 @@ class TeleGramChatState(SimpleState, ContextualState):
     """
     State defining a Telegram chat screen (group or 1 on 1)
     """
+
     def __init__(self, parent_state: State):
         super().__init__([CHAT_STATE_MESSAGE_TEXTBOX, CHAT_STATE_GIF_BUTTON],
                          parent_state=parent_state)
@@ -29,21 +30,21 @@ class TelegramChatSettingsState(SimpleState, ContextualState):
     """
     State defining the chat settings screen of a Telegram conversation (group or 1 on 1).
     """
+
     def __init__(self, parent_state: State):
         super().__init__(
             [CHAT_SETTINGS_STATE_BACK, CHAT_SETTINGS_STATE_THREE_DOTS, CHAT_SETTINGS_STATE_CONVERSATION_NAME],
             parent_state=parent_state,
-            invalid_xpaths=[SEND_FROM_GALLERY_MEDIA_SWITCH.format(index=1)])  # otherwise this state was confused with the send_from_gallery state
+            # invalid_xpaths is needed because this state was confused with the send_from_gallery state
+            invalid_xpaths=[SEND_FROM_GALLERY_MEDIA_SWITCH.format(index=1)])
 
     def validate_context(self, driver: PumaDriver, conversation: str = None) -> bool:
         if conversation is None:
             return True
         return driver.is_present(CHAT_SETTINGS_STATE_CONVERSATION_NAME_CONTEXT.format(conversation=conversation))
 
-    def can_edit(self, driver: PumaDriver):
-        return driver.is_present(CHAT_SETTINGS_EDIT_GROUP_BUTTON)
-
-    def can_add_members(self, driver: PumaDriver):
+    @staticmethod
+    def can_add_members(driver: PumaDriver):
         return driver.is_present(CHAT_SETTINGS_STATE_ADD_MEMBERS)
 
 
@@ -119,7 +120,7 @@ class Telegram(StateGraph):
         self.driver.send_keys(CHAT_STATE_MESSAGE_TEXTBOX, message)
         # send_button = self.driver.get_element('//android.view.View[@content-desc="Send"]')
         # Telegram has a horrible UI; the bounds of the send button are defined incorrectly so we need to click off-center
-        self.driver.click_within(CHAT_STATE_SEND_BUTTON, 0.8, 0.5)
+        self.driver.click(CHAT_STATE_SEND_BUTTON, 0.8, 0.5)
 
     @action(chat_state)
     def send_voice_message(self, duration: int, conversation: str = None):
@@ -254,8 +255,9 @@ class Telegram(StateGraph):
         Sends a live location, updating the chat participants of the location for a given amount of time.
         Can be done in a given conversation or the current conversation.
 
-        :param duration_option: the duration option to pick. You can use a 1-based index to select the desired option,
-        or use the UI text. The latter might change, so an index is probably more stable.
+        :param duration_option: the duration option to pick. Typically, the UI offers the choices of 15m, 1 hour and 8
+        hours. You can either the index of the option (the first option has index 1) or a string that occurs in the UI
+        text (e.g. "15 min"). The latter might change, so an index is probably more stable.
         :param conversation: the conversation (group or 1 on 1) to send the message in. Not needed when already in a conversation.
         """
         self.driver.click(SEND_MEDIA_STATE_LOCATION_BUTTON)
@@ -288,7 +290,7 @@ class Telegram(StateGraph):
         self.driver.click(CHAT_STATE_STOP_LIVE_LOCATION_CONFIRM_BUTTON)
 
     @action(new_message_state, end_state=chat_state)
-    def create_new_group(self, group_name: str, members: list[str] = [], auto_delete: int = None):
+    def create_group(self, group_name: str, members: list[str] = [], auto_delete: int = None):
         """
         Create a new chat group.
 

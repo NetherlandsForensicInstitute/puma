@@ -97,8 +97,9 @@ phone.send_live_location(duration_option='1 hour')  # or by using part of the UI
 ## Group chat management
 
 Puma can create and manage group chats. For chatting, group chats behave like regular conversations
+
 ```python
-phone.create_new_group('my best friends', members = ['alice', 'bob'])  # Creates a group.
+phone.create_group('my best friends', members=['alice', 'bob'])  # Creates a group.
 ## A group name is required, members are optional and can be added later:
 phone.add_members(conversation='my best friends', new_members=['charlie, dave'])
 # members can also be removed
