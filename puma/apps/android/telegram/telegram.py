@@ -25,6 +25,14 @@ class TeleGramChatState(SimpleState, ContextualState):
             return True
         return driver.is_present(CHAT_STATE_CONVERSATION_NAME.format(conversation=conversation))
 
+    @staticmethod
+    def go_to_chat(driver: PumaDriver, conversation: str):
+        if not conversation:
+            raise ValueError(f'Cannot open a conversation without a conversation name')
+        driver.click(CHAT_OVERVIEW_SEARCH_BUTTON)
+        driver.send_keys(SEARCH_INPUT_FIELD, conversation)
+        driver.click(FIRST_SEARCH_HIT.format(conversation=conversation))
+
 
 class TelegramChatSettingsState(SimpleState, ContextualState):
     """
@@ -47,17 +55,9 @@ class TelegramChatSettingsState(SimpleState, ContextualState):
     def can_add_members(driver: PumaDriver):
         return driver.is_present(CHAT_SETTINGS_STATE_ADD_MEMBERS)
 
-
-def open_chat_settings(driver: PumaDriver, conversation: str):
-    driver.click(CHAT_STATE_CONVERSATION_NAME.format(conversation=conversation))
-
-
-def go_to_chat(driver: PumaDriver, conversation: str):
-    if not conversation:
-        raise ValueError(f'Cannot open a conversation without a conversation name')
-    driver.click(CHAT_OVERVIEW_SEARCH_BUTTON)
-    driver.send_keys(SEARCH_INPUT_FIELD, conversation)
-    driver.click(FIRST_SEARCH_HIT.format(conversation=conversation))
+    @staticmethod
+    def open_chat_settings(driver: PumaDriver, conversation: str):
+        driver.click(CHAT_STATE_CONVERSATION_NAME.format(conversation=conversation))
 
 
 @supported_version("12.0.1")
@@ -89,9 +89,9 @@ class Telegram(StateGraph):
          NEW_MESSAGE_STATE_CREATE_NEW_CONTACT_BUTTON],
         parent_state=conversations_state)
 
-    conversations_state.to(chat_state, go_to_chat)
+    conversations_state.to(chat_state, TeleGramChatState.go_to_chat)
     chat_state.to(call_state, compose_clicks([CHAT_STATE_CALL_BUTTON], name="press_call_button"))
-    chat_state.to(chat_settings_state, open_chat_settings)
+    chat_state.to(chat_settings_state, TelegramChatSettingsState.open_chat_settings)
     chat_state.to(send_media_state, compose_clicks([CHAT_STATE_MEDIA_BUTTON], name="press_attachment_button"))
     send_media_state.to(send_from_gallery_state,
                         compose_clicks([SEND_MEDIA_STATE_GALLERY_BUTTON], name='press_gallery_button'))
