@@ -104,4 +104,4 @@ class OpenCamera(StateGraph):
         logger.info(f"Currently in front camera view: {currently_in_front}")
         if currently_in_front != front_camera:
             switch_camera_button.click()
-            logger.info("Switched camera view")
+            self.gtl_logger.info("Switched camera view")

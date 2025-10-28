@@ -50,7 +50,7 @@ def action(to_state: State):
                 return result
             except Exception as e:
                 gtl_logger.error("Unexpected exception", e)
-                raise
+                raise e
 
 
         return wrapper
