@@ -238,7 +238,7 @@ class Telegram(StateGraph):
         self.driver.click(CALL_STATE_END_CALL_BUTTON)
 
     @action(send_media_state, end_state=chat_state)
-    def send_location(self, conversation: str = None):
+    def send_current_location(self, conversation: str = None):
         """
         Sends the current location.
         Can be done in a given conversation or the current conversation.

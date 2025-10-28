@@ -76,6 +76,19 @@ class TestTelegram(unittest.TestCase):
         time.sleep(1)
         self.alice.end_call()
 
+    def test_send_location(self):
+        self.alice.send_current_location(conversation=BOB_NAME)
+        self.alice.send_current_location()
+        self.alice.send_live_location()
+        time.sleep(3)
+        self.alice.stop_live_location_sharing()
+        self.alice.send_live_location(duration_option=2)
+        time.sleep(3)
+        self.alice.stop_live_location_sharing()
+        self.alice.send_live_location(duration_option='8 hours')
+        time.sleep(3)
+        self.alice.stop_live_location_sharing()
+
     def test_group_management(self):
         group_name = 'Puma test group'
         new_group_name = 'New puma test group'

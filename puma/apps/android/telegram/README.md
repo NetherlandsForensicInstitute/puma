@@ -85,9 +85,10 @@ phone_alice.end_call()
 ## Location
 
 Puma supports sending the current location or the live location:
+
 ```python
 # in all examples below, the parameter conversation is needed if you're not currently in a conversation. We omit it here.
-phone.send_location()  # sends the current location
+phone.send_current_location()  # sends the current location
 phone.send_live_location()  # sends the live location for the default duration
 phone.stop_live_location_sharing()  # stops the live location sharing
 phone.send_live_location(duration_option=2)  # you can use a different duration option, by using a 1-based index
