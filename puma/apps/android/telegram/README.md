@@ -57,7 +57,7 @@ phone.send_media_from_gallery(media_index=2, caption='cool bird, huh?')  # capti
 phone.send_media_from_gallery(media_index=1, folder='screenshots')  # we can also choose media files from a specific folder
 # the above command uses OCR to recognize the folder name. Since this is not 100% reliable, you can also use an index
 # to open the nth folder. The index is 1-based
-phone.send_media_from_gallery(media_index=1, folder=3)  # sends the first media file from the 3rd folder int eh Telegram dropdown 
+phone.send_media_from_gallery(media_index=1, folder=3)  # sends the first media file from the 3rd folder in the Telegram dropdown 
 ```
 Telegram also supports voice and video messages, which are audio or video clips recorded in the app:
 ```python
@@ -75,7 +75,7 @@ phone_alice.start_call(conversation='Bob')  # start call with Bob
 phone_bob.answer_call()  # answer an incoming call
 phone_alice.end_call()  # ends current call
 
-phone_bob.start_call()  # starts a call in teh current conversation
+phone_bob.start_call()  # starts a call in the current conversation
 phone_alice.answer_call()
 phone_bob.mute_mic()  # mutes the microphone
 phone_bob.mute_mic()  # a second call will unmute
@@ -86,9 +86,9 @@ phone_alice.end_call()
 
 Puma supports sending the current location or the live location:
 ```python
-# in alle xamples below, the parameter conversation is needed if you're not currently in a conversation. We omit it here.
+# in all examples below, the parameter conversation is needed if you're not currently in a conversation. We omit it here.
 phone.send_location()  # sends the current location
-phone.send_live_location()  # sends the liva location fo the default duration
+phone.send_live_location()  # sends the live location for the default duration
 phone.stop_live_location_sharing()  # stops the live location sharing
 phone.send_live_location(duration_option=2)  # you can use a different duration option, by using a 1-based index
 phone.send_live_location(duration_option='1 hour')  # or by using part of the UI text that's in view. This is readable code but less stable
