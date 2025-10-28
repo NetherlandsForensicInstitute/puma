@@ -57,7 +57,7 @@ phone.send_media_from_gallery(media_index=2, caption='cool bird, huh?')  # capti
 phone.send_media_from_gallery(media_index=1, folder='screenshots')  # we can also choose media files from a specific folder
 # the above command uses OCR to recognize the folder name. Since this is not 100% reliable, you can also use an index
 # to open the nth folder. The index is 1-based
-phone.send_media_from_gallery(media_index=1, folder=3)  # sends the first media file from the 3rd folder int eh Telegram dropdown 
+phone.send_media_from_gallery(media_index=1, folder=3)  # sends the first media file from the 3rd folder in the Telegram dropdown 
 ```
 Telegram also supports voice and video messages, which are audio or video clips recorded in the app:
 ```python
