@@ -94,7 +94,7 @@ class SimpleState(State):
         """
         super().__init__(initial_state=initial_state, parent_state=parent_state, parent_state_transition=parent_state_transition)
         if not xpaths:
-            raise ValueError(f'Cannot create a sSimpelState without any xpath validation expressions.')
+            raise ValueError(f'Cannot create a SimpleState without any xpath validation expressions.')
         self.present_xpaths = xpaths
         self.invalid_xpaths = invalid_xpaths
 
