@@ -371,7 +371,7 @@ class Telegram(StateGraph):
     @action(chat_settings_state)
     def edit_group_description(self, conversation: str, description: str):
         """
-        Changes the description af a chat group.
+        Changes the description of a chat group.
 
         :param conversation: the chat group to rename
         :param description: the new description of the chat group
