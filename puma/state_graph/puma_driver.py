@@ -174,6 +174,15 @@ class PumaDriver:
                 return
         raise PumaClickException(f'Could not click on non present element with xpath {xpath}')
 
+    def tap(self, coords: tuple[int, int]):
+        """
+        Taps on the screen at the specified coordinates.
+
+        :param coords: A tuple (x, y) representing the coordinates to tap.
+        """
+        self.gtl_logger.info(f'Tapping on coordinates {coords}')
+        self.driver.tap([coords])
+
     def get_element(self, xpath: str):
         """
         Retrieves an element specified by its XPath.
