@@ -75,7 +75,7 @@ phone_alice.start_call(conversation='Bob')  # start call with Bob
 phone_bob.answer_call()  # answer an incoming call
 phone_alice.end_call()  # ends current call
 
-phone_bob.start_call()  # starts a call in teh current conversation
+phone_bob.start_call()  # starts a call in the current conversation
 phone_alice.answer_call()
 phone_bob.mute_mic()  # mutes the microphone
 phone_bob.mute_mic()  # a second call will unmute
