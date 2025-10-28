@@ -12,6 +12,9 @@ TELEGRAM_WEB_PACKAGE = 'org.telegram.messenger.web'
 
 
 class TeleGramChatState(SimpleState, ContextualState):
+    """
+    State defining a Telegram chat screen (group or 1 on 1)
+    """
     def __init__(self, parent_state: State):
         super().__init__([CHAT_STATE_MESSAGE_TEXTBOX, CHAT_STATE_GIF_BUTTON],
                          parent_state=parent_state)
@@ -23,10 +26,14 @@ class TeleGramChatState(SimpleState, ContextualState):
 
 
 class TelegramChatSettingsState(SimpleState, ContextualState):
+    """
+    State defining the chat settings screen of a Telegram conversation (group or 1 on 1).
+    """
     def __init__(self, parent_state: State):
         super().__init__(
             [CHAT_SETTINGS_STATE_BACK, CHAT_SETTINGS_STATE_THREE_DOTS, CHAT_SETTINGS_STATE_CONVERSATION_NAME],
-            parent_state=parent_state, invalid_xpaths=[SEND_FROM_GALLERY_MEDIA_SWITCH.format(index=1)])
+            parent_state=parent_state,
+            invalid_xpaths=[SEND_FROM_GALLERY_MEDIA_SWITCH.format(index=1)])  # otherwise this state was confused with the send_from_gallery state
 
     def validate_context(self, driver: PumaDriver, conversation: str = None) -> bool:
         if conversation is None:

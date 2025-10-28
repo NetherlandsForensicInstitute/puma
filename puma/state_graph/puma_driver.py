@@ -180,9 +180,13 @@ class PumaDriver:
         Clicks on a location within a given element, based on a specified width and height ratio.
         While the click() method will always click in the middle, this method can be used to click off-center.
 
+        The ratios are values between 0 and 1 that determine where the element needs to be clicked, where (0,0)
+        corresponds to the top-left and (1,1) corresponds to the bottom right.
+        TYhe width_ratio determines the x coordinate, the height_ratio the y coordinate.
+
         :param xpath: The XPath of the element to click.
-        :param width_ratio: defines the x
-        :param height_ratio:
+        :param width_ratio: Determines the x coordinate, relative within the element, from 0 to 1 (left to right).
+        :param height_ratio: Determines the y coordinate, relative within the element, from 0 to 1 (top to bottom).
         :raises PumaClickException: If the element cannot be found after multiple attempts.
         """
         send_button = self.get_element(xpath)
@@ -192,6 +196,13 @@ class PumaDriver:
         self.driver.tap([(location)])
 
     def long_click(self, xpath:str):
+        """
+        Triggers a long_press on an element specified by its XPath.
+        This method uses press_and_hold with a duration of 1 second.
+
+        :param xpath: The XPath of the element to click.
+        :raises PumaClickException: If the element cannot be clicked after multiple attempts.
+        """
         self.press_and_hold(xpath, 1)
 
     def press_and_hold(self, xpath: str, duration: int):
