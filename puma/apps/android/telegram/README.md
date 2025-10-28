@@ -88,7 +88,7 @@ Puma supports sending the current location or the live location:
 ```python
 # in alle xamples below, the parameter conversation is needed if you're not currently in a conversation. We omit it here.
 phone.send_location()  # sends the current location
-phone.send_live_location()  # sends the liva location fo the default duration
+phone.send_live_location()  # sends the live location for the default duration
 phone.stop_live_location_sharing()  # stops the live location sharing
 phone.send_live_location(duration_option=2)  # you can use a different duration option, by using a 1-based index
 phone.send_live_location(duration_option='1 hour')  # or by using part of the UI text that's in view. This is readable code but less stable
