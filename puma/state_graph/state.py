@@ -87,7 +87,7 @@ class SimpleState(State):
         Initializes a new SimpleState instance.
 
         :param xpaths: A list of XPaths which are all present on the state window.
-        "param invalid_xpaths: A list of xpaths which cannot be present in the state window.
+        :param invalid_xpaths: A list of xpaths which cannot be present in the state window.
         :param initial_state: Whether this is the initial state.
         :param parent_state: The parent state of this state, or None if it has no parent.
         :param parent_state_transition: How to transition back to the parent state. By default, this is a press on the back button.
