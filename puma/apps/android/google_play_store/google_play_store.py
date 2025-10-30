@@ -280,6 +280,37 @@ class GooglePlayStore(StateGraph):
         """
         return self.driver.is_present(self._status_xpath(AllAppsStatus.ALL_APPS_UP_TO_DATE))
 
+    def _log_why_app_page_not_available(self, package_name):
+        #TODO build in puma
+        # app is not available in this country
+        if self.driver.is_present('//*[@content-desc="This item is not available in your country."]'):
+            logger.error(f'Could not install package {package_name} on device {self.driver.device_udid} because it is not '
+                         f'available in this country')
+        # "Something went wrong" message: app doesn't seem to exist
+        elif self.driver.is_present('//*[@text="Something went wrong"]'):
+            logger.error(
+                f'Could not install package {package_name} on device {self.driver.device_udid} because the Play Store '
+                f'page doesn\'t seem to exist. Is the package name correct?')
+        # Device is not compatible with app version
+        elif self.driver.is_present('//*[@content-desc="Your device isn\'t compatible with this version."]'):
+            logger.error(
+                f'Could not install package {package_name} on device {self.driver.device_udid} because the device is not '
+                f'compatible with the app version. This is probably because the phone is rooted.')
+        else:
+            # App is paid
+            if self.driver.is_present("//*[contains(@content-desc,'€') or contains(@content-desc,'$')]"):
+                # Add exception for the case when the euro sign is present in the context of: "#1 top for €0 in education"
+                if not self.driver.is_present("//*[contains(@content-desc,'€0 ')]"):
+                    logger.error(
+                        f'Could not install package {package_name} on device {self.driver.device_udid} because it is a paid app. Paid '
+                        f'apps are currently not supported')
+                    return
+            # Catch all other situations where the app page is not as expected
+            if not self.driver.is_present('//*[@content-desc="Uninstall" or @content-desc="Install" or @content-desc="Cancel"]'):
+                screenshot_path = self.save_screenshot() #TODO build this into driver
+                logger.error(f"App page is not as expected, none of the expected buttons are present (see screenshot:"
+                             f" {screenshot_path})")
+
     @staticmethod
     def _status_xpath(xpath: str) -> str:
         return f'//*[@text="{xpath}"]'
