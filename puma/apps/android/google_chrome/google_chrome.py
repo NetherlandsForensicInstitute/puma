@@ -31,26 +31,26 @@ class GoogleChrome(StateGraph):
     tab_overview_state = SimpleState(xpaths=[TAB_LIST, SEARCH_TABS])
     incognito_tab_overview_state = SimpleState(xpaths=[TAB_LIST, SEARCH_INCOGNITO_TABS],
                                                parent_state=tab_overview_state,
-                                               parent_state_transition=compose_clicks([STANDARD_TAB_OVERVIEW_BUTTON]))
+                                               parent_state_transition=compose_clicks([STANDARD_TAB_OVERVIEW_BUTTON], 'go_to_tab_overview'))
     new_tab_state = SimpleState(xpaths=[SEARCH_BOX, SEARCH_BOX_ENGINE_ICON],
                                 initial_state=True,
                                 parent_state=tab_overview_state,
-                                parent_state_transition=compose_clicks([TAB_SWITCH_BUTTON]))
+                                parent_state_transition=compose_clicks([TAB_SWITCH_BUTTON],'go_to_tab_overview'))
     current_tab_state = CurrentTab(parent_state=tab_overview_state)
     new_incognito_tab_state = SimpleState(xpaths=[URL_BAR, NEW_TAB_INCOGNITO_TITLE],
                                           parent_state=incognito_tab_overview_state,
-                                          parent_state_transition=compose_clicks([TAB_SWITCH_BUTTON]))
+                                          parent_state_transition=compose_clicks([TAB_SWITCH_BUTTON], 'go_to_incognito_tab_overview'))
     bookmarks_state = SimpleState(xpaths=[BOOKMARKS_SORT_VIEW, BOOKMARKS_CREATE_FOLDER, BOOKMARKS_PAGE_TITLE],
                                   parent_state=current_tab_state,
-                                  parent_state_transition=compose_clicks([CLOSE_BOOKMARKS]))
+                                  parent_state_transition=compose_clicks([CLOSE_BOOKMARKS], 'go_to_current_tab'))
     bookmarks_folder_state = BookmarksFolder(parent_state=bookmarks_state)
     # Transitions
-    tab_overview_state.to(new_tab_state, compose_clicks([NEW_TAB_XPATH_TAB_OVERVIEW], name='go_to_tab_overview'))
+    tab_overview_state.to(new_tab_state, compose_clicks([NEW_TAB_XPATH_TAB_OVERVIEW], 'go_to_tab_overview'))
     tab_overview_state.to(current_tab_state, current_tab_state.switch_to_tab)
     tab_overview_state.to(new_incognito_tab_state,
-                          compose_clicks([THREE_DOTS, NEW_INCOGNITO_TAB_BUTTON], name='go_to_incognito_state'))
-    current_tab_state.to(new_tab_state, compose_clicks([NEW_TAB_FROM_CURRENT_TAB]))
-    current_tab_state.to(bookmarks_state, compose_clicks([THREE_DOTS, OPEN_BOOKMARKS]))
+                          compose_clicks([THREE_DOTS, NEW_INCOGNITO_TAB_BUTTON], 'go_to_incognito_state'))
+    current_tab_state.to(new_tab_state, compose_clicks([NEW_TAB_FROM_CURRENT_TAB], 'go_to_current_tab'))
+    current_tab_state.to(bookmarks_state, compose_clicks([THREE_DOTS, OPEN_BOOKMARKS], 'go_to_current_tab'))
     bookmarks_state.to(bookmarks_folder_state, bookmarks_folder_state.go_to_bookmarks_folder)
 
     def __init__(self, device_udid):
