@@ -7,12 +7,6 @@ Puma supports taking pictures and video, switching between front and rear camera
 The app can be installed from [the Play Store](https://play.google.com/store/apps/details?id=net.sourceforge.opencamera)
 or [F-Droid](https://f-droid.org/packages/net.sourceforge.opencamera/).
 
-## Deprecation
-
-This class does not use `StateGraph` as its base class, and has therefore been deprecated since Puma 3.0.0. It can still
-be used, but it will not be maintained. If you want to add functionality, please rewrite this class using `StateGraph`
-as the abstract base class. Also see the [CONTRIBUTING.md](../../../../CONTRIBUTING.md).
-
 ## Prerequisites
 
 - The application is installed on your device
@@ -20,9 +14,9 @@ as the abstract base class. Also see the [CONTRIBUTING.md](../../../../CONTRIBUT
 ### Initialization is standard:
 
 ```python
-from puma.apps.android.open_camera.open_camera import OpenCameraActions
+from puma.apps.android.open_camera.open_camera import OpenCamera
 
-phone = OpenCameraActions("emulator-5554")
+phone = OpenCamera("emulator-5554")
 ```
 
 ### Using the camera
@@ -33,15 +27,12 @@ You can take pictures, and switch from front to back:
 # simply take a picture
 phone.take_picture()
 # switch to the front camera to take a picture
-phone.switch_camera()
-phone.take_picture()
+phone.take_picture(front_camera=True)
 # switch back to the rear camera to take a picture
-phone.switch_camera()
 phone.take_picture()
 # taking video requires a duration:
-phone.take_video(10)  # ten seconds of recording
+phone.take_video(duration=10)  # ten seconds of recording
 # We can zoom
-phone.zoom(1)  # zoom in completely
-phone.zoom(0)  # zoom out completely
-phone.zoom(0.5)  # The middle
+phone.take_picture(zoom_amount=1.0)
+phone.take_picture(zoom_amount=0.5)
 ```

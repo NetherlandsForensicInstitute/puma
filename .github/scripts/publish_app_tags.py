@@ -4,7 +4,7 @@ from typing import Callable, Tuple
 from git import Repo, Remote
 
 from puma.apps.android.google_camera.google_camera import GoogleCamera
-from puma.apps.android.google_chrome.google_chrome import GoogleChromeActions
+from puma.apps.android.google_chrome.google_chrome import GoogleChrome
 from puma.apps.android.google_maps.google_maps import GoogleMapsActions
 from puma.apps.android.google_play_store.google_play_store import GooglePlayStore
 from puma.apps.android.open_camera.open_camera import OpenCameraActions
@@ -16,7 +16,7 @@ from puma.apps.android.whatsapp_business.whatsapp_business import WhatsappBusine
 
 all_app_actions = [
     GoogleCamera,
-    GoogleChromeActions,
+    GoogleChrome,
     GoogleMapsActions,
     GooglePlayStore,
     OpenCameraActions,
