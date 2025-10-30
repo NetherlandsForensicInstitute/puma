@@ -186,7 +186,7 @@ class PumaDriver:
                     top_left = element.location['x'], element.location['y']
                     size = element.size['height'], element.size['width']
                     location = int(top_left[0] + width_ratio * size[1]), int(top_left[1] + height_ratio * size[0])
-                    self.driver.tap([(location)])
+                    self.tap(location)
                 return
         raise PumaClickException(f'Could not click on non present element with xpath {xpath}')
 
