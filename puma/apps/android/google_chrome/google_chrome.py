@@ -1,3 +1,5 @@
+from time import sleep
+
 from puma.apps.android.appium_actions import supported_version
 from puma.apps.android.google_chrome import logger
 from puma.apps.android.google_chrome.states import BookmarksFolder, CurrentTab
@@ -87,7 +89,7 @@ class GoogleChrome(StateGraph):
         Opens an incognito tab and enters the url_string to the address bar.
         :param url_string: the input to pass to the address bar
         """
-        self.driver.click(THREE_DOTS)
+        self._open_settings_pane()
         self.driver.click(NEW_INCOGNITO_TAB_BUTTON)
         self._enter_url(url_string, URL_BAR)
 
@@ -98,7 +100,7 @@ class GoogleChrome(StateGraph):
         :param tab_index: Index of the tab to bookmark.
         :return: True if bookmark has been added, False if it already existed.
         """
-        self.driver.click(THREE_DOTS)
+        self._open_settings_pane()
         if self.driver.is_present(EDIT_BOOKMARK_BUTTON):
             logger.info("This page was already bookmarked, skipping...")
             return False
@@ -121,8 +123,7 @@ class GoogleChrome(StateGraph):
         :param tab_index: Index of the tab to delete the bookmark from.
         :return: True if bookmark has been deleted, False if it wasn't bookmarked.
         """
-        self.driver.click(THREE_DOTS)
-
+        self._open_settings_pane()
         if self.driver.is_present(BOOKMARK_THIS_PAGE_BUTTON):
             logger.info("This page was not bookmarked, skipping...")
             return False
@@ -130,6 +131,14 @@ class GoogleChrome(StateGraph):
             self.driver.click(EDIT_BOOKMARK_BUTTON)
             self.driver.click(DELETE_BOOKMARK)
             return True
+
+    def _open_settings_pane(self):
+        """
+        Opens the settings pane. Add a short sleep to ensure the page is actually opened.
+        """
+        self.driver.click(THREE_DOTS)
+        sleep(1)
+
 
     def _enter_url(self, url_string: str, url_bar_xpath):
         self.driver.send_keys(url_bar_xpath, url_string)

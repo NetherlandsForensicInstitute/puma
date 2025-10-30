@@ -14,8 +14,8 @@ URL_BAR = '//android.widget.EditText[@resource-id="com.android.chrome:id/url_bar
 NEW_TAB_FROM_CURRENT_TAB = '//android.widget.ImageButton[@content-desc="New tab"]'
 # Menu
 NEW_TAB_INCOGNITO_TITLE = '//android.widget.TextView[@resource-id="com.android.chrome:id/new_tab_incognito_title"]'
-BOOKMARK_THIS_PAGE_BUTTON = '//android.widget.Button[lower-case(@content-desc)="bookmark"]'
-EDIT_BOOKMARK_BUTTON = '//android.widget.Button[lower-case(@content-desc)="edit bookmark"]'
+BOOKMARK_THIS_PAGE_BUTTON = '//*[lower-case(@content-desc)="bookmark"]'
+EDIT_BOOKMARK_BUTTON = '//*[lower-case(@content-desc)="edit bookmark"]'
 NEW_INCOGNITO_TAB_BUTTON = '//android.widget.TextView[@resource-id="com.android.chrome:id/title" and @text="New Incognito tab"]'
 OPEN_BOOKMARKS = '//android.widget.TextView[@resource-id="com.android.chrome:id/menu_item_text" and @text="Bookmarks"]'
 # Bookmarks
