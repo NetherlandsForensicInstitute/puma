@@ -7,7 +7,7 @@ from puma.apps.android.google_camera.google_camera import GoogleCamera
 from puma.apps.android.google_chrome.google_chrome import GoogleChrome
 from puma.apps.android.google_maps.google_maps import GoogleMapsActions
 from puma.apps.android.google_play_store.google_play_store import GooglePlayStore
-from puma.apps.android.open_camera.open_camera import OpenCameraActions
+from puma.apps.android.open_camera.open_camera import OpenCamera
 from puma.apps.android.snapchat.snapchat import SnapchatActions
 from puma.apps.android.telegram.telegram import TelegramActions
 from puma.apps.android.teleguard.teleguard import TeleGuard
@@ -19,7 +19,7 @@ all_app_actions = [
     GoogleChrome,
     GoogleMapsActions,
     GooglePlayStore,
-    OpenCameraActions,
+    OpenCamera,
     SnapchatActions,
     TelegramActions,
     TeleGuard,
