@@ -5,12 +5,14 @@ from puma.apps.android.telegram.telegram import Telegram
 
 # Fill in the udids below. Run ADB devices to see the udids.
 device_udids = {
-    "Alice": "32131JEHN38079",
-    "Bob": "34281JEHN03866"
+    "Alice": "",
+    "Bob": ""
 }
+# In case different names than Alice and Bob are used on the phone, change them here:
 ALICE_NAME = "TwoCharlie"
 BOB_NAME = "Bob"
-GALLERY_FOLDER_NAME = "Screenshots"  # a directory containing pictures of videos that can be sent for this test
+# a directory containing pictures of videos that can be sent for this test
+GALLERY_FOLDER_NAME = "Screenshots"
 
 
 class TestTelegram(unittest.TestCase):
@@ -99,3 +101,6 @@ class TestTelegram(unittest.TestCase):
         self.bob.edit_group_name(conversation=group_name, new_group_name=new_group_name)
         self.bob.delete_and_leave_group(conversation=new_group_name)
         self.alice.delete_and_leave_group(conversation=new_group_name)
+
+if __name__ == '__main__':
+    unittest.main()
