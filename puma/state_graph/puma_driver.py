@@ -299,6 +299,13 @@ class PumaDriver:
         """
         self.adb.open_intent(url, package_name)
 
+    def open_notification(self):
+        """
+        Opens the Android notifications panel.
+        """
+        self.gtl_logger.info("Opening notifications panel.")
+        self.driver.open_notifications()
+
     def start_recording(self, output_directory: str):
         """
         Starts a screen recording.

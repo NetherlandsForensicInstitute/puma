@@ -215,7 +215,7 @@ class Telegram(StateGraph):
         """
         Answer when receiving a call via Telegram.
         """
-        self.driver.driver.open_notifications()
+        self.driver.open_notifications()
         ANSWER_CALL_NOTIFICATION_BUTTON = '//android.widget.Button[lower-case(@content-desc)="answer"]'
         if not self.driver.is_present(ANSWER_CALL_NOTIFICATION_BUTTON, implicit_wait=5):
             self.driver.back()
