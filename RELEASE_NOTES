@@ -1,6 +1,7 @@
 Version 3.0.0
 -------------
 134. Telegram: Rewrite to Puma State Machine
+148. Skip release notes test for main branch
 136. Rewrite Google Chrome to use the StateGraph
 138. Rewrite OpenCamera to use the StateGraph
 11. Add Release notes test
