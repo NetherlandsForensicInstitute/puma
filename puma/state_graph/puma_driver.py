@@ -282,10 +282,16 @@ class PumaDriver:
         self._screen_recorder = None
         return video_files
 
-    def save_screenshot(self) -> str:
-        screenshot_name = self._new_screenshot_name()
-        self.driver.save_screenshot(screenshot_name)
-        return screenshot_name
+    def save_screenshot(self, path: str = None) -> str:
+        """
+        Saves a screenshot of the current screen.
+        :param path: Optionally provide the path to save the screenshot. Note that this should end with .png.
+        :return:
+        """
+        if path is None or not path.endswith(".png"):
+            path = self._new_screenshot_name()
+        self.driver.save_screenshot(path)
+        return path
 
     def _new_screenshot_name(self):
         now = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
