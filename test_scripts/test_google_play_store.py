@@ -9,6 +9,11 @@ device_udids = {
 PACKAGE_NAME = ""  # This app will be installed and uninstalled, so choose an app for which uninstalling does not matter
 UPDATABLE_PACKAGE_NAME = ""  # This app should be installed already and updatable. You can check which apps can be updated under "Manage apps and device"
 
+PAID_PACKAGE_NAME = "com.teslacoilsw.launcher.prime"
+NON_EXISTING_PACKAGE_NAME = "bla.bla"
+NOT_AVAILABLE_CARRIER_PACKAGE_NAME = "jp.softbank.mb.plusmessage"
+NOT_AVAILABLE_COUNTRY_PACKAGE_NAME = "com.ss.android.ugc.trill"
+
 
 class TestPlayStore(unittest.TestCase):
     """
@@ -34,9 +39,9 @@ class TestPlayStore(unittest.TestCase):
         if not UPDATABLE_PACKAGE_NAME:
             print("Global variable UPDATABLE_PACKAGE_NAME was not configured, please add it at the top of the script.\n Exiting...")
 
-    def test_get_app_state(self):
-        app_state = self.alice.get_app_state(PACKAGE_NAME)
-        print(f"App state is {app_state}")
+    def test_get_app_status(self):
+        app_status = self.alice.get_app_status(PACKAGE_NAME)
+        print(f"App status is {app_status}")
 
     def test_install_app(self):
         self.alice.uninstall_app(PACKAGE_NAME)
@@ -51,3 +56,11 @@ class TestPlayStore(unittest.TestCase):
 
     def test_update_all_apps(self):
         self.alice.update_all_apps()
+
+    def test_app_page_not_available(self):
+        self.alice.install_app(NOT_AVAILABLE_CARRIER_PACKAGE_NAME)
+        self.alice.install_app(NOT_AVAILABLE_COUNTRY_PACKAGE_NAME)
+        self.alice.install_app(NON_EXISTING_PACKAGE_NAME)
+        self.alice.install_app(PAID_PACKAGE_NAME)
+        #TODO add asserts
+

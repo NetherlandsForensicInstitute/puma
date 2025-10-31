@@ -169,6 +169,7 @@ class GooglePlayStore(StateGraph):
                 return AppStatus.INSTALLING_UPDATE
             else:
                 return AppStatus.INSTALLING
+
         logger.error(f'Could not determine the install state of the current app.')
         return AppStatus.UNKNOWN
 
@@ -179,6 +180,13 @@ class GooglePlayStore(StateGraph):
         INSTALLED, NOT_INSTALLED, UPDATE_AVAILABLE, INSTALLING, INSTALL_UPDATE, and UNKNOWN.
         :return the AppState of the given application
         """
+        state = self._get_app_status_internal()
+        if state == AppStatus.UNKNOWN:
+            try:
+                self._log_why_app_page_not_available(package_name)
+            except Exception:
+                logger.exception("Exception while logging diagnostics for why app page is not available")
+
         return self._get_app_status_internal()
 
     @action(app_page_state)
