@@ -21,8 +21,6 @@ class State(ABC):
         :param parent_state_transition: How to transition back to the parent state. By default, this is a press on the back button.
         """
         self.id = None  # set in metaclass
-        if initial_state and parent_state:
-            raise ValueError(f'Error creating state: initial state cannot have a parent state')
         self.initial_state = initial_state
         self.parent_state = parent_state
         self.transitions = []
@@ -178,3 +176,9 @@ def _shortest_path(start: State, destination: State | str) -> list[Transition] |
         for transition in state.transitions:
             queue.append((transition.to_state, path + [transition]))
     return None
+
+class TransitionError(Exception):
+    """
+    Exception raised when there is an error in state transition.
+    """
+    pass
