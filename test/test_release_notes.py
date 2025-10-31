@@ -53,13 +53,18 @@ class TestReleaseNotes(unittest.TestCase):
         self.release_notes = read_release_notes(self.release_notes_path)
 
     def test_branch_in_release_notes(self):
-        self.assertIn(f"{self.issue_number}. ", "\n".join(self.release_notes))
+        self.assertIn(f"{self.issue_number}. ",
+                      "\n".join(self.release_notes),
+                      f"Issue number {self.issue_number} was not found in the release notes, please add an entry "
+                      f"for this issue.")
 
     def test_version_in_release_notes_same_as_setup(self):
         first_line = self.release_notes[0]
         match = re.search(r'(\d+\.\d+\.\d+)', first_line)
         first_version_in_release_notes = match.group(1) if match else None
-        self.assertIsNotNone(first_version_in_release_notes)
+        self.assertIsNotNone(first_version_in_release_notes,
+                             "The first line of the release notes does not contain a semantic version, please "
+                             "check this.")
         self.assertEqual(first_version_in_release_notes, version.version,
                          "Version in release notes is not equal to setup version")
 
