@@ -282,10 +282,16 @@ class PumaDriver:
         self._screen_recorder = None
         return video_files
 
+    def save_screenshot(self) -> str:
+        screenshot_name = self._new_screenshot_name()
+        self.driver.save_screenshot(screenshot_name)
+        return screenshot_name
+
     def _new_screenshot_name(self):
         now = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
         device_name = self.options.device_name
         return Path(CACHE_FOLDER) / f'{now}-{device_name}-{uuid4()}.png'
+
 
     def _find_text_ocr(self, text_to_find: str) -> list[RecognizedText]:
         path = self._new_screenshot_name()

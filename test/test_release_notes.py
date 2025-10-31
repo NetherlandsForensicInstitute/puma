@@ -50,7 +50,7 @@ class TestReleaseNotes(unittest.TestCase):
 
     def test_branch_in_release_notes(self):
         if self.exclusion_pattern not in self.branch_name:
-            self.assertTrue(f"{self.issue_number}. " in "\n".join(self.release_notes))
+            self.assertIn(f"{self.issue_number}. ", "\n".join(self.release_notes))
 
     def test_version_in_release_notes_same_as_setup(self):
         first_line = self.release_notes[0]
