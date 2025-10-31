@@ -285,10 +285,11 @@ class PumaDriver:
     def save_screenshot(self, path: str = None) -> str:
         """
         Saves a screenshot of the current screen.
-        :param path: Optionally provide the path to save the screenshot. Note that this should end with .png.
-        :return:
+        :param path: Optionally provide the path to save the screenshot. Note that this should end with .png. If not
+        supplied, generates a screenshot in the current directory.
+        :return: The path to the screenshot
         """
-        if path is None or not path.endswith(".png"):
+        if path is None or not path.endswith(".png"): #TODO check path
             path = self._new_screenshot_name()
         self.driver.save_screenshot(path)
         return path
