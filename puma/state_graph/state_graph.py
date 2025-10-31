@@ -266,10 +266,10 @@ class StateGraph(metaclass=StateGraphMeta):
         if len(current_states) != 1:
             if not self.try_restart:
                 if len(current_states) > 1:
-                    raise ValueError("More than one state matches the current UI. Write stricter XPaths")
+                    raise ValueError(f"More than one state matches the current UI. Write stricter XPaths. states: {current_states}")
                 else:
                     raise ValueError("Unknown state, cannot recover.")
-            logger.warn(f'Not in a known state. Restarting app {self.driver.app_package} once')
+            logger.warning(f'Not in a known state. Restarting app {self.driver.app_package} once')
             self.driver.restart_app()
             sleep(3)
             self.try_restart = False
