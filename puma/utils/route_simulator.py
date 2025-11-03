@@ -1,8 +1,9 @@
+import json
 import random
 import threading
 import time
 from time import sleep
-from typing import Optional, Callable
+from typing import Optional, Callable, Tuple, List
 
 import geopy.distance
 import gpxpy
@@ -119,6 +120,7 @@ class RouteSimulator:
         cls = geopy.get_geocoder_for_service("nominatim")
         geocoder = cls(**config)
 
+        # TODO: remove eternal loop
         while True:
             start_location = geocoder.geocode(start_loc)
             if start_location:
@@ -136,20 +138,7 @@ class RouteSimulator:
         end_lon = destination_location.longitude
         self.driver.set_location(start_lat, start_lon)
 
-        URL = f"http://router.project-osrm.org/route/v1/{transport_mode}/{start_lon},{start_lat};{end_lon},{end_lat}?alternatives=false&annotations=nodes"  # car / bike / foot
-        r = requests.get(url=URL)
-        data = r.json()
-        nodes = data["routes"][0]["legs"][0]["annotation"]["nodes"]
-        overpass_query = f"[out:json];({''.join('node(' + str(x) + ');' for x in nodes)});(._;>;);out;"
-        r2 = requests.post(url='https://overpass-api.de/api/interpreter', verify=False, data=overpass_query)
-        data2 = r2.json()
-
-        point_dict = {}
-        point_list = []
-        for element in data2['elements']:
-            point_dict.update({element['id']: Point(element['lat'], element['lon'])})
-        for x in nodes:
-            point_list.append(point_dict.get(x))
+        point_list = self._get_osm_route(start_lat, start_lon, end_lat, end_lon)
 
         if start_visual_function is not None:
             start_visual_function(destination, transport_mode)
@@ -165,6 +154,27 @@ class RouteSimulator:
         consumer_thread = threading.Thread(target=self._appium_loop)
         consumer_thread.daemon = True
         consumer_thread.start()
+
+    @staticmethod
+    def _get_osm_route(start_lat, start_lon, end_lat, end_lon) -> List[Point]:
+        # OSRM wants lon,lat (instead of lat,lon)
+        url = f"https://router.project-osrm.org/route/v1/driving/{start_lon},{start_lat};{end_lon},{end_lat}"
+        # params suggested by chatGPT, otherwise we don't get the full route
+        params = {
+            "overview": "full",  # full geometry of the route
+            "geometries": "geojson"
+        }
+
+        response = requests.get(url, params=params)
+        response.raise_for_status()
+
+        data = response.json()
+        if not data.get("routes"):
+            raise ValueError("No route found between the given points.")
+
+        route = data["routes"][0]["geometry"]["coordinates"]
+        # Convert from (lon, lat) to Points containing (lat, lon)
+        return [Point(lat, lon) for lon, lat in route]
 
     def stop_route(self):
         """
