@@ -89,14 +89,19 @@ class Snapchat(StateGraph):
     conversation_state = SimpleState(['//android.widget.FrameLayout[@resource-id="com.snapchat.android:id/feed_new_chat"]'], parent_state=camera_state)
     chat_state = SnapchatChatState(parent_state=conversation_state)
 
+    discard_state = SimpleState(['//android.widget.TextView[@resource-id="com.snapchat.android:id/alert_dialog_description"]'])
     photo_state = SimpleState(['//android.view.ViewGroup[@resource-id="com.snapchat.android:id/sent_to_button_label_mode_view"]'])
     snap_state = SnapchatChatSnapState(parent_state=photo_state)
-    discard_state = SimpleState(['//android.view.View[@resource-id="com.snapchat.android:id/discard_alert_dialog_discard_view"]'], parent_state=photo_state)
 
     camera_state.to(conversation_state, compose_clicks(['//android.view.ViewGroup[@content-desc="Chat"]']))
     conversation_state.to(chat_state, go_to_chat)
+
     camera_state.to(photo_state, compose_clicks(['//android.widget.FrameLayout[@content-desc="Camera Capture"]']))
-    photo_state.to(snap_state, compose_clicks(['//android.view.ViewGroup[@resource-id="com.snapchat.android:id/sent_to_button_label_mode_view"]']))
+    photo_state.to(snap_state, compose_clicks(['//android.view.ViewGroup[@resource-id="com.snapchat.android:id/sent_to_button_label_mode_view"]'])) #//android.widget.ImageButton[@content-desc="Send"]
+
+    # snap_state.to(photo_state, compose_clicks(['//android.view.View[@content-desc="Back arrow"]']))
+    photo_state.to(discard_state, compose_clicks(['//android.widget.ImageButton[@content-desc="Discard"]']))
+    discard_state.to(camera_state, compose_clicks(['//android.view.View[@resource-id="com.snapchat.android:id/discard_alert_dialog_discard_view"]']))
 
 
     def __init__(self, device_udid):
