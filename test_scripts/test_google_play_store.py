@@ -60,7 +60,7 @@ class TestPlayStore(unittest.TestCase):
     def test_app_page_not_available(self):
         self.alice.install_app(NOT_AVAILABLE_CARRIER_PACKAGE_NAME)
         self.alice.install_app(NOT_AVAILABLE_COUNTRY_PACKAGE_NAME)
-        self.alice.install_app(NON_EXISTING_PACKAGE_NAME)
+        self.alice.install_app(NON_EXISTING_PACKAGE_NAME) #TODO look into recovery, it does not work properly
         self.alice.install_app(PAID_PACKAGE_NAME)
         #TODO add asserts
 

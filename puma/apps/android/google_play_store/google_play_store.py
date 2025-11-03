@@ -47,6 +47,7 @@ MANAGE_APPS_AND_DEVICES = '//android.widget.TextView[@resource-id="com.android.v
 
 # Diagnostic / other XPATHs
 NOT_AVAILABLE_COUNTRY = '//*[@content-desc="This item is not available in your country."]'
+NOT_AVAILABLE_CARRIER = '//*[@content-desc="This item isn\'t available on your carrier."]'
 SOMETHING_WENT_WRONG = '//*[@text="Something went wrong"]'
 DEVICE_INCOMPATIBLE = '//*[@content-desc="Your device isn\'t compatible with this version."]'
 PAID_APP = "//*[contains(@content-desc,'€') or contains(@content-desc,'$')]"
@@ -186,8 +187,9 @@ class GooglePlayStore(StateGraph):
                 self._log_why_app_page_not_available(package_name)
             except Exception:
                 logger.exception("Exception while logging diagnostics for why app page is not available")
-
-        return self._get_app_status_internal()
+            finally:
+                return state
+        return state
 
     @action(app_page_state)
     def install_app(self, package_name: str = None):
@@ -197,7 +199,7 @@ class GooglePlayStore(StateGraph):
         :param package_name: The exact package name of the application.
         """
         #TODO add check that the install button is present
-        if self._get_app_status_internal() != AppStatus.NOT_INSTALLED:
+        if self.get_app_status(package_name) != AppStatus.NOT_INSTALLED:
             logger.warn(f'Tried to install app {package_name}, but it was already installed')
             return
         if self.driver.is_present(APP_PAGE_INSTALL_BUTTON):
@@ -214,7 +216,7 @@ class GooglePlayStore(StateGraph):
         nothing.
         :param package_name: The exact package name of the application.
         """
-        if self._get_app_status_internal() not in [AppStatus.INSTALLED, AppStatus.UPDATE_AVAILABLE]:
+        if self.get_app_status(package_name) not in [AppStatus.INSTALLED, AppStatus.UPDATE_AVAILABLE]:
             logger.warn(f'Tried to uninstall app {package_name}, but it was not installed')
             return
         self.driver.click(APP_PAGE_UNINSTALL_BUTTON)
@@ -297,8 +299,11 @@ class GooglePlayStore(StateGraph):
         return self.driver.is_present(self._status_xpath(AllAppsStatus.ALL_APPS_UP_TO_DATE))
 
     def _log_why_app_page_not_available(self, package_name):
-        # app is not available in this country
+        # Not available in this country
         if self.driver.is_present(NOT_AVAILABLE_COUNTRY):
+            logger.error(f'Could not install package {package_name} because it is not available in this country')
+        # Not available on your carrier
+        elif self.driver.is_present(NOT_AVAILABLE_CARRIER):
             logger.error(f'Could not install package {package_name} because it is not available in this country')
         # "Something went wrong" message: app doesn't seem to exist
         elif self.driver.is_present(SOMETHING_WENT_WRONG):
