@@ -27,8 +27,8 @@ def extract_issue_number(branch_name) -> str:
     if match:
         return match.group(1)  # Return the captured issue number
     else:
-        raise ValueError('Invalid issue number, please check that your branch name starts with the issue number and a'
-                         ' dash.')
+        raise ValueError(f'Invalid issue number: {match}. Please check that your branch name starts with the issue '
+                         f'number and a dash.')
 
 def read_release_notes(file_path: str) -> list[str]:
     """
