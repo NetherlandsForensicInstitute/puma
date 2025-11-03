@@ -118,8 +118,18 @@ class RouteSimulator:
         config = dict(user_agent="Maps")
         cls = geopy.get_geocoder_for_service("nominatim")
         geocoder = cls(**config)
-        start_location = geocoder.geocode(start_loc)
-        destination_location = geocoder.geocode(destination)
+
+        while True:
+            start_location = geocoder.geocode(start_loc)
+            if start_location:
+                break
+            sleep(1)
+        while True:
+            destination_location = geocoder.geocode(destination)
+            if destination_location:
+                break
+            sleep(1)
+
         start_lat = start_location.latitude
         start_lon = start_location.longitude
         end_lat = destination_location.latitude
