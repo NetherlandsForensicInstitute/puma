@@ -460,6 +460,34 @@ class WhatsApp(StateGraph):
         self.driver.get_element(f'//*[@resource-id="{self.WHATSAPP_PACKAGE}:id/contactpicker_text_container"]//*[@text="{contact}"]').click()
         self.send_message_in_current_conversation(first_message)
 
+    @log_action
+    def open_more_options(self):
+        """
+        Open more options (hamburger menu) in the home screen.
+        """
+        self.driver.get_element('//android.widget.ImageView[@content-desc="More options"]').click()
+
+    @action(conversations_state)
+    #TODO: Broadcast window is not a state
+    def send_broadcast(self, receivers: List[str], broadcast_text: str):
+        """
+        Broadcast a message.
+        :param receivers: list of receiver names, minimum of 2!.
+        :param broadcast_text: Text to send.
+        """
+        if len(receivers) < 2:
+            raise Exception(f"Error: minimum of 2 receivers required for a broadcast, got: {receivers}")
+
+        self.open_more_options()
+        # self.driver.get_element(f'//*[@resource-id=:"{self.WHATSAPP_PACKAGE}:id/title" and @text="New broadcast"]').click()
+        self.driver.get_element(NEW_BROADCAST_TITLE).click()
+        for receiver in receivers:
+            self.driver.get_element(f'//*[@resource-id="{self.WHATSAPP_PACKAGE}:id/chat_able_contacts_row_name" and @text="{receiver}"]').click()
+
+        self.driver.get_element(f'//android.widget.ImageButton[@resource-id="{self.WHATSAPP_PACKAGE}:id/next_btn"]').click()
+        self.driver.get_element(f'//android.widget.EditText[@resource-id="{self.WHATSAPP_PACKAGE}:id/entry"]').send_keys(broadcast_text)
+        self.driver.get_element(f'//android.widget.ImageButton[@resource-id="{self.WHATSAPP_PACKAGE}:id/send"]').click()
+
     # endregion
     ########################################
 
@@ -516,30 +544,6 @@ class WhatsApp(StateGraph):
         self.driver.find_element(by=AppiumBy.XPATH, value='//*[@content-desc="Reply"]').click()
         text_box = self.driver.find_element(by=AppiumBy.ID, value=f"{self.app_package}:id/entry")
         text_box.send_keys(reply_text)
-        self.driver.find_element(by=AppiumBy.ID, value=f"{self.app_package}:id/send").click()
-
-    @log_action
-    #TODO: Broadcast window is not a state
-    def send_broadcast(self, receivers: [str], broadcast_text: str):
-        """
-        Broadcast a message.
-        :param receivers: list of receiver names, minimum of 2!.
-        :param broadcast_text: Text to send.
-        """
-        self.return_to_homescreen()
-        if len(receivers) < 2:
-            print("Error: minimum of 2 receivers required for a broadcast!")
-            return
-        self.open_more_options()
-        new_broadcast = self.driver.find_element(by=AppiumBy.XPATH, value=
-        f"//*[@resource-id='{self.app_package}:id/title' and @text='New broadcast']")
-        new_broadcast.click()
-        for receiver in receivers:
-            self.driver.find_element(by=AppiumBy.XPATH, value=
-            f"//*[@resource-id='{self.app_package}:id/chat_able_contacts_row_name' and @text='{receiver}']").click()
-        self.driver.find_element(by=AppiumBy.ID, value=f"{self.app_package}:id/next_btn").click()
-        text_box = self.driver.find_element(by=AppiumBy.ID, value=f"{self.app_package}:id/entry")
-        text_box.send_keys(broadcast_text)
         self.driver.find_element(by=AppiumBy.ID, value=f"{self.app_package}:id/send").click()
 
     @log_action
