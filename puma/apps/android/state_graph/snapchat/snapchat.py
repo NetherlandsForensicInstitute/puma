@@ -77,9 +77,12 @@ class SnapchatChatSnapState(SimpleState, ContextualState):
             return True
 
         logger.info('getting content_desc')
-        content_desc = driver.get_element('//androidx.recyclerview.widget.RecyclerView[@resource-id="com.snapchat.android:id/send_to_recycler_view"]').get_attribute('text')
+        conversation_xpath = f'//androidx.recyclerview.widget.RecyclerView[@resource-id="com.snapchat.android:id/send_to_recycler_view"]//javaClass[@text="{conversation}"]'
+        elements = driver.driver.find_elements(AppiumBy.XPATH, conversation_xpath)
+        content_desc = elements[0].get_attribute("text")
         logger.info(f'getting content_desc {content_desc}')
         logger.info(f'conversation is {conversation}')
+        logger.info(conversation in content_desc)
 
         return conversation in content_desc
 
@@ -125,7 +128,7 @@ class Snapchat(StateGraph):
 
     @action(snap_state)
     def send_snap_to(self, conversation: str = None):
-        self.driver.click(f'(//javaClass[@text={conversation}])[1]')
+        self.driver.click(f'(//androidx.recyclerview.widget.RecyclerView[@resource-id="com.snapchat.android:id/send_to_recycler_view"]//javaClass[@text="{conversation}"])[1]')
         self.driver.click(f'//android.view.View[@content-desc="Send"]')
 
 
@@ -134,7 +137,7 @@ if __name__ == "__main__":
         bob = Snapchat(device_udid="34281JEHN03866")
         contact_charlie = "Charlie"
 
-        # bob.send_message("hi", contact_charlie)
+        bob.send_message("hi", contact_charlie)
 
         bob.send_snap_to(contact_charlie)
 
