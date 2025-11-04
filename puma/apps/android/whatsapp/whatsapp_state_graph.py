@@ -20,9 +20,12 @@ CONVERSATIONS_STATE_NEW_CHAT_OR_SEND_MESSAGE = '//android.widget.ImageButton[@co
 CONVERSATIONS_STATE_CHAT_TAB = '//android.widget.FrameLayout[@content-desc="Chats"]'
 CONVERSATIONS_STATE_HOME_ROOT_FRAME = '//android.widget.FrameLayout[@resource-id="com.whatsapp:id/root_view"]'
 
-SETTINGS_STATE_PROFILE_PICTURE = '//android.widget.ImageView[@resource-id="com.whatsapp:id/photo_btn"]'
-SETTINGS_STATE_NAME = '//android.widget.Button[@resource-id="com.whatsapp:id/profile_settings_row_text" and @text="Name"]'
-SETTINGS_STATE_PHONE = '//android.widget.Button[@resource-id="com.whatsapp:id/profile_settings_row_text" and @text="Phone"]'
+SETTINGS_STATE_QR = '//android.widget.ImageView[@resource-id="com.whatsapp:id/profile_info_qr_code"]'
+SETTINGS_STATE_ACCOUNT_SWITCH = '//android.widget.ImageView[@resource-id="com.whatsapp:id/account_switcher_button"]'
+
+PROFILE_STATE_PROFILE_PICTURE = '//android.widget.ImageView[@resource-id="com.whatsapp:id/photo_btn"]'
+PROFILE_STATE_NAME = '//android.widget.Button[@resource-id="com.whatsapp:id/profile_settings_row_text" and @text="Name"]'
+PROFILE_STATE_PHONE = '//android.widget.Button[@resource-id="com.whatsapp:id/profile_settings_row_text" and @text="Phone"]'
 
 #Chat state xpaths
 CHAT_STATE_ROOT_LAYOUT = '//android.widget.LinearLayout[@resource-id="com.whatsapp:id/conversation_root_layout"]'
@@ -143,10 +146,7 @@ def go_to_chat(driver: PumaDriver, to_chat: str):
     :param to_chat: The name of the conversation to navigate to.
     """
     logger.info(f'Clicking on conversation {to_chat} with driver {driver}')
-    driver.driver.find_elements(by=AppiumBy.XPATH, value=conversation_row_for_subject(to_chat))[-1].click()
-
-def go_to_settings(driver: PumaDriver):
-    compose_clicks([HAMBURGER_MENU, OPEN_SETTINGS_BY_TITLE, PROFILE_INFO])(driver)
+    driver.get_elements(conversation_row_for_subject(to_chat))[-1].click()
 
 
 class WhatsAppChatState(SimpleState, ContextualState):
@@ -194,14 +194,18 @@ class WhatsApp(StateGraph):
                                       CONVERSATIONS_STATE_NEW_CHAT_OR_SEND_MESSAGE,
                                       CONVERSATIONS_STATE_CHAT_TAB],
                                       initial_state=True)
-    settings_state = SimpleState([SETTINGS_STATE_PROFILE_PICTURE,
-                                SETTINGS_STATE_NAME,
-                                SETTINGS_STATE_PHONE],
-                                parent_state=conversations_state)
+    settings_state = SimpleState([SETTINGS_STATE_QR,
+                                  SETTINGS_STATE_ACCOUNT_SWITCH],
+                                 parent_state=conversations_state)
+    profile_state = SimpleState([PROFILE_STATE_PROFILE_PICTURE,
+                                 PROFILE_STATE_NAME,
+                                 PROFILE_STATE_PHONE],
+                                parent_state=settings_state)
     chat_state = WhatsAppChatState(parent_state=conversations_state)
 
     conversations_state.to(chat_state, go_to_chat)
-    conversations_state.to(settings_state, go_to_settings)
+    conversations_state.to(settings_state, compose_clicks([HAMBURGER_MENU, OPEN_SETTINGS_BY_TITLE]))
+    settings_state.to(profile_state, compose_clicks([PROFILE_INFO]))
 
     # @abstractmethod
     def __init__(self, device_udid: str, app_package: str):
@@ -255,7 +259,7 @@ class WhatsApp(StateGraph):
 
 
 
-    @action(settings_state)
+    @action(profile_state)
     def change_profile_picture(self, photo_dir_name, index=1):
         self.driver.get_element(f'//android.widget.Button[@resource-id="com.whatsapp:id/profile_info_edit_btn"]').click()
         self.driver.get_element("//*[@text='Gallery']").click()
