@@ -1,3 +1,5 @@
+import time
+
 from appium.webdriver.common.appiumby import AppiumBy
 
 from puma.apps.android.state_graph.snapchat import logger
@@ -127,7 +129,17 @@ class Snapchat(StateGraph):
         self._press_enter()
 
     @action(snap_state)
-    def send_snap_to(self, recipients: [str] = None):
+    def send_snap_to(self, recipients: [str] = None, caption: str = None):
+        if caption:
+            self.driver.click(f'//android.view.View[@resource-id="com.snapchat.android:id/full_screen_surface_view"]')
+            time.sleep(0.5)
+            caption_xpath = '//android.widget.EditText[@resource-id="com.snapchat.android:id/caption_edit_text_view"]'
+            caption_field = self.driver.driver.find_element(AppiumBy.XPATH, caption_xpath)
+            caption_field.send_keys(caption)
+
+            # self.driver.back()
+            self.driver.click(f'//android.view.View[@content-desc="Send"]')
+
         if recipients:
             for recipient in recipients:
                 self.driver.click(f'(//androidx.recyclerview.widget.RecyclerView[@resource-id="com.snapchat.android:id/send_to_recycler_view"]//javaClass[@text="{recipient}"])[1]')
@@ -143,7 +155,7 @@ if __name__ == "__main__":
         contact_charlie = "Charlie"
         group_bob = "Group Bob"
 
-        bob.send_message("hi", contact_charlie)
+        # bob.send_message("hi", contact_charlie)
 
-        bob.send_snap_to([contact_charlie])
+        bob.send_snap_to(recipients=[contact_charlie], caption="whoopwhoop")
 
