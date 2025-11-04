@@ -43,6 +43,11 @@ CHAT_STATE_ROOT_LAYOUT = '//android.widget.LinearLayout[@resource-id="com.whatsa
 CHAT_STATE_CONTACT_HEADER = '//android.widget.TextView[@resource-id="com.whatsapp:id/conversation_contact_name"]'
 
 CALL_STATE_CONTACT_HEADER = '//android.widget.TextView[@resource-id="com.whatsapp:id/title"]'
+CALL_STATE_VOICE_CALL_BUTTON = '//android.widget.ImageButton[@content-desc="Voice call"]'
+
+SEND_LOCATION_STATE_HEADER = '//android.view.ViewGroup[@resource-id="com.whatsapp:id/toolbar"]/android.widget.TextView[@text="Send location"]'
+SEND_LOCATION_STATE_LIVE_LOCATION = '//android.widget.FrameLayout[@resource-id="com.whatsapp:id/live_location_btn"]'
+SEND_LOCATION_STATE_CURRENT_LOCATION = '//android.widget.FrameLayout[@resource-id="com.whatsapp:id/send_current_location_btn"]'
 
 MESSAGE_TEXT_BOX = '//android.widget.EditText[@resource-id="com.whatsapp:id/entry"]'
 MENTION_SUGGESTIONS = '//android.widget.ImageView[@resource-id="com.whatsapp:id/contact_photo"]'
@@ -119,7 +124,7 @@ def message_status(message_text: str) -> str:
             f"/.."
             f"//*[@resource-id='com.whatsapp:id/status']")
 
-def broadcast_contact_row(receiver: str) -> str:
+def contact_row(receiver: str) -> str:
     return f"//*[@resource-id='com.whatsapp:id/chat_able_contacts_row_name' and @text='{receiver}']"
 
 def contact_name_in_picker(contact_name: str) -> str:
@@ -177,6 +182,8 @@ def go_to_call(driver: PumaDriver, contact: str):
     logger.info(f'Clicking on contact {contact} with driver {driver}')
     driver.get_element(CALL_TAB_SEARCH_BUTTON).click()
     driver.send_keys(SEARCH_BAR, contact)
+    driver.get_element(contact_row(contact)).click()
+    driver.get_element(CALL_STATE_VOICE_CALL_BUTTON).click()
 
 
 class WhatsAppChatState(SimpleState, ContextualState):
@@ -250,7 +257,7 @@ class WhatsAppChatSettingsState(SimpleState, ContextualState):
         return conversation.lower() in content_desc.lower()
 
 
-class WhatsAppCallState(SimpleState, ContextualState):
+class WhatsAppVoiceCallState(SimpleState, ContextualState):
     """
     A state representing a call screen in the application.
 
@@ -314,8 +321,11 @@ class WhatsApp(StateGraph):
                                  UPDATES_STATE_STATUS_HEADER,
                                  UPDATES_STATE_NEW_STATUS],
                                 parent_state=conversations_state)
-    call_state = WhatsAppCallState(parent_state=calls_state)
-    # send_location_state = SimpleState([], parent_state=chat_state)
+    voice_call_state = WhatsAppVoiceCallState(parent_state=calls_state)
+    send_location_state = SimpleState([SEND_LOCATION_STATE_HEADER,
+                                       SEND_LOCATION_STATE_LIVE_LOCATION,
+                                       SEND_LOCATION_STATE_CURRENT_LOCATION],
+                                      parent_state=chat_state)
     # chat_settings = WhatsAppChatSettingsState(parent_state=chat_state)
 
     conversations_state.to(chat_state, go_to_chat)
@@ -323,7 +333,7 @@ class WhatsApp(StateGraph):
     conversations_state.to(new_chat_state, compose_clicks([CONVERSATIONS_STATE_NEW_CHAT_OR_SEND_MESSAGE]))
     conversations_state.to(calls_state, compose_clicks([CALLS_TAB]))
     conversations_state.to(updates_state, compose_clicks([UPDATES_TAB]))
-    calls_state.to(call_state, go_to_call)
+    calls_state.to(voice_call_state, go_to_call)
     settings_state.to(profile_state, compose_clicks([PROFILE_INFO]))
 
 
