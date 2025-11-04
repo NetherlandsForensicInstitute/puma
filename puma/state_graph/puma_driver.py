@@ -13,6 +13,7 @@ from appium.webdriver.common.appiumby import AppiumBy
 from appium import webdriver
 from appium.webdriver.extensions.android.nativekey import AndroidKey
 from appium.webdriver.webdriver import WebDriver
+from selenium.webdriver import ActionChains
 from urllib3.exceptions import MaxRetryError
 
 from puma.computer_vision import ocr
@@ -165,18 +166,64 @@ class PumaDriver:
         self.gtl_logger.info(f'Pressing home button')
         self.driver.press_keycode(AndroidKey.HOME)
 
-    def click(self, xpath: str):
+    def click(self, xpath: str, width_ratio:float=0.5, height_ratio:float=0.5):
         """
         Clicks on an element specified by its XPath.
 
+        By default, this method clicks in the center of the element selected by the given XPath.
+        If you want to click off-center, you can use the width and heigh ratio.
+        The ratios are values between 0 and 1 that determine where the element needs to be clicked, where (0,0)
+        corresponds to the top-left and (1,1) corresponds to the bottom right.
+        The width_ratio determines the x coordinate, the height_ratio the y coordinate.
+
         :param xpath: The XPath of the element to click.
+        :param width_ratio: Optional. Determines the x coordinate, relative within the element, from 0 to 1 (left to right).
+        :param height_ratio: Optional. Determines the y coordinate, relative within the element, from 0 to 1 (top to bottom).
         :raises PumaClickException: If the element cannot be clicked after multiple attempts.
         """
         for attempt in range(3):
             if self.is_present(xpath, self.implicit_wait):
-                self.driver.find_element(by=AppiumBy.XPATH, value=xpath).click()
+                if (width_ratio, height_ratio) == (0.5, 0.5):
+                    self.driver.find_element(by=AppiumBy.XPATH, value=xpath).click()
+                else:
+                    element = self.get_element(xpath)
+                    top_left = element.location['x'], element.location['y']
+                    size = element.size['height'], element.size['width']
+                    location = int(top_left[0] + width_ratio * size[1]), int(top_left[1] + height_ratio * size[0])
+                    self.tap(location)
                 return
         raise PumaClickException(f'Could not click on non present element with xpath {xpath}')
+
+    def tap(self, coords: tuple[int, int]):
+        """
+        Taps on the screen at the specified coordinates.
+
+        :param coords: A tuple (x, y) representing the coordinates to tap.
+        """
+        self.gtl_logger.info(f'Tapping on coordinates {coords}')
+        self.driver.tap([coords])
+
+    def long_click(self, xpath:str):
+        """
+        Triggers a long_press on an element specified by its XPath.
+        This method uses press_and_hold with a duration of 1 second.
+
+        :param xpath: The XPath of the element to click.
+        :raises PumaClickException: If the element cannot be clicked after multiple attempts.
+        """
+        self.press_and_hold(xpath, 1)
+
+    def press_and_hold(self, xpath: str, duration: int):
+        """
+        Clicks on a certain element, and hold for a given duration (in seconds)
+
+        :param xpath: The XPath of the element to click.
+        :param duration: how many seconds to hold the element before releasing
+        :raises PumaClickException: If the element cannot be found after multiple attempts.
+        """
+        element = self.get_element(xpath)
+        actions = ActionChains(self.driver)
+        actions.move_to_element(element).click_and_hold().pause(duration).release().perform()
 
     def get_element(self, xpath: str):
         """
@@ -227,6 +274,23 @@ class PumaDriver:
                 time.sleep(0.5)
         raise PumaClickException(f'After {max_swipes} swipes, cannot find element with xpath {xpath}')
 
+
+    def long_press_element(self, xpath: str, duration: int = 1000):
+        """
+        Press some element for some duration.
+        :param xpath: Xpath of the element to long press.
+        :param duration: Duration of the press in milliseconds.
+        :return:
+        """
+        element = self.get_element(xpath)
+        location = element.location
+        size = element.size
+
+        # Calculate the center of the element
+        x = location['x'] + size['width'] // 2
+        y = location['y'] + size['height'] // 2
+        self.driver.execute_script('mobile: longClickGesture', {'x': x, 'y': y, 'duration': duration})
+
     def send_keys(self, xpath: str, text: str):
         """
         Sends keys to an element specified by its XPath.
@@ -236,6 +300,7 @@ class PumaDriver:
         """
         self.gtl_logger.info(f'Entering text "{text}" in text box')
         element = self.get_element(xpath)
+        element.click() # TODO check all usages
         element.send_keys(text)
 
     def press_enter(self):
@@ -262,6 +327,13 @@ class PumaDriver:
         If not, the URl will open in the default app configured for that URL.
         """
         self.adb.open_intent(url, package_name)
+
+    def open_notification(self):
+        """
+        Opens the Android notifications panel.
+        """
+        self.gtl_logger.info("Opening notifications panel.")
+        self.driver.open_notifications()
 
     def start_recording(self, output_directory: str):
         """
@@ -311,6 +383,7 @@ class PumaDriver:
         :param click_first_when_multiple: If True, the first occurrence of the string will be clicked if multiple are found.
         If False, raises an PumaClickException if multiple occurrences are found. Defaults to False.
         """
+        self.gtl_logger.info(f'Using OCR to click on text "{text_to_click}"')
         found_text = self._find_text_ocr(text_to_click)
         if len(found_text) == 0:
             msg = f'Could not find text {text_to_click} on screen so could not click it'
@@ -323,7 +396,7 @@ class PumaDriver:
                 logger.warning(f'Found multiple occurrences of text {text_to_click} on screen, clicking first one')
         x = found_text[0].bounding_box.middle[0]
         y = found_text[0].bounding_box.middle[1]
-        self.gtl_logger.info(f'Clicking found text {found_text}')
+        self.gtl_logger.info(f'Clicking found text {found_text} at coordinates {(x,y)}')
         self.driver.execute_script('mobile: clickGesture', {'x': x, 'y': y})
 
     def set_idle_timeout(self, timeout: int):

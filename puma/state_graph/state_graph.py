@@ -37,7 +37,7 @@ class StateGraphMeta(type):
             return new_class
 
         # collect states and transitions
-        states = []
+        states: list[State] = []
         transitions = []
         for key, value in namespace.items():
             if isinstance(value, State):
@@ -103,6 +103,7 @@ class StateGraphMeta(type):
         unreachable_states = [s for s in states if not s.initial_state and not (
                     bool(_shortest_path(initial_state, s)) and bool(_shortest_path(s, initial_state)))]
         if unreachable_states:
+            # TODO make this error message more specific: exactly log which transition cannot be done (to or from the initial state)
             raise ValueError(
                 f'Some states cannot be reached from the initial state, or cannot go back to the initial state: {unreachable_states}')
 
@@ -265,10 +266,10 @@ class StateGraph(metaclass=StateGraphMeta):
         if len(current_states) != 1:
             if not self.try_restart:
                 if len(current_states) > 1:
-                    raise ValueError("More than one state matches the current UI. Write stricter XPaths")
+                    raise ValueError(f"More than one state matches the current UI. Write stricter XPaths. states: {current_states}")
                 else:
                     raise ValueError("Unknown state, cannot recover.")
-            logger.warn(f'Not in a known state. Restarting app {self.driver.app_package} once')
+            logger.warning(f'Not in a known state. Restarting app {self.driver.app_package} once')
             self.driver.restart_app()
             sleep(3)
             self.try_restart = False
@@ -284,6 +285,14 @@ class StateGraph(metaclass=StateGraphMeta):
         :param popup_handler: The pop-up handler to be added.
         """
         self.app_popups.append(popup_handler)
+
+    def add_popup_handlers(self, *popup_handlers: PopUpHandler):
+        """
+        Adds multiple pop-up handlers to manage application pop-ups.
+
+        :param popup_handlers: The pop-up handlers to be added.
+        """
+        self.app_popups.extend(popup_handlers)
 
     def _find_shortest_path(self, destination: State | str) -> list[Transition] | None:
         """

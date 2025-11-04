@@ -21,8 +21,6 @@ class State(ABC):
         :param parent_state_transition: How to transition back to the parent state. By default, this is a press on the back button.
         """
         self.id = None  # set in metaclass
-        if initial_state and parent_state:
-            raise ValueError(f'Error creating state: initial state cannot have a parent state')
         self.initial_state = initial_state
         self.parent_state = parent_state
         self.transitions = []
@@ -79,20 +77,24 @@ class ContextualState(State):
 
 class SimpleState(State):
     """
-    Simple State. This is a standard state which can be validated by providing a list of XPaths.
+    Simple State. This is a standard state which can be validated by providing a list of present XPaths.
     """
 
-    def __init__(self, xpaths: List[str], initial_state: bool = False, parent_state: 'State' = None, parent_state_transition: Callable[..., None] = None):
+    def __init__(self, xpaths: List[str], invalid_xpaths: list[str] = [], initial_state: bool = False, parent_state: 'State' = None, parent_state_transition: Callable[..., None] = None):
         """
         Initializes a new SimpleState instance.
 
         :param xpaths: A list of XPaths which are all present on the state window.
+        :param invalid_xpaths: A list of xpaths which cannot be present in the state window.
         :param initial_state: Whether this is the initial state.
         :param parent_state: The parent state of this state, or None if it has no parent.
         :param parent_state_transition: How to transition back to the parent state. By default, this is a press on the back button.
         """
         super().__init__(initial_state=initial_state, parent_state=parent_state, parent_state_transition=parent_state_transition)
-        self.xpaths = xpaths
+        if not xpaths:
+            raise ValueError(f'Cannot create a SimpleState without any xpath validation expressions.')
+        self.present_xpaths = xpaths
+        self.invalid_xpaths = invalid_xpaths
 
     def validate(self, driver: PumaDriver) -> bool:
         """
@@ -101,7 +103,8 @@ class SimpleState(State):
         :param driver: The PumaDriver instance to use.
         :return: True if all XPaths are present, otherwise False.
         """
-        return all(driver.is_present(xpath) for xpath in self.xpaths)
+        return (all(driver.is_present(xpath) for xpath in self.present_xpaths)
+                and all((not driver.is_present(xpath)) for xpath in self.invalid_xpaths))
 
 
 def back(driver: PumaDriver):
@@ -178,3 +181,9 @@ def _shortest_path(start: State, destination: State | str) -> list[Transition] |
         for transition in state.transitions:
             queue.append((transition.to_state, path + [transition]))
     return None
+
+class TransitionError(Exception):
+    """
+    Exception raised when there is an error in state transition.
+    """
+    pass
