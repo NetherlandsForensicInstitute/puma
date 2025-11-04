@@ -1,19 +1,16 @@
 import re
-from abc import ABC, abstractmethod
+from abc import abstractmethod
 from time import sleep
 from typing import Union, List
 
 from appium.webdriver.common.appiumby import AppiumBy
 from selenium.common import NoSuchElementException
-from selenium.webdriver.common.by import By
-from typing_extensions import deprecated
 
 from puma.apps.android import log_action
-from puma.apps.android.appium_actions import AndroidAppiumActions
 from puma.apps.android.whatsapp import logger
 from puma.state_graph.action import action
 from puma.state_graph.puma_driver import PumaDriver
-from puma.state_graph.state import SimpleState, ContextualState, State
+from puma.state_graph.state import SimpleState, ContextualState, State, compose_clicks
 from puma.state_graph.state_graph import StateGraph
 
 HAMBURGER_MENU = '//android.widget.ImageView[@content-desc="More options"]'
@@ -23,6 +20,9 @@ CONVERSATIONS_STATE_NEW_CHAT_OR_SEND_MESSAGE = '//android.widget.ImageButton[@co
 CONVERSATIONS_STATE_CHAT_TAB = '//android.widget.FrameLayout[@content-desc="Chats"]'
 CONVERSATIONS_STATE_HOME_ROOT_FRAME = '//android.widget.FrameLayout[@resource-id="com.whatsapp:id/root_view"]'
 
+SETTINGS_STATE_PROFILE_PICTURE = '//android.widget.ImageView[@resource-id="com.whatsapp:id/photo_btn"]'
+SETTINGS_STATE_NAME = '//android.widget.Button[@resource-id="com.whatsapp:id/profile_settings_row_text" and @text="Name"]'
+SETTINGS_STATE_PHONE = '//android.widget.Button[@resource-id="com.whatsapp:id/profile_settings_row_text" and @text="Phone"]'
 
 #Chat state xpaths
 CHAT_STATE_ROOT_LAYOUT = '//android.widget.LinearLayout[@resource-id="com.whatsapp:id/conversation_root_layout"]'
@@ -50,6 +50,7 @@ DECLINE_BUTTON = "//android.widget.Button[@content-desc='Decline']"
 # Settings state xpaths
 OPEN_SETTINGS_BY_TITLE = '//android.widget.TextView[@text="Settings"]'
 NEW_STATUS_BUTTON = '//android.widget.ImageButton[@content-desc="New status update"]'
+PROFILE_INFO = '//android.widget.TextView[@resource-id="com.whatsapp:id/profile_info_name"]'
 
 #previously fstring templates
 FAB_OR_FABTEXT = "//*[@resource-id='com.whatsapp:id/fab' or @resource-id='com.whatsapp:id/fabText']"
@@ -144,6 +145,10 @@ def go_to_chat(driver: PumaDriver, to_chat: str):
     logger.info(f'Clicking on conversation {to_chat} with driver {driver}')
     driver.driver.find_elements(by=AppiumBy.XPATH, value=conversation_row_for_subject(to_chat))[-1].click()
 
+def go_to_settings(driver: PumaDriver):
+    compose_clicks([HAMBURGER_MENU, OPEN_SETTINGS_BY_TITLE, PROFILE_INFO])(driver)
+
+
 class WhatsAppChatState(SimpleState, ContextualState):
     """
     A state representing a chat screen in the application.
@@ -189,9 +194,14 @@ class WhatsApp(StateGraph):
                                       CONVERSATIONS_STATE_NEW_CHAT_OR_SEND_MESSAGE,
                                       CONVERSATIONS_STATE_CHAT_TAB],
                                       initial_state=True)
+    settings_state = SimpleState([SETTINGS_STATE_PROFILE_PICTURE,
+                                SETTINGS_STATE_NAME,
+                                SETTINGS_STATE_PHONE],
+                                parent_state=conversations_state)
     chat_state = WhatsAppChatState(parent_state=conversations_state)
 
     conversations_state.to(chat_state, go_to_chat)
+    conversations_state.to(settings_state, go_to_settings)
 
     # @abstractmethod
     def __init__(self, device_udid: str, app_package: str):
@@ -245,6 +255,13 @@ class WhatsApp(StateGraph):
 
 
 
+    @action(settings_state)
+    def change_profile_picture(self, photo_dir_name, index=1):
+        self.driver.get_element(f'//android.widget.Button[@resource-id="com.whatsapp:id/profile_info_edit_btn"]').click()
+        self.driver.get_element("//*[@text='Gallery']").click()
+        self.driver.get_element('//android.widget.ImageButton[@content-desc="Folders"]').click()
+        self._find_media_in_folder(photo_dir_name, index)
+        self.driver.get_element(f'//android.widget.Button[@resource-id="com.whatsapp:id/ok_btn"]').click()
 
 
     # @abstractmethod
@@ -625,18 +642,18 @@ class WhatsApp(StateGraph):
         """
         self.return_to_homescreen()
         self.open_more_options()
-        self.driver.find_element(by=By.XPATH, value="//*[@text='New group']").click()
+        self.driver.find_element(by=AppiumBy.XPATH, value="//*[@text='New group']").click()
 
         participants = [participants] if not isinstance(participants, list) else participants
         for participant in participants:
-            contacts = self.driver.find_elements(by=By.CLASS_NAME, value="android.widget.TextView")
+            contacts = self.driver.find_elements(by=AppiumBy.CLASS_NAME, value="android.widget.TextView")
             participant_to_add = [contact for contact in contacts if contact.text.lower() == participant.lower()][0]
             participant_to_add.click()
 
         self.driver.find_element(by=AppiumBy.ID, value=f"{self.app_package}:id/next_btn").click()
         text_box = self.driver.find_element(by=AppiumBy.ID, value=f"{self.app_package}:id/group_name")
         text_box.send_keys(subject)
-        image_buttons = self.driver.find_elements(by=By.CLASS_NAME, value="android.widget.ImageButton")
+        image_buttons = self.driver.find_elements(by=AppiumBy.CLASS_NAME, value="android.widget.ImageButton")
         next_button = [button for button in image_buttons if button.tag_name == "Create"][0]
         next_button.click()
         print("Waiting 5 sec to create group")
@@ -799,15 +816,13 @@ class WhatsApp(StateGraph):
 
     def _find_media_in_folder(self, directory_name, index):
         try:
-            self.swipe_to_find_element(xpath=f'//android.widget.TextView[@text="{directory_name}"]')
+            self.driver.swipe_to_click_element(xpath=f'//android.widget.TextView[@text="{directory_name}"]')
         except NoSuchElementException:
             raise NoSuchElementException(f'The directory {directory_name} could not be found.')
-        self.driver.find_element(by=AppiumBy.XPATH,
-                                 value=f'//android.widget.TextView[@text="{directory_name}"]').click()
+        self.driver.get_element(f'//android.widget.TextView[@text="{directory_name}"]').click()
         sleep(0.5)
         try:
-            self.driver.find_element(by=AppiumBy.XPATH,
-                                     value=f'//androidx.compose.ui.platform.ComposeView/android.view.View/android.view.View/android.view.View[4]/android.view.View[{index}]/android.view.View[2]/android.view.View').click()
+            self.driver.get_element(f'//androidx.compose.ui.platform.ComposeView/android.view.View/android.view.View/android.view.View[4]/android.view.View[{index}]/android.view.View[2]/android.view.View').click()
         except NoSuchElementException:
             raise NoSuchElementException(
                 f'The media at index {index} could not be found. The index is likely too large or negative.')
