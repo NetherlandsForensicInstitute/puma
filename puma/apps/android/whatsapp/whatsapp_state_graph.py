@@ -29,7 +29,7 @@ PROFILE_STATE_PHONE = '//android.widget.Button[@resource-id="com.whatsapp:id/pro
 
 #Chat state xpaths
 CHAT_STATE_ROOT_LAYOUT = '//android.widget.LinearLayout[@resource-id="com.whatsapp:id/conversation_root_layout"]'
-CHAT_STATE_CONTACT_HEADER = '//android.widget.LinearLayout[@resource-id="com.whatsapp:id/conversation_contact"]'
+CHAT_STATE_CONTACT_HEADER = '//android.widget.TextView[@resource-id="com.whatsapp:id/conversation_contact_name"]'
 
 MESSAGE_TEXT_BOX = '//android.widget.EditText[@resource-id="com.whatsapp:id/entry"]'
 MENTION_SUGGESTIONS = '//android.widget.ImageView[@resource-id="com.whatsapp:id/contact_photo"]'
@@ -134,7 +134,7 @@ def compose_media_by_index(index: int) -> str:
     return (f'//androidx.compose.ui.platform.ComposeView/android.view.View/android.view.View'
             f'/android.view.View[4]/android.view.View[{index}]/android.view.View[2]/android.view.View')
 
-def go_to_chat(driver: PumaDriver, to_chat: str):
+def go_to_chat(driver: PumaDriver, conversation: str):
     """
     Navigates to a specific chat conversation in the application.
 
@@ -143,10 +143,10 @@ def go_to_chat(driver: PumaDriver, to_chat: str):
     to navigate to a specific chat state.
 
     :param driver: The PumaDriver instance used to interact with the application.
-    :param to_chat: The name of the conversation to navigate to.
+    :param conversation: The name of the conversation to navigate to.
     """
-    logger.info(f'Clicking on conversation {to_chat} with driver {driver}')
-    driver.get_elements(conversation_row_for_subject(to_chat))[-1].click()
+    logger.info(f'Clicking on conversation {conversation} with driver {driver}')
+    driver.get_elements(conversation_row_for_subject(conversation))[-1].click()
 
 
 class WhatsAppChatState(SimpleState, ContextualState):
@@ -184,6 +184,41 @@ class WhatsAppChatState(SimpleState, ContextualState):
         return conversation.lower() in content_desc.lower()
 
 
+class WhatsAppChatSettingsState(SimpleState, ContextualState):
+    """
+    A state representing a chat settings screen in the application.
+
+    This class extends both SimpleState and ContextualState to represent a chat settings screen
+    and validate its context based on the contact or group name.
+    """
+
+    def __init__(self, parent_state: State):
+        """
+        Initializes the ChatState with a parent state.
+
+        :param parent_state: The parent state of this chat state.
+        """
+        super().__init__(xpaths=[],
+                         parent_state=parent_state)
+
+    def validate_context(self, driver: PumaDriver, conversation: str = None) -> bool:
+        """
+        Validates the context of the chat settings state.
+
+        This method checks if the current chat settings screen matches the expected contact or group name.
+
+        :param driver: The PumaDriver instance used to interact with the application.
+        :param conversation: The name of the conversation to validate against.
+        :return: True if the context is valid, False otherwise.
+        """
+        if not conversation:
+            return True
+
+        # TODO fix xpath
+        content_desc = (driver.get_element(CHAT_STATE_CONTACT_HEADER).get_attribute('text'))
+        return conversation.lower() in content_desc.lower()
+
+
 class WhatsApp(StateGraph):
     """
     TODO
@@ -202,10 +237,20 @@ class WhatsApp(StateGraph):
                                  PROFILE_STATE_PHONE],
                                 parent_state=settings_state)
     chat_state = WhatsAppChatState(parent_state=conversations_state)
+    # new_chat_state = SimpleState([], parent_state=conversations_state)
+    # calls_state = SimpleState([], parent_state=conversations_state)
+    # updates_state = SimpleState([], parent_state=conversations_state)
+    # call_state = SimpleState([], parent_state=calls_state)
+    # send_location_state = SimpleState([], parent_state=chat_state)
+    # chat_settings = WhatsAppChatSettingsState(parent_state=chat_state)
 
     conversations_state.to(chat_state, go_to_chat)
     conversations_state.to(settings_state, compose_clicks([HAMBURGER_MENU, OPEN_SETTINGS_BY_TITLE]))
+    # conversations_state.to(new_chat_state, compose_clicks([]))
+    # conversations_state.to(calls_state, compose_clicks([]))
+    # conversations_state.to(updates_state, compose_clicks([]))
     settings_state.to(profile_state, compose_clicks([PROFILE_INFO]))
+
 
     # @abstractmethod
     def __init__(self, device_udid: str, app_package: str):
@@ -238,7 +283,7 @@ class WhatsApp(StateGraph):
         self.driver.press_backspace()
 
     @action(chat_state)
-    def send_message(self, message_text, to_chat: str, wait_until_sent=False):
+    def send_message(self, message_text, conversation: str, wait_until_sent=False):
         """
         Send a message in the current chat. If the message contains a mention, this is handled correctly.
         :param wait_until_sent: Exit this function only when the message has been sent.
@@ -254,10 +299,13 @@ class WhatsApp(StateGraph):
         if 'http' in message_text:
             sleep(2)
         self.driver.click(SEND_BUTTON)
-        if wait_until_sent:
-            _ = self._ensure_message_sent(message_text)
+        # if wait_until_sent:
+            # TODO convert to post action validation
+            # _ = self._ensure_message_sent(message_text)
 
-
+    # @action(send_location_state)
+    # def send_current_location(self, to_chat: str):
+    #     pass
 
     @action(profile_state)
     def change_profile_picture(self, photo_dir_name, index=1):
@@ -268,15 +316,7 @@ class WhatsApp(StateGraph):
         self.driver.get_element(f'//android.widget.Button[@resource-id="com.whatsapp:id/ok_btn"]').click()
 
 
-    # @abstractmethod
-    # @log_action
-    # def change_profile_picture(self, photo_dir_name, index=1):
-    #     """
-    #     Change profile picture. Selects the picture in the specified directory.
-    #     :param photo_dir_name: Name of the directory the profile photo is in.
-    #     """
-    #     pass
-    #
+
     # @abstractmethod
     # @log_action
     # def set_about(self, about_text: str):
@@ -288,45 +328,8 @@ class WhatsApp(StateGraph):
 
 
 
-    def currently_in_conversation_overview(self) -> bool:
-        # Send message occurs when no conversations are present yet. New chat when there are conversations.
-        return self.is_present('//android.widget.ImageButton[@content-desc="New chat"] | '
-                               '//android.widget.Button[@content-desc="Send message"]')
-
-    def currently_in_conversation(self) -> bool:
-        return self.is_present(
-            f'//android.widget.LinearLayout[@resource-id="{self.app_package}:id/conversation_root_layout"]',
-            implicit_wait=1)
-
-    def return_to_homescreen(self):
-        if self.driver.current_package != self.app_package:
-            self.driver.activate_app(self.app_package)
-        while not self.currently_in_conversation_overview():
-            self.driver.back()
-        sleep(0.5)
-
-    def get_conversation_row_elements(self, subject):
-        self.return_to_homescreen()
-        return self.driver.find_elements(by=AppiumBy.XPATH,
-                                         value=f"//*[contains(@resource-id,'{self.app_package}:id/conversations_row_contact_name') and @text='{subject}']")
-
     @log_action
-    def select_chat(self, subject):
-        """
-        Select the chat with subject x. For 1-on-1 chats, the subject is the name of the conversation partner. For group
-        chats, this is the subject. The top found chat will be selected, so there should not be more than 1 chat with the same subject.
-        """
-        self.return_to_homescreen()
-        chats_of_interest = self.get_conversation_row_elements(subject)
-        if len(chats_of_interest) > 1:
-            chats_of_interest_text = ", ".join([chat.text for chat in chats_of_interest])
-            print(
-                f"[WARNING]: Multiple chats found that contain the subject {subject}: {chats_of_interest_text}. Selecting the first one.")
-        if len(chats_of_interest) == 0:
-            raise Exception(f'Cannot find conversation with name {subject}')
-        chats_of_interest[0].click()
-
-    @log_action
+    #TODO
     def create_new_chat(self, contact, first_message):
         """
         Start a new 1-on-1 conversation with a contact and send a message.
@@ -340,23 +343,17 @@ class WhatsApp(StateGraph):
         f"//*[@resource-id='{self.app_package}:id/contactpicker_text_container']//*[@text='{contact}']").click()
         self.send_message(first_message)
 
-    def _if_chat_go_to_chat(self, chat: str):
-        if chat is not None:
-            self.return_to_homescreen()
-            self.select_chat(chat)
-        if not self.currently_in_conversation():
-            raise Exception('Expected to be in conversation screen now, but screen contents are unknown')
-
-    def _ensure_message_sent(self, message_text):
-        message_status_el = self.driver.get_element(message_status(message_text))
-        while message_status_el.tag_name == "Pending":
-            #TODO gtl logger?
-            logger.info("Message pending, waiting for the message to be sent.")
-            sleep(10)
-        logger.info("Message sent.")
-        return message_status_el
+    # def _ensure_message_sent(self, message_text):
+    #     message_status_el = self.driver.get_element(message_status(message_text))
+    #     while message_status_el.tag_name == "Pending":
+    #         #TODO gtl logger?
+    #         logger.info("Message pending, waiting for the message to be sent.")
+    #         sleep(10)
+    #     logger.info("Message sent.")
+    #     return message_status_el
 
     @log_action
+    #TODO
     def delete_message_for_everyone(self, message_text: str, chat: str = None):
         """
         Remove a message with the message text. Should be recently sent, so it is still in view and still possible to
@@ -374,6 +371,7 @@ class WhatsApp(StateGraph):
                                  value=f"//*[@resource-id='{self.app_package}:id/buttonPanel']//*[@text='Delete for everyone']").click()
 
     @log_action
+    #TODO
     def reply_to_message(self, message_to_reply_to: str, reply_text: str, chat: str = None):
         """
         Reply to a message. Assumes you are in the chat in which the message was sent.
@@ -392,6 +390,7 @@ class WhatsApp(StateGraph):
         self.driver.find_element(by=AppiumBy.ID, value=f"{self.app_package}:id/send").click()
 
     @log_action
+    #TODO: Broadcast window is not a state
     def send_broadcast(self, receivers: [str], broadcast_text: str):
         """
         Broadcast a message.
@@ -415,6 +414,7 @@ class WhatsApp(StateGraph):
         self.driver.find_element(by=AppiumBy.ID, value=f"{self.app_package}:id/send").click()
 
     @log_action
+    #TODO
     def send_sticker(self, chat: str = None):
         """
         Send the only sticker in the sticker menu. Assumes 1 sticker is present in WhatsApp.
@@ -438,6 +438,7 @@ class WhatsApp(StateGraph):
         self.driver.execute_script('mobile: clickGesture', {'x': x, 'y': y})
 
     @log_action
+    #TODO
     def send_voice_recording(self, duration: int = 2000, chat: str = None):
         """
         Sends a voice message in the current conversation.
@@ -450,6 +451,7 @@ class WhatsApp(StateGraph):
         self._long_press_element(voice_button, duration=duration)
 
     @log_action
+    #TODO
     def send_current_location(self, chat: str = None):
         """
         Send the current location in the current chat.
@@ -463,6 +465,7 @@ class WhatsApp(StateGraph):
         self.driver.find_element(by=AppiumBy.ID, value=f"{self.app_package}:id/send_current_location_btn").click()
 
     @log_action
+    #TODO: location is a state, end state is chat state (contextual?)
     def send_live_location(self, caption=None, chat: str = None):
         """
         Send a live location in the current chat.
@@ -482,6 +485,7 @@ class WhatsApp(StateGraph):
         self.driver.find_element(by=AppiumBy.ID, value=f"{self.app_package}:id/send").click()
 
     @log_action
+    #TODO
     def stop_live_location(self, need_to_scroll=False, chat: str = None):
         """
         Stops the current live location sharing.
@@ -499,6 +503,7 @@ class WhatsApp(StateGraph):
             self.driver.find_element(by=AppiumBy.XPATH, value=popup_button_xpath).click()
 
     @log_action
+    #TODO
     def send_contact(self, contact_name: str, chat: str = None):
         """
         Send a contact in the current chat.
@@ -515,6 +520,7 @@ class WhatsApp(StateGraph):
         self.driver.find_element(by=AppiumBy.ID, value=f"{self.app_package}:id/send_btn").click()
 
     @log_action
+    #TODO: updates is a state, creating the update isn't
     def set_status(self, caption: str = None):
         """
         Sets a status by taking a picture and setting the given caption.
@@ -539,6 +545,7 @@ class WhatsApp(StateGraph):
         self.return_to_homescreen()
 
     @log_action
+    #TODO
     def activate_disappearing_messages(self, chat=None):
         """
         Activates disappearing messages (auto delete) in the current or a given chat.
@@ -558,6 +565,7 @@ class WhatsApp(StateGraph):
             self.return_to_homescreen()
 
     @log_action
+    #TODO
     def deactivate_disappearing_messages(self, chat=None):
         """
         Disables disappearing messages (auto delete) in the current or a given chat.
@@ -576,18 +584,7 @@ class WhatsApp(StateGraph):
             self.return_to_homescreen()
 
     @log_action
-    def navigate_to_call_tab(self):
-        """
-        Navigates to the call tab. The 2 resource ids are necessary because they differ when you are or are not on the call tab.
-        :return:
-        """
-        self.driver.find_element(by=AppiumBy.XPATH,
-                                 value='//android.widget.TextView['
-                                       f'( @resource-id="{self.app_package}:id/navigation_bar_item_small_label_view"'
-                                       f'or @resource-id="{self.app_package}:id/navigation_bar_item_large_label_view" )'
-                                       'and @text="Calls"]').click()
-
-    @log_action
+    #TODO: call tab is a state
     def call_contact(self, contact, video_call=False):
         """
         Make a WhatsApp call. The call is made to a given contact name
@@ -606,6 +603,7 @@ class WhatsApp(StateGraph):
                                  value=f'(//android.widget.ImageView[@content-desc="{call_type}"])[1]').click()  # Take the top one without checking the name, since we already searched for the contact
 
     @log_action
+    #TODO
     def end_call(self):
         """
         Ends the current call. Assumes the call screen is open.
@@ -618,6 +616,7 @@ class WhatsApp(StateGraph):
         self.driver.find_element(by=AppiumBy.XPATH, value=end_call_button).click()
 
     @log_action
+    #TODO, not an action
     def answer_call(self):
         """
         Answer when receiving a call via Whatsapp.
@@ -628,6 +627,7 @@ class WhatsApp(StateGraph):
                                  value="//android.widget.Button[@content-desc='Answer' or @content-desc='Video']").click()
 
     @log_action
+    #TODO, not an action
     def decline_call(self):
         """
         Declines an incoming Whatsapp call.
@@ -637,6 +637,7 @@ class WhatsApp(StateGraph):
         self.driver.find_element(by=AppiumBy.XPATH, value="//android.widget.Button[@content-desc='Decline']").click()
 
     @log_action
+    #TODO, use new chat state
     def create_group(self, subject: str, participants: Union[str, List[str]]):
         """
         Create a new group. Assumes you are in homescreen.
@@ -681,6 +682,7 @@ class WhatsApp(StateGraph):
         self.return_to_homescreen()
 
     @log_action
+    #TODO
     def set_group_description(self, group_name, description):
         """
         Set the group description.
@@ -696,6 +698,7 @@ class WhatsApp(StateGraph):
         self.return_to_homescreen()
 
     @log_action
+    #TODO
     def delete_group(self, group_name):
         """
         Leaves and deletes a given group.
@@ -710,6 +713,7 @@ class WhatsApp(StateGraph):
         self.return_to_homescreen()
 
     @log_action
+    #TODO
     def archive_conversation(self, subject):
         """
         Archives a given conversation.
@@ -745,6 +749,7 @@ class WhatsApp(StateGraph):
 
     @log_action
     @abstractmethod
+    #TODO: implement this action
     def leave_group(self, group_name):
         """
         This method will leave the given group. It will not delete that group.
@@ -754,6 +759,7 @@ class WhatsApp(StateGraph):
         pass
 
     @log_action
+    #TODO: maybe make a state for chat settings? But the state is different for one-on-one and group conversations.
     def remove_participant_from_group(self, group_name, participant):
         """
         Removes a given participant from a given group chat.
@@ -770,6 +776,7 @@ class WhatsApp(StateGraph):
         self.return_to_homescreen()
 
     @log_action
+    #TODO
     def forward_message(self, from_chat, message_contains, to_chat):
         """
         Forwards a message from one conversation to another.
@@ -789,24 +796,9 @@ class WhatsApp(StateGraph):
         f"//*[@resource-id='{self.app_package}:id/contact_list']//*[@text='{to_chat}']").click()
         self.driver.find_element(by=AppiumBy.ID, value=f"{self.app_package}:id/send").click()
 
-    @log_action
-    def open_settings_you(self):
-        self.return_to_homescreen()
-        self.open_more_options()
-        # Improvement possible: get all elements and filter on text=settings
-        self.driver.find_element(by=AppiumBy.XPATH,
-                                 value=f'//android.widget.TextView[@resource-id="{self.app_package}:id/title" and @text="Settings"]').click()
-        self.driver.find_element(by=AppiumBy.ACCESSIBILITY_ID, value="You").click()
 
     @log_action
-    def open_more_options(self):
-        """
-        Open more options (hamburger menu) in the home screen.
-        """
-        self.driver.find_element(by=AppiumBy.XPATH,
-                                 value='//android.widget.ImageView[@content-desc="More options"]').click()
-
-    @log_action
+    #TODO
     def open_view_once_photo(self, chat=None):
         """
         Open view once photo in the current or specified chat. Should be done right after the photo is sent, to ensure the correct photo is opened, this will be the lowest one.
