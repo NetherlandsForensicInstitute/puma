@@ -127,17 +127,23 @@ class Snapchat(StateGraph):
         self._press_enter()
 
     @action(snap_state)
-    def send_snap_to(self, conversation: str = None):
-        self.driver.click(f'(//androidx.recyclerview.widget.RecyclerView[@resource-id="com.snapchat.android:id/send_to_recycler_view"]//javaClass[@text="{conversation}"])[1]')
+    def send_snap_to(self, recipients: [str] = None):
+        if recipients:
+            for recipient in recipients:
+                self.driver.click(f'(//androidx.recyclerview.widget.RecyclerView[@resource-id="com.snapchat.android:id/send_to_recycler_view"]//javaClass[@text="{recipient}"])[1]')
+        else:
+            self.driver.click(f'//javaClass[@text="My Story · Friends Only"]/..')
         self.driver.click(f'//android.view.View[@content-desc="Send"]')
+
 
 
 # TODO: continue with send snap and add the rest from the template and contributing for adding a new application
 if __name__ == "__main__":
         bob = Snapchat(device_udid="34281JEHN03866")
         contact_charlie = "Charlie"
+        group_bob = "Group Bob"
 
         bob.send_message("hi", contact_charlie)
 
-        bob.send_snap_to(contact_charlie)
+        bob.send_snap_to([contact_charlie])
 
