@@ -27,9 +27,22 @@ PROFILE_STATE_PROFILE_PICTURE = '//android.widget.ImageView[@resource-id="com.wh
 PROFILE_STATE_NAME = '//android.widget.Button[@resource-id="com.whatsapp:id/profile_settings_row_text" and @text="Name"]'
 PROFILE_STATE_PHONE = '//android.widget.Button[@resource-id="com.whatsapp:id/profile_settings_row_text" and @text="Phone"]'
 
+NEW_CHAT_STATE_HEADER = '//android.widget.TextView[@text="New chat"]'
+NEW_CHAT_STATE_NEW_GROUP = '//android.widget.TextView[@resource-id="com.whatsapp:id/contactpicker_row_name" and @text="New group"]'
+NEW_CHAT_STATE_NEW_CONTACT = '//android.widget.TextView[@resource-id="com.whatsapp:id/contactpicker_row_name" and @text="New contact"]'
+
+CALLS_STATE_START_CALL = '//android.widget.Button[@content-desc="Start a call"]'
+CALLS_STATE_HEADER = '//android.view.ViewGroup[@resource-id="com.whatsapp:id/toolbar"]/android.widget.TextView[@text="Calls"]'
+
+UPDATES_STATE_HEADER = '//android.view.ViewGroup[@resource-id="com.whatsapp:id/toolbar"]/android.widget.TextView[@text="Updates"]'
+UPDATES_STATE_STATUS_HEADER = '//android.widget.TextView[@resource-id="com.whatsapp:id/header_textview" and @text="Status"]'
+UPDATES_STATE_NEW_STATUS = '//android.view.View[@content-desc="New status update"]'
+
 #Chat state xpaths
 CHAT_STATE_ROOT_LAYOUT = '//android.widget.LinearLayout[@resource-id="com.whatsapp:id/conversation_root_layout"]'
 CHAT_STATE_CONTACT_HEADER = '//android.widget.TextView[@resource-id="com.whatsapp:id/conversation_contact_name"]'
+
+CALL_STATE_CONTACT_HEADER = '//android.widget.TextView[@resource-id="com.whatsapp:id/title"]'
 
 MESSAGE_TEXT_BOX = '//android.widget.EditText[@resource-id="com.whatsapp:id/entry"]'
 MENTION_SUGGESTIONS = '//android.widget.ImageView[@resource-id="com.whatsapp:id/contact_photo"]'
@@ -77,6 +90,8 @@ NAVIGATION_TAB_BY_TEXT = ('//android.widget.TextView['
                           '( @resource-id="com.whatsapp:id/navigation_bar_item_small_label_view"'
                           ' or @resource-id="com.whatsapp:id/navigation_bar_item_large_label_view" )'
                           ' and @text="{tab_text}"]')
+CALLS_TAB = '//android.widget.TextView[@resource-id="com.whatsapp:id/navigation_bar_item_small_label_view" and @text="Calls"]'
+UPDATES_TAB = '//android.widget.TextView[@resource-id="com.whatsapp:id/navigation_bar_item_small_label_view" and @text="Updates"]'
 CALL_TYPE_IMAGEVIEW_TEMPLATE = '(//android.widget.ImageView[@content-desc="{call_type}"])[1]'
 CONVERSATION_TEXT_CONTAINS = ("//*[@resource-id='com.whatsapp:id/conversation_text_row']"
                               "//*[contains(@text,'{message_contains}')]")
@@ -148,6 +163,21 @@ def go_to_chat(driver: PumaDriver, conversation: str):
     logger.info(f'Clicking on conversation {conversation} with driver {driver}')
     driver.get_elements(conversation_row_for_subject(conversation))[-1].click()
 
+def go_to_call(driver: PumaDriver, contact: str):
+    """
+    Navigates to a specific chat conversation in the application.
+
+    This function constructs an XPath to locate and click on a conversation element
+    based on the conversation name. It is designed to be used within a state transition
+    to navigate to a specific chat state.
+
+    :param driver: The PumaDriver instance used to interact with the application.
+    :param conversation: The name of the conversation to navigate to.
+    """
+    logger.info(f'Clicking on contact {contact} with driver {driver}')
+    driver.get_element(CALL_TAB_SEARCH_BUTTON).click()
+    driver.send_keys(SEARCH_BAR, contact)
+
 
 class WhatsAppChatState(SimpleState, ContextualState):
     """
@@ -194,10 +224,11 @@ class WhatsAppChatSettingsState(SimpleState, ContextualState):
 
     def __init__(self, parent_state: State):
         """
-        Initializes the ChatState with a parent state.
+        Initializes the ChatSettingsState with a parent state.
 
         :param parent_state: The parent state of this chat state.
         """
+        # TODO: add xpaths
         super().__init__(xpaths=[],
                          parent_state=parent_state)
 
@@ -219,6 +250,41 @@ class WhatsAppChatSettingsState(SimpleState, ContextualState):
         return conversation.lower() in content_desc.lower()
 
 
+class WhatsAppCallState(SimpleState, ContextualState):
+    """
+    A state representing a call screen in the application.
+
+    This class extends both SimpleState and ContextualState to represent a call screen
+    and validate its context based on the contact.
+    """
+
+    def __init__(self, parent_state: State):
+        """
+        Initializes the CallState with a parent state.
+
+        :param parent_state: The parent state of this call state.
+        """
+        super().__init__(xpaths=[END_CALL_BUTTON,
+                                 CALL_SCREEN_BACKGROUND],
+                         parent_state=parent_state)
+
+    def validate_context(self, driver: PumaDriver, contact: str = None) -> bool:
+        """
+        Validates the context of the call state.
+
+        This method checks if the current call screen matches the expected contact name.
+
+        :param driver: The PumaDriver instance used to interact with the application.
+        :param contact: The name of the call recipient to validate against.
+        :return: True if the context is valid, False otherwise.
+        """
+        if not contact:
+            return True
+
+        content_desc = (driver.get_element(CALL_STATE_CONTACT_HEADER).get_attribute('text'))
+        return contact.lower() in content_desc.lower()
+
+
 class WhatsApp(StateGraph):
     """
     TODO
@@ -237,18 +303,27 @@ class WhatsApp(StateGraph):
                                  PROFILE_STATE_PHONE],
                                 parent_state=settings_state)
     chat_state = WhatsAppChatState(parent_state=conversations_state)
-    # new_chat_state = SimpleState([], parent_state=conversations_state)
-    # calls_state = SimpleState([], parent_state=conversations_state)
-    # updates_state = SimpleState([], parent_state=conversations_state)
-    # call_state = SimpleState([], parent_state=calls_state)
+    new_chat_state = SimpleState([NEW_CHAT_STATE_HEADER,
+                                  NEW_CHAT_STATE_NEW_GROUP,
+                                  NEW_CHAT_STATE_NEW_CONTACT],
+                                 parent_state=conversations_state)
+    calls_state = SimpleState([CALLS_STATE_HEADER,
+                               CALLS_STATE_START_CALL],
+                              parent_state=conversations_state)
+    updates_state = SimpleState([UPDATES_STATE_HEADER,
+                                 UPDATES_STATE_STATUS_HEADER,
+                                 UPDATES_STATE_NEW_STATUS],
+                                parent_state=conversations_state)
+    call_state = WhatsAppCallState(parent_state=calls_state)
     # send_location_state = SimpleState([], parent_state=chat_state)
     # chat_settings = WhatsAppChatSettingsState(parent_state=chat_state)
 
     conversations_state.to(chat_state, go_to_chat)
     conversations_state.to(settings_state, compose_clicks([HAMBURGER_MENU, OPEN_SETTINGS_BY_TITLE]))
-    # conversations_state.to(new_chat_state, compose_clicks([]))
-    # conversations_state.to(calls_state, compose_clicks([]))
-    # conversations_state.to(updates_state, compose_clicks([]))
+    conversations_state.to(new_chat_state, compose_clicks([CONVERSATIONS_STATE_NEW_CHAT_OR_SEND_MESSAGE]))
+    conversations_state.to(calls_state, compose_clicks([CALLS_TAB]))
+    conversations_state.to(updates_state, compose_clicks([UPDATES_TAB]))
+    calls_state.to(call_state, go_to_call)
     settings_state.to(profile_state, compose_clicks([PROFILE_INFO]))
 
 
