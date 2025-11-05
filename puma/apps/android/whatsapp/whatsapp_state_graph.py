@@ -587,18 +587,15 @@ class WhatsApp(StateGraph):
     def _click_coordinates(self, x, y):
         self.driver.execute_script('mobile: clickGesture', {'x': x, 'y': y})
 
-    @log_action
-    #TODO
-    def send_voice_recording(self, duration: int = 2000, chat: str = None):
+    @action(chat_state)
+    def send_voice_recording(self, conversation: str, duration: int = 2000):
         """
         Sends a voice message in the current conversation.
-        Assumes we are in the conversation in which we want to send the voice message.
-        :param duration: the duration in of the voice message to send in millisec.
-        :param chat: The chat conversation in which to send this voice recording, if not currently in the desired chat.
+        :param conversation: The chat conversation in which to send this voice recording.
+        :param duration: the duration in of the voice message to send in milliseconds.
         """
-        self._if_chat_go_to_chat(chat)
-        voice_button = self.driver.find_element(by=AppiumBy.ID, value=f"{self.app_package}:id/voice_note_btn")
-        self._long_press_element(voice_button, duration=duration)
+        voice_button = self.driver.get_element('//*[@resource-id="com.whatsapp:id/voice_note_btn"]')
+        self.driver.long_press_element(voice_button, duration=duration)
 
     @log_action
     #TODO
