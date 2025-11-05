@@ -145,7 +145,12 @@ class Snapchat(StateGraph):
     def send_snap_to(self, recipients: [str] = None):
         if recipients:
             for recipient in recipients:
-                self.driver.click(f'(//androidx.recyclerview.widget.RecyclerView[@resource-id="com.snapchat.android:id/send_to_recycler_view"]//javaClass[@text="{recipient}"])[2]')
+                recipient_xpath = (
+                    f'//androidx.recyclerview.widget.RecyclerView[@resource-id="com.snapchat.android:id/send_to_recycler_view"]'
+                    f'//android.view.View[count(.//javaClass)=1]//javaClass[@text="{recipient}"]'
+                )
+                self.driver.click(recipient_xpath)
+                # self.driver.click(f'(//androidx.recyclerview.widget.RecyclerView[@resource-id="com.snapchat.android:id/send_to_recycler_view"]//javaClass[@text="{recipient}"])[1]')
         else:
             self.driver.click(f'//javaClass[@text="My Story · Friends Only"]/..')
         self.driver.click(f'//android.view.View[@content-desc="Send"]')
@@ -159,8 +164,8 @@ if __name__ == "__main__":
         group_bob = "Group Bob"
 
         # bob.send_message("hi", contact_charlie)
-        bob.toggle_camera()
+        # bob.toggle_camera()
         bob.take_photo()
-        bob.add_caption("whoopwhoop")
+        # bob.add_caption("whoopwhoop")
         bob.send_snap_to(recipients=[contact_charlie])
 
