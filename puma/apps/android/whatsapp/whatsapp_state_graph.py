@@ -804,7 +804,7 @@ class WhatsApp(StateGraph):
         self.driver.click('//*[@resource-id="com.whatsapp:id/send_btn"]')
 
     @action(chat_settings_state)
-    def activate_disappearing_messages(self, chat=None):
+    def activate_disappearing_messages(self, conversation: str):
         """
         Activates disappearing messages (auto delete) in the current or a given chat.
         Messages will now auto-delete after 24h.
