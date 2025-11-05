@@ -27,16 +27,20 @@ PROFILE_STATE_PROFILE_PICTURE = '//android.widget.ImageView[@resource-id="com.wh
 PROFILE_STATE_NAME = '//android.widget.Button[@resource-id="com.whatsapp:id/profile_settings_row_text" and @text="Name"]'
 PROFILE_STATE_PHONE = '//android.widget.Button[@resource-id="com.whatsapp:id/profile_settings_row_text" and @text="Phone"]'
 
-NEW_CHAT_STATE_HEADER = '//android.widget.TextView[@text="New chat"]'
+# TODO-CC: there is no 'New chat'? You pick a contect from the 'Contacts on WhatsApp' list?
+# NEW_CHAT_STATE_HEADER = '//android.widget.TextView[@text="New chat"]'
 NEW_CHAT_STATE_NEW_GROUP = '//android.widget.TextView[@resource-id="com.whatsapp:id/contactpicker_row_name" and @text="New group"]'
 NEW_CHAT_STATE_NEW_CONTACT = '//android.widget.TextView[@resource-id="com.whatsapp:id/contactpicker_row_name" and @text="New contact"]'
+NEW_CHAT_STATE_NEW_COMMUNITY = '//android.widget.TextView[@resource-id="com.whatsapp:id/contactpicker_row_name" and @text="New community"]'
 
 CALLS_STATE_START_CALL = '//android.widget.Button[@content-desc="Start a call"]'
 CALLS_STATE_HEADER = '//android.view.ViewGroup[@resource-id="com.whatsapp:id/toolbar"]/android.widget.TextView[@text="Calls"]'
 
 UPDATES_STATE_HEADER = '//android.view.ViewGroup[@resource-id="com.whatsapp:id/toolbar"]/android.widget.TextView[@text="Updates"]'
 UPDATES_STATE_STATUS_HEADER = '//android.widget.TextView[@resource-id="com.whatsapp:id/header_textview" and @text="Status"]'
-UPDATES_STATE_NEW_STATUS = '//android.view.View[@content-desc="New status update"]'
+# TODO-CC: invalid after updating status?
+# UPDATES_STATE_NEW_STATUS = '//android.view.View[@content-desc="New status update"]'
+UPDATES_STATE_NEW_STATUS = '//android.widget.ImageButton[@content-desc="New status update"]'
 
 #Chat state xpaths
 CHAT_STATE_ROOT_LAYOUT = '//android.widget.LinearLayout[@resource-id="com.whatsapp:id/conversation_root_layout"]'
@@ -375,9 +379,9 @@ class WhatsApp(StateGraph):
                                  PROFILE_STATE_PHONE],
                                 parent_state=settings_state)
     chat_state = WhatsAppChatState(parent_state=conversations_state)
-    new_chat_state = SimpleState([NEW_CHAT_STATE_HEADER,
-                                  NEW_CHAT_STATE_NEW_GROUP,
-                                  NEW_CHAT_STATE_NEW_CONTACT],
+    new_chat_state = SimpleState([NEW_CHAT_STATE_NEW_GROUP,
+                                  NEW_CHAT_STATE_NEW_CONTACT,
+                                  NEW_CHAT_STATE_NEW_COMMUNITY],
                                  parent_state=conversations_state)
     calls_state = SimpleState([CALLS_STATE_HEADER,
                                CALLS_STATE_START_CALL],
@@ -436,14 +440,7 @@ class WhatsApp(StateGraph):
         # Remove a space resulting from selecting the mention person
         self.driver.press_backspace()
 
-    @action(chat_state)
-    def send_message(self, message_text, conversation: str, wait_until_sent=False):
-        """
-        Send a message in the current chat. If the message contains a mention, this is handled correctly.
-        :param wait_until_sent: Exit this function only when the message has been sent.
-        :param conversation: The chat conversation in which to send this message.
-        :param message_text: The text that the message contains.
-        """
+    def send_message_in_current_conversation(self, message_text, wait_until_sent=False):
         self.driver.click(MESSAGE_TEXT_BOX)
         self._handle_mention(message_text) \
             if "@" in message_text \
@@ -457,6 +454,16 @@ class WhatsApp(StateGraph):
             # TODO convert to post action validation
             # _ = self._ensure_message_sent(message_text)
 
+    @action(chat_state)
+    def send_message(self, message_text, conversation: str, wait_until_sent=False):
+        """
+        Send a message in the current chat. If the message contains a mention, this is handled correctly.
+        :param wait_until_sent: Exit this function only when the message has been sent.
+        :param conversation: The chat conversation in which to send this message.
+        :param message_text: The text that the message contains.
+        """
+        self.send_message_in_current_conversation(message_text, wait_until_sent)
+
     # @action(send_location_state)
     # def send_current_location(self, to_chat: str):
     #     pass
@@ -469,6 +476,59 @@ class WhatsApp(StateGraph):
         self._find_media_in_folder(photo_dir_name, index)
         self.driver.get_element(f'//android.widget.Button[@resource-id="com.whatsapp:id/ok_btn"]').click()
 
+    ########################################
+    # region CC
+
+        # {
+        #   "platformName": "Android",
+        #   "appium:options": {
+        #     "automationName": "UiAutomator2",
+        #     "platformVersion": "16.0",
+        #     "deviceName": "Android",
+        #     "udid": "",
+        #     "noReset": true
+        #   }
+        # }
+
+    def get_ui_component(self, widget_type: str, resource_id: str):
+        return self.driver.get_element(f'//android.widget.{widget_type}[@resource-id="{self.WHATSAPP_PACKAGE}:id/{resource_id}"]')
+
+    def get_ui_component_by_xpath(self, xpath: str):
+        return self.driver.get_element(xpath)
+
+    # TODO: you 'add' a status, not set it?
+    @action(updates_state)
+    def set_status(self, caption: str = None):
+        """
+        Sets a status by taking a picture and setting the given caption.
+        :param caption: the caption to publish with the status.
+        """
+        self.get_ui_component_by_xpath(UPDATES_STATE_NEW_STATUS).click()
+        # TODO-CC: why was a check for if_present present? It it weren't there, the following steps would also break?
+        self.get_ui_component_by_xpath(CAMERA_BUTTON).click()
+
+        self.get_ui_component('ImageView', 'shutter').click()
+        if caption:
+             self.get_ui_component('EditText', 'caption').send_keys(caption)
+
+        self.get_ui_component('ImageButton', 'send').click()
+
+        # self.driver.get_element(UPDATES_STATE_NEW_STATUS).click()
+        #
+        # if self.driver.is_present(CAMERA_BUTTON):
+        #     self.driver.get_element(CAMERA_BUTTON).click()
+        #
+        # # TODO-CC: first time I got the 'allow WhatsApp access to your camera'
+        # #       + 'Allow WhatsApp to take pictures and record video'
+        #
+        # self.driver.get_element(f'//android.widget.ImageView[@resource-id="{self.WHATSAPP_PACKAGE}:id/shutter"]').click()
+        # if caption:
+        #     self.driver.get_element(f'//android.widget.EditText[@resource-id="{self.WHATSAPP_PACKAGE}:id/caption"]').send_keys(caption)
+        #
+        # self.driver.get_element(f'//android.widget.ImageButton[@resource-id="{self.WHATSAPP_PACKAGE}:id/send"]').click()
+        #
+        # # TODO-CC: now I get 'This status update will be sent to your contacts. Change privacy settings. (Cancel, Send)'
+
     @action(profile_state)
     def set_about(self, about_text: str):
         self.driver.get_element('//*[@resource-id="com.whatsapp:id/profile_info_status_card"]').click()
@@ -478,6 +538,7 @@ class WhatsApp(StateGraph):
         # This action ends in a screen that isn't a state, so move back one screen.
         self.driver.back()
 
+    @action(new_chat_state)
     @log_action
     #TODO CC
     def create_new_chat(self, contact, first_message):
@@ -486,12 +547,141 @@ class WhatsApp(StateGraph):
         :param contact: Contact to start the conversation with.
         :param first_message: First message to send to the contact
         """
-        self.return_to_homescreen()
-        self.driver.find_element(by=AppiumBy.XPATH, value=
-        f"//*[@resource-id='{self.app_package}:id/fab' or @resource-id='{self.app_package}:id/fabText']").click()
-        self.driver.find_element(by=AppiumBy.XPATH, value=
-        f"//*[@resource-id='{self.app_package}:id/contactpicker_text_container']//*[@text='{contact}']").click()
-        self.send_message(first_message)
+        self.driver.get_element(f'//*[@resource-id="{self.WHATSAPP_PACKAGE}:id/contactpicker_text_container"]//*[@text="{contact}"]').click()
+        self.send_message_in_current_conversation(first_message)
+
+    def open_more_options(self):
+        """
+        Open more options (hamburger menu) in the home screen.
+        """
+        self.driver.get_element('//android.widget.ImageView[@content-desc="More options"]').click()
+
+    @action(conversations_state)
+    def send_broadcast(self, receivers: List[str], broadcast_text: str):
+        """
+        Broadcast a message.
+        :param receivers: list of receiver names, minimum of 2!.
+        :param broadcast_text: Text to send.
+        """
+        if len(receivers) < 2:
+            raise Exception(f"Error: minimum of 2 receivers required for a broadcast, got: {receivers}")
+
+        self.open_more_options()
+        # self.driver.get_element(f'//*[@resource-id=:"{self.WHATSAPP_PACKAGE}:id/title" and @text="New broadcast"]').click()
+        self.driver.get_element(NEW_BROADCAST_TITLE).click()
+        for receiver in receivers:
+            self.driver.get_element(f'//*[@resource-id="{self.WHATSAPP_PACKAGE}:id/chat_able_contacts_row_name" and @text="{receiver}"]').click()
+
+        self.driver.get_element(f'//android.widget.ImageButton[@resource-id="{self.WHATSAPP_PACKAGE}:id/next_btn"]').click()
+        self.driver.get_element(f'//android.widget.EditText[@resource-id="{self.WHATSAPP_PACKAGE}:id/entry"]').send_keys(broadcast_text)
+        self.driver.get_element(f'//android.widget.ImageButton[@resource-id="{self.WHATSAPP_PACKAGE}:id/send"]').click()
+
+    @action(chat_state)
+    def delete_message_for_everyone(self, conversation: str, message_text: str):
+        """
+        Remove a message with the message text. Should be recently sent, so it is still in view and still possible to
+        delete for everyone.
+        :param conversation: The chat conversation in which to send this message, if not currently in the desired chat.
+        :param message_text: literal message text of the message to remove. The first match will be removed in case
+        there are multiple with the same text.
+        """
+        message_element = self.driver.find_element(f"//*[@resource-id='{self.WHATSAPP_PACKAGE}:id/conversation_text_row']//*[@text='{message_text}']")
+        self._long_press_element(message_element)
+        self.driver.get_element('//*[@content-desc="Delete"]').click()
+        self.driver.get_element(f'//*[@resource-id="{self.WHATSAPP_PACKAGE}:id/buttonPanel"]//*[@text="Delete for everyone"]').click()
+
+    @action(conversations_state)
+    def create_group(self, subject: str, participants: Union[str, List[str]]):
+        """
+        Create a new group.
+        :param subject: The subject of the group.
+        :param participants: The contact(s) you want to add to the group (string or list).
+        Note that only 1 participant is implemented for now.
+        """
+        self.open_more_options()
+        self.driver.get_element('//*[@text="New group"]').click()
+
+        participants = [participants] if not isinstance(participants, list) else participants
+        for participant in participants:
+            # TODO-CC: classname
+            contacts = self.driver.get_element(by=AppiumBy.CLASS_NAME, value='android.widget.TextView')
+            participant_to_add = [contact for contact in contacts if contact.text.lower() == participant.lower()][0]
+            participant_to_add.click()
+
+        self.driver.get_element(f'//*[@resource-id="{self.WHATSAPP_PACKAGE}:id/next_btn"]').click()
+        self.driver.get_element(f'//*[@resource-id="{self.WHATSAPP_PACKAGE}:id/group_name"]').send_keys(subject)
+
+        # TODO-CC: classname
+        image_buttons = self.driver.find_elements(by=AppiumBy.CLASS_NAME, value='android.widget.ImageButton')
+        # TODO-CC: is this necessary? or can we just get the Create button with xpath
+        next_button = [button for button in image_buttons if button.tag_name == "Create"][0]
+        next_button.click()
+
+        # TODO-CC: print should be log?
+        print("Waiting 5 sec to create group")
+        sleep(5)
+
+        # TODO-CC: use xpaths to check? Or just try to find the single_msg_tv
+        # if self.currently_at_homescreen():
+        print("On homescreen now")
+        # Check if creating the group succeeded
+        top_conv =self.driver.get_element(f'//*[@resource-id="{self.WHATSAPP_PACKAGE}:id/single_msg_tv"]')
+        max_attempts = 20
+        while "Creating" in top_conv.text or "Couldn't create" in top_conv.text:
+            if "Couldn't create" in top_conv.text:
+                print("Couldn't create. Tapping to retry")
+                top_conv.click()
+            else:
+                print("Waiting for group to be created.")
+            sleep(5)
+            max_attempts -= 1
+            if max_attempts == 0:
+                # TODO-CC: is this a timeout?
+                raise TimeoutError(f"Could not create group after 20 attempts. Try restarting your emulator and try again.")
+        # self.return_to_homescreen()
+
+    @action(conversations_state)
+    def archive_conversation(self, subject):
+        """
+        Archives a given conversation.
+        :param subject: The conversation to archive.
+        """
+        # TODO-CC: get elements necessary?
+        conversation = self.driver.get_elements(f'//*[contains(@resource-id,"{self.WHATSAPP_PACKAGE}:id/conversations_row_contact_name") and @text="{subject}"]')[0]
+        self._long_press_element(conversation)
+        self.driver.get_element(f'//*[@resource-id="{self.WHATSAPP_PACKAGE}:id/menuitem_conversations_archive"]').click()
+        # Wait until the archive popup disappeared
+        archived_popup_present = True
+        # TODO-CC: limit amount of tries
+        while archived_popup_present:
+            print("waiting for archived popup to disappear")
+            sleep(5)
+            archived_popup_present = 'archived' in self.driver.get_elements(f'//*[contains(@text,"archived") or @resource-id="{self.WHATSAPP_PACKAGE}:id/fab"]')[0].text
+        print("Archive pop-up gone!")
+
+    @action(chat_state)
+    def open_view_once_photo(self, conversation: str):
+        """
+        Open view once photo in the current or specified chat. Should be done right after the photo is sent, to ensure the correct photo is opened, this will be the lowest one.
+        # TODO-CC: do we want this state dependent code? Perhaps just make it a different method? (open_view_one + open_view_once_in_current)
+        :param conversation: The chat in which the photo has to be opened
+        """
+        self.driver.get_elements('//*[contains(@resource-id, "view_once_media")]')[-1].click()
+
+    @action(chat_state)
+    def set_group_description(self, conversation: str, description: str):
+        """
+        Set the group description.
+        :param conversation: Name of the group to set the description for.
+        :param description: Description of the group.
+        """
+        self.driver.get_element(f'//*[@resource-id="{self.WHATSAPP_PACKAGE}:id/conversation_contact"]')
+        self.driver.scroll_to_find_element(text_equals='Add group description').click()
+        self.driver.find_element(f'//*[@resource-id="{self.WHATSAPP_PACKAGE}:id/edit_text"]').send_keys(description)
+        self.driver.find_element(f'//*[@resource-id="{self.WHATSAPP_PACKAGE}:id/ok_btn"]').click()
+
+    # endregion
+    ########################################
 
     # def _ensure_message_sent(self, message_text):
     #     message_status_el = self.driver.get_element(message_status(message_text))
@@ -663,33 +853,8 @@ class WhatsApp(StateGraph):
         self.driver.click('//*[@resource-id="com.whatsapp:id/next_btn"]')
         self.driver.click('//*[@resource-id="com.whatsapp:id/send_btn"]')
 
-    @log_action
-    #TODO: updates is a state, creating the update isn't
-    def set_status(self, caption: str = None):
-        """
-        Sets a status by taking a picture and setting the given caption.
-        :param caption: the caption to publish with the status.
-        """
-        self.return_to_homescreen()
-        self.driver.find_element(by=AppiumBy.XPATH,
-                                 value='//android.widget.TextView['
-                                       f'( @resource-id="{self.app_package}:id/navigation_bar_item_small_label_view"'
-                                       f'or @resource-id="{self.app_package}:id/navigation_bar_item_large_label_view" )'
-                                       'and @text="Updates"]').click()
-        self.driver.find_element(by=AppiumBy.XPATH,
-                                 value='//android.widget.ImageButton[@content-desc="New status update"]').click()
-        open_camera = '//android.widget.Button[@content-desc="Camera"]'
-        if self.is_present(open_camera):
-            self.driver.find_element(by=AppiumBy.XPATH, value=open_camera).click()
-        self.driver.find_element(by=AppiumBy.ID, value=f"{self.app_package}:id/shutter").click()
-        if caption:
-            self.driver.find_element(by=AppiumBy.ID, value=f"{self.app_package}:id/caption").send_keys(caption)
-        self.driver.find_element(by=AppiumBy.ID, value=f"{self.app_package}:id/send").click()
-        # TODO: popup that can appear!
-        self.return_to_homescreen()
-
     @action(chat_settings_state)
-    def activate_disappearing_messages(self, conversation: str):
+    def activate_disappearing_messages(self, chat=None):
         """
         Activates disappearing messages (auto delete) in the current or a given chat.
         Messages will now auto-delete after 24h.
