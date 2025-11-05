@@ -908,44 +908,33 @@ class WhatsApp(StateGraph):
         """
         pass
 
-    @log_action
-    #TODO: maybe make a state for chat settings? But the state is different for one-on-one and group conversations.
-    def remove_participant_from_group(self, group_name, participant):
+    @action(chat_settings_state)
+    def remove_participant_from_group(self, conversation: str, group_name, participant):
         """
         Removes a given participant from a given group chat.
-        It is assumed the group chat exists and has the given participant, and that we start at the whatsapp home screen.
-        :param group_name: The group
+        It is assumed the group chat exists and has the given participant.
+        :param conversation: The group
         :param participant: The participant to remove
         """
-        self.select_chat(group_name)
-        self.driver.find_element(by=AppiumBy.ID, value=f"{self.app_package}:id/conversation_contact").click()
-        self.scroll_to_find_element(text_equals=participant).click()
-        self.driver.find_element(by=AppiumBy.XPATH, value="//*[starts-with(@text, 'Remove')]").click()
-        self.driver.find_element(by=AppiumBy.XPATH, value="//*[@class='android.widget.Button' and @text='OK']").click()
-        sleep(5)
-        self.return_to_homescreen()
+        self.driver.swipe_to_click_element_with_text(text_equals=participant)
+        self.driver.click("//*[starts-with(@text, 'Remove')]")
+        self.driver.click("//*[@class='android.widget.Button' and @text='OK']")
 
-    @log_action
-    #TODO
-    def forward_message(self, from_chat, message_contains, to_chat):
+    @action(chat_state)
+    def forward_message(self, conversation: str, message_contains, to_chat):
         """
         Forwards a message from one conversation to another.
-        It is assumed the message and both conversations exists, and that we start at the whatsapp home screen.
-        :param from_chat: The chat from which the message has to be forwarded
+        It is assumed the message and both conversations exists.
+        :param conversation: The chat from which the message has to be forwarded
         :param message_contains: the text from the message that has to be forwarded. Uses String.contains(), so only part
         of the message is needed, but be sure the given text is enough to match your intended message uniquely.
         :param to_chat: The chat to which the message has to be forwarded.
         """
-        self.select_chat(from_chat)
-        chat_message = self.driver.find_element(by=AppiumBy.XPATH, value=
-        f"//*[@resource-id='{self.app_package}:id/conversation_text_row']//*[contains(@text,'{message_contains}')]")
+        chat_message = self.driver.get_element(f"//*[@resource-id='com.whatsapp:id/conversation_text_row']//*[contains(@text,'{message_contains}')]")
         self._long_press_element(chat_message)
-        self.driver.find_element(by=AppiumBy.XPATH, value=
-        f"//*[@resource-id='{self.app_package}:id/action_mode_bar']//*[@content-desc='Forward']").click()
-        self.driver.find_element(by=AppiumBy.XPATH, value=
-        f"//*[@resource-id='{self.app_package}:id/contact_list']//*[@text='{to_chat}']").click()
-        self.driver.find_element(by=AppiumBy.ID, value=f"{self.app_package}:id/send").click()
-
+        self.driver.click(f"//*[@resource-id='com.whatsapp:id/action_mode_bar']//*[@content-desc='Forward']")
+        self.driver.click(f"//*[@resource-id='com.whatsapp:id/contact_list']//*[@text='{to_chat}']")
+        self.driver.click('//*[@resource-id="com.whatsapp:id/send"]')
 
     def _find_media_in_folder(self, directory_name, index):
         try:
