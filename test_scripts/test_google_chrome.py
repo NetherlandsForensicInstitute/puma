@@ -1,7 +1,6 @@
 import unittest
 
-from puma.apps.android.google_chrome.google_chrome import GoogleChromeActions
-from test_scripts.test_google_maps import device_udids
+from puma.apps.android.google_chrome.google_chrome import GoogleChrome
 
 # Fill in the udid below. Run ADB devices to see the udids.
 device_udids = {
@@ -17,29 +16,41 @@ class TestGoogleChrome(unittest.TestCase):
     Prerequisites:
     - All prerequisites mentioned in the README.
     - Phone or emulator with Google Chrome installed
+    - At least one tab with a url entered in the tab overview
     """
 
     @classmethod
     def setUpClass(self):
         if not device_udids["Alice"]:
-            print("No udid was configured for Alice. Pleas add at the top of the script.\nExiting....")
+            print("No udid was configured for Alice. Please add at the top of the script.\nExiting....")
             exit(1)
-        self.alice = GoogleChromeActions(device_udids["Alice"])
+        self.alice = GoogleChrome(device_udids["Alice"])
 
-    def test_go_to(self):
-        self.alice.go_to("www.wikipedia.com")
 
-    def test_new_tab(self):
-        self.alice.go_to("www.google.com", new_tab=True)
+    def test_visit_url(self):
+        self.alice.visit_url("www.google.com", 1)
 
-    def test_save_bookmark(self):
-        self.alice.bookmark_page()
+    def test_visit_url_new_tab(self):
+        self.alice.visit_url_new_tab("wikipedia.org")
 
-    def test_load_bookmark(self):
-        self.alice.load_bookmark()
+    def test_bookmarks(self):
+        self.alice.visit_url("www.wikipedia.com", 1)
+        # Clean up at the start, so we can be sure that both saving and deleting are properly tested.
+        self.alice.delete_bookmark(1)
 
-    def test_incognito(self):
-        self.alice.go_to_incognito("www.wikipedia.com")
+        self.assertTrue(self.alice.bookmark_page(1))
+        self.assertFalse(self.alice.bookmark_page(1))
+        self.alice.load_first_bookmark("Mobile bookmarks")
+        self.assertTrue(self.alice.delete_bookmark(1))
+        self.assertFalse(self.alice.delete_bookmark(1))
+
+    def test_go_to_incognito(self):
+        self.alice.visit_url_incognito("www.wikipedia.com")
+
+    def test_transitions(self):
+        for to_state in self.alice.states:
+            self.alice.go_to_state(to_state, tab_index=1, folder_name="Mobile bookmarks")
+        self.alice.go_to_state(self.alice.initial_state)
 
 
 if __name__ == '__main__':

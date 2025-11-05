@@ -7,92 +7,107 @@ For detailed information on each method, see the method its PyDoc documentation.
 The application can be downloaded
 in [the Google PlayStore](https://play.google.com/store/apps/details?id=org.telegram.messenger).
 
-### Prerequisites
+## Prerequisites
+
 - The application installed on your device
 - Registration with a phone number
+- Device language needs to be set to English
 
-### Initialization
+## Initialization
 
 Initialization is standard but has one optional parameter.
 When using the most common version of Telegram (the version published to the Google Play Store) you can use standard
 initialization:
 
 ```python
-from puma.apps.android.telegram.telegram import TelegramActions
+from puma.apps.android.telegram.telegram import Telegram
 
-phone = TelegramActions("emulator-5444")
+phone = Telegram("emulator-5444")
 ```
 
 If you're using the Telegram apk found at [telegram.org](https://telegram.org/android), you can use the optional
 parameter `telegram_web_version`:
 
 ```python
-phone = TelegramActions("emulator-5444", telegram_web_version=True)
+phone = Telegram("emulator-5444", telegram_web_version=True)
 ```
 
 This is needed because these two versions of the Telegram Android app use different package names.
 
-### Navigating the UI
+## Sending a message
 
-You can go to the Telegram start screen (the screen you see when opening the app), and opening a specific conversation:
-
-```python
-phone.return_to_homescreen()  # returns to the WhatsApp home screen
-phone.select_chat("Bob")  # opens the conversation with Bob
-# this method doesn't require you to be at the home screen
-phone.select_group("Guys")  # this call will first go back to the home screen, then open the other conversation
-phone.select_channel("News")
-```
-
-### Sending a message
-
-Of course, you can send text messages:
+Sending a message is done easily:
 
 ```python
-phone.select_chat("Bob")  # open the conversation with Bob 
-phone.send_message("Hi Bob!")  # Send Bob a message
-# but this can be done in one call:
-phone.send_message("Hi Charlie", chat="Charlie")  # This will open the charlie conversation, then send the message
-# !!! Only use the `chat` argument the first time! If not, each send_message call will first exit the current
-# conversation, and then open the conversation again. This happens because Puma cannot detect whether you're already
-# in the desired conversation
-# Telegram allows you to reply to messages:
-phone.reply_to_message("Hi Alice!", reply="Hi bob, what's up!")  # replies with a new message
-phone.emoji_reply_to_message("Finished laundry", reply="👍")  # replies with an emoji reaction on the message itself
+phone.send_message("Hi Bob!", conversation='Bob')  # Send Bob a message
+phone.send_message("How are you doing?")  # After the conversation is opened, the conversation parameter is not needed
+phone.send_message("Any plans this weekend?", conversation='Bob')  # ...But it's not a problem
+phone.send_message("Perhaps a movie?", conversation='bOB')  # conversation names need to match exactly, but are case-insensitive
 ```
 
-### Sending Pictures
+### Sending media
 
-For Telegram, Puma currently only supports taking and sending a picture with the embedded camera in the Telegram app.
+Puma can send pictures and videos alreayd on the device:
 
 ```python
-phone.take_and_send_picture(chat="bob")  # Sends a picture with the rear camera
-phone.take_and_send_picture(caption="Look where I am!")  # Captions can be included
-phone.take_and_send_picture(front_camera=True)  # You can also use the front camera
+phone.send_media_from_gallery(media_index=1, conversation='Bob')  # this picks the first picture in the media picker
+# we will ommit the conversation parameter from here, as it is not needed once we have opened a conversation
+phone.send_media_from_gallery(media_index=[2,4,7])  # we can also send multiple files: the 2nd, 4th and 7th
+phone.send_media_from_gallery(media_index=2, caption='cool bird, huh?')  # captions are also supported
+phone.send_media_from_gallery(media_index=1, folder='screenshots')  # we can also choose media files from a specific folder
+# the above command uses OCR to recognize the folder name. Since this is not 100% reliable, you can also use an index
+# to open the nth folder. The index is 1-based
+phone.send_media_from_gallery(media_index=1, folder=3)  # sends the first media file from the 3rd folder in the Telegram dropdown 
 ```
+Telegram also supports voice and video messages, which are audio or video clips recorded in the app:
+```python
+phone.send_voice_message(10, conversation='Bob')  # sends a 10 second voice message
+phone.send_video_message(5)  # sends a 5 second video message
+```
+
 
 ## Calls
 
 We can make (video) calls using telegram:
 
 ```python
-phone_alice.start_call()  # start call in the current conversation
+phone_alice.start_call(conversation='Bob')  # start call with Bob
 phone_bob.answer_call()  # answer an incoming call
-phone_alice.end_call()  # ends current call (can be called before other party answered the call)
-phone_alice.start_call("Charlie", video=True)  # starts a video call
-phone_charlie.decline_call()  # decline an incoming call
-# when a call is active, we can toggle between a video call and a voice call:
-phone.toggle_video_in_call()
-# when in a video call, we can switch between the front and read camera:
-phone.flip_video_in_call()
+phone_alice.end_call()  # ends current call
+
+phone_bob.start_call()  # starts a call in the current conversation
+phone_alice.answer_call()
+phone_bob.mute_mic()  # mutes the microphone
+phone_bob.mute_mic()  # a second call will unmute
+phone_alice.end_call()
 ```
 
-When calls are made, you can also retrieve the current status of the call:
+## Location
+
+Puma supports sending the current location or the live location:
 
 ```python
-phone_alice.get_call_status()  # returns None when not in a call
-phone_alice.start_call()
-phone_alice.get_call_status()  # returns status describing the current phase of the call, as displayed in the UI: connecting, waiting, or requesting
-phone_bob.answer_call()
-phone_alice.get_call_status()  # When a call is in progress after the other party picked up, this returns "In progress"
+# in all examples below, the parameter conversation is needed if you're not currently in a conversation. We omit it here.
+phone.send_current_location()  # sends the current location
+phone.send_live_location()  # sends the live location for the default duration
+phone.stop_live_location_sharing()  # stops the live location sharing
+phone.send_live_location(duration_option=2)  # you can use a different duration option, by using a 1-based index
+phone.send_live_location(duration_option='1 hour')  # or by using part of the UI text that's in view. This is readable code but less stable
+```
+
+## Group chat management
+
+Puma can create and manage group chats. For chatting, group chats behave like regular conversations
+
+```python
+phone.create_group('my best friends', members=['alice', 'bob'])  # Creates a group.
+## A group name is required, members are optional and can be added later:
+phone.add_members(conversation='my best friends', new_members=['charlie, dave'])
+# members can also be removed
+phone.remove_member(conversation='my best friends', member='dave')
+# the group name and description can be changed:
+phone.edit_group_name(conversation='my best friends', new_group_name='my good friends')
+phone.edit_group_description(conversation='my good friends', description='Since 1999!')
+# groups can be deleted or left. A regular user will simply leave, while the group owner will delete the group:
+phone.delete_and_leave_group(conversation='my good friends')
 ```

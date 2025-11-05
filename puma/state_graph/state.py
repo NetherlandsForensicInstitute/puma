@@ -11,31 +11,45 @@ class State(ABC):
     """
     Abstract class representing a state. Each state represents a window in the UI.
     """
-    def __init__(self, parent_state: 'State' = None, initial_state: bool = False):
+
+    def __init__(self, initial_state: bool = False, parent_state: 'State' = None, parent_state_transition: Callable[..., None] = None):
         """
         Initializes a new State instance.
 
-        :param parent_state: The parent state of this state, or None if it has no parent.
         :param initial_state: Whether this is the initial state of the FSM.
+        :param parent_state: The parent state of this state, or None if it has no parent.
+        :param parent_state_transition: How to transition back to the parent state. By default, this is a press on the back button.
         """
         self.id = None  # set in metaclass
-        if initial_state and parent_state:
-            raise ValueError(f'Error creating state: initial state cannot have a parent state')
         self.initial_state = initial_state
         self.parent_state = parent_state
         self.transitions = []
 
         if parent_state:
-            self.to(parent_state, back)
+            if parent_state_transition is None:
+                self.to(parent_state, back)
+            else:
+                self.to(parent_state, parent_state_transition)
 
     def to(self, to_state: 'State', ui_actions: Callable[..., None]):
         """
-        Transition to another state.
+        Define the transition from this state to another state.
 
         :param to_state: The next state to transition to.
         :param ui_actions: A list of UI action functions to perform the transition.
         """
         self.transitions.append(Transition(self, to_state, ui_actions))
+
+    def from_states(self, from_states: List['State'], ui_actions: Callable[..., None]):
+        """
+        Define the transition from a set of other states to this state.
+        This method is convenient when a state can be reached from many other states with the same UI actions.
+
+        :param from_states: The next state to transition to.
+        :param ui_actions: A list of UI action functions to perform the transition.
+        """
+        for state in from_states:
+            state.to(self, ui_actions)
 
     @abstractmethod
     def validate(self, driver: PumaDriver) -> bool:
@@ -63,32 +77,41 @@ class ContextualState(State):
 
 class SimpleState(State):
     """
-    Simple State. This is a standard state which can be validated by providing a list of XPaths.
+    Simple State. This is a standard state which can be validated by providing a list of present XPaths.
     """
-    def __init__(self, xpaths: List[str], initial_state: bool = False, parent_state: 'State' = None, ):
+
+    def __init__(self, xpaths: List[str], invalid_xpaths: list[str] = [], initial_state: bool = False, parent_state: 'State' = None, parent_state_transition: Callable[..., None] = None):
         """
         Initializes a new SimpleState instance.
 
         :param xpaths: A list of XPaths which are all present on the state window.
+        :param invalid_xpaths: A list of xpaths which cannot be present in the state window.
         :param initial_state: Whether this is the initial state.
         :param parent_state: The parent state of this state, or None if it has no parent.
+        :param parent_state_transition: How to transition back to the parent state. By default, this is a press on the back button.
         """
-        super().__init__(parent_state=parent_state, initial_state=initial_state)
-        self.xpaths = xpaths
+        super().__init__(initial_state=initial_state, parent_state=parent_state, parent_state_transition=parent_state_transition)
+        if not xpaths:
+            raise ValueError(f'Cannot create a SimpleState without any xpath validation expressions.')
+        self.present_xpaths = xpaths
+        self.invalid_xpaths = invalid_xpaths
 
     def validate(self, driver: PumaDriver) -> bool:
         """
         Validates if all XPaths are present on the screen.
-        :param driver: The PPumaDriver instance to use.
-        :return: a boolean
+
+        :param driver: The PumaDriver instance to use.
+        :return: True if all XPaths are present, otherwise False.
         """
-        return all(driver.is_present(xpath) for xpath in self.xpaths)
+        return (all(driver.is_present(xpath) for xpath in self.present_xpaths)
+                and all((not driver.is_present(xpath)) for xpath in self.invalid_xpaths))
 
 
 def back(driver: PumaDriver):
     """
     Utility method for calling the back action in Android devices.
-    :param driver: PumaDriver
+
+    :param driver: The PumaDriver instance to use.
     """
     logger.info(f'calling driver.back() with driver {driver}')
     driver.back()
@@ -158,3 +181,9 @@ def _shortest_path(start: State, destination: State | str) -> list[Transition] |
         for transition in state.transitions:
             queue.append((transition.to_state, path + [transition]))
     return None
+
+class TransitionError(Exception):
+    """
+    Exception raised when there is an error in state transition.
+    """
+    pass

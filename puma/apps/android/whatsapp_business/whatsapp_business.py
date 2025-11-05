@@ -12,7 +12,7 @@ from puma.apps.android.whatsapp.whatsapp_common import WhatsAppCommon
 @deprecated('This class does not use the Puma state machine, and will therefore not be maintained. ' +
             'If you want to add functionality, please rewrite this class using StateGraph as the abstract base class.')
 @supported_version("2.25.24.78")
-class WhatsappActions(WhatsAppCommon):
+class WhatsappBusinessActions(WhatsAppCommon):
 
     def __init__(self,
                  device_udid,
@@ -20,11 +20,11 @@ class WhatsappActions(WhatsAppCommon):
                  implicit_wait=1,
                  appium_server='http://localhost:4723'):
         """
-        Class with an API for WhatsApp Android using Appium. Can be used with an emulator or real device attached to the computer.
+        Class with an API for WhatsApp for Business Android using Appium. Can be used with an emulator or real device attached to the computer.
         """
         AndroidAppiumActions.__init__(self,
                                       device_udid,
-                                      'com.whatsapp',
+                                      'com.whatsapp.w4b',
                                       desired_capabilities=desired_capabilities,
                                       implicit_wait=implicit_wait,
                                       appium_server=appium_server)
@@ -32,25 +32,37 @@ class WhatsappActions(WhatsAppCommon):
     def change_profile_picture(self, photo_dir_name, index=1):
         self.return_to_homescreen()
         self.open_settings_you()
-        self.driver.find_element(by=AppiumBy.ID, value=f'{self.app_package}:id/profile_info_edit_btn').click()
-        self.driver.find_element(by=AppiumBy.XPATH, value="//*[@text='Gallery']").click()
+        self.driver.find_element(by=AppiumBy.XPATH,
+                                 value='//android.widget.ImageView[@content-desc="Edit photo"]').click()
+        self.driver.find_element(by=AppiumBy.XPATH,
+                                 value='//android.widget.TextView[@resource-id="android:id/text1" and @text="Add or edit profile photo"]').click()
+        self.driver.find_element(by=AppiumBy.XPATH,
+                                 value='//android.widget.TextView[@resource-id="com.whatsapp.w4b:id/row_text" and @text="Gallery"]').click()
         self.driver.find_element(by=AppiumBy.XPATH,
                                  value='//android.widget.ImageButton[@content-desc="Folders"]').click()
         WhatsAppCommon._find_media_in_folder(self, photo_dir_name, index)
-        self.driver.find_element(by=AppiumBy.ID, value=f"{self.app_package}:id/ok_btn").click()
+        self.driver.find_element(by=AppiumBy.XPATH,
+                                 value='//android.widget.Button[@resource-id="com.whatsapp.w4b:id/ok_btn"]').click()
 
     def set_about(self, about_text: str):
         self.return_to_homescreen()
         self.open_settings_you()
-        self.driver.find_element(by=AppiumBy.ID, value=f"{self.app_package}:id/profile_info_status_card").click()
-        self.driver.find_element(by=AppiumBy.ID, value=f"{self.app_package}:id/status_tv_edit_icon").click()
+        self.swipe_to_find_element(f'//android.widget.TextView[@text="About"]').click()
+        self.driver.find_element(by=AppiumBy.XPATH, value='//android.widget.ImageView[@content-desc="edit"]').click()
         text_box = self.driver.find_element(by=AppiumBy.ID, value=f"{self.app_package}:id/edit_text")
         text_box.click()
         text_box.clear()
         text_box.send_keys(about_text)
         self.driver.find_element(by=AppiumBy.ID, value=f"{self.app_package}:id/save_button").click()
 
-    def send_media(self, directory_name, index=1, caption=None, view_once=False, chat: str = None):
+    def leave_group(self, group_name):
+        self.select_chat(group_name)
+        self.driver.find_element(by=AppiumBy.ID, value=f"{self.app_package}:id/conversation_contact").click()
+        self.scroll_to_find_element(text_equals="Exit group").click()
+        self.driver.find_element(by=AppiumBy.XPATH, value="//android.widget.Button[@text='Exit group']").click()
+        self.return_to_homescreen()
+
+    def send_media(self, directory_name, index=1, caption=None, chat: str = None):
         self._if_chat_go_to_chat(chat)
         # Go to gallery
         self.driver.find_element(by=AppiumBy.ID, value=f"{self.app_package}:id/input_attach_button").click()
@@ -72,10 +84,5 @@ class WhatsappActions(WhatsAppCommon):
             text_box.click()
             self.driver.back()
 
-        if view_once:
-            self.driver.find_element(by=AppiumBy.ID, value=f"{self.app_package}:id/view_once_toggle").click()
-            popup_button = f'//android.widget.Button[@resource-id="{self.app_package}:id/vo_sp_bottom_sheet_ok_button"]'
-            if self.is_present(popup_button):
-                self.driver.find_element(by=AppiumBy.XPATH, value=popup_button).click()
         sleep(1)
         self.driver.find_element(by=AppiumBy.ID, value=f"{self.app_package}:id/send").click()

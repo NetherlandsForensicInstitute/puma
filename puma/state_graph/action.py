@@ -1,11 +1,10 @@
 import inspect
 
-from puma.state_graph import logger
 from puma.state_graph.state import State
 from puma.state_graph.utils import _safe_func_call
 
 
-def action(to_state: State):
+def action(state: State, end_state: State = None):
     """
     Decorator to wrap a function with logic to ensure a specific state before execution.
 
@@ -14,9 +13,11 @@ def action(to_state: State):
     a message, while ensuring the correct state. If a PumaClickException occurs during the
     execution of the function, it attempts to recover the state and retry the function execution.
 
-    :param to_state: The target state to ensure before executing the decorated function.
+    :param state: The target state to ensure before executing the decorated function.
+    :param end_state: Defines if this action ends in a different state (Optional)
     :return: A decorator function that wraps the provided function with state assurance logic.
     """
+
     def decorator(func):
         def wrapper(*args, **kwargs):
             """
@@ -34,23 +35,35 @@ def action(to_state: State):
             arguments = bound_args.arguments
             arguments.pop('self')
             puma_ui_graph = args[0]
-            puma_ui_graph.go_to_state(to_state, **arguments)
-
+            # get the ground truth logger to log these actions
+            gtl_logger = puma_ui_graph.gtl_logger
             try:
-                logger.info(f"[{puma_ui_graph.driver.options.udid}] Executing action {func.__name__} with arguments: {args} and key word arguments: {kwargs} for application: {puma_ui_graph.__class__.__name__}")
-                result = func(*args, **kwargs)
-            except:
-                logger.info(f"[{puma_ui_graph.driver.options.udid}] Failed to execute action {func.__name__}, retrying once.")
-                puma_ui_graph.recover_state(to_state)
-                puma_ui_graph.go_to_state(to_state, **arguments)
-                result = func(*args, **kwargs)
-            if post_action:
-                print('calling post action callable!')
-                # TODO: also pass the driver
-                _safe_func_call(post_action, **kwargs)
-            puma_ui_graph.try_restart = True
-            logger.info(f"[{puma_ui_graph.driver.options.udid}] Successfully executed action {func.__name__} with arguments: {args} and key word arguments: {kwargs} for application: {puma_ui_graph.__class__.__name__}")
-            return result
+                puma_ui_graph.try_restart = True
+                puma_ui_graph.go_to_state(state, **arguments)
+                try:
+                    gtl_logger.info(
+                        f"Executing action {func.__name__} with arguments: {args[1:]} and keyword arguments: {kwargs} for application: {puma_ui_graph.__class__.__name__}")
+                    result = func(*args, **kwargs)
+                except:
+                    gtl_logger.info(f"Failed to execute action {func.__name__}.")
+                    puma_ui_graph.recover_state(state)
+                    puma_ui_graph.go_to_state(state, **arguments)
+                    gtl_logger.info(f'Retrying action {func.__name__}')
+                    result = func(*args, **kwargs)
+                if post_action:
+                    print('calling post action callable!')
+                    # TODO: also pass the driver
+                    _safe_func_call(post_action, **kwargs)
+                puma_ui_graph.try_restart = True
+                gtl_logger.info(
+                    f"Successfully executed action {func.__name__} with arguments: {args[1:]} and keyword arguments: {kwargs} for application: {puma_ui_graph.__class__.__name__}")
+                if end_state:
+                    puma_ui_graph.current_state = end_state
+                return result
+            except Exception as e:
+                gtl_logger.error("Unexpected exception", e)
+                raise e
+
 
         return wrapper
 

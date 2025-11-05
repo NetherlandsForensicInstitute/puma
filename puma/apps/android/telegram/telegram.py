@@ -1,355 +1,405 @@
-from time import sleep
-from typing import Dict, Optional
+import time
 
-from appium.webdriver.common.appiumby import AppiumBy
-
-from puma.apps.android.appium_actions import supported_version, AndroidAppiumActions
+from puma.apps.android.telegram import logger
+from puma.apps.android.telegram.xpaths import *
+from puma.state_graph.action import action
+from puma.state_graph.puma_driver import supported_version, PumaDriver, PumaClickException
+from puma.state_graph.state import SimpleState, ContextualState, State, compose_clicks
+from puma.state_graph.state_graph import StateGraph
 
 TELEGRAM_PACKAGE = 'org.telegram.messenger'
 TELEGRAM_WEB_PACKAGE = 'org.telegram.messenger.web'
 
 
-@supported_version("11.9.0")
-class TelegramActions(AndroidAppiumActions):
+class TeleGramChatState(SimpleState, ContextualState):
+    """
+    State defining a Telegram chat screen (group or 1 on 1)
+    """
 
-    def __init__(self,
-                 device_udid,
-                 telegram_web_version: bool = False,
-                 desired_capabilities: Dict[str, str] = None,
-                 implicit_wait=1,
-                 appium_server='http://localhost:4723'):
+    def __init__(self, parent_state: State):
+        super().__init__([CHAT_STATE_MESSAGE_TEXTBOX, CHAT_STATE_GIF_BUTTON],
+                         parent_state=parent_state)
+
+    def validate_context(self, driver: PumaDriver, conversation: str = None) -> bool:
+        if not conversation:
+            return True
+        return driver.is_present(CHAT_STATE_CONVERSATION_NAME.format(conversation=conversation))
+
+    @staticmethod
+    def go_to_chat(driver: PumaDriver, conversation: str):
+        if not conversation:
+            raise ValueError(f'Cannot open a conversation without a conversation name')
+        driver.click(CHAT_OVERVIEW_SEARCH_BUTTON)
+        driver.send_keys(SEARCH_INPUT_FIELD, conversation)
+        driver.click(FIRST_SEARCH_HIT.format(conversation=conversation))
+
+
+class TelegramChatSettingsState(SimpleState, ContextualState):
+    """
+    State defining the chat settings screen of a Telegram conversation (group or 1 on 1).
+    """
+
+    def __init__(self, parent_state: State):
+        super().__init__(
+            [CHAT_SETTINGS_STATE_BACK, CHAT_SETTINGS_STATE_THREE_DOTS, CHAT_SETTINGS_STATE_CONVERSATION_NAME],
+            parent_state=parent_state,
+            # invalid_xpaths is needed because this state was confused with the send_from_gallery state
+            invalid_xpaths=[SEND_FROM_GALLERY_MEDIA_SWITCH.format(index=1)])
+
+    def validate_context(self, driver: PumaDriver, conversation: str = None) -> bool:
+        if conversation is None:
+            return True
+        return driver.is_present(CHAT_SETTINGS_STATE_CONVERSATION_NAME_CONTEXT.format(conversation=conversation))
+
+    @staticmethod
+    def can_add_members(driver: PumaDriver):
+        return driver.is_present(CHAT_SETTINGS_STATE_ADD_MEMBERS)
+
+    @staticmethod
+    def open_chat_settings(driver: PumaDriver, conversation: str):
+        driver.click(CHAT_STATE_CONVERSATION_NAME.format(conversation=conversation))
+
+
+@supported_version("12.0.1")
+class Telegram(StateGraph):
+    """
+    A class representing a state graph for managing UI states and transitions in the Telegram Messenger application.
+
+    This class uses a state machine approach to manage transitions between different states
+    of the Telegram user interface. It provides methods to navigate between states, validate states,
+    and handle unexpected states or errors.
+    """
+    conversations_state = SimpleState(
+        [CHAT_OVERVIEW_NEW_MESSAGE_BUTTON, CHAT_OVERVIEW_SEARCH_BUTTON, CHAT_OVERVIEW_NAV_MENU_BUTTON],
+        initial_state=True)
+    chat_state = TeleGramChatState(parent_state=conversations_state)
+    chat_settings_state = TelegramChatSettingsState(parent_state=chat_state)
+    call_state = SimpleState([CALL_STATE_END_CALL_BUTTON, CALL_STATE_MUTE_BUTTON, CALL_STATE_SPEAKER_BUTTON],
+                             parent_state=chat_state)
+    send_media_state = SimpleState(
+        [SEND_MEDIA_STATE_INSTANT_CAMERA_BUTTON, SEND_MEDIA_STATE_GALLERY_BUTTON, SEND_MEDIA_STATE_FILE_BUTTON,
+         SEND_MEDIA_STATE_LOCATION_BUTTON],
+        parent_state=chat_state)
+    send_from_gallery_state = SimpleState(
+        [SEND_FROM_GALLERY_STATE_BACK_BUTTON, SEND_FROM_GALLERY_FOLDER_PICKER,
+         SEND_FROM_GALLERY_THREE_DOTS_BUTTON, SEND_FROM_GALLERY_MEDIA_SWITCH.format(index=1)],
+        parent_state=chat_state)  # pressing back goes to the chat state
+    new_message_state = SimpleState(
+        [NEW_MESSAGE_STATE_NEW_GROUP_BUTTON, NEW_MESSAGE_STATE_NEW_CONTACT_BUTTON, NEW_MESSAGE_STATE_NEW_CHANNEL_BUTTON,
+         NEW_MESSAGE_STATE_CREATE_NEW_CONTACT_BUTTON],
+        parent_state=conversations_state)
+
+    conversations_state.to(chat_state, TeleGramChatState.go_to_chat)
+    chat_state.to(call_state, compose_clicks([CHAT_STATE_CALL_BUTTON], name="press_call_button"))
+    chat_state.to(chat_settings_state, TelegramChatSettingsState.open_chat_settings)
+    chat_state.to(send_media_state, compose_clicks([CHAT_STATE_MEDIA_BUTTON], name="press_attachment_button"))
+    send_media_state.to(send_from_gallery_state,
+                        compose_clicks([SEND_MEDIA_STATE_GALLERY_BUTTON], name='press_gallery_button'))
+    conversations_state.to(new_message_state,
+                           compose_clicks([CHAT_OVERVIEW_NEW_MESSAGE_BUTTON], name='press_new_message_button'))
+
+    def __init__(self, device_udid, telegram_web_version: bool = False):
         """
-        Class with an API for Telegram Android using Appium. Can be used with an emulator or real device attached to the
-        computer.
-        This class can be used for both the Play Store version and the version found at telegram.org. When using the
-        latter however, you need to use the `telegram_web_version` parameter, and set it to True.
+        Initializes Telegram messenger with a device UDID.
+
+        :param device_udid: The unique device identifier for the Android device.
         """
-        AndroidAppiumActions.__init__(self,
-                                      device_udid,
-                                      TELEGRAM_WEB_PACKAGE if telegram_web_version else TELEGRAM_PACKAGE,
-                                      desired_capabilities=desired_capabilities,
-                                      implicit_wait=implicit_wait,
-                                      appium_server=appium_server)
+        package = TELEGRAM_WEB_PACKAGE if telegram_web_version else TELEGRAM_PACKAGE
+        StateGraph.__init__(self, device_udid, package)
 
-    def _currently_at_homescreen(self, **kwargs) -> bool:
-        return self.is_present('//android.widget.FrameLayout[@content-desc="New Message"]', **kwargs)
-
-    def _currently_in_conversation(self, **kwargs) -> bool:
-        return self.is_present('//android.widget.ImageView[@content-desc="Emoji, stickers, and GIFs"]', **kwargs)
-
-    def _currently_in_camera(self, **kwargs) -> bool:
-        return self.is_present('//android.widget.Button[lower-case(@content-desc)="shutter"]', **kwargs)
-
-    def _currently_in_call(self, **kwargs) -> bool:
-        return self.is_present('//android.widget.Button[lower-case(@text)="end call"]', **kwargs)
-
-    def _currently_in_active_call(self, **kwargs) -> bool:
+    @action(chat_state)
+    def send_message(self, message: str, conversation: str = None):
         """
-        Returns true if currently in a call that is in actual progress (meaning: the other party answered the call).
-        """
-        return self.is_present('//android.widget.LinearLayout[@content-desc="Encryption key of this call"]', **kwargs)
+        Sends a regular text based message.
+        Can be done in a given conversation or the current conversation.
 
-    def _load_conversation_titles(self):
-        while True:
-            xpath = "//androidx.recyclerview.widget.RecyclerView/android.view.ViewGroup[not(@content-desc)]"
-            convos = self.driver.find_elements(by=AppiumBy.XPATH, value=xpath)
-            if len(convos) == 0:
-                break
-            print('some conversations still do not have a title loaded, clicking...')
-            convos[0].click()
-            self.driver.back()
-            if not self._currently_at_homescreen():
-                self.driver.back()
-        print('all conversations loaded!')
+        :param message: the message to send
+        :param conversation: the conversation (group or 1 on 1) to send the message in. Not needed when already in a conversation.
+        """
+        # self.driver.click(CHAT_STATE_MESSAGE_TEXTBOX)
+        self.driver.send_keys(CHAT_STATE_MESSAGE_TEXTBOX, message)
+        # send_button = self.driver.get_element('//android.view.View[@content-desc="Send"]')
+        # Telegram has a horrible UI; the bounds of the send button are defined incorrectly so we need to click off-center
+        self.driver.click(CHAT_STATE_SEND_BUTTON, 0.8, 0.5)
 
-    def return_to_homescreen(self, attempts: int = 10, try_restart: bool = True):
+    @action(chat_state)
+    def send_voice_message(self, duration: int, conversation: str = None):
         """
-        Returns to the start screen of Telegram
-        :param attempts: Number of attempts to return to home screen. Avoids an infinite loop when a popup occurs.
+        Sends a voice message. This is a short audio clip that can be recorded in the chat screen.
+        Can be done in a given conversation or the current conversation.
+
+        :param duration: the duration of the voice message.
+        :param conversation: the conversation (group or 1 on 1) to send the message in. Not needed when already in a conversation.
         """
-        attempt = 0
-        while not self._currently_at_homescreen() and attempt < attempts:
-            if self.driver.current_package != self.app_package:
-                self.activate_app()
-            self.driver.back()
-            attempt += 1
-        if not self._currently_at_homescreen():
-            if try_restart:
-                self.restart_app()
-                self.return_to_homescreen(attempts, False)
+        if not self._in_voice_message_mode():
+            self.driver.click(CHAT_STATE_RECORD_VIDEO_OR_AUDIO_MESSAGE)
+        self.driver.press_and_hold(CHAT_STATE_RECORD_VIDEO_OR_AUDIO_MESSAGE, duration)
+
+    @action(chat_state)
+    def send_video_message(self, duration: int, conversation: str = None):
+        """
+        Sends a video message. This is a short video clip that can be recorded in the chat screen.
+        Can be done in a given conversation or the current conversation.
+
+        :param duration: the duration of the video message.
+        :param conversation: the conversation (group or 1 on 1) to send the message in. Not needed when already in a conversation.
+        """
+        if self._in_voice_message_mode():
+            self.driver.click(CHAT_STATE_RECORD_VIDEO_OR_AUDIO_MESSAGE)
+        self.driver.press_and_hold(CHAT_STATE_RECORD_VIDEO_OR_AUDIO_MESSAGE, duration)
+
+    @action(send_from_gallery_state, end_state=chat_state)
+    def send_media_from_gallery(self, media_index: int | list[int],
+                                caption: str = None,
+                                folder: str | int = None,
+                                conversation: str = None):
+        """
+        Sends one or more video or picture. This is a short audio clip that can be recorded in the chat screen.
+        Can be done in a given conversation or the current conversation.
+
+        :param media_index: the index or indices of the media files to send. This is the 1-based index of the thumbnails
+        seen in the media picker.
+        :param caption: An optional text message attached to the media file(s)
+        :param folder: The name of the folder in which the files are stored. Optional: if none given the default
+        'Gallery' section is used.
+        :param conversation: the conversation (group or 1 on 1) to send the media in. Not needed when already in a
+        conversation.
+        """
+        if not media_index:
+            raise ValueError(f'Cannot send media from gallery without a proper set of indices')
+        # open folder if needed
+        if folder:
+            self.driver.click(SEND_FROM_GALLERY_FOLDER_PICKER)
+            if isinstance(folder, str):
+                logger.warning(
+                    f'Using OCR to click on media folder {folder}. OCR is unreliable, if possible use the folder index number!')
+                time.sleep(1)
+                self.driver.click_text_ocr(folder)
             else:
-                raise Exception('Tried to return to homescreen but ran out of attempts...')
-        self._load_conversation_titles()
-        sleep(1)
+                self.driver.click(f'//android.widget.LinearLayout/android.view.View[{folder}]')
+        # select picture/video
+        if isinstance(media_index, int):
+            media_index = [media_index]
+        clicked = 0
+        for i in media_index:
+            try:
+                if i in [2, 3]:  # these switches can be obscured by other UI elements. We do a long press for those
+                    self.driver.long_click(f'{SEND_FROM_GALLERY_MEDIA_SWITCH.format(index=i)}/..')
+                else:
+                    self.driver.click(SEND_FROM_GALLERY_MEDIA_SWITCH.format(index=i))
+                self.gtl_logger.info(f'Selected gallery item with index {i}')
+                clicked += 1
+            except PumaClickException as e:
+                logger.warning(f'Could not select media with index {i}. Are enough media files present?')
+        if clicked == 0:
+            raise PumaClickException(
+                f'Tried to select gallery items with indexes {media_index}, but could not select any of them.')
+        if caption:
+            self.driver.send_keys('//android.widget.EditText[@text]', caption)
+            self.gtl_logger.info(f'Entered caption {caption}')
+        # send button
+        self.driver.click('//android.widget.Button')
+        self.gtl_logger.info(f'Pressed send button')
 
-    def start_new_chat(self, chat: str):
-        self.return_to_homescreen()
-        self.driver.find_element(by=AppiumBy.XPATH,
-                                 value='//android.widget.FrameLayout[@content-desc="New Message"]').click()
-        self.driver.find_element(by=AppiumBy.XPATH,
-                                 value='//android.widget.ImageButton[@content-desc="Search"]').click()
-        self.driver.find_element(by=AppiumBy.XPATH,
-                                 value='//android.widget.EditText[@text="Search"]').send_keys(chat)
-        self.driver.find_element(by=AppiumBy.XPATH,
-                                 value=f'//android.view.ViewGroup[starts-with(lower-case(@text), "{chat.lower()}")]').click()
+    @action(chat_state, end_state=call_state)
+    def start_call(self, conversation: str = None):
+        """
+        Starts a voice call in the current or given conversation.
 
-    def select_chat(self, chat: str | int):
+        :param conversation: the conversation (group or 1 on 1) to make the call in. Not needed when already in a
+        conversation.
         """
-        Opens a given conversation based on the (partial) name of a chat, or opens the chat at the passed index
-        Note that the index is 1 based, so the first chat is index 1.
-        For groups or channels, it is advised to use :meth:`TelegramActions.select_group` or
-        :meth:`TelegramActions.select_channel`, as the matching is more explicit
-        :param chat: (part of) the conversation name to open or the 1-based index of the chat to open
-        """
-        self.return_to_homescreen()
-        if type(chat) is str:
-            xpath = f'//android.view.ViewGroup[starts-with(lower-case(@content-desc), "{chat.lower()}")]'
-        elif type(chat) is int:
-            xpath = f'//androidx.recyclerview.widget.RecyclerView/android.view.ViewGroup[{chat}]'
-        else:
-            raise ValueError(f'Argument was of type {type(chat)}, but needs to be str or int')
-
-        self.driver.find_element(by=AppiumBy.XPATH, value=xpath).click()
-        if not self._currently_in_conversation(implicit_wait=1):
-            raise RuntimeError("Conversation was not opened after clicking the conversation")
-
-    def select_group(self, group_name: str):
-        """
-        Opens a given conversation based on the exact name of a group.
-        :param group_name: Exact group name to open
-        """
-        self.select_chat(f'Group. {group_name}')
-
-    def select_channel(self, channel_name: str):
-        """
-        Opens a given conversation based on the exact name of a channel.
-        :param channel_name: Exact channel name to open
-        """
-        self.select_chat(f'Channel. {channel_name}')
-
-    def send_message(self, message: str, chat: str | int):
-        """
-        Send a message in the current or given chat
-        :param message: The text message to send
-        :param chat: Optional: The chat conversation in which to send this message, if not currently in the desired chat. This is either the (partial) chat name or the index of the chat on the home screen.
-        """
-        self._if_chat_go_to_chat(chat)
-        message_editText_xpath = '//android.widget.EditText[@text="Message" or @hint="Message"]'
-        message_editText = self.driver.find_element(by=AppiumBy.XPATH, value=message_editText_xpath)
-        message_editText.clear()
-        message_editText.send_keys(message)
-
-        # The actual send button is not in the same place as the element. The button is at about 75% of the box.
-        # We adjust the location of the click from the middle to the right of the box.
-        # TODO: clicking the correct spot in the bounding box is no longer necessary because the click box is now the same size as the button (issue 97)
-        location = self._find_button_location(0.75, 0.5, '//android.view.View[@content-desc="Send"]')
-        self.driver.tap([(location)])
-
-    def reply_to_message(self, message_to_reply_to: str, reply: str, chat: str = None):
-        """
-        Send a text message as a reply to a previous message.
-        This method will scroll up until the given message text is found, select that message, and reply to it
-        :param message_to_reply_to: the message to reply to
-        :param reply: The text message that will be sent as a reply
-        :param chat: Optional: The chat conversation in which to send this message, if not currently in the desired chat
-        """
-        try:
-            self._tap_message(message_to_reply_to, chat)
-        except:
-            raise Exception(f'Failed to scroll to message "{message_to_reply_to}", does it exist?')
-        self.driver.find_element(by=AppiumBy.XPATH, value='//android.widget.TextView[@text="Reply"]').click()
-        self.driver.find_element(by=AppiumBy.XPATH, value='//android.widget.EditText').send_keys(reply)
-        self.driver.find_element(by=AppiumBy.XPATH, value='//android.view.View[@content-desc="Send"]').click()
-
-    def emoji_reply_to_message(self, message_to_respond_to: str, emoji_to_respond_with: str = '👍', chat: str = None):
-        """
-        Send emoji response to a previous message.
-        This method will scroll up until the given message text is found, select that message, and reply to it
-        :param message_to_reply_to: the message to reply to
-        :param emoji_to_respond_with: the emoji with which to respond. Optional, by default '👍'
-        :param chat: Optional: The chat conversation in which to send this message, if not currently in the desired chat
-        """
-        self._tap_message(message_to_respond_to, chat)
-        if self.is_present(f'//android.widget.FrameLayout[@text="{emoji_to_respond_with}"]', implicit_wait=2):
-            self.driver.find_element(by=AppiumBy.XPATH,
-                                     value=f'//android.widget.FrameLayout[@text="{emoji_to_respond_with}"]').click()
-        else:
-            print(f'ERROR: emoji {emoji_to_respond_with} does not exist on screen!')
-            self.driver.back()
-
-    def _tap_message(self, message_to_tap, chat):
-        self._if_chat_go_to_chat(chat)
-        message = self.scroll_to_find_element(text_contains=message_to_tap)
-        # we want to click the middle right part of the message to open the menu
-        x = message.location['x'] + message.size['width'] - 50
-        y = message.location['y'] + message.size['height'] / 2
-        print(f'Tapping screen at ({x},{y})')
-        self.driver.tap([(x, y)])
-
-    def take_and_send_picture(self,
-                              chat: str = None,
-                              caption: str = None,
-                              wait_time: int = 1,
-                              front_camera: bool = False):
-        """
-        Opens the embedded camera in the Telegram app, takes a picture, and sends it.
-        :param chat: Optional: the conversation in which to send the picture. If not used, we assume a conversation is opened
-        :param caption: Optional: a caption to include with the picture
-        :param wait_time: Optional: time to wait (in seconds) after opening the camera before taking a picture. Default 1s
-        :param front_camera: Optional: whether to use the front camera. Default False
-        """
-        self._if_chat_go_to_chat(chat)
-        # click the attachment icon
-        self.driver.find_element(by=AppiumBy.XPATH,
-                                 value='//android.widget.ImageView[lower-case(@content-desc)="attach media"]').click()
-
-        camera_preview_xpath = '//android.widget.FrameLayout[@resource-id="android:id/content"]/android.widget.FrameLayout/android.widget.FrameLayout[2]'
-        shutter_xpath = '//android.widget.Button[lower-case(@content-desc)="shutter"]'
-        for i in range(10):
-            if self.is_present(camera_preview_xpath):
-                self.driver.find_element(by=AppiumBy.XPATH, value=camera_preview_xpath).click()
-                if self.is_present(shutter_xpath):
-                    break
-            sleep(1)
-        if not self.is_present(shutter_xpath):
-            raise Exception("Clicking the camera preview to take a picture failed.")
-
-        # switch camera if need be
-        if front_camera:
-            self.driver.find_element(by=AppiumBy.XPATH,
-                                     value='//android.widget.ImageView[lower-case(@content-desc)="switch camera"]').click()
-        sleep(wait_time)
-        # take picture
-        self.driver.find_element(by=AppiumBy.XPATH, value=shutter_xpath).click()
-        # add caption
-        if caption is not None:
-            text_field = '//android.widget.EditText'
-            for i in range(10):
-                if self.is_present(text_field):
-                    break
-                sleep(1)
-            self.driver.find_element(by=AppiumBy.XPATH, value=text_field).click()
-            self.driver.find_element(by=AppiumBy.XPATH, value=text_field).send_keys(caption)
-
-            if self.driver.is_keyboard_shown():
-                self.driver.find_element(by=AppiumBy.XPATH,
-                                         value='//android.widget.EditText/../../android.widget.ImageView').click()
-        # press send
-        # The actual send button is not in the same place as the element. The button is at about 75% of the box.
-        # We adjust the location of the click from the middle to the right bottom corner of the box.
-        # TODO: clicking the correct spot in the bounding box is no longer necessary because the click box is now the same size as the button (issue 97)
-        location = self._find_button_location(0.75, 0.75, '//*[lower-case(@content-desc)="send"]')
-        self.driver.tap([(location)])
-
-        sleep(0.3)  # the animation after sending a picture might throw off the script
-
-    def start_call(self, chat: str = None, video: bool = False) -> bool:
-        """
-        Makes a call and ends the call after a given number of seconds.
-        The call is made to either
-            * the current conversation we're in
-            * a given contact name
-        :param chat: Optional: name of the conversation to start a call in
-        :param video: False (default) for voice call, True for video call.
-        :return: True if call was successfully started
-        """
-        self._if_chat_go_to_chat(chat)
-        if not video:
-            self.driver.find_element(by=AppiumBy.XPATH,
-                                     value='//android.widget.ImageButton[lower-case(@content-desc)="call"]').click()
-        else:
-            self.driver.find_element(by=AppiumBy.XPATH,
-                                     value='//android.widget.ImageButton[lower-case(@content-desc)="more options"]').click()
-            self.driver.find_element(by=AppiumBy.XPATH,
-                                     value='//android.widget.TextView[lower-case(@text)="video call"]').click()
-        # wait a short while (max 2s) for the call to have started
-        return self._currently_in_call(implicit_wait=2)
-
-    def get_call_status(self) -> Optional[str]:
-        """
-        Returns a string describing the status of the current call, which is a text visible on the call screen.
-        If the call is in progress, no text indicates this, but this method will return "In progress".
-        If not currently in a call, this method returns None.
-        Known statuses include 'Requesting', 'Waiting' and 'Ringing'.
-        """
-        if not self._currently_in_call():
-            return None
-        if self._currently_in_active_call():
-            return "In progress"
-        status_element = '//android.widget.LinearLayout[ends-with(@text, "Telegram Call")]/android.widget.FrameLayout/android.widget.TextView'
-        status_element = self.driver.find_element(by=AppiumBy.XPATH, value=status_element)
-        return status_element.get_attribute("text")
-
-    def end_call(self):
-        """
-        Ends the current call. Assumes the call screen is open.
-        """
-        if not self._currently_in_call():
-            raise Exception('Cannot end call while not in call screen.')
-        self.driver.find_element(by=AppiumBy.XPATH,
-                                 value='//android.widget.Button[lower-case(@text)="end call"]').click()
+        self.driver.click(CHAT_STATE_CALL_BUTTON)
 
     def answer_call(self):
         """
         Answer when receiving a call via Telegram.
         """
         self.driver.open_notifications()
-        if not self.is_present('//android.widget.Button[lower-case(@content-desc)="answer"]', implicit_wait=3):
+        ANSWER_CALL_NOTIFICATION_BUTTON = '//android.widget.Button[lower-case(@content-desc)="answer"]'
+        if not self.driver.is_present(ANSWER_CALL_NOTIFICATION_BUTTON, implicit_wait=5):
             self.driver.back()
-            raise Exception('Tried to answer call, but couldn\'t find notification to answer any calls')
-        self.driver.find_element(by=AppiumBy.XPATH,
-                                 value='//android.widget.Button[lower-case(@content-desc)="answer"]').click()
-        open_call_button = '//android.widget.TextView[@resource-id="android:id/title" and @text="Ongoing Telegram call"]'
-        if self.is_present(open_call_button):
-            self.driver.find_element(by=AppiumBy.XPATH, value=open_call_button).click()
+            raise PumaClickException('Tried to answer call, but couldn\'t find notification to answer any calls')
+        self.driver.click(ANSWER_CALL_NOTIFICATION_BUTTON)
 
-    def decline_call(self):
+    @action(call_state)
+    def mute_mic(self):
         """
-        Declines an incoming Telegram call.
+        Mutes or unmutes the microphone when in a call.
         """
-        self.driver.open_notifications()
-        if not self.is_present('//android.widget.Button[lower-case(@content-desc)="decline"]', implicit_wait=3):
+        self.driver.click(CALL_STATE_MUTE_BUTTON)
+
+    def end_call(self):
+        """
+        Ends the current Telegram call. If no call is in progress, this will log a warning but not raise an error.
+        """
+        if self.current_state != Telegram.call_state:
+            logger.warning(f'Tried to end a call, but no call was in progress')
+        self.driver.click(CALL_STATE_END_CALL_BUTTON)
+
+    @action(send_media_state, end_state=chat_state)
+    def send_current_location(self, conversation: str = None):
+        """
+        Sends the current location.
+        Can be done in a given conversation or the current conversation.
+
+        :param conversation: the conversation (group or 1 on 1) to send the message in. Not needed when already in a conversation.
+        """
+        self.driver.click(SEND_MEDIA_STATE_LOCATION_BUTTON)
+        self.driver.click(SEND_MEDIA_STATE_MY_LOCATION_BUTTON)
+        self.driver.click(SEND_MEDIA_STATE_SEND_CURRENT_LOCATION_BUTTON)
+
+    @action(send_media_state, end_state=chat_state)
+    def send_live_location(self, conversation: str = None, duration_option: int | str = 1):
+        """
+        Sends a live location, updating the chat participants of the location for a given amount of time.
+        Can be done in a given conversation or the current conversation.
+
+        :param duration_option: the duration option to pick. Typically, the UI offers the choices of 15m, 1 hour and 8
+        hours. You can either the index of the option (the first option has index 1) or a string that occurs in the UI
+        text (e.g. "15 min"). The latter might change, so an index is probably more stable.
+        :param conversation: the conversation (group or 1 on 1) to send the message in. Not needed when already in a conversation.
+        """
+        self.driver.click(SEND_MEDIA_STATE_LOCATION_BUTTON)
+        if not self.driver.is_present(SEND_MEDIA_STATE_LIVE_LOCATION_BUTTON, implicit_wait=1):
+            logger.warning(f'Could not share live location, was live location already being shared?')
             self.driver.back()
-            raise Exception('Tried to answer call, but couldn\'t find notification to answer any calls')
-        self.driver.find_element(by=AppiumBy.XPATH,
-                                 value='//android.widget.Button[lower-case(@content-desc)="decline"]').click()
-        self.driver.back()
-
-    def toggle_video_in_call(self):
-        """
-        Toggles video in an ongoing call.
-        """
-        if not self._currently_in_call():
-            raise Exception('Expected to be in a call, but could not detect call screen!')
-        if self.is_present('//android.widget.TextView[lower-case(@text)="start video"]'):
-            # turn on video:
-            self.driver.find_element(by=AppiumBy.XPATH,
-                                     value='//android.widget.FrameLayout[@content-desc="Start Video"]').click()
-            self.driver.find_element(by=AppiumBy.XPATH,
-                                     value='//android.widget.TextView[@content-desc="Share Video"]').click()
+            return
+        self.driver.click(SEND_MEDIA_STATE_LIVE_LOCATION_BUTTON)
+        if isinstance(duration_option, int):
+            self.driver.click(SEND_MEDIA_STATE_LIVE_LOCATION_DURATION_OPTION_INDEX.format(duration=duration_option))
         else:
-            self.driver.find_element(by=AppiumBy.XPATH,
-                                     value='//android.widget.FrameLayout[@content-desc="Stop Video"]').click()
+            xpath = SEND_MEDIA_STATE_LIVE_LOCATION_DURATION_OPTION_TEXT.format(duration=duration_option)
+            if not self.driver.is_present(xpath, implicit_wait=1):
+                raise PumaClickException(
+                    f'Could not select option for live location sharing with name "{duration_option}". Is this option present in the UI?')
+            self.driver.click(xpath)
+        self.driver.click(SEND_MEDIA_STATE_LIVE_LOCATION_SHARE_BUTTON)
 
-    def flip_video_in_call(self):
+    @action(chat_state)
+    def stop_live_location_sharing(self, conversation: str = None):
         """
-        Switches between the front camera and rear camera while in a video call.
+        Stops live location sharing in a conversation.
+
+        :param conversation: the conversation (group or 1 on 1) to send the message in. Not needed when already in a conversation.
         """
-        if not self._currently_in_call():
-            raise Exception('Expected to be in a call, but could not detect call screen!')
-        self.driver.find_element(by=AppiumBy.XPATH, value='//android.widget.FrameLayout[@content-desc="Flip"]').click()
+        if not self.driver.is_present(CHAT_STATE_STOP_LIVE_LOCATION_SHARING_BUTTON):
+            logger.warning(f'Could not stop sharing live location as it wasn\'t shared.')
+            return
+        self.driver.click(CHAT_STATE_STOP_LIVE_LOCATION_SHARING_BUTTON)
+        self.driver.click(CHAT_STATE_STOP_LIVE_LOCATION_CONFIRM_BUTTON)
 
-    def _if_chat_go_to_chat(self, chat: str | int):
-        if chat is not None:
-            self.select_chat(chat)
-            sleep(1)
-        if not self._currently_in_conversation():
-            raise Exception('Expected to be in conversation screen now, but screen contents are unknown')
+    @action(new_message_state, end_state=chat_state)
+    def create_group(self, group_name: str, members: list[str] = [], auto_delete: int = None):
+        """
+        Create a new chat group.
 
-    def _find_button_location(self, width_ratio: float, height_ratio: float, xpath: str):
-        send_button = self.driver.find_element(by=AppiumBy.XPATH,
-                                               value=xpath)
-        top_left = send_button.location['x'], send_button.location['y']
-        size = send_button.size['height'], send_button.size['width']
-        location = int(top_left[0] + width_ratio * size[1]), int(top_left[1] + height_ratio * size[0])
-        return location
+        :param group_name: the name of the new chat group
+        :param members: Optional: a list of members to add when creating the group.
+        :param auto_delete: optional: select the auto-delete option to use (1-based index). Off by default.
+        """
+        if auto_delete is not None and auto_delete not in [1, 2, 3]:
+            raise ValueError(f'Unsupported auto-delete option: {auto_delete}')
+        self.driver.click(NEW_MESSAGE_STATE_NEW_GROUP_BUTTON)
+        for member in members:
+            self.gtl_logger.info(f'adding group member {member}')
+            self.driver.click(NEW_GROUP_MEMBER.format(member=member))
+        self.driver.click(NEW_GROUP_NEXT)
+        self.gtl_logger.info(f'Entering group name "{group_name}" and setting auto-delete option')
+        self.driver.send_keys(NEW_GROUP_NAME_INPUT, group_name)
+        if auto_delete:
+            self.driver.click(NEW_GROUP_AUTO_DELETE_OPTION)
+            self.driver.click(f'//android.widget.LinearLayout/android.widget.FrameLayout[{auto_delete}]')
+        self.driver.click(NEW_GROUP_DONE_BUTTON)
+
+    @action(chat_settings_state)
+    def add_members(self, new_members: list[str], conversation: str):
+        """
+        Adds members to a given chat group.
+
+        :param new_members: a list of members to add to the group.
+        :param conversation: the chat group name to add the members to.
+        :raises PumaClickException: If not a valid group chat, or if the current user does not have permissions to
+        add members.
+        """
+        if not Telegram.chat_settings_state.can_add_members(self.driver):
+            raise PumaClickException(f"Cannot add members in conversation {conversation}. "
+                                     f"Check whether it is a group and whether permissions are setup correctly.")
+        self.driver.click(CHAT_SETTINGS_STATE_ADD_MEMBERS)
+        for name in new_members:
+            self.driver.send_keys(CHAT_SETTINGS_STATE_ADD_MEMBERS_SEARCH, name)
+            try:
+                self.driver.click(
+                    f'//androidx.recyclerview.widget.RecyclerView//android.widget.TextView[lower-case(@text)=lower-case("{name}")]')
+            except PumaClickException:
+                raise PumaClickException(
+                    f'Could not add member {name} as it could not be found in the UI after a search')
+        self.driver.click('//android.widget.ImageView[@content-desc="Next"]')
+        self.driver.click('//android.widget.TextView[@text="Add"]')
+
+    @action(chat_settings_state)
+    def remove_member(self, member: str, conversation: str = None):
+        """
+        Removes a member from a chat group.
+
+        :param member: the member to remove.
+        :param conversation: the group chat to remove the user from. Not needed when already in a group chat.
+        :raises PumaClickException: If not a valid group chat, or if the current user does not have permissions to
+        remove members.
+        """
+        if not Telegram.chat_settings_state.can_add_members(self.driver):
+            raise PumaClickException(f"Cannot remove members in conversation {conversation}. "
+                                     f"Check whether it is a group and whether permissions are setup correctly.")
+        self.driver.long_click(CHAT_SETTINGS_STATE_MEMBER_CONTEXT.format(member=member))
+        self.driver.click(CHAT_SETTINGS_STATE_REMOVE_MEMBER_BUTTON)
+
+    @action(chat_settings_state)
+    def edit_group_name(self, conversation: str, new_group_name: str):
+        """
+        Changes the name of a chat group.
+
+        :param conversation: the chat group to rename
+        :param new_group_name: the new chat group name
+        :raises PumaClickException: If not a valid group chat, or if the current user does not have permissions to
+        rename the group.
+        """
+        if not Telegram.chat_settings_state.can_add_members(self.driver):
+            raise PumaClickException(f"Cannot rename conversation {conversation}. "
+                                     f"Check whether it is a group and whether permissions are setup correctly.")
+        self.driver.click(CHAT_SETTINGS_EDIT_GROUP_BUTTON)
+        self.driver.send_keys(EDIT_GROUP_NAME, new_group_name)
+        self.driver.click(EDIT_GROUP_DONE)
+
+    @action(chat_settings_state)
+    def edit_group_description(self, conversation: str, description: str):
+        """
+        Changes the description of a chat group.
+
+        :param conversation: the chat group to rename
+        :param description: the new description of the chat group
+        :raises PumaClickException: If not a valid group chat, or if the current user does not have permissions to
+        add members.
+        """
+        if not Telegram.chat_settings_state.can_add_members(self.driver):
+            raise PumaClickException(f"Cannot rename conversation {conversation}. "
+                                     f"Check whether it is a group and whether permissions are setup correctly.")
+        self.driver.click(CHAT_SETTINGS_EDIT_GROUP_BUTTON)
+        self.driver.send_keys(EDIT_GROUP_DESCRIPTION, description)
+        self.driver.click(EDIT_GROUP_DONE)
+
+    @action(chat_state)
+    def delete_and_leave_group(self, conversation: str):
+        """
+        Leaves the group and deletes it from the conversations overview.
+
+        :param conversation: the name of the group chat to leave.
+        """
+        self.driver.click(CHAT_STATE_THREE_DOTS)
+        self.driver.click(CHAT_STATE_DELETE_AND_LEAVE_GROUP)
+        if self.driver.is_present(CHAT_STATE_DELETE_AND_LEAVE_GROUP_FOR_ALL):
+            self.driver.click(CHAT_STATE_DELETE_AND_LEAVE_GROUP_FOR_ALL)
+        self.driver.click(CHAT_STATE_DELETE_AND_LEAVE_GROUP_CONFIRM_BUTTON)
+
+    def _in_voice_message_mode(self):
+        return self.driver.get_element(CHAT_STATE_RECORD_VIDEO_OR_AUDIO_MESSAGE).get_attribute(
+            'content-desc') == 'Record voice message'

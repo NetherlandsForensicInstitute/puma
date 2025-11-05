@@ -1,5 +1,5 @@
 from time import sleep
-from typing import List, Dict
+from typing import Dict
 from unittest.mock import Mock
 
 from puma.state_graph import logger
@@ -7,8 +7,8 @@ from puma.state_graph.action import action
 from puma.state_graph.popup_handler import known_popups, PopUpHandler
 from puma.state_graph.puma_driver import PumaDriver, PumaClickException
 
-from puma.state_graph.utils import _safe_func_call
-from puma.state_graph.state import State, ContextualState, Transition, _shortest_path, SimpleState
+from puma.state_graph.state import State, ContextualState, SimpleState, Transition, _shortest_path
+from puma.state_graph.utils import safe_func_call, filter_arguments, is_valid_package_name
 
 
 class StateGraphMeta(type):
@@ -20,6 +20,7 @@ class StateGraphMeta(type):
     is exactly one initial state, that all states are reachable from the initial state, and
     that there are no duplicate state names or transitions.
     """
+
     def __new__(cls, name, bases, namespace):
         """
         Creates a new class using the StateGraphMeta metaclass.
@@ -38,8 +39,8 @@ class StateGraphMeta(type):
         if name == 'StateGraph':
             return new_class
 
-        ## collect states and transitions
-        states = []
+        # collect states and transitions
+        states: list[State] = []
         transitions = []
         for key, value in namespace.items():
             if isinstance(value, State):
@@ -51,13 +52,13 @@ class StateGraphMeta(type):
         new_class.transitions = [transition for state in states for transition in state.transitions]
         new_class.initial_state = next(s for s in states if s.initial_state)
 
-        ## validation
+        # validation
         StateGraphMeta._validate_graph(states)
 
         return new_class
 
     @staticmethod
-    def _validate_graph(states: List[State]):
+    def _validate_graph(states: list[State]):
         """
         Validates the state graph to ensure it meets specific criteria.
 
@@ -70,11 +71,11 @@ class StateGraphMeta(type):
         :param states: A list of states in the state graph.
         :raises ValueError: If any of the validation checks fail.
         """
-        # there can only be one initial state
+        # There can only be one initial state
         StateGraphMeta._validate_only_one_initial_state(states)
-        # initial state cannot be Contextual state
+        # Initial state cannot be Contextual state
         StateGraphMeta._validate_initial_state(states)
-        # you need to be able to go from  the initial state to each other state and back
+        # You need to be able to go from the initial state to each other state and back
         StateGraphMeta._validate_every_state_reachable(states)
         # Contextual states need parent state
         StateGraphMeta._validate_contextual_states(states)
@@ -105,6 +106,7 @@ class StateGraphMeta(type):
         unreachable_states = [s for s in states if not s.initial_state and not (
                     bool(_shortest_path(initial_state, s)) and bool(_shortest_path(s, initial_state)))]
         if unreachable_states:
+            # TODO make this error message more specific: exactly log which transition cannot be done (to or from the initial state)
             raise ValueError(
                 f'Some states cannot be reached from the initial state, or cannot go back to the initial state: {unreachable_states}')
 
@@ -134,13 +136,13 @@ class StateGraphMeta(type):
 
 class StateGraph(metaclass=StateGraphMeta):
     """
-       A class representing a state graph for managing UI states and transitions in an application.
+    A class representing a state graph for managing UI states and transitions in an application.
 
-       This class uses a state machine approach to manage transitions between different states
-       of a user interface. It initializes with a device and application package, and provides
-       methods to navigate between states, validate states, and handle unexpected states or errors.
+    This class uses a state machine approach to manage transitions between different states
+    of a user interface. It initializes with a device and application package, and provides
+    methods to navigate between states, validate states, and handle unexpected states or errors.
+    """
 
-   """
     def __init__(self, device_udid: str, app_package: str, appium_server: str = 'http://localhost:4723', desired_capabilities: Dict[str, str] = None):
         """
         Initializes the StateGraph with a device and application package.
@@ -149,11 +151,13 @@ class StateGraph(metaclass=StateGraphMeta):
         :param app_package: The package name of the application.
         :param desired_capabilities: desired capabilities as passed to the Appium webdriver.
         """
-
+        if not is_valid_package_name(app_package):
+            raise ValueError(f'The provided package name is invalid: {app_package}')
         self.current_state = self.initial_state
         self.driver = PumaDriver(device_udid, app_package, appium_server=appium_server, desired_capabilities=desired_capabilities)
         self.app_popups = []
         self.try_restart = True
+        self.gtl_logger = self.driver.gtl_logger
 
     def go_to_state(self, to_state: State | str, **kwargs) -> bool:
         """
@@ -176,7 +180,10 @@ class StateGraph(metaclass=StateGraphMeta):
             counter += 1
             try:
                 transition = self._find_shortest_path(to_state)[0]
-                _safe_func_call(transition.ui_actions, **kwargs)
+
+                self.gtl_logger.info(f'Going from state {self.current_state} to {to_state}, calling transition {transition.ui_actions.__name__}')
+                safe_func_call(transition.ui_actions, **kwargs)
+
                 self._validate_state(transition.to_state, **kwargs)
             except PumaClickException as pce:
                 logger.warn(f"Transition or state validation failed, recover? {pce}")
@@ -199,29 +206,39 @@ class StateGraph(metaclass=StateGraphMeta):
         valid = expected_state.validate(self.driver)
         context_valid = True
         if isinstance(expected_state, ContextualState):
-            context_valid = _safe_func_call(expected_state.validate_context, **kwargs)
+            context_valid = safe_func_call(expected_state.validate_context, **kwargs)
 
         # handle validation results
         if not valid:
+            self.gtl_logger.error(f'Expected to be in state {expected_state}, but the validation failed')
+
              # state is totally unexpected
             self.recover_state(expected_state)
             self._validate_state(self.current_state, **kwargs)
         elif not context_valid:
-            # correct state, but wrong context (eg we want a conversation with Alice, but we're in a conversation with Bob)
+            relevant_kwargs = filter_arguments(expected_state.validate_context, **kwargs)
+            self.gtl_logger.error(f'Was in the expected state {expected_state}, but context {relevant_kwargs} did not match')
+            # correct state, but wrong context (e.g. we want a conversation with Alice, but we're in a conversation with Bob)
             # recovery: always go back to the parent state
-            self.go_to_state(expected_state.parent_state)
+            # Go to the first non-contextual parent state, context is lost when recovering from a contextual state
+            go_to_state = expected_state.parent_state
+            while isinstance(go_to_state, ContextualState):
+                go_to_state = go_to_state.parent_state
+            self.go_to_state(go_to_state)
         else:
+            self.gtl_logger.info(f'Validated that current state is the expected state {expected_state}')
             self.current_state = expected_state
 
     def recover_state(self, expected_state):
         """
         Attempts to recover the expected state if the current state is not the expected state.
 
-        This method ensures the application is active, handles popups, and attempts to
+        This method ensures the application is active, handles pop-ups, and attempts to
         identify and recover the current state if it does not match the expected state.
 
         :param expected_state: The state that is expected to be the current state.
         """
+        self.gtl_logger.info(f"Recovering state to {expected_state}")
         # Ensure app active
         if not self.driver.app_open():
             self.driver.activate_app()
@@ -229,7 +246,7 @@ class StateGraph(metaclass=StateGraphMeta):
         if self.current_state.validate(self.driver):
             return
 
-        # popups
+        # pop-ups
         self._handle_popups()
 
         if self.current_state.validate(self.driver):
@@ -252,25 +269,33 @@ class StateGraph(metaclass=StateGraphMeta):
         if len(current_states) != 1:
             if not self.try_restart:
                 if len(current_states) > 1:
-                    raise ValueError("More than one state matches the current UI. Write stricter XPATHs")
+                    raise ValueError(f"More than one state matches the current UI. Write stricter XPaths. states: {current_states}")
                 else:
                     raise ValueError("Unknown state, cannot recover.")
-            logger.warn(f'Not in a known state. Restarting app {self.driver.app_package} once')
+            logger.warning(f'Not in a known state. Restarting app {self.driver.app_package} once')
             self.driver.restart_app()
             sleep(3)
             self.try_restart = False
             return
-        logger.info(
+        self.gtl_logger.info(
             f'Was in unknown state, expected {expected_state}. Recognized state, setting current state to: {current_states[0]}')
         self.current_state = current_states[0]
 
     def add_popup_handler(self, popup_handler: PopUpHandler):
         """
-        Adds a popup handler to manage application popups.
+        Adds a pop-up handler to manage application pop-ups.
 
-        :param popup_handler: The popup handler to be added.
+        :param popup_handler: The pop-up handler to be added.
         """
         self.app_popups.append(popup_handler)
+
+    def add_popup_handlers(self, *popup_handlers: PopUpHandler):
+        """
+        Adds multiple pop-up handlers to manage application pop-ups.
+
+        :param popup_handlers: The pop-up handlers to be added.
+        """
+        self.app_popups.extend(popup_handlers)
 
     def _find_shortest_path(self, destination: State | str) -> list[Transition] | None:
         """

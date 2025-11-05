@@ -1,24 +1,28 @@
 import time
 import unittest
 
-from puma.apps.android.telegram.telegram import TelegramActions
-
+from puma.apps.android.telegram.telegram import Telegram
 
 # Fill in the udids below. Run ADB devices to see the udids.
 device_udids = {
     "Alice": "",
     "Bob": ""
 }
+# In case different names than Alice and Bob are used on the phone, change them here:
+ALICE_NAME = "TwoCharlie"
+BOB_NAME = "Bob"
+# a directory containing pictures of videos that can be sent for this test
+GALLERY_FOLDER_NAME = "Screenshots"
 
 
 class TestTelegram(unittest.TestCase):
     """
-    With this test, you can check whether all Appium functionality works for the current version of Telegram.
+    With this test, you can check whether all functionality works for the current version of Telegram.
     The test can only be run manually, as you need a setup with at least one but preferably two phones.
 
     Prerequisites:
     - All prerequisites mentioned in the README.
-    - 2 phones with Telegram isntalled and registered:
+    - 2 phones with Telegram installed and registered:
         - Alice:
             - Have Bob in contacts
             - Have Bob in the conversation overview (start chatting with Bob manually to ensure this)
@@ -26,108 +30,77 @@ class TestTelegram(unittest.TestCase):
             - Have Alice in contacts.
     - Appium running
     """
+
     @classmethod
     def setUpClass(self):
         if not device_udids["Alice"]:
             print("No udid was configured for Alice. Please add at the top of the script.\nExiting....")
             exit(1)
-        self.alice = TelegramActions(device_udids["Alice"])
+        self.alice = Telegram(device_udids["Alice"])
 
         self.bob_configured = bool(device_udids["Bob"])
         if self.bob_configured:
-            self.bob = TelegramActions(device_udids["Bob"])
+            self.bob = Telegram(device_udids["Bob"])
         else:
             print("WARNING: No udid configured for Bob. Some tests will fail as a result")
 
-        self.contact_alice = "Alice"
-        self.contact_bob = "Bob"
-
-    def test_navigation(self):
-        self.alice.return_to_homescreen()
-        self.alice.select_chat(self.contact_bob)
-        self.alice.return_to_homescreen()
+    def setUp(self):
+        """
+        Return to start screen of telegram before each test
+        """
+        self.alice.go_to_state(Telegram.conversations_state)
+        if self.bob_configured:
+            self.bob.go_to_state(Telegram.conversations_state)
 
     def test_send_message(self):
-        self.alice.send_message("Hello Bob!", chat=self.contact_bob)
-        self.alice.send_message("Hello again!")
+        self.alice.send_message("Hello Bob!", conversation=BOB_NAME)
+        self.alice.send_message("Hello again")
 
-    def test_reply_to_message(self):
-        original_message = "test123"
-        self.alice.send_message(original_message, chat=self.contact_bob)
-        self.alice.reply_to_message(original_message, reply="This is a first reply")
-        self.alice.return_to_homescreen()
-        self.alice.reply_to_message(original_message, reply="this is a second reply", chat=self.contact_bob)
+    def test_send_voice_and_video_message(self):
+        self.alice.send_voice_message(duration=2, conversation=BOB_NAME)
+        self.alice.send_voice_message(duration=1)
+        self.alice.send_video_message(duration=3)
+        self.alice.send_video_message(duration=1, conversation=BOB_NAME)
 
-    def test_emoji_reply_to_message(self):
-        original_message = "test123"
-        self.alice.send_message(original_message, chat=self.contact_bob)
-        self.alice.emoji_reply_to_message(original_message)
-        self.alice.emoji_reply_to_message(original_message, emoji_to_respond_with="👎")
-        self.alice.return_to_homescreen()
-        self.alice.emoji_reply_to_message(original_message, chat=self.contact_bob)
+    def test_send_from_gallery(self):
+        self.alice.send_media_from_gallery(conversation=BOB_NAME, media_index=1)
+        self.alice.send_media_from_gallery(media_index=[2,4])
+        self.alice.send_media_from_gallery(conversation=BOB_NAME, media_index=3, caption="This is a caption")
+        self.alice.send_media_from_gallery(conversation=BOB_NAME, media_index=1, folder=GALLERY_FOLDER_NAME)
 
-    def test_take_and_send_picture(self):
-        self.alice.take_and_send_picture(chat=self.contact_bob)
-        self.alice.take_and_send_picture(caption="test caption!")
-        self.alice.take_and_send_picture(front_camera=True)
-        time_to_sleep = 2
-        start = time.time()
-        self.alice.take_and_send_picture(wait_time=time_to_sleep)
-        end = time.time()
-        if end - start < time_to_sleep:
-            self.fail("phone.take_and_send_picture did not wait long enough")
-
-    def test_calls_abort_call(self):
-        self.alice.start_call(self.contact_bob)
-        time.sleep(2)
-        self.alice.end_call()
-        self.alice.start_call(self.contact_bob, video=True)
-        time.sleep(2)
-        self.alice.end_call()
-
-    def test_get_call_status(self):
-        self.assertIsNone(self.alice.get_call_status())
-        self.alice.start_call(self.contact_bob)
-        self.assertIsNotNone(self.alice.get_call_status())
-        self.alice.end_call()
-
-    # Call related tests. Note that you need two phones for these tests, otherwise these tests will fail
-    def assert_bob_configured(self):
-        self.assertTrue(self.bob_configured, "Bob is not configured. This test cannot be executed.")
-
-    def test_calls_decline_call(self):
-        self.assert_bob_configured()
-        self.alice.start_call(self.contact_bob)
-        time.sleep(2)
-        self.bob.decline_call()
-
-    def test_calls_answer_and_end_call(self):
-        self.assert_bob_configured()
-        self.alice.start_call(self.contact_bob)
-        time.sleep(2)
+    def test_calls(self):
+        self.alice.start_call(conversation=BOB_NAME)
         self.bob.answer_call()
         time.sleep(2)
-        self.bob.end_call()
-
-    def test_calls_change_video(self):
-        self.assert_bob_configured()
-        self.alice.start_call(self.contact_bob)
+        self.bob.mute_mic()
         time.sleep(2)
-        self.bob.answer_call()
+        self.bob.mute_mic()
         time.sleep(1)
-        self.alice.toggle_video_in_call()
-        time.sleep(1)
-        self.alice.flip_video_in_call()
-        time.sleep(1)
-        self.alice.flip_video_in_call()
-        time.sleep(1)
-        self.alice.toggle_video_in_call()
-        time.sleep(1)
-        self.bob.end_call()
+        self.alice.end_call()
 
-    def test_select_chat_by_index(self):
-        self.alice.select_chat(1)
+    def test_send_location(self):
+        self.alice.send_current_location(conversation=BOB_NAME)
+        self.alice.send_current_location()
+        self.alice.send_live_location()
+        time.sleep(3)
+        self.alice.stop_live_location_sharing()
+        self.alice.send_live_location(duration_option=2)
+        time.sleep(3)
+        self.alice.stop_live_location_sharing()
+        self.alice.send_live_location(duration_option='8 hours')
+        time.sleep(3)
+        self.alice.stop_live_location_sharing()
 
+    def test_group_management(self):
+        group_name = 'Puma test group'
+        new_group_name = 'New puma test group'
+        self.alice.create_group(group_name=group_name, members=[BOB_NAME])
+        self.bob.send_message(conversation=group_name, message='Hi there Alice!')
+        self.alice.remove_member(conversation=group_name, member=BOB_NAME)
+        self.alice.add_members(conversation=group_name, new_members=[BOB_NAME])
+        self.bob.edit_group_name(conversation=group_name, new_group_name=new_group_name)
+        self.bob.delete_and_leave_group(conversation=new_group_name)
+        self.alice.delete_and_leave_group(conversation=new_group_name)
 
 if __name__ == '__main__':
     unittest.main()

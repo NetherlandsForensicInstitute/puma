@@ -12,8 +12,8 @@ The application can be downloaded in [the Google PlayStore](https://play.google.
 ### Initialization is standard:
 
 ```python
-from puma.apps.android.google_chrome.google_chrome import GoogleChromeActions
-phone = GoogleChromeActions("emulator-5554")
+from puma.apps.android.google_chrome.google_chrome import GoogleChrome
+phone = GoogleChrome("emulator-5554")
 ```
 
 ### Navigating the UI
@@ -21,10 +21,10 @@ phone = GoogleChromeActions("emulator-5554")
 You can go to a new web page, add a bookmark and enter incognito mode:
 
 ```python
-phone.go_to("google.com")
-phone.bookmark_page()
-phone.go_to("www.imdb.com", new_tab=True)
-phone.load_bookmark()
-phone.switch_to_tab()
-phone.go_to_incognito("DFRWS is awesome!")
+phone.visit_url("google.com", tab_index=1)
+phone.visit_url_new_tab("google.com", tab_index=1)
+phone.visit_url_incognito("DFRWS is awesome!")
+phone.bookmark_page(tab_index=1)
+phone.load_first_bookmark(folder_name="Mobile bookmarks")
+phone.delete_bookmark(tab_index=1)
 ```
