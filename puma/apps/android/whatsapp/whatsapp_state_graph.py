@@ -469,21 +469,17 @@ class WhatsApp(StateGraph):
         self._find_media_in_folder(photo_dir_name, index)
         self.driver.get_element(f'//android.widget.Button[@resource-id="com.whatsapp:id/ok_btn"]').click()
 
-
-
-    # @abstractmethod
-    # @log_action
-    # def set_about(self, about_text: str):
-    #     """
-    #     Set the about section on the WhatsApp profile.
-    #     :param about_text: text in the about
-    #     """
-    #     pass
-
-
+    @action(profile_state)
+    def set_about(self, about_text: str):
+        self.driver.get_element('//*[@resource-id="com.whatsapp:id/profile_info_status_card"]').click()
+        self.driver.get_element('//*[@resource-id="com.whatsapp:id/status_tv_edit_icon"]').click()
+        self.driver.send_keys('//*[@resource-id="com.whatsapp:id/edit_text"]', about_text)
+        self.driver.get_element('//*[@resource-id="com.whatsapp:id/save_button"]').click()
+        # This action ends in a screen that isn't a state, so move back one screen.
+        self.driver.back()
 
     @log_action
-    #TODO
+    #TODO CC
     def create_new_chat(self, contact, first_message):
         """
         Start a new 1-on-1 conversation with a contact and send a message.
@@ -507,7 +503,7 @@ class WhatsApp(StateGraph):
     #     return message_status_el
 
     @log_action
-    #TODO
+    #TODO CC
     def delete_message_for_everyone(self, message_text: str, chat: str = None):
         """
         Remove a message with the message text. Should be recently sent, so it is still in view and still possible to
@@ -544,7 +540,7 @@ class WhatsApp(StateGraph):
         self.driver.find_element(by=AppiumBy.ID, value=f"{self.app_package}:id/send").click()
 
     @log_action
-    #TODO: Broadcast window is not a state
+    #TODO: Broadcast window is not a state CC
     def send_broadcast(self, receivers: [str], broadcast_text: str):
         """
         Broadcast a message.
