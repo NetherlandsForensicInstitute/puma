@@ -598,19 +598,16 @@ class WhatsApp(StateGraph):
         voice_button = self.driver.find_element(by=AppiumBy.ID, value=f"{self.app_package}:id/voice_note_btn")
         self._long_press_element(voice_button, duration=duration)
 
-    @log_action
-    #TODO
-    def send_current_location(self, chat: str = None):
+    @action(send_location_state, end_state=chat_state)
+    def send_current_location(self, conversation: str):
         """
         Send the current location in the current chat.
-        Assumes we're in a chat and that the given contact exists.
-        :param chat: The chat conversation in which to send the location, if not currently in the desired chat.
+        :param conversation: The chat conversation in which to send the location.
         """
-        self._if_chat_go_to_chat(chat)
-        self.driver.find_element(by=AppiumBy.ID, value=f"{self.app_package}:id/input_attach_button").click()
-        self.driver.find_element(by=AppiumBy.ID, value=f"{self.app_package}:id/pickfiletype_location_holder").click()
+        self.driver.get_element('//*[@resource-id="com.whatsapp:id/input_attach_button"]').click()
+        self.driver.get_element('//*[@resource-id="com.whatsapp:id/pickfiletype_location_holder"]').click()
         sleep(5)  # it takes some time to fix the location
-        self.driver.find_element(by=AppiumBy.ID, value=f"{self.app_package}:id/send_current_location_btn").click()
+        self.driver.get_element('//*[@resource-id="com.whatsapp:id/send_current_location_btn"]').click()
 
     @log_action
     #TODO: location is a state, end state is chat state (contextual?)
