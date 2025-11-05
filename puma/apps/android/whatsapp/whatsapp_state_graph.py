@@ -720,24 +720,21 @@ class WhatsApp(StateGraph):
         else:
             self.return_to_homescreen()
 
-    @log_action
-    #TODO: call tab is a state
-    def call_contact(self, contact, video_call=False):
+    @action(calls_state, end_state=voice_call_state)
+    def voice_call_contact(self, conversation: str):
         """
-        Make a WhatsApp call. The call is made to a given contact name
-        :param contact: name of the contact to call.
-        :param video_call: False (default) for voice call, True for video call.
+        Make a WhatsApp voice call. The call is made to a given contact.
+        :param conversation: name of the contact to call.
         """
-        self.return_to_homescreen()
-        call_type = "Video call" if video_call else "Voice call"
-        self.navigate_to_call_tab()
-        self.driver.find_element(by=AppiumBy.XPATH,
-                                 value='//android.widget.ImageButton[@content-desc="Search"]').click()
-        search_bar = self.driver.find_element(by=AppiumBy.XPATH,
-                                              value=f'//android.widget.EditText[@resource-id="{self.app_package}:id/search_view_edit_text"]')
-        search_bar.send_keys(contact)
-        self.driver.find_element(by=AppiumBy.XPATH,
-                                 value=f'(//android.widget.ImageView[@content-desc="{call_type}"])[1]').click()  # Take the top one without checking the name, since we already searched for the contact
+        go_to_voice_call(self.driver, conversation)
+
+    @action(calls_state, end_state=video_call_state)
+    def video_call_contact(self, conversation: str):
+        """
+        Make a WhatsApp voice call. The call is made to a given contact.
+        :param conversation: name of the contact to call.
+        """
+        go_to_video_call(self.driver, conversation)
 
     @log_action
     #TODO
