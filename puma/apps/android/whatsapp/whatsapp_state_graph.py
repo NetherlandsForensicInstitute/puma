@@ -609,25 +609,22 @@ class WhatsApp(StateGraph):
         sleep(5)  # it takes some time to fix the location
         self.driver.get_element('//*[@resource-id="com.whatsapp:id/send_current_location_btn"]').click()
 
-    @log_action
-    #TODO: location is a state, end state is chat state (contextual?)
-    def send_live_location(self, caption=None, chat: str = None):
+    @action(send_location_state, end_state=chat_state)
+    def send_live_location(self, conversation: str, caption=None):
         """
         Send a live location in the current chat.
-        Assumes we're in a chat and that the given contact exists.
+        :param conversation: The chat conversation in which to start the live location sharing.
         :param caption: Optional caption sent along with the live location
-        :param chat: The chat conversation in which to start the live location sharing, if not currently in the desired chat.
         """
-        self._if_chat_go_to_chat(chat)
-        self.driver.find_element(by=AppiumBy.ID, value=f"{self.app_package}:id/input_attach_button").click()
-        self.driver.find_element(by=AppiumBy.ID, value=f"{self.app_package}:id/pickfiletype_location_holder").click()
-        self.driver.find_element(by=AppiumBy.ID, value=f"{self.app_package}:id/live_location_btn").click()
-        dialog = f'//android.widget.LinearLayout[@resource-id="{self.app_package}:id/location_new_user_dialog_container"]'
-        if self.is_present(dialog):
-            self.driver.find_element(by=AppiumBy.XPATH, value="//android.widget.Button[@text='Continue']").click()
+        self.driver.click('//*[@resource-id="com.whatsapp:id/input_attach_button"]')
+        self.driver.click('//*[@resource-id="com.whatsapp:id/pickfiletype_location_holder"]')
+        self.driver.click('//*[@resource-id="com.whatsapp:id/live_location_btn"]')
+        dialog = f'//android.widget.LinearLayout[@resource-id="com.whatsapp:id/location_new_user_dialog_container"]'
+        if self.driver.is_present(dialog):
+            self.driver.click('//android.widget.Button[@text="Continue"]')
         if caption is not None:
-            self.driver.find_element(by=AppiumBy.ID, value=f"{self.app_package}:id/comment").send_keys(caption)
-        self.driver.find_element(by=AppiumBy.ID, value=f"{self.app_package}:id/send").click()
+            self.driver.send_keys('//*[@resource-id="com.whatsapp:id/comment"]', caption)
+        self.driver.click('//*[@resource-id="com.whatsapp:id/send"]')
 
     @log_action
     #TODO
