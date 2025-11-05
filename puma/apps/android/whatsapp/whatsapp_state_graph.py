@@ -897,26 +897,25 @@ class WhatsApp(StateGraph):
         y = location['y'] + size['height'] // 2
         self.driver.execute_script('mobile: longClickGesture', {'x': x, 'y': y, 'duration': duration})
 
-    @log_action
-    @abstractmethod
-    #TODO: implement this action
-    def leave_group(self, group_name):
+    @action(chat_settings_state)
+    def leave_group(self, conversation: str):
         """
         This method will leave the given group. It will not delete that group.
-        This method assumes we start at the whatsapp home screen.
-        :param group_name: Name of the group we want to leave.
+        :param conversation: Name of the group we want to leave.
         """
-        pass
+        self.driver.swipe_to_click_element('//android.widget.TextView[@resource-id="com.whatsapp:id/list_item_title" and @text="Exit group"]')
+        self.driver.click('//android.widget.Button[@text="Exit group"]')
+
 
     @action(chat_settings_state)
-    def remove_participant_from_group(self, conversation: str, group_name, participant):
+    def remove_participant_from_group(self, conversation: str, participant):
         """
         Removes a given participant from a given group chat.
         It is assumed the group chat exists and has the given participant.
         :param conversation: The group
         :param participant: The participant to remove
         """
-        self.driver.swipe_to_click_element_with_text(text_equals=participant)
+        self.driver.swipe_to_click_element(f'//android.widget.TextView[@resource-id="com.whatsapp:id/name" and @text="{participant}"]')
         self.driver.click("//*[starts-with(@text, 'Remove')]")
         self.driver.click("//*[@class='android.widget.Button' and @text='OK']")
 
