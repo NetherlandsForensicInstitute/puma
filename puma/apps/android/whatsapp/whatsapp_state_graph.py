@@ -688,44 +688,26 @@ class WhatsApp(StateGraph):
         # TODO: popup that can appear!
         self.return_to_homescreen()
 
-    @log_action
-    #TODO
-    def activate_disappearing_messages(self, chat=None):
+    @action(chat_settings_state)
+    def activate_disappearing_messages(self, conversation: str):
         """
         Activates disappearing messages (auto delete) in the current or a given chat.
         Messages will now auto-delete after 24h.
-        Assumes that we are in the intended conversation if no group name is given, if a group name is given it is
-        assumed that this group exists and that we are at the whatsapp home screen.
-        :param chat: Optional: group for which disappearing messages should be activated.
+        :param conversation: The conversation for which disappearing messages should be activated.
         """
-        self._if_chat_go_to_chat(chat)
-        self.driver.find_element(by=AppiumBy.ID, value=f"{self.app_package}:id/conversation_contact").click()
-        self.scroll_to_find_element(text_contains='Disappearing messages').click()
-        self.driver.find_elements(by=AppiumBy.XPATH, value="//*[@class='android.widget.RadioButton']")[0].click()
-        if chat is None:
-            self.driver.back()
-            self.driver.back()
-        else:
-            self.return_to_homescreen()
+        self.driver.swipe_to_click_element('//*[@resource-id="com.whatsapp:id/list_item_title" and @text="Disappearing messages"]')
+        self.driver.click('//android.widget.RadioButton[@text="24 hours"]')
+        self.driver.back()
 
-    @log_action
-    #TODO
-    def deactivate_disappearing_messages(self, chat=None):
+    @action(chat_settings_state)
+    def deactivate_disappearing_messages(self, conversation: str):
         """
         Disables disappearing messages (auto delete) in the current or a given chat.
-        Assumes that we are in the intended conversation if no group name is given, if a group name is given it is
-        assumed that this group exists and that we are at the whatsapp home screen.
-        :param chat: Optional: group for which disappearing messages should be activated.
+        :param conversation: The conversation for which disappearing messages should be activated.
         """
-        self._if_chat_go_to_chat(chat)
-        self.driver.find_element(by=AppiumBy.ID, value=f"{self.app_package}:id/conversation_contact").click()
-        self.scroll_to_find_element(text_contains='Disappearing messages').click()
-        self.driver.find_elements(by=AppiumBy.XPATH, value="//*[@class='android.widget.RadioButton']")[-1].click()
-        if chat is None:
-            self.driver.back()
-            self.driver.back()
-        else:
-            self.return_to_homescreen()
+        self.driver.swipe_to_click_element('//*[@resource-id="com.whatsapp:id/list_item_title" and @text="Disappearing messages"]')
+        self.driver.click('//android.widget.RadioButton[@text="Off"]')
+        self.driver.back()
 
     @log_action
     #TODO: call tab is a state
