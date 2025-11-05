@@ -1,5 +1,6 @@
 import re
 from abc import abstractmethod
+from subprocess import STARTUPINFO
 from time import sleep
 from typing import Union, List
 
@@ -41,13 +42,26 @@ UPDATES_STATE_NEW_STATUS = '//android.view.View[@content-desc="New status update
 #Chat state xpaths
 CHAT_STATE_ROOT_LAYOUT = '//android.widget.LinearLayout[@resource-id="com.whatsapp:id/conversation_root_layout"]'
 CHAT_STATE_CONTACT_HEADER = '//android.widget.TextView[@resource-id="com.whatsapp:id/conversation_contact_name"]'
+CHAT_STATE_CONTACT_HEADER_WITH_NAME = '//android.widget.TextView[@resource-id="com.whatsapp:id/conversation_contact_name" and @text="{conversation}"]'
+
+VOICE_CALL_STATE_CAMERA_BUTTON = '//android.widget.Button[@content-desc="Turn camera on" and @resource-id="com.whatsapp:id/camera_button"]'
 
 CALL_STATE_CONTACT_HEADER = '//android.widget.TextView[@resource-id="com.whatsapp:id/title"]'
-CALL_STATE_VOICE_CALL_BUTTON = '//android.widget.ImageButton[@content-desc="Voice call"]'
+START_VOICE_CALL_BUTTON = '//android.widget.ImageButton[@content-desc="Voice call"]'
+START_VIDEO_CALL_BUTTON = '//android.widget.ImageButton[@content-desc="Video call"]'
+
+VIDEO_CALL_STATE_CAMERA_BUTTON = '//android.widget.Button[@content-desc="Turn camera off" and @resource-id="com.whatsapp:id/camera_button"]'
+VIDEO_CALL_STATE_SWITCH_CAMERA = '//android.widget.Button[@resource-id="com.whatsapp:id/calling_camera_switch_wds_button"]'
 
 SEND_LOCATION_STATE_HEADER = '//android.view.ViewGroup[@resource-id="com.whatsapp:id/toolbar"]/android.widget.TextView[@text="Send location"]'
 SEND_LOCATION_STATE_LIVE_LOCATION = '//android.widget.FrameLayout[@resource-id="com.whatsapp:id/live_location_btn"]'
 SEND_LOCATION_STATE_CURRENT_LOCATION = '//android.widget.FrameLayout[@resource-id="com.whatsapp:id/send_current_location_btn"]'
+
+CHAT_SETTINGS_STATE_CONTACT_NAME = ('//android.widget.TextView[@resource-id="com.whatsapp:id/contact_title"] | '
+                                    '//android.widget.TextView[@resource-id="com.whatsapp:id/business_title"] | '
+                                    '//android.widget.TextView[@resource-id="com.whatsapp:id/group_title"]')
+CHAT_SETTINGS_STATE_NOTIFICATIONS = '//android.widget.LinearLayout[@resource-id="com.whatsapp:id/notifications_and_sounds_layout"]'
+CHAT_SETTINGS_STATE_MEDIA_VISIBILITY = '//android.widget.Button[@resource-id="com.whatsapp:id/media_visibility_layout"]'
 
 MESSAGE_TEXT_BOX = '//android.widget.EditText[@resource-id="com.whatsapp:id/entry"]'
 MENTION_SUGGESTIONS = '//android.widget.ImageView[@resource-id="com.whatsapp:id/contact_photo"]'
@@ -67,6 +81,8 @@ OK_BUTTON_CLASS_TEXT = "//*[@class='android.widget.Button' and @text='OK']"
 CALL_TAB_SEARCH_BUTTON = '//android.widget.ImageButton[@content-desc="Search"]'
 ANSWER_OR_VIDEO_BUTTON = "//android.widget.Button[@content-desc='Answer' or @content-desc='Video']"
 DECLINE_BUTTON = "//android.widget.Button[@content-desc='Decline']"
+ATTACH_BUTTON = '//android.widget.ImageButton[@resource-id="com.whatsapp:id/input_attach_button"]'
+ATTACH_LOCATION_BUTTON = '//android.widget.Button[@resource-id="com.whatsapp:id/pickfiletype_location_holder"]'
 
 # Settings state xpaths
 OPEN_SETTINGS_BY_TITLE = '//android.widget.TextView[@text="Settings"]'
@@ -168,22 +184,31 @@ def go_to_chat(driver: PumaDriver, conversation: str):
     logger.info(f'Clicking on conversation {conversation} with driver {driver}')
     driver.get_elements(conversation_row_for_subject(conversation))[-1].click()
 
-def go_to_call(driver: PumaDriver, contact: str):
+def go_to_voice_call(driver: PumaDriver, contact: str):
     """
-    Navigates to a specific chat conversation in the application.
-
-    This function constructs an XPath to locate and click on a conversation element
-    based on the conversation name. It is designed to be used within a state transition
-    to navigate to a specific chat state.
+    Starts a voice call with a specific user.
 
     :param driver: The PumaDriver instance used to interact with the application.
-    :param conversation: The name of the conversation to navigate to.
+    :param contact: The name of user to call.
     """
     logger.info(f'Clicking on contact {contact} with driver {driver}')
     driver.get_element(CALL_TAB_SEARCH_BUTTON).click()
     driver.send_keys(SEARCH_BAR, contact)
     driver.get_element(contact_row(contact)).click()
-    driver.get_element(CALL_STATE_VOICE_CALL_BUTTON).click()
+    driver.get_element(START_VOICE_CALL_BUTTON).click()
+
+def go_to_video_call(driver: PumaDriver, contact: str):
+    """
+    Starts a video call with a specific user.
+
+    :param driver: The PumaDriver instance used to interact with the application.
+    :param contact: The name of user to call.
+    """
+    logger.info(f'Clicking on contact {contact} with driver {driver}')
+    driver.get_element(CALL_TAB_SEARCH_BUTTON).click()
+    driver.send_keys(SEARCH_BAR, contact)
+    driver.get_element(contact_row(contact)).click()
+    driver.get_element(START_VIDEO_CALL_BUTTON).click()
 
 
 class WhatsAppChatState(SimpleState, ContextualState):
@@ -220,6 +245,10 @@ class WhatsAppChatState(SimpleState, ContextualState):
         content_desc = (driver.get_element(CHAT_STATE_CONTACT_HEADER).get_attribute('text'))
         return conversation.lower() in content_desc.lower()
 
+    @staticmethod
+    def open_chat_settings(driver: PumaDriver, conversation: str):
+        driver.click(CHAT_STATE_CONTACT_HEADER_WITH_NAME.format(conversation=conversation))
+
 
 class WhatsAppChatSettingsState(SimpleState, ContextualState):
     """
@@ -235,8 +264,9 @@ class WhatsAppChatSettingsState(SimpleState, ContextualState):
 
         :param parent_state: The parent state of this chat state.
         """
-        # TODO: add xpaths
-        super().__init__(xpaths=[],
+        super().__init__(xpaths=[CHAT_SETTINGS_STATE_CONTACT_NAME,
+                                 CHAT_SETTINGS_STATE_NOTIFICATIONS,
+                                 CHAT_SETTINGS_STATE_MEDIA_VISIBILITY],
                          parent_state=parent_state)
 
     def validate_context(self, driver: PumaDriver, conversation: str = None) -> bool:
@@ -252,8 +282,7 @@ class WhatsAppChatSettingsState(SimpleState, ContextualState):
         if not conversation:
             return True
 
-        # TODO fix xpath
-        content_desc = (driver.get_element(CHAT_STATE_CONTACT_HEADER).get_attribute('text'))
+        content_desc = (driver.get_element(CHAT_SETTINGS_STATE_CONTACT_NAME).get_attribute('text'))
         return conversation.lower() in content_desc.lower()
 
 
@@ -272,7 +301,44 @@ class WhatsAppVoiceCallState(SimpleState, ContextualState):
         :param parent_state: The parent state of this call state.
         """
         super().__init__(xpaths=[END_CALL_BUTTON,
-                                 CALL_SCREEN_BACKGROUND],
+                                 CALL_SCREEN_BACKGROUND,
+                                 VOICE_CALL_STATE_CAMERA_BUTTON],
+                         parent_state=parent_state)
+
+    def validate_context(self, driver: PumaDriver, contact: str = None) -> bool:
+        """
+        Validates the context of the call state.
+
+        This method checks if the current call screen matches the expected contact name.
+
+        :param driver: The PumaDriver instance used to interact with the application.
+        :param contact: The name of the call recipient to validate against.
+        :return: True if the context is valid, False otherwise.
+        """
+        if not contact:
+            return True
+
+        content_desc = (driver.get_element(CALL_STATE_CONTACT_HEADER).get_attribute('text'))
+        return contact.lower() in content_desc.lower()
+
+class WhatsAppVideoCallState(SimpleState, ContextualState):
+    """
+    A state representing a call screen in the application.
+
+    This class extends both SimpleState and ContextualState to represent a call screen
+    and validate its context based on the contact.
+    """
+
+    def __init__(self, parent_state: State):
+        """
+        Initializes the CallState with a parent state.
+
+        :param parent_state: The parent state of this call state.
+        """
+        super().__init__(xpaths=[END_CALL_BUTTON,
+                                 CALL_SCREEN_BACKGROUND,
+                                 VIDEO_CALL_STATE_CAMERA_BUTTON,
+                                 VIDEO_CALL_STATE_SWITCH_CAMERA],
                          parent_state=parent_state)
 
     def validate_context(self, driver: PumaDriver, contact: str = None) -> bool:
@@ -322,19 +388,23 @@ class WhatsApp(StateGraph):
                                  UPDATES_STATE_NEW_STATUS],
                                 parent_state=conversations_state)
     voice_call_state = WhatsAppVoiceCallState(parent_state=calls_state)
+    video_call_state = WhatsAppVideoCallState(parent_state=calls_state)
     send_location_state = SimpleState([SEND_LOCATION_STATE_HEADER,
                                        SEND_LOCATION_STATE_LIVE_LOCATION,
                                        SEND_LOCATION_STATE_CURRENT_LOCATION],
                                       parent_state=chat_state)
-    # chat_settings = WhatsAppChatSettingsState(parent_state=chat_state)
+    chat_settings_state = WhatsAppChatSettingsState(parent_state=chat_state)
 
     conversations_state.to(chat_state, go_to_chat)
     conversations_state.to(settings_state, compose_clicks([HAMBURGER_MENU, OPEN_SETTINGS_BY_TITLE]))
     conversations_state.to(new_chat_state, compose_clicks([CONVERSATIONS_STATE_NEW_CHAT_OR_SEND_MESSAGE]))
     conversations_state.to(calls_state, compose_clicks([CALLS_TAB]))
     conversations_state.to(updates_state, compose_clicks([UPDATES_TAB]))
-    calls_state.to(voice_call_state, go_to_call)
+    calls_state.to(voice_call_state, go_to_voice_call)
+    calls_state.to(video_call_state, go_to_video_call)
     settings_state.to(profile_state, compose_clicks([PROFILE_INFO]))
+    chat_state.to(send_location_state, compose_clicks([ATTACH_BUTTON, ATTACH_LOCATION_BUTTON]))
+    chat_state.to(chat_settings_state, WhatsAppChatState.open_chat_settings)
 
 
     # @abstractmethod
