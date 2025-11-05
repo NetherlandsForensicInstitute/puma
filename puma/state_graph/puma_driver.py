@@ -274,6 +274,34 @@ class PumaDriver:
                 time.sleep(0.5)
         raise PumaClickException(f'After {max_swipes} swipes, cannot find element with xpath {xpath}')
 
+    def swipe_to_click_element_with_text(self, resource_id: str = None, text_equals: str = None,
+                               text_contains: str = None):
+        """
+        This code will scroll in the current view until a certain element is found, and then return that element.
+        The element can be searched for by resource-id and/or the text in that element.
+        When defining the text of the element either an exact match or a textContains match can be used. These two can
+        of course not be used at the same time.
+        The method will keep scrolling until the element is found. If you look for something that doesn't exist you
+        will have a bad time.
+        The first matching element is returned when found.
+        :param resource_id: the resource id of the element to look for.
+        :param text_equals: the exact text of the element to look for. Cannot be used in combination with text_contains.
+        :param text_contains: part of the text of the element to look for. Cannot be used in combination with
+        text_equals.
+        :return: The element when found.
+        """
+        if text_equals is not None and text_contains is not None:
+            raise ValueError('text_equals and text_contains can not be used at the same time')
+        if resource_id is None and text_contains is None and text_equals is None:
+            raise ValueError('resource_id, text_equals and text_contains cannot all be None')
+
+        resource_id_part = '' if resource_id is None else f'.resourceIdMatches("{resource_id}")'
+        text_part = '' if text_equals is None else f'.text("{text_equals}")'
+        text_contains_part = '' if text_contains is None else f'.textContains("{text_contains}")'
+
+        java_code = f'new UiScrollable(new UiSelector().scrollable(true).instance(0)).scrollIntoView(new UiSelector(){resource_id_part}{text_part}{text_contains_part}.instance(0))'
+        self.driver.find_element(by=AppiumBy.ANDROID_UIAUTOMATOR, value=java_code).click()
+
 
     def long_press_element(self, xpath: str, duration: int = 1000):
         """

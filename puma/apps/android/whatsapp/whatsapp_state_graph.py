@@ -912,22 +912,17 @@ class WhatsApp(StateGraph):
         """
         pass
 
-    @log_action
-    #TODO: maybe make a state for chat settings? But the state is different for one-on-one and group conversations.
-    def remove_participant_from_group(self, group_name, participant):
+    @action(chat_settings_state)
+    def remove_participant_from_group(self, conversation: str, group_name, participant):
         """
         Removes a given participant from a given group chat.
-        It is assumed the group chat exists and has the given participant, and that we start at the whatsapp home screen.
-        :param group_name: The group
+        It is assumed the group chat exists and has the given participant.
+        :param conversation: The group
         :param participant: The participant to remove
         """
-        self.select_chat(group_name)
-        self.driver.find_element(by=AppiumBy.ID, value=f"{self.app_package}:id/conversation_contact").click()
-        self.scroll_to_find_element(text_equals=participant).click()
-        self.driver.find_element(by=AppiumBy.XPATH, value="//*[starts-with(@text, 'Remove')]").click()
-        self.driver.find_element(by=AppiumBy.XPATH, value="//*[@class='android.widget.Button' and @text='OK']").click()
-        sleep(5)
-        self.return_to_homescreen()
+        self.driver.swipe_to_click_element_with_text(text_equals=participant)
+        self.driver.click("//*[starts-with(@text, 'Remove')]")
+        self.driver.click("//*[@class='android.widget.Button' and @text='OK']")
 
     @log_action
     #TODO
