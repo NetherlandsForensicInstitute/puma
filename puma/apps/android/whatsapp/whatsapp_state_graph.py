@@ -736,39 +736,44 @@ class WhatsApp(StateGraph):
         """
         go_to_video_call(self.driver, conversation)
 
-    @log_action
-    #TODO
-    def end_call(self):
+    @action(voice_call_state, end_state=calls_state)
+    def end_voice_call(self):
         """
-        Ends the current call. Assumes the call screen is open.
+        Ends the current voice call.
         """
-        end_call_button = f'//*[@content-desc="Leave call" or @resource-id="{self.app_package}:id/end_call_button" or @resource-id="{self.app_package}:id/footer_end_call_btn"]'
-        if not self.is_present(end_call_button, implicit_wait=1):
-            # tap screen to make call button visible
-            background = f'//android.widget.RelativeLayout[@resource-id="{self.app_package}:id/call_screen"]'
-            self.driver.find_element(by=AppiumBy.XPATH, value=background).click()
-        self.driver.find_element(by=AppiumBy.XPATH, value=end_call_button).click()
+        self.end_call()
 
-    @log_action
-    #TODO, not an action
+    @action(video_call_state, end_state=calls_state)
+    def end_video_call(self):
+        """
+        Ends the current video call.
+        """
+        self.end_call()
+
+    def end_call(self):
+        end_call_button = f'//*[@content-desc="Leave call" or @resource-id="com.whatsapp:id/end_call_button" or @resource-id="com.whatsapp:id/footer_end_call_btn"]'
+        if not self.driver.is_present(end_call_button, implicit_wait=1):
+            # tap screen to make call button visible
+            self.driver.click(CALL_SCREEN_BACKGROUND)
+        self.driver.click(end_call_button)
+
+    # This method is not an @action, since it is not tied to a state.
     def answer_call(self):
         """
         Answer when receiving a call via Whatsapp.
         """
-        self.open_notifications()
+        self.driver.open_notifications()
         sleep(2)
-        self.driver.find_element(by=AppiumBy.XPATH,
-                                 value="//android.widget.Button[@content-desc='Answer' or @content-desc='Video']").click()
+        self.driver.click("//android.widget.Button[@content-desc='Answer' or @content-desc='Video']")
 
-    @log_action
-    #TODO, not an action
+    # This method is not an @action, since it is not tied to a state.
     def decline_call(self):
         """
         Declines an incoming Whatsapp call.
         """
-        self.open_notifications()
+        self.driver.open_notifications()
         sleep(2)
-        self.driver.find_element(by=AppiumBy.XPATH, value="//android.widget.Button[@content-desc='Decline']").click()
+        self.driver.click("//android.widget.Button[@content-desc='Decline']")
 
     @log_action
     #TODO, use new chat state
