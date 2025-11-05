@@ -301,6 +301,7 @@ class PumaDriver:
         self.gtl_logger.info(f'Entering text "{text}" in text box')
         element = self.get_element(xpath)
         element.click() # TODO check all usages
+        element.clear()
         element.send_keys(text)
 
     def press_enter(self):
@@ -410,6 +411,9 @@ class PumaDriver:
         settings = self.driver.get_settings()
         settings.update({"waitForIdleTimeout": timeout})
         self.driver.update_settings(settings)
+
+    def execute_script(self, script: str):
+        self.driver.execute_script(script)
 
     def __repr__(self):
         """

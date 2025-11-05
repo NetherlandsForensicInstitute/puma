@@ -563,17 +563,15 @@ class WhatsApp(StateGraph):
         text_box.send_keys(broadcast_text)
         self.driver.find_element(by=AppiumBy.ID, value=f"{self.app_package}:id/send").click()
 
-    @log_action
-    #TODO
-    def send_sticker(self, chat: str = None):
+    @action(chat_state)
+    def send_sticker(self, conversation: str):
         """
         Send the only sticker in the sticker menu. Assumes 1 sticker is present in WhatsApp.
-        Note that the selection of the sticker is based on coordinates of the Pixel 5. For other phones with different
+        Note that the selection of the sticker is based on coordinates of the Samsung G955F. For other phones with different
         screen sizes, it should be validated that this is correct.
-        :param chat: The chat conversation in which to send this sticker, if not currently in the desired chat.
+        :param conversation: The chat conversation in which to send this sticker.
         """
-        self._if_chat_go_to_chat(chat)
-        self.driver.find_element(by=AppiumBy.ID, value=f"{self.app_package}:id/emoji_picker_btn").click()
+        self.driver.get_element('//*[@resource-id="com.whatsapp:id/emoji_picker_btn"]').click()
         sleep(1)
         # Press sticker tab
         # TODO: make coordinates configurable or calculate what they should be
