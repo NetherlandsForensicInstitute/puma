@@ -649,22 +649,19 @@ class WhatsApp(StateGraph):
         if self.is_present(popup_button_xpath):
             self.driver.find_element(by=AppiumBy.XPATH, value=popup_button_xpath).click()
 
-    @log_action
-    #TODO
-    def send_contact(self, contact_name: str, chat: str = None):
+    @action(chat_state)
+    def send_contact(self, conversation: str, contact_name: str):
         """
         Send a contact in the current chat.
-        Assumes we're in a chat and that the given contact exists.
         :param contact_name: the name of the contact to send.
-        :param chat: The chat conversation in which to send the contact, if not currently in the desired chat.
+        :param conversation: The chat conversation in which to send the contact.
         """
-        self._if_chat_go_to_chat(chat)
-        self.driver.find_element(by=AppiumBy.ID, value=f"{self.app_package}:id/input_attach_button").click()
-        self.driver.find_element(by=AppiumBy.ID, value=f"{self.app_package}:id/pickfiletype_contact_holder").click()
-        self.swipe_to_find_element(
-            f'//android.widget.TextView[@resource-id="{self.app_package}:id/name" and @text="{contact_name}"]').click()
-        self.driver.find_element(by=AppiumBy.ID, value=f"{self.app_package}:id/next_btn").click()
-        self.driver.find_element(by=AppiumBy.ID, value=f"{self.app_package}:id/send_btn").click()
+        self.driver.click('//*[@resource-id="com.whatsapp:id/input_attach_button"]')
+        self.driver.click('//*[@resource-id="com.whatsapp:id/pickfiletype_contact_holder"]')
+        self.driver.swipe_to_click_element(
+            f'//android.widget.TextView[@resource-id="com.whatsapp:id/name" and @text="{contact_name}"]')
+        self.driver.click('//*[@resource-id="com.whatsapp:id/next_btn"]')
+        self.driver.click('//*[@resource-id="com.whatsapp:id/send_btn"]')
 
     @log_action
     #TODO: updates is a state, creating the update isn't
