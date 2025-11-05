@@ -579,6 +579,15 @@ class WhatsApp(StateGraph):
             archived_popup_present = 'archived' in self.driver.get_elements(f'//*[contains(@text,"archived") or @resource-id="{self.WHATSAPP_PACKAGE}:id/fab"]')[0].text
         print("Archive pop-up gone!")
 
+    @action(chat_state)
+    def open_view_once_photo(self, conversation: str):
+        """
+        Open view once photo in the current or specified chat. Should be done right after the photo is sent, to ensure the correct photo is opened, this will be the lowest one.
+        # TODO-CC: do we want this state dependent code? Perhaps just make it a different method? (open_view_one + open_view_once_in_current)
+        :param conversation: Optional: The chat in which the photo has to be opened. If not supplied, the photo will be opened in the current chat.
+        """
+        self.driver.get_elements('//*[contains(@resource-id, "view_once_media")]')[-1].click()
+
     # endregion
     ########################################
 
@@ -590,6 +599,7 @@ class WhatsApp(StateGraph):
     #         sleep(10)
     #     logger.info("Message sent.")
     #     return message_status_el
+
     @log_action
     #TODO CC
     def delete_message_for_everyone(self, message_text: str, chat: str = None):
@@ -944,19 +954,6 @@ class WhatsApp(StateGraph):
         f"//*[@resource-id='{self.app_package}:id/contact_list']//*[@text='{to_chat}']").click()
         self.driver.find_element(by=AppiumBy.ID, value=f"{self.app_package}:id/send").click()
 
-
-    @log_action
-    #TODO
-    def open_view_once_photo(self, chat=None):
-        """
-        Open view once photo in the current or specified chat. Should be done right after the photo is sent, to ensure the correct photo is opened, this will be the lowest one.
-        :param chat: Optional: The chat in which the photo has to be opened. If not supplied, the photo will be opened in the current chat.
-        """
-        self._if_chat_go_to_chat(chat)
-        most_recent_view_once = \
-            self.driver.find_elements(by=AppiumBy.XPATH, value='//*[contains(@resource-id, "view_once_media")]')[-1]
-        most_recent_view_once.click()
-        self.driver.back()
 
     def _find_media_in_folder(self, directory_name, index):
         try:
