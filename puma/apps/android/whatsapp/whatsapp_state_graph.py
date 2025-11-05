@@ -924,27 +924,21 @@ class WhatsApp(StateGraph):
         self.driver.click("//*[starts-with(@text, 'Remove')]")
         self.driver.click("//*[@class='android.widget.Button' and @text='OK']")
 
-    @log_action
-    #TODO
-    def forward_message(self, from_chat, message_contains, to_chat):
+    @action(chat_state)
+    def forward_message(self, conversation: str, message_contains, to_chat):
         """
         Forwards a message from one conversation to another.
-        It is assumed the message and both conversations exists, and that we start at the whatsapp home screen.
-        :param from_chat: The chat from which the message has to be forwarded
+        It is assumed the message and both conversations exists.
+        :param conversation: The chat from which the message has to be forwarded
         :param message_contains: the text from the message that has to be forwarded. Uses String.contains(), so only part
         of the message is needed, but be sure the given text is enough to match your intended message uniquely.
         :param to_chat: The chat to which the message has to be forwarded.
         """
-        self.select_chat(from_chat)
-        chat_message = self.driver.find_element(by=AppiumBy.XPATH, value=
-        f"//*[@resource-id='{self.app_package}:id/conversation_text_row']//*[contains(@text,'{message_contains}')]")
+        chat_message = self.driver.get_element(f"//*[@resource-id='com.whatsapp:id/conversation_text_row']//*[contains(@text,'{message_contains}')]")
         self._long_press_element(chat_message)
-        self.driver.find_element(by=AppiumBy.XPATH, value=
-        f"//*[@resource-id='{self.app_package}:id/action_mode_bar']//*[@content-desc='Forward']").click()
-        self.driver.find_element(by=AppiumBy.XPATH, value=
-        f"//*[@resource-id='{self.app_package}:id/contact_list']//*[@text='{to_chat}']").click()
-        self.driver.find_element(by=AppiumBy.ID, value=f"{self.app_package}:id/send").click()
-
+        self.driver.click(f"//*[@resource-id='com.whatsapp:id/action_mode_bar']//*[@content-desc='Forward']")
+        self.driver.click(f"//*[@resource-id='com.whatsapp:id/contact_list']//*[@text='{to_chat}']")
+        self.driver.click('//*[@resource-id="com.whatsapp:id/send"]')
 
     def _find_media_in_folder(self, directory_name, index):
         try:
