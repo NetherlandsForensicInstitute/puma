@@ -1,6 +1,5 @@
 import re
 from abc import abstractmethod
-from subprocess import STARTUPINFO
 from time import sleep
 from typing import Union, List
 
