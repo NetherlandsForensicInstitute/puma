@@ -648,7 +648,7 @@ class WhatsApp(StateGraph):
         """
         # TODO-CC: get elements necessary?
         conversation = self.driver.get_elements(f'//*[contains(@resource-id,"{self.WHATSAPP_PACKAGE}:id/conversations_row_contact_name") and @text="{subject}"]')[0]
-        self._long_press_element(conversation)
+        self.driver.long_press_element(conversation)
         self.driver.get_element(f'//*[@resource-id="{self.WHATSAPP_PACKAGE}:id/menuitem_conversations_archive"]').click()
         # Wait until the archive popup disappeared
         archived_popup_present = True
@@ -679,6 +679,21 @@ class WhatsApp(StateGraph):
         self.driver.scroll_to_find_element(text_equals='Add group description').click()
         self.driver.find_element(f'//*[@resource-id="{self.WHATSAPP_PACKAGE}:id/edit_text"]').send_keys(description)
         self.driver.find_element(f'//*[@resource-id="{self.WHATSAPP_PACKAGE}:id/ok_btn"]').click()
+
+    @action(conversations_state)
+    def delete_group(self, group_name):
+        """
+        Leaves and deletes a given group.
+        Assumes the group exists, isn't left yet, and that we start from the whatsapp home screen.
+        :param group_name: the group to be deleted.
+        """
+        self.leave_group(group_name)
+        self.select_chat(group_name)
+        self.driver.find_element(by=AppiumBy.ID, value=f"{self.app_package}:id/conversation_contact").click()
+        self.driver.find_element(by=AppiumBy.XPATH, value="//*[contains(@text,'Delete group')]").click()
+        self.driver.find_element(by=AppiumBy.XPATH, value="//*[contains(@text,'Delete group')]").click()
+        self.return_to_homescreen()
+
 
     # endregion
     ########################################
@@ -926,67 +941,6 @@ class WhatsApp(StateGraph):
         self.open_notifications()
         sleep(2)
         self.driver.find_element(by=AppiumBy.XPATH, value="//android.widget.Button[@content-desc='Decline']").click()
-
-    @log_action
-    #TODO, use new chat state
-    def create_group(self, subject: str, participants: Union[str, List[str]]):
-        """
-        Create a new group. Assumes you are in homescreen.
-        :param subject: The subject of the group.
-        :param participants: The contact(s) you want to add to the group (string or list).
-        Note that only 1 participant is implemented for now.
-        """
-        self.return_to_homescreen()
-        self.open_more_options()
-        self.driver.find_element(by=AppiumBy.XPATH, value="//*[@text='New group']").click()
-
-        participants = [participants] if not isinstance(participants, list) else participants
-        for participant in participants:
-            contacts = self.driver.find_elements(by=AppiumBy.CLASS_NAME, value="android.widget.TextView")
-            participant_to_add = [contact for contact in contacts if contact.text.lower() == participant.lower()][0]
-            participant_to_add.click()
-
-        self.driver.find_element(by=AppiumBy.ID, value=f"{self.app_package}:id/next_btn").click()
-        text_box = self.driver.find_element(by=AppiumBy.ID, value=f"{self.app_package}:id/group_name")
-        text_box.send_keys(subject)
-        image_buttons = self.driver.find_elements(by=AppiumBy.CLASS_NAME, value="android.widget.ImageButton")
-        next_button = [button for button in image_buttons if button.tag_name == "Create"][0]
-        next_button.click()
-        print("Waiting 5 sec to create group")
-        sleep(5)
-        if self.currently_at_homescreen():
-            print("On homescreen now")
-            # Check if creating the group succeeded
-            top_conv = self.driver.find_element(by=AppiumBy.ID, value=f"{self.app_package}:id/single_msg_tv")
-            max_attempts = 20
-            while "Creating" in top_conv.text or "Couldn't create" in top_conv.text:
-                if "Couldn't create" in top_conv.text:
-                    print("Couldn't create. Tapping to retry")
-                    top_conv.click()
-                else:
-                    print("Waiting for group to be created.")
-                sleep(5)
-                max_attempts -= 1
-                if max_attempts == 0:
-                    raise TimeoutError(
-                        f"Could not create group after 20 attempts. Try restarting your emulator and try again.")
-        self.return_to_homescreen()
-
-    @log_action
-    #TODO
-    def set_group_description(self, group_name, description):
-        """
-        Set the group description.
-        :param group_name: Name of the group to set the description for.
-        :param description: Description of the group.
-        """
-        self.return_to_homescreen()
-        self.select_chat(group_name)
-        self.driver.find_element(by=AppiumBy.ID, value=f"{self.app_package}:id/conversation_contact").click()
-        self.scroll_to_find_element(text_equals="Add group description").click()
-        self.driver.find_element(by=AppiumBy.ID, value=f"{self.app_package}:id/edit_text").send_keys(description)
-        self.driver.find_element(by=AppiumBy.ID, value=f"{self.app_package}:id/ok_btn").click()
-        self.return_to_homescreen()
 
     @log_action
     #TODO
