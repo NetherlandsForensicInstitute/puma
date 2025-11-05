@@ -944,21 +944,6 @@ class WhatsApp(StateGraph):
 
     @log_action
     #TODO
-    def delete_group(self, group_name):
-        """
-        Leaves and deletes a given group.
-        Assumes the group exists, isn't left yet, and that we start from the whatsapp home screen.
-        :param group_name: the group to be deleted.
-        """
-        self.leave_group(group_name)
-        self.select_chat(group_name)
-        self.driver.find_element(by=AppiumBy.ID, value=f"{self.app_package}:id/conversation_contact").click()
-        self.driver.find_element(by=AppiumBy.XPATH, value="//*[contains(@text,'Delete group')]").click()
-        self.driver.find_element(by=AppiumBy.XPATH, value="//*[contains(@text,'Delete group')]").click()
-        self.return_to_homescreen()
-
-    @log_action
-    #TODO
     def archive_conversation(self, subject):
         """
         Archives a given conversation.
