@@ -460,7 +460,6 @@ class WhatsApp(StateGraph):
         self.driver.get_element(f'//*[@resource-id="{self.WHATSAPP_PACKAGE}:id/contactpicker_text_container"]//*[@text="{contact}"]').click()
         self.send_message_in_current_conversation(first_message)
 
-    @log_action
     def open_more_options(self):
         """
         Open more options (hamburger menu) in the home screen.
@@ -488,6 +487,71 @@ class WhatsApp(StateGraph):
         self.driver.get_element(f'//android.widget.EditText[@resource-id="{self.WHATSAPP_PACKAGE}:id/entry"]').send_keys(broadcast_text)
         self.driver.get_element(f'//android.widget.ImageButton[@resource-id="{self.WHATSAPP_PACKAGE}:id/send"]').click()
 
+    @action(chat_state)
+    def delete_message_for_everyone(self, conversation: str, message_text: str):
+        """
+        Remove a message with the message text. Should be recently sent, so it is still in view and still possible to
+        delete for everyone.
+        :param conversation: The chat conversation in which to send this message, if not currently in the desired chat.
+        :param message_text: literal message text of the message to remove. The first match will be removed in case
+        there are multiple with the same text.
+        """
+        message_element = self.driver.find_element(f"//*[@resource-id='{self.WHATSAPP_PACKAGE}:id/conversation_text_row']//*[@text='{message_text}']")
+        self._long_press_element(message_element)
+        self.driver.get_element('//*[@content-desc="Delete"]').click()
+        self.driver.get_element(f'//*[@resource-id="{self.WHATSAPP_PACKAGE}:id/buttonPanel"]//*[@text="Delete for everyone"]').click()
+
+    @action(conversations_state)
+    def create_group(self, subject: str, participants: Union[str, List[str]]):
+        """
+        Create a new group.
+        :param subject: The subject of the group.
+        :param participants: The contact(s) you want to add to the group (string or list).
+        Note that only 1 participant is implemented for now.
+        """
+        self.open_more_options()
+        self.driver.get_element('//*[@text="New group"]').click()
+
+        participants = [participants] if not isinstance(participants, list) else participants
+        for participant in participants:
+            # TODO: classname
+            contacts = self.driver.get_element(by=AppiumBy.CLASS_NAME, value='android.widget.TextView')
+            participant_to_add = [contact for contact in contacts if contact.text.lower() == participant.lower()][0]
+            participant_to_add.click()
+
+        self.driver.get_element(f'//android.widget.ImageButton[@resource-id="{self.WHATSAPP_PACKAGE}:id/next_btn"]').click()
+        self.driver.get_element(f'//android.widget.ImageButton[@resource-id="{self.WHATSAPP_PACKAGE}:id/group_name"]').send_keys(subject)
+
+        # TODO: classname
+        image_buttons = self.driver.find_elements(by=AppiumBy.CLASS_NAME, value='android.widget.ImageButton')
+        # TODO: is this necessary?
+        next_button = [button for button in image_buttons if button.tag_name == "Create"][0]
+        next_button.click()
+
+        # TODO: print should be log?
+        print("Waiting 5 sec to create group")
+        sleep(5)
+
+        # TODO: use xpaths to check? Or just try to find the single_msg_tv
+        # if self.currently_at_homescreen():
+        print("On homescreen now")
+        # Check if creating the group succeeded
+        top_conv =self.driver.get_element(f'//android.widget.ImageButton[@resource-id="{self.WHATSAPP_PACKAGE}:id/single_msg_tv"]')
+        max_attempts = 20
+        while "Creating" in top_conv.text or "Couldn't create" in top_conv.text:
+            if "Couldn't create" in top_conv.text:
+                print("Couldn't create. Tapping to retry")
+                top_conv.click()
+            else:
+                print("Waiting for group to be created.")
+            sleep(5)
+            max_attempts -= 1
+            if max_attempts == 0:
+                # TODO: is this a timeout?
+                raise TimeoutError(f"Could not create group after 20 attempts. Try restarting your emulator and try again.")
+        # self.return_to_homescreen()
+
+
     # endregion
     ########################################
 
@@ -508,24 +572,6 @@ class WhatsApp(StateGraph):
     #     :param about_text: text in the about
     #     """
     #     pass
-
-    @log_action
-    #TODO
-    def delete_message_for_everyone(self, message_text: str, chat: str = None):
-        """
-        Remove a message with the message text. Should be recently sent, so it is still in view and still possible to
-        delete for everyone.
-        :param message_text: literal message text of the message to remove. The first match will be removed in case
-        there are multiple with the same text.
-        :param chat: The chat conversation in which to send this message, if not currently in the desired chat.
-        """
-        self._if_chat_go_to_chat(chat)
-        message_element = self.driver.find_element(by=AppiumBy.XPATH, value=
-        f"//*[@resource-id='{self.app_package}:id/conversation_text_row']//*[@text='{message_text}']")
-        self._long_press_element(message_element)
-        self.driver.find_element(by=AppiumBy.XPATH, value='//*[@content-desc="Delete"]').click()
-        self.driver.find_element(by=AppiumBy.XPATH,
-                                 value=f"//*[@resource-id='{self.app_package}:id/buttonPanel']//*[@text='Delete for everyone']").click()
 
     @log_action
     #TODO
@@ -743,51 +789,6 @@ class WhatsApp(StateGraph):
         self.open_notifications()
         sleep(2)
         self.driver.find_element(by=AppiumBy.XPATH, value="//android.widget.Button[@content-desc='Decline']").click()
-
-    @log_action
-    #TODO, use new chat state
-    def create_group(self, subject: str, participants: Union[str, List[str]]):
-        """
-        Create a new group. Assumes you are in homescreen.
-        :param subject: The subject of the group.
-        :param participants: The contact(s) you want to add to the group (string or list).
-        Note that only 1 participant is implemented for now.
-        """
-        self.return_to_homescreen()
-        self.open_more_options()
-        self.driver.find_element(by=AppiumBy.XPATH, value="//*[@text='New group']").click()
-
-        participants = [participants] if not isinstance(participants, list) else participants
-        for participant in participants:
-            contacts = self.driver.find_elements(by=AppiumBy.CLASS_NAME, value="android.widget.TextView")
-            participant_to_add = [contact for contact in contacts if contact.text.lower() == participant.lower()][0]
-            participant_to_add.click()
-
-        self.driver.find_element(by=AppiumBy.ID, value=f"{self.app_package}:id/next_btn").click()
-        text_box = self.driver.find_element(by=AppiumBy.ID, value=f"{self.app_package}:id/group_name")
-        text_box.send_keys(subject)
-        image_buttons = self.driver.find_elements(by=AppiumBy.CLASS_NAME, value="android.widget.ImageButton")
-        next_button = [button for button in image_buttons if button.tag_name == "Create"][0]
-        next_button.click()
-        print("Waiting 5 sec to create group")
-        sleep(5)
-        if self.currently_at_homescreen():
-            print("On homescreen now")
-            # Check if creating the group succeeded
-            top_conv = self.driver.find_element(by=AppiumBy.ID, value=f"{self.app_package}:id/single_msg_tv")
-            max_attempts = 20
-            while "Creating" in top_conv.text or "Couldn't create" in top_conv.text:
-                if "Couldn't create" in top_conv.text:
-                    print("Couldn't create. Tapping to retry")
-                    top_conv.click()
-                else:
-                    print("Waiting for group to be created.")
-                sleep(5)
-                max_attempts -= 1
-                if max_attempts == 0:
-                    raise TimeoutError(
-                        f"Could not create group after 20 attempts. Try restarting your emulator and try again.")
-        self.return_to_homescreen()
 
     @log_action
     #TODO
