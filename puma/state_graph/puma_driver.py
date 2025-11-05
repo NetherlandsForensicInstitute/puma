@@ -329,7 +329,7 @@ class PumaDriver:
         """
         self.adb.open_intent(url, package_name)
 
-    def open_notification(self):
+    def open_notifications(self):
         """
         Opens the Android notifications panel.
         """
