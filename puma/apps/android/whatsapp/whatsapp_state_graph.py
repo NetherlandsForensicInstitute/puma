@@ -27,7 +27,7 @@ PROFILE_STATE_PROFILE_PICTURE = '//android.widget.ImageView[@resource-id="com.wh
 PROFILE_STATE_NAME = '//android.widget.Button[@resource-id="com.whatsapp:id/profile_settings_row_text" and @text="Name"]'
 PROFILE_STATE_PHONE = '//android.widget.Button[@resource-id="com.whatsapp:id/profile_settings_row_text" and @text="Phone"]'
 
-# TODO: there is no 'New chat'? You pick a contect from the 'Contacts on WhatsApp' list?
+# TODO-CC: there is no 'New chat'? You pick a contect from the 'Contacts on WhatsApp' list?
 # NEW_CHAT_STATE_HEADER = '//android.widget.TextView[@text="New chat"]'
 NEW_CHAT_STATE_NEW_GROUP = '//android.widget.TextView[@resource-id="com.whatsapp:id/contactpicker_row_name" and @text="New group"]'
 NEW_CHAT_STATE_NEW_CONTACT = '//android.widget.TextView[@resource-id="com.whatsapp:id/contactpicker_row_name" and @text="New contact"]'
@@ -38,7 +38,7 @@ CALLS_STATE_HEADER = '//android.view.ViewGroup[@resource-id="com.whatsapp:id/too
 
 UPDATES_STATE_HEADER = '//android.view.ViewGroup[@resource-id="com.whatsapp:id/toolbar"]/android.widget.TextView[@text="Updates"]'
 UPDATES_STATE_STATUS_HEADER = '//android.widget.TextView[@resource-id="com.whatsapp:id/header_textview" and @text="Status"]'
-# TODO: invalid after updating status?
+# TODO-CC: invalid after updating status?
 # UPDATES_STATE_NEW_STATUS = '//android.view.View[@content-desc="New status update"]'
 UPDATES_STATE_NEW_STATUS = '//android.widget.ImageButton[@content-desc="New status update"]'
 
@@ -425,7 +425,7 @@ class WhatsApp(StateGraph):
         :param caption: the caption to publish with the status.
         """
         self.get_ui_component_by_xpath(UPDATES_STATE_NEW_STATUS).click()
-        # TODO: why was a check for if_present present? It it weren't there, the following steps would also break?
+        # TODO-CC: why was a check for if_present present? It it weren't there, the following steps would also break?
         self.get_ui_component_by_xpath(CAMERA_BUTTON).click()
 
         self.get_ui_component('ImageView', 'shutter').click()
@@ -439,7 +439,7 @@ class WhatsApp(StateGraph):
         # if self.driver.is_present(CAMERA_BUTTON):
         #     self.driver.get_element(CAMERA_BUTTON).click()
         #
-        # # TODO: first time I got the 'allow WhatsApp access to your camera'
+        # # TODO-CC: first time I got the 'allow WhatsApp access to your camera'
         # #       + 'Allow WhatsApp to take pictures and record video'
         #
         # self.driver.get_element(f'//android.widget.ImageView[@resource-id="{self.WHATSAPP_PACKAGE}:id/shutter"]').click()
@@ -448,7 +448,7 @@ class WhatsApp(StateGraph):
         #
         # self.driver.get_element(f'//android.widget.ImageButton[@resource-id="{self.WHATSAPP_PACKAGE}:id/send"]').click()
         #
-        # # TODO: now I get 'This status update will be sent to your contacts. Change privacy settings. (Cancel, Send)'
+        # # TODO-CC: now I get 'This status update will be sent to your contacts. Change privacy settings. (Cancel, Send)'
 
     @action(new_chat_state)
     def create_new_chat(self, contact, first_message):
@@ -467,7 +467,6 @@ class WhatsApp(StateGraph):
         self.driver.get_element('//android.widget.ImageView[@content-desc="More options"]').click()
 
     @action(conversations_state)
-    #TODO: Broadcast window is not a state
     def send_broadcast(self, receivers: List[str], broadcast_text: str):
         """
         Broadcast a message.
@@ -514,29 +513,29 @@ class WhatsApp(StateGraph):
 
         participants = [participants] if not isinstance(participants, list) else participants
         for participant in participants:
-            # TODO: classname
+            # TODO-CC: classname
             contacts = self.driver.get_element(by=AppiumBy.CLASS_NAME, value='android.widget.TextView')
             participant_to_add = [contact for contact in contacts if contact.text.lower() == participant.lower()][0]
             participant_to_add.click()
 
-        self.driver.get_element(f'//android.widget.ImageButton[@resource-id="{self.WHATSAPP_PACKAGE}:id/next_btn"]').click()
-        self.driver.get_element(f'//android.widget.ImageButton[@resource-id="{self.WHATSAPP_PACKAGE}:id/group_name"]').send_keys(subject)
+        self.driver.get_element(f'//*[@resource-id="{self.WHATSAPP_PACKAGE}:id/next_btn"]').click()
+        self.driver.get_element(f'//*[@resource-id="{self.WHATSAPP_PACKAGE}:id/group_name"]').send_keys(subject)
 
-        # TODO: classname
+        # TODO-CC: classname
         image_buttons = self.driver.find_elements(by=AppiumBy.CLASS_NAME, value='android.widget.ImageButton')
-        # TODO: is this necessary?
+        # TODO-CC: is this necessary? or can we just get the Create button with xpath
         next_button = [button for button in image_buttons if button.tag_name == "Create"][0]
         next_button.click()
 
-        # TODO: print should be log?
+        # TODO-CC: print should be log?
         print("Waiting 5 sec to create group")
         sleep(5)
 
-        # TODO: use xpaths to check? Or just try to find the single_msg_tv
+        # TODO-CC: use xpaths to check? Or just try to find the single_msg_tv
         # if self.currently_at_homescreen():
         print("On homescreen now")
         # Check if creating the group succeeded
-        top_conv =self.driver.get_element(f'//android.widget.ImageButton[@resource-id="{self.WHATSAPP_PACKAGE}:id/single_msg_tv"]')
+        top_conv =self.driver.get_element(f'//*[@resource-id="{self.WHATSAPP_PACKAGE}:id/single_msg_tv"]')
         max_attempts = 20
         while "Creating" in top_conv.text or "Couldn't create" in top_conv.text:
             if "Couldn't create" in top_conv.text:
@@ -547,10 +546,28 @@ class WhatsApp(StateGraph):
             sleep(5)
             max_attempts -= 1
             if max_attempts == 0:
-                # TODO: is this a timeout?
+                # TODO-CC: is this a timeout?
                 raise TimeoutError(f"Could not create group after 20 attempts. Try restarting your emulator and try again.")
         # self.return_to_homescreen()
 
+    @action(conversations_state)
+    def archive_conversation(self, subject):
+        """
+        Archives a given conversation.
+        :param subject: The conversation to archive.
+        """
+        # TODO-CC: get elements necessary?
+        conversation = self.driver.get_elements(f'//*[contains(@resource-id,"{self.WHATSAPP_PACKAGE}:id/conversations_row_contact_name") and @text="{subject}"]')[0]
+        self._long_press_element(conversation)
+        self.driver.get_element(f'//*[@resource-id="{self.WHATSAPP_PACKAGE}:id/menuitem_conversations_archive"]').click()
+        # Wait until the archive popup disappeared
+        archived_popup_present = True
+        # TODO-CC: limit amount of tries
+        while archived_popup_present:
+            print("waiting for archived popup to disappear")
+            sleep(5)
+            archived_popup_present = 'archived' in self.driver.get_elements(f'//*[contains(@text,"archived") or @resource-id="{self.WHATSAPP_PACKAGE}:id/fab"]')[0].text
+        print("Archive pop-up gone!")
 
     # endregion
     ########################################
@@ -820,26 +837,6 @@ class WhatsApp(StateGraph):
         self.driver.find_element(by=AppiumBy.XPATH, value="//*[contains(@text,'Delete group')]").click()
         self.driver.find_element(by=AppiumBy.XPATH, value="//*[contains(@text,'Delete group')]").click()
         self.return_to_homescreen()
-
-    @log_action
-    #TODO
-    def archive_conversation(self, subject):
-        """
-        Archives a given conversation.
-        :param subject: The conversation to archive.
-        """
-        self.return_to_homescreen()
-        conversation = self.get_conversation_row_elements(subject)[0]
-        self._long_press_element(conversation)
-        self.driver.find_element(by=AppiumBy.ID, value=f'{self.app_package}:id/menuitem_conversations_archive').click()
-        # Wait until the archive popup disappeared
-        archived_popup_present = True
-        while archived_popup_present:
-            print("waiting for archived popup to disappear")
-            sleep(5)
-            archived_popup_present = 'archived' in self.driver.find_elements(by=AppiumBy.XPATH, value=
-            f"//*[contains(@text,'archived') or @resource-id='{self.app_package}:id/fab']")[0].text
-        print("Archive pop-up gone!")
 
     def _long_press_element(self, element, duration=1000):
         """
