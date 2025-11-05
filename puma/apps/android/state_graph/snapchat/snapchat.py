@@ -131,14 +131,13 @@ class Snapchat(StateGraph):
     @action(snap_state)
     def send_snap_to(self, recipients: [str] = None, caption: str = None):
         if caption:
+            self.driver.click(f'//android.view.View[@content-desc="Back arrow"]')
             self.driver.click(f'//android.view.View[@resource-id="com.snapchat.android:id/full_screen_surface_view"]')
-            time.sleep(0.5)
             caption_xpath = '//android.widget.EditText[@resource-id="com.snapchat.android:id/caption_edit_text_view"]'
             caption_field = self.driver.driver.find_element(AppiumBy.XPATH, caption_xpath)
             caption_field.send_keys(caption)
-
-            # self.driver.back()
-            self.driver.click(f'//android.view.View[@content-desc="Send"]')
+            self.driver.back()
+            self.driver.click(f'//android.widget.ImageButton[@content-desc="Send"]')
 
         if recipients:
             for recipient in recipients:
