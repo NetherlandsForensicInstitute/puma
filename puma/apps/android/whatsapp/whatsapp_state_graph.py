@@ -626,23 +626,18 @@ class WhatsApp(StateGraph):
             self.driver.send_keys('//*[@resource-id="com.whatsapp:id/comment"]', caption)
         self.driver.click('//*[@resource-id="com.whatsapp:id/send"]')
 
-    @log_action
-    #TODO
-    def stop_live_location(self, need_to_scroll=False, chat: str = None):
+    @action(chat_state)
+    def stop_live_location(self, conversation: str):
         """
         Stops the current live location sharing.
+        :param conversation: The chat conversation in which to stop the live location sharing.
         :param need_to_scroll: Set to True if we need to scroll in the conversation to find the button "Stop Sharing"
-        :param chat: The chat conversation in which to stop the live location sharing, if not currently in the desired chat.
         """
-        self._if_chat_go_to_chat(chat)
-        if need_to_scroll:
-            self.scroll_to_find_element(text_contains="Stop sharing").click()
-        else:
-            self.driver.find_element(by=AppiumBy.XPATH, value="//*[@text='Stop sharing']").click()
+        self.driver.swipe_to_click_element('//*[@text="Stop sharing"]')
 
         popup_button_xpath = '//android.widget.Button[@content-desc="Stop"]'
-        if self.is_present(popup_button_xpath):
-            self.driver.find_element(by=AppiumBy.XPATH, value=popup_button_xpath).click()
+        if self.driver.is_present(popup_button_xpath):
+            self.driver.click(popup_button_xpath)
 
     @log_action
     #TODO
