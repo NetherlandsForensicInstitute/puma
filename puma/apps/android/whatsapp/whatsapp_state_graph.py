@@ -539,8 +539,6 @@ class WhatsApp(StateGraph):
         self.driver.back()
 
     @action(new_chat_state)
-    @log_action
-    #TODO CC
     def create_new_chat(self, contact, first_message):
         """
         Start a new 1-on-1 conversation with a contact and send a message.
@@ -694,7 +692,6 @@ class WhatsApp(StateGraph):
         self.driver.find_element(by=AppiumBy.XPATH, value="//*[contains(@text,'Delete group')]").click()
         self.return_to_homescreen()
 
-
     # endregion
     ########################################
 
@@ -706,24 +703,6 @@ class WhatsApp(StateGraph):
     #         sleep(10)
     #     logger.info("Message sent.")
     #     return message_status_el
-
-    @log_action
-    #TODO CC
-    def delete_message_for_everyone(self, message_text: str, chat: str = None):
-        """
-        Remove a message with the message text. Should be recently sent, so it is still in view and still possible to
-        delete for everyone.
-        :param message_text: literal message text of the message to remove. The first match will be removed in case
-        there are multiple with the same text.
-        :param chat: The chat conversation in which to send this message, if not currently in the desired chat.
-        """
-        self._if_chat_go_to_chat(chat)
-        message_element = self.driver.find_element(by=AppiumBy.XPATH, value=
-        f"//*[@resource-id='{self.app_package}:id/conversation_text_row']//*[@text='{message_text}']")
-        self._long_press_element(message_element)
-        self.driver.find_element(by=AppiumBy.XPATH, value='//*[@content-desc="Delete"]').click()
-        self.driver.find_element(by=AppiumBy.XPATH,
-                                 value=f"//*[@resource-id='{self.app_package}:id/buttonPanel']//*[@text='Delete for everyone']").click()
 
     @log_action
     #TODO
@@ -742,30 +721,6 @@ class WhatsApp(StateGraph):
         self.driver.find_element(by=AppiumBy.XPATH, value='//*[@content-desc="Reply"]').click()
         text_box = self.driver.find_element(by=AppiumBy.ID, value=f"{self.app_package}:id/entry")
         text_box.send_keys(reply_text)
-        self.driver.find_element(by=AppiumBy.ID, value=f"{self.app_package}:id/send").click()
-
-    @log_action
-    #TODO: Broadcast window is not a state CC
-    def send_broadcast(self, receivers: [str], broadcast_text: str):
-        """
-        Broadcast a message.
-        :param receivers: list of receiver names, minimum of 2!.
-        :param broadcast_text: Text to send.
-        """
-        self.return_to_homescreen()
-        if len(receivers) < 2:
-            print("Error: minimum of 2 receivers required for a broadcast!")
-            return
-        self.open_more_options()
-        new_broadcast = self.driver.find_element(by=AppiumBy.XPATH, value=
-        f"//*[@resource-id='{self.app_package}:id/title' and @text='New broadcast']")
-        new_broadcast.click()
-        for receiver in receivers:
-            self.driver.find_element(by=AppiumBy.XPATH, value=
-            f"//*[@resource-id='{self.app_package}:id/chat_able_contacts_row_name' and @text='{receiver}']").click()
-        self.driver.find_element(by=AppiumBy.ID, value=f"{self.app_package}:id/next_btn").click()
-        text_box = self.driver.find_element(by=AppiumBy.ID, value=f"{self.app_package}:id/entry")
-        text_box.send_keys(broadcast_text)
         self.driver.find_element(by=AppiumBy.ID, value=f"{self.app_package}:id/send").click()
 
     @log_action
@@ -942,26 +897,6 @@ class WhatsApp(StateGraph):
         sleep(2)
         self.driver.find_element(by=AppiumBy.XPATH, value="//android.widget.Button[@content-desc='Decline']").click()
 
-    @log_action
-    #TODO
-    def archive_conversation(self, subject):
-        """
-        Archives a given conversation.
-        :param subject: The conversation to archive.
-        """
-        self.return_to_homescreen()
-        conversation = self.get_conversation_row_elements(subject)[0]
-        self._long_press_element(conversation)
-        self.driver.find_element(by=AppiumBy.ID, value=f'{self.app_package}:id/menuitem_conversations_archive').click()
-        # Wait until the archive popup disappeared
-        archived_popup_present = True
-        while archived_popup_present:
-            print("waiting for archived popup to disappear")
-            sleep(5)
-            archived_popup_present = 'archived' in self.driver.find_elements(by=AppiumBy.XPATH, value=
-            f"//*[contains(@text,'archived') or @resource-id='{self.app_package}:id/fab']")[0].text
-        print("Archive pop-up gone!")
-
     def _long_press_element(self, element, duration=1000):
         """
         Press some element for some duration.
@@ -1026,19 +961,6 @@ class WhatsApp(StateGraph):
         f"//*[@resource-id='{self.app_package}:id/contact_list']//*[@text='{to_chat}']").click()
         self.driver.find_element(by=AppiumBy.ID, value=f"{self.app_package}:id/send").click()
 
-
-    @log_action
-    #TODO
-    def open_view_once_photo(self, chat=None):
-        """
-        Open view once photo in the current or specified chat. Should be done right after the photo is sent, to ensure the correct photo is opened, this will be the lowest one.
-        :param chat: Optional: The chat in which the photo has to be opened. If not supplied, the photo will be opened in the current chat.
-        """
-        self._if_chat_go_to_chat(chat)
-        most_recent_view_once = \
-            self.driver.find_elements(by=AppiumBy.XPATH, value='//*[contains(@resource-id, "view_once_media")]')[-1]
-        most_recent_view_once.click()
-        self.driver.back()
 
     def _find_media_in_folder(self, directory_name, index):
         try:
