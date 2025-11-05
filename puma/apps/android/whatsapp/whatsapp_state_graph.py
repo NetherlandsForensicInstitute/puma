@@ -584,9 +584,21 @@ class WhatsApp(StateGraph):
         """
         Open view once photo in the current or specified chat. Should be done right after the photo is sent, to ensure the correct photo is opened, this will be the lowest one.
         # TODO-CC: do we want this state dependent code? Perhaps just make it a different method? (open_view_one + open_view_once_in_current)
-        :param conversation: Optional: The chat in which the photo has to be opened. If not supplied, the photo will be opened in the current chat.
+        :param conversation: The chat in which the photo has to be opened
         """
         self.driver.get_elements('//*[contains(@resource-id, "view_once_media")]')[-1].click()
+
+    @action(chat_state)
+    def set_group_description(self, conversation: str, description: str):
+        """
+        Set the group description.
+        :param conversation: Name of the group to set the description for.
+        :param description: Description of the group.
+        """
+        self.driver.get_element(f'//*[@resource-id="{self.WHATSAPP_PACKAGE}:id/conversation_contact"]')
+        self.driver.scroll_to_find_element(text_equals='Add group description').click()
+        self.driver.find_element(f'//*[@resource-id="{self.WHATSAPP_PACKAGE}:id/edit_text"]').send_keys(description)
+        self.driver.find_element(f'//*[@resource-id="{self.WHATSAPP_PACKAGE}:id/ok_btn"]').click()
 
     # endregion
     ########################################
@@ -858,22 +870,6 @@ class WhatsApp(StateGraph):
         self.open_notifications()
         sleep(2)
         self.driver.find_element(by=AppiumBy.XPATH, value="//android.widget.Button[@content-desc='Decline']").click()
-
-    @log_action
-    #TODO
-    def set_group_description(self, group_name, description):
-        """
-        Set the group description.
-        :param group_name: Name of the group to set the description for.
-        :param description: Description of the group.
-        """
-        self.return_to_homescreen()
-        self.select_chat(group_name)
-        self.driver.find_element(by=AppiumBy.ID, value=f"{self.app_package}:id/conversation_contact").click()
-        self.scroll_to_find_element(text_equals="Add group description").click()
-        self.driver.find_element(by=AppiumBy.ID, value=f"{self.app_package}:id/edit_text").send_keys(description)
-        self.driver.find_element(by=AppiumBy.ID, value=f"{self.app_package}:id/ok_btn").click()
-        self.return_to_homescreen()
 
     @log_action
     #TODO
