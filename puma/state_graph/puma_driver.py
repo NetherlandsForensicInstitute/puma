@@ -251,19 +251,18 @@ class PumaDriver:
                 return self.driver.find_elements(by=AppiumBy.XPATH, value=xpath)
         raise PumaClickException(f'Could not find elements with xpath {xpath}')
 
-    def swipe_to_click_element(self, xpath: str, max_swipes: int = 10):
+    def swipe_to_find_element(self, xpath: str, max_swipes: int = 10):
         """
-        Swipes down to find and click an element specified by its XPath. This is necessary when the element you want to
-        click on is out of view.
+        Swipes down to find an element specified by its XPath. This is necessary when the element you want to click on
+        is out of view.
 
-        :param xpath: The XPath of the element to find and click.
+        :param xpath: The XPath of the element to find.
         :param max_swipes: The maximum number of swipe attempts to find the element.
         :raises PumaClickException: If the element cannot be found after the maximum number of swipes.
         """
         for attempt in range(max_swipes):
             if self.is_present(xpath):
-                self.click(xpath)
-                return
+                return self.get_element(xpath)
             else:
                 self.gtl_logger.warning(f"Attempt {attempt + 1}: Element not found, swiping down")
                 window_size = self.driver.get_window_size()
@@ -274,6 +273,17 @@ class PumaDriver:
                 time.sleep(0.5)
         raise PumaClickException(f'After {max_swipes} swipes, cannot find element with xpath {xpath}')
 
+    def swipe_to_click_element(self, xpath: str, max_swipes: int = 10):
+        """
+        Swipes down to find and click an element specified by its XPath. This is necessary when the element you want to
+        click on is out of view.
+
+        :param xpath: The XPath of the element to find and click.
+        :param max_swipes: The maximum number of swipe attempts to find the element.
+        :raises PumaClickException: If the element cannot be found after the maximum number of swipes.
+        """
+        self.swipe_to_find_element(xpath, max_swipes)
+        self.click(xpath)
 
     def long_press_element(self, xpath: str, duration: int = 1000):
         """

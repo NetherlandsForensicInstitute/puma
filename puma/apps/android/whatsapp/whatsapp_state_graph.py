@@ -704,24 +704,20 @@ class WhatsApp(StateGraph):
     #     logger.info("Message sent.")
     #     return message_status_el
 
-    @log_action
-    #TODO
-    def reply_to_message(self, message_to_reply_to: str, reply_text: str, chat: str = None):
+    @action(chat_state)
+    def reply_to_message(self, conversation: str, message_to_reply_to: str, reply_text: str):
         """
-        Reply to a message. Assumes you are in the chat in which the message was sent.
+        Reply to a message.
+        :param conversation: The chat conversation in which to send this message.
         :param message_to_reply_to: message you want to reply to.
         :param reply_text: message text you are sending in your reply.
-        :param chat: The chat conversation in which to send this message, if not currently in the desired chat.
         """
-        # Wait and see if the message to be forwarded is no longer pending. If so, we must wait because a pending
-        # message cannot be forwarded
-        self._if_chat_go_to_chat(chat)
-        message_element = self.scroll_to_find_element(text_contains=message_to_reply_to)
-        self._long_press_element(message_element)
-        self.driver.find_element(by=AppiumBy.XPATH, value='//*[@content-desc="Reply"]').click()
-        text_box = self.driver.find_element(by=AppiumBy.ID, value=f"{self.app_package}:id/entry")
-        text_box.send_keys(reply_text)
-        self.driver.find_element(by=AppiumBy.ID, value=f"{self.app_package}:id/send").click()
+        message_xpath = f'//android.widget.TextView[@resource-id="{self.WHATSAPP_PACKAGE}:id/message_text" and contains(@text, "{message_to_reply_to})"]'
+        self.driver.swipe_to_find_element(message_xpath)
+        self.driver.long_press_element(message_xpath)
+        self.driver.click('//*[@content-desc="Reply"]')
+        self.driver.send_keys(f'//*[@resource-id="{self.WHATSAPP_PACKAGE}:id/entry"]', reply_text)
+        self.driver.click(f'//*[@resource-id="{self.WHATSAPP_PACKAGE}:id/send"]')
 
     @action(chat_state)
     def send_sticker(self, conversation: str):
