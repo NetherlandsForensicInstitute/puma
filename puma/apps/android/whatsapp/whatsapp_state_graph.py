@@ -678,19 +678,16 @@ class WhatsApp(StateGraph):
         self.driver.find_element(f'//*[@resource-id="{self.WHATSAPP_PACKAGE}:id/edit_text"]').send_keys(description)
         self.driver.find_element(f'//*[@resource-id="{self.WHATSAPP_PACKAGE}:id/ok_btn"]').click()
 
-    @action(conversations_state)
-    def delete_group(self, group_name):
+    @action(chat_settings_state)
+    def delete_group(self, conversation: str):
         """
         Leaves and deletes a given group.
-        Assumes the group exists, isn't left yet, and that we start from the whatsapp home screen.
-        :param group_name: the group to be deleted.
+        Assumes the group exists and hasn't been left yet.
+        :param conversation: the group to be deleted.
         """
-        self.leave_group(group_name)
-        self.select_chat(group_name)
-        self.driver.find_element(by=AppiumBy.ID, value=f"{self.app_package}:id/conversation_contact").click()
-        self.driver.find_element(by=AppiumBy.XPATH, value="//*[contains(@text,'Delete group')]").click()
-        self.driver.find_element(by=AppiumBy.XPATH, value="//*[contains(@text,'Delete group')]").click()
-        self.return_to_homescreen()
+        self.leave_group(conversation)
+        self.driver.click('//*[contains(@text,"Delete group")]')
+        self.driver.click('//*[contains(@text,"Delete group")]')
 
     # endregion
     ########################################
