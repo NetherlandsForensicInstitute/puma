@@ -311,6 +311,9 @@ class PumaDriver:
         self.gtl_logger.info(f'Entering text "{text}" in text box')
         element = self.get_element(xpath)
         element.click() # TODO check all usages
+        time.sleep(0.5)
+        # The element has changed after clicking due to the keyboard appearing, so find it again.
+        element = self.get_element(xpath)
         element.clear()
         element.send_keys(text)
 

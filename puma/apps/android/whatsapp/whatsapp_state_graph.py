@@ -30,7 +30,7 @@ NEW_CHAT_STATE_NEW_GROUP = '//android.widget.TextView[@resource-id="com.whatsapp
 NEW_CHAT_STATE_NEW_CONTACT = '//android.widget.TextView[@resource-id="com.whatsapp:id/contactpicker_row_name" and @text="New contact"]'
 NEW_CHAT_STATE_NEW_COMMUNITY = '//android.widget.TextView[@resource-id="com.whatsapp:id/contactpicker_row_name" and @text="New community"]'
 
-CALLS_STATE_START_CALL = '//android.widget.Button[@content-desc="Start a call"]'
+CALLS_STATE_START_CALL = '//android.widget.ImageButton[@content-desc="New call"]'
 CALLS_STATE_HEADER = '//android.view.ViewGroup[@resource-id="com.whatsapp:id/toolbar"]/android.widget.TextView[@text="Calls"]'
 
 UPDATES_STATE_HEADER = '//android.view.ViewGroup[@resource-id="com.whatsapp:id/toolbar"]/android.widget.TextView[@text="Updates"]'
@@ -47,8 +47,8 @@ CHAT_STATE_CONTACT_HEADER_WITH_NAME = '//android.widget.TextView[@resource-id="c
 VOICE_CALL_STATE_CAMERA_BUTTON = '//android.widget.Button[@content-desc="Turn camera on" and @resource-id="com.whatsapp:id/camera_button"]'
 
 CALL_STATE_CONTACT_HEADER = '//android.widget.TextView[@resource-id="com.whatsapp:id/title"]'
-START_VOICE_CALL_BUTTON = '//android.widget.ImageButton[@content-desc="Voice call"]'
-START_VIDEO_CALL_BUTTON = '//android.widget.ImageButton[@content-desc="Video call"]'
+START_VOICE_CALL_BUTTON = '//*[@resource-id="com.whatsapp:id/voice_call"]'
+START_VIDEO_CALL_BUTTON = '//*[@resource-id="com.whatsapp:id/video_call"]'
 
 VIDEO_CALL_STATE_CAMERA_BUTTON = '//android.widget.Button[@content-desc="Turn camera off" and @resource-id="com.whatsapp:id/camera_button"]'
 VIDEO_CALL_STATE_SWITCH_CAMERA = '//android.widget.Button[@resource-id="com.whatsapp:id/calling_camera_switch_wds_button"]'
@@ -91,10 +91,6 @@ def conversation_row_for_subject(subject: str) -> str:
     return f"//*[contains(@resource-id,'com.whatsapp:id/conversations_row_contact_name') and @text='{subject}']"
 
 
-def contact_row(receiver: str) -> str:
-    return f"//*[@resource-id='com.whatsapp:id/chat_able_contacts_row_name' and @text='{receiver}']"
-
-
 def go_to_chat(driver: PumaDriver, conversation: str):
     """
     Navigates to a specific chat conversation in the application.
@@ -117,11 +113,9 @@ def go_to_voice_call(driver: PumaDriver, contact: str):
     :param driver: The PumaDriver instance used to interact with the application.
     :param contact: The name of user to call.
     """
-    logger.info(f'Clicking on contact {contact} with driver {driver}')
-    driver.get_element(CALL_TAB_SEARCH_BUTTON).click()
+    driver.click(CALL_TAB_SEARCH_BUTTON)
     driver.send_keys(SEARCH_BAR, contact)
-    driver.get_element(contact_row(contact)).click()
-    driver.get_element(START_VOICE_CALL_BUTTON).click()
+    driver.click(START_VOICE_CALL_BUTTON)
 
 
 def go_to_video_call(driver: PumaDriver, contact: str):
@@ -131,11 +125,9 @@ def go_to_video_call(driver: PumaDriver, contact: str):
     :param driver: The PumaDriver instance used to interact with the application.
     :param contact: The name of user to call.
     """
-    logger.info(f'Clicking on contact {contact} with driver {driver}')
-    driver.get_element(CALL_TAB_SEARCH_BUTTON).click()
+    driver.click(CALL_TAB_SEARCH_BUTTON)
     driver.send_keys(SEARCH_BAR, contact)
-    driver.get_element(contact_row(contact)).click()
-    driver.get_element(START_VIDEO_CALL_BUTTON).click()
+    driver.click(START_VIDEO_CALL_BUTTON)
 
 
 class WhatsAppChatState(SimpleState, ContextualState):
@@ -441,6 +433,7 @@ class WhatsApp(StateGraph):
         :param first_message: First message to send to the contact
         """
         self.driver.click(f'//*[@resource-id="{self.WHATSAPP_PACKAGE}:id/contactpicker_text_container"]//*[@text="{contact}"]')
+        self.driver.click('//android.widget.Button[@content-desc="Message"]')
         self.send_message_in_current_conversation(first_message)
 
     def open_more_options(self):
@@ -500,6 +493,8 @@ class WhatsApp(StateGraph):
         self.driver.click(f'//*[@resource-id="{self.WHATSAPP_PACKAGE}:id/next_btn"]')
         self.driver.send_keys(f'//*[@resource-id="{self.WHATSAPP_PACKAGE}:id/group_name"]', conversation)
         self.driver.click(f'//*[@resource-id="{self.WHATSAPP_PACKAGE}:id/ok_btn"]')
+        # Creating a group takes a few seconds
+        sleep(2)
 
     @action(conversations_state)
     def archive_conversation(self, conversation: str):
@@ -558,7 +553,7 @@ class WhatsApp(StateGraph):
         :param message_to_reply_to: message you want to reply to.
         :param reply_text: message text you are sending in your reply.
         """
-        message_xpath = f'//android.widget.TextView[@resource-id="{self.WHATSAPP_PACKAGE}:id/message_text" and contains(@text, "{message_to_reply_to})"]'
+        message_xpath = f'//android.widget.TextView[@resource-id="{self.WHATSAPP_PACKAGE}:id/message_text" and contains(@text, "{message_to_reply_to}")]'
         self.driver.swipe_to_find_element(message_xpath)
         self.driver.long_press_element(message_xpath)
         self.driver.click('//*[@content-desc="Reply"]')
@@ -566,23 +561,27 @@ class WhatsApp(StateGraph):
         self.driver.click(f'//*[@resource-id="{self.WHATSAPP_PACKAGE}:id/send"]')
 
     @action(chat_state)
-    def send_sticker(self, conversation: str):
+    def send_emoji(self, conversation: str):
         """
-        Send the only sticker in the sticker menu. Assumes 1 sticker is present in WhatsApp.
-        Note that the selection of the sticker is based on coordinates of the Samsung G955F. For other phones with different
-        screen sizes, it should be validated that this is correct.
+        Send the first emoji in the emoji menu.
         :param conversation: The chat conversation in which to send this sticker.
         """
         self.driver.click('//*[@resource-id="com.whatsapp:id/emoji_picker_btn"]')
         sleep(1)
-        # Press sticker tab
-        # TODO: make coordinates configurable or calculate what they should be
-        # self.press_coordinates(663, 2136) # Pixel 5
-        self.driver.tap((663, 2032))  # Samsung G955F
+        self.driver.click('//*[@resource-id="com.whatsapp:id/emojis"]')
+        self.driver.click('//*[@resource-id="com.whatsapp:id/emoji"]')
+        self.driver.click(f'//*[@resource-id="{self.WHATSAPP_PACKAGE}:id/send"]')
+
+    @action(chat_state)
+    def send_sticker(self, conversation: str):
+        """
+        Send the first sticker in the sticker menu.
+        :param conversation: The chat conversation in which to send this sticker.
+        """
+        self.driver.click('//*[@resource-id="com.whatsapp:id/emoji_picker_btn"]')
         sleep(1)
-        # Press sticker
-        # self.press_coordinates(150, 1600) # Pixel 5
-        self.driver.tap((128, 1502))  # Samsung G955F
+        self.driver.click('//*[@resource-id="com.whatsapp:id/stickers"]')
+        self.driver.click('//*[@resource-id="com.whatsapp:id/sticker"]')
 
     @action(chat_state)
     def send_voice_recording(self, conversation: str, duration: int = 2000):
@@ -599,8 +598,6 @@ class WhatsApp(StateGraph):
         Send the current location in the specified chat.
         :param conversation: The chat conversation in which to send the location.
         """
-        self.driver.click('//*[@resource-id="com.whatsapp:id/input_attach_button"]')
-        self.driver.click('//*[@resource-id="com.whatsapp:id/pickfiletype_location_holder"]')
         sleep(5)  # it takes some time to fix the location
         self.driver.click('//*[@resource-id="com.whatsapp:id/send_current_location_btn"]')
 
@@ -611,8 +608,6 @@ class WhatsApp(StateGraph):
         :param conversation: The chat conversation in which to start the live location sharing.
         :param caption: Optional caption sent along with the live location
         """
-        self.driver.click('//*[@resource-id="com.whatsapp:id/input_attach_button"]')
-        self.driver.click('//*[@resource-id="com.whatsapp:id/pickfiletype_location_holder"]')
         self.driver.click('//*[@resource-id="com.whatsapp:id/live_location_btn"]')
         dialog = f'//android.widget.LinearLayout[@resource-id="com.whatsapp:id/location_new_user_dialog_container"]'
         if self.driver.is_present(dialog):

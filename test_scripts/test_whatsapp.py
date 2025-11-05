@@ -87,19 +87,23 @@ class TestWhatsapp(unittest.TestCase):
         self.alice.reply_to_message(self.contact_bob, message, "reply")
 
     def test_send_media(self):
-        self.alice.send_media(self.contact_bob, "Downloads", caption="caption", view_once=False)
+        self.alice.send_media(self.contact_bob, "Screenshots", caption="caption", view_once=False)
 
     def test_send_media_view_once(self):
-        self.alice.send_media(self.contact_bob, self.photo_directory_name, caption="caption", view_once=True)
+        self.alice.send_media(self.contact_bob, 'Screenshots', caption="caption", view_once=True)
 
     def test_send_sticker(self):
         self.alice.send_sticker(self.contact_bob)
+
+    def test_send_emoji(self):
+        self.alice.send_emoji(self.contact_bob)
 
     def test_send_contact(self):
         self.ensure_bob_conversation_present()
         self.alice.send_contact(self.contact_bob, self.contact_bob)
 
     def test_send_current_location(self):
+        self.ensure_bob_conversation_present()
         self.alice.send_current_location(self.contact_bob)
 
     def test_send_and_stop_live_location(self):
