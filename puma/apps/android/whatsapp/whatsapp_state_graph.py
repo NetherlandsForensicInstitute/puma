@@ -392,7 +392,7 @@ class WhatsApp(StateGraph):
             _ = self._ensure_message_sent(message_text)
 
     @action(chat_state)
-    def send_message(self, message_text, conversation: str, wait_until_sent=False):
+    def send_message(self, conversation: str, message_text, wait_until_sent=False):
         """
         Send a message in the current chat. If the message contains a mention, this is handled correctly.
         :param wait_until_sent: Exit this function only when the message has been sent.
@@ -757,6 +757,33 @@ class WhatsApp(StateGraph):
         self.driver.click(f"//*[@resource-id='com.whatsapp:id/action_mode_bar']//*[@content-desc='Forward']")
         self.driver.click(f"//*[@resource-id='com.whatsapp:id/contact_list']//*[@text='{to_chat}']")
         self.driver.click('//*[@resource-id="com.whatsapp:id/send"]')
+
+    @action(chat_state)
+    def send_media(self, conversation: str, directory_name, index=1, caption=None, view_once=False):
+        # Go to gallery
+        self.driver.click(f'//*[@resource-id="{self.WHATSAPP_PACKAGE}:id/input_attach_button"]')
+        self.driver.click(f'//*[@resource-id="{self.WHATSAPP_PACKAGE}:id/pickfiletype_gallery_holder"]')
+
+        self.driver.click('//android.widget.ImageButton[@content-desc="Folders"]')
+        self._find_media_in_folder(directory_name, index)
+        sleep(0.5)
+        self.driver.click('//androidx.compose.ui.platform.ComposeView/android.view.View/android.view.View/android.view.View[5]/android.view.View[3]/android.widget.Button')
+
+        if caption:
+            sleep(0.5)
+            caption_xpath = f'//*[@resource-id="{self.WHATSAPP_PACKAGE}:id/caption"]'
+            self.driver.send_keys(caption_xpath, caption)
+            # Clicking the text box after sending keys is required for Whatsapp to notice text has been inserted.
+            self.driver.click(caption_xpath)
+            self.driver.back()
+
+        if view_once:
+            self.driver.click(f'//*[@resource-id="{self.WHATSAPP_PACKAGE}:id/view_once_toggle"]')
+            popup_button = f'//android.widget.Button[@resource-id="{self.WHATSAPP_PACKAGE}:id/vo_sp_bottom_sheet_ok_button"]'
+            if self.driver.is_present(popup_button):
+                self.driver.click(popup_button)
+        sleep(1)
+        self.driver.click(f'//*[@resource-id="{self.WHATSAPP_PACKAGE}:id/send"]')
 
     def _find_media_in_folder(self, directory_name, index):
         try:

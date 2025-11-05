@@ -1,7 +1,7 @@
 import unittest
 from time import sleep
 
-from puma.apps.android.whatsapp.whatsapp import WhatsappActions
+from puma.apps.android.whatsapp.whatsapp_state_graph import WhatsApp, conversation_row_for_subject
 
 # Fill in the udids below. Run ADB devices to see the udids.
 device_udids = {
@@ -32,11 +32,11 @@ class TestWhatsapp(unittest.TestCase):
         if not device_udids["Alice"]:
             print("No udid was configured for Alice. Please add at the top of the script.\nExiting....")
             exit(1)
-        self.alice = WhatsappActions(device_udids["Alice"]) # Assuming Phone class is already defined
+        self.alice = WhatsApp(device_udids["Alice"], "com.whatsapp") # Assuming Phone class is already defined
 
         self.bob_configured = bool(device_udids["Bob"])
         if self.bob_configured:
-            self.bob = WhatsappActions(device_udids["Bob"])
+            self.bob = WhatsApp(device_udids["Bob"], "com.whatsapp")
         else:
             print("WARNING: No udid configured for Bob. Some tests will fail as a result")
 
@@ -45,32 +45,21 @@ class TestWhatsapp(unittest.TestCase):
         self.contact_charlie = "Charlie"
         self.photo_directory_name = "photos"
 
-        self.alice.return_to_homescreen()
-        if self.bob_configured:
-            self.bob.return_to_homescreen()
-
     def conversation_present(self, subject):
-        return self.alice.get_conversation_row_elements(subject)[0] is not None
+        return self.alice.driver.is_present(conversation_row_for_subject(subject))
 
     def ensure_bob_conversation_present(self):
         if not self.conversation_present(self.contact_bob):
             self.alice.create_new_chat(self.contact_bob, "create new chat, first message")
 
-    def test_open_settings_you(self):
-        self.alice.open_settings_you()
-
     def test_change_profile_picture(self):
-        self.alice.change_profile_picture("Downloads")
-
-    def test_currently_in_conversation_overview(self):
-        self.alice.return_to_homescreen()
-        self.assertTrue(self.alice.currently_in_conversation_overview())
+        self.alice.change_profile_picture("Screenshots")
 
     def test_set_about(self):
         self.alice.set_about("about text")
 
     def test_set_status(self):
-        self.alice.set_status("caption")
+        self.alice.add_status("caption")
 
     def test_create_new_chat(self):
         self.alice.create_new_chat(self.contact_bob, "create new chat, first message")
@@ -82,26 +71,29 @@ class TestWhatsapp(unittest.TestCase):
 
     def test_send_and_delete_message_for_everyone(self):
         self.ensure_bob_conversation_present()
-        self.alice.send_message("message to delete", self.contact_bob)
-        self.alice.delete_message_for_everyone("message to delete", self.contact_bob)
+        self.alice.send_message(self.contact_bob, "message to delete")
+        self.alice.delete_message_for_everyone(self.contact_bob, "message to delete")
 
     def test_forward_message(self):
         self.ensure_bob_conversation_present()
         message_to_forward = "message to forward"
-        self.alice.send_message(message_to_forward, self.contact_bob, True)
+        self.alice.send_message(self.contact_bob, message_to_forward, True)
         self.alice.forward_message(self.contact_bob, message_to_forward, self.contact_bob)
 
     def test_reply_to_message(self):
         self.ensure_bob_conversation_present()
         message = "message to reply to"
-        self.alice.send_message(message, self.contact_bob, True)
-        self.alice.reply_to_message(message, "reply", self.contact_bob)
+        self.alice.send_message(self.contact_bob, message, True)
+        self.alice.reply_to_message(self.contact_bob, message, "reply")
 
     def test_send_media(self):
-        self.alice.send_media("Downloads", caption="caption", view_once=False, chat=self.contact_bob)
+        self.alice.send_media(self.contact_bob, "Downloads", caption="caption", view_once=False)
 
     def test_send_media_view_once(self):
-        self.alice.send_media(self.photo_directory_name, caption="caption", view_once=True, chat=self.contact_bob)
+        self.alice.send_media(self.contact_bob, self.photo_directory_name, caption="caption", view_once=True)
+
+    def test_send_sticker(self):
+        self.alice.send_sticker(self.contact_bob)
 
     def test_send_contact(self):
         self.ensure_bob_conversation_present()
@@ -112,12 +104,12 @@ class TestWhatsapp(unittest.TestCase):
 
     def test_send_and_stop_live_location(self):
         self.ensure_bob_conversation_present()
-        self.alice.send_live_location("caption", chat=self.contact_bob)
-        self.alice.stop_live_location()
+        self.alice.send_live_location(self.contact_bob, "caption")
+        self.alice.stop_live_location(self.contact_bob)
 
     def test_send_voice_recording(self):
         self.ensure_bob_conversation_present()
-        self.alice.send_voice_recording(chat=self.contact_bob)
+        self.alice.send_voice_recording(self.contact_bob)
 
     # Group related tests
     def test_set_group_description(self):
@@ -135,49 +127,51 @@ class TestWhatsapp(unittest.TestCase):
         self.alice.create_group(leave_group, self.contact_bob)
         self.alice.leave_group(leave_group)
 
+    def test_delete_group(self):
+        delete_group = "delete group"
+        self.alice.create_group(delete_group, self.contact_bob)
+        self.alice.delete_group(delete_group)
+
     def test_remove_participant_from_group(self):
         group = "remove bob group"
         self.alice.create_group(group, self.contact_bob)
         self.alice.remove_participant_from_group(group, self.contact_bob)
 
-    def test_navigate_to_calls_tab(self):
-        self.alice.navigate_to_call_tab()
-
     # Call related tests. Note that you need two phones for these tests, otherwise these tests will fail
     def assert_bob_configured(self):
         self.assertTrue(self.bob_configured, "Bob is not configured. This test cannot be executed.")
 
+    # TODO Call Bob and hang up immediately (voice and video)
 
     def test_answer_end_voice_call(self):
         self.assert_bob_configured()
-        self.alice.call_contact(self.contact_bob)
+        self.alice.voice_call_contact(self.contact_bob)
         self.bob.answer_call()
         sleep(2)
-        self.alice.end_call()
+        self.alice.end_voice_call()
 
     def test_answer_end_video_call(self):
         self.assert_bob_configured()
-        self.alice.call_contact(self.contact_bob, video_call=True)
+        self.alice.video_call_contact(self.contact_bob)
         self.bob.answer_call()
         sleep(2)
-        self.alice.end_call()
+        self.alice.end_video_call()
 
     def test_decline_voice_call(self):
         self.assert_bob_configured()
-        self.alice.call_contact(self.contact_bob)
+        self.alice.voice_call_contact(self.contact_bob)
         self.bob.decline_call()
 
     def test_decline_video_call(self):
         self.assert_bob_configured()
-        self.alice.call_contact(self.contact_bob, video_call=True)
+        self.alice.video_call_contact(self.contact_bob)
         self.bob.decline_call()
 
     def test_open_view_once_photo(self):
         self.assert_bob_configured()
-        self.bob.select_chat(self.contact_alice)
-        self.alice.send_media(self.photo_directory_name, view_once=True, chat=self.contact_bob)
+        self.alice.send_media(self.contact_bob, self.photo_directory_name, view_once=True)
         sleep(1)
-        self.bob.open_view_once_photo()
+        self.bob.open_view_once_photo(self.contact_alice)
 
     # For this test, both Bob and Charlie need to be in Alice's contacts
     def test_send_broadcast(self):
