@@ -3,10 +3,22 @@ import time
 from puma.apps.android.google_maps.google_maps import GoogleMapsActions
 from puma.apps.android.telegram.telegram import Telegram
 
+"""
+This is a script that demonstrates how to easily write a Puma script that simulates a small scenario, spanning
+multiple phones and apps.
+To run this script:
+* make sure Google Maps and Telegram are installed on 2 phones
+* make sure the two users can contact each other over Telegram under the names bob and charlie
+* have at least 1 picture in the gallery
+* fill in the UDIDs of the two connected devices
+"""
 if __name__ == '__main__':
-    bob_maps = GoogleMapsActions('34281JEHN03866')
-    bob_telegram = Telegram('34281JEHN03866')
-    charlie_telegram = Telegram('32131JEHN38079')
+    bob_udid = 'udid 1'
+    charlie_udid = 'udid 2'
+
+    bob_maps = GoogleMapsActions(bob_udid)
+    bob_telegram = Telegram(bob_udid)
+    charlie_telegram = Telegram(charlie_udid)
 
     # send messages
     bob_telegram.go_to_state(Telegram.chat_state, conversation='Charlie')
@@ -28,6 +40,7 @@ if __name__ == '__main__':
 
     # send a picture from device
     charlie_telegram.send_message('Bob, we might have a problem...')
+    # sends the first picture/video in teh gallery
     charlie_telegram.send_media_from_gallery(media_index=1, caption="The servers don't look great, we need you here ASAP!")
 
     # change speed
