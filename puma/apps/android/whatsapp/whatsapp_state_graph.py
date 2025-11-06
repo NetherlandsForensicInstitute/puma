@@ -8,17 +8,27 @@ from puma.state_graph.puma_driver import PumaDriver, PumaClickException
 from puma.state_graph.state import SimpleState, ContextualState, State, compose_clicks
 from puma.state_graph.state_graph import StateGraph
 from puma.utils.xpath_utils import build_resource_id_xpath_widget, build_resource_id_xpath, \
-    build_content_desc_xpath_widget, build_text_xpath_widget
+    build_content_desc_xpath_widget, build_text_xpath_widget, build_resource_id_text_xpath_widget, \
+    build_resource_id_text_xpath
 
 
 def build_wa_resource_id_xpath_widget(widget_type: str, resource_id: str) -> str:
     return build_resource_id_xpath_widget(widget_type, WHATSAPP_PACKAGE, resource_id)
 
+
 def build_wa_resource_id_xpath(resource_id: str) -> str:
     return build_resource_id_xpath(WHATSAPP_PACKAGE, resource_id)
 
+
+def build_wa_resource_id_text_xpath_widget(widget_type: str, resource_id: str, text: str) -> str:
+    return build_resource_id_text_xpath_widget(widget_type, WHATSAPP_PACKAGE, resource_id, text)
+
+
+def build_wa_resource_id_text_xpath(resource_id: str, text: str) -> str:
+    return build_resource_id_text_xpath(WHATSAPP_PACKAGE, resource_id, text)
+
 WHATSAPP_PACKAGE = 'com.whatsapp'
-HAMBURGER_MENU = '//android.widget.ImageView[@content-desc="More options"]'
+HAMBURGER_MENU = build_content_desc_xpath_widget('ImageView', 'More options')
 # Conversations overview state xpaths
 CONVERSATIONS_STATE_WHATSAPP_LOGO = build_wa_resource_id_xpath_widget('ImageView', 'toolbar_logo')
 CONVERSATIONS_STATE_NEW_CHAT_OR_SEND_MESSAGE = f'{build_content_desc_xpath_widget('ImageButton', 'New chat')} | {build_content_desc_xpath_widget('Button', 'Send message')}'
@@ -29,26 +39,26 @@ SETTINGS_STATE_QR = build_wa_resource_id_xpath_widget('ImageView', 'profile_info
 SETTINGS_STATE_ACCOUNT_SWITCH = build_wa_resource_id_xpath_widget('ImageView', 'account_switcher_button')
 
 PROFILE_STATE_PROFILE_PICTURE = build_wa_resource_id_xpath_widget('ImageView', 'photo_btn')
-PROFILE_STATE_NAME = '//android.widget.Button[@resource-id="com.whatsapp:id/profile_settings_row_text" and @text="Name"]'
-PROFILE_STATE_PHONE = '//android.widget.Button[@resource-id="com.whatsapp:id/profile_settings_row_text" and @text="Phone"]'
+PROFILE_STATE_NAME = build_wa_resource_id_text_xpath_widget('Button', 'profile_settings_row_text', 'Name')
+PROFILE_STATE_PHONE = build_wa_resource_id_text_xpath_widget('Button', 'profile_settings_row_text', 'Phone')
 
 # TODO-CC: there is no 'New chat'? You pick a contect from the 'Contacts on WhatsApp' list?
 # NEW_CHAT_STATE_HEADER = build_text_xpath_widget('TextView', 'New chat')
-NEW_CHAT_STATE_NEW_GROUP = '//android.widget.TextView[@resource-id="com.whatsapp:id/contactpicker_row_name" and @text="New group"]'
-NEW_CHAT_STATE_NEW_CONTACT = '//android.widget.TextView[@resource-id="com.whatsapp:id/contactpicker_row_name" and @text="New contact"]'
-NEW_CHAT_STATE_NEW_COMMUNITY = '//android.widget.TextView[@resource-id="com.whatsapp:id/contactpicker_row_name" and @text="New community"]'
+NEW_CHAT_STATE_NEW_GROUP = build_wa_resource_id_text_xpath_widget('TextView', 'contactpicker_row_name', 'New group')
+NEW_CHAT_STATE_NEW_CONTACT = build_wa_resource_id_text_xpath_widget('TextView', 'contactpicker_row_name', 'New contact')
+NEW_CHAT_STATE_NEW_COMMUNITY = build_wa_resource_id_text_xpath_widget('TextView', 'contactpicker_row_name', 'New community')
 
 CALLS_STATE_START_CALL = build_content_desc_xpath_widget('ImageButton', 'New call')
 CALLS_STATE_HEADER = '//android.view.ViewGroup[@resource-id="com.whatsapp:id/toolbar"]/android.widget.TextView[@text="Calls"]'
 
 UPDATES_STATE_HEADER = '//android.view.ViewGroup[@resource-id="com.whatsapp:id/toolbar"]/android.widget.TextView[@text="Updates"]'
-UPDATES_STATE_STATUS_HEADER = '//android.widget.TextView[@resource-id="com.whatsapp:id/header_textview" and @text="Status"]'
+UPDATES_STATE_STATUS_HEADER = build_wa_resource_id_text_xpath_widget('TextView', 'header_textview', 'Status')
 UPDATES_STATE_NEW_STATUS = build_content_desc_xpath_widget('ImageButton', 'New status update')
 
 #Chat state xpaths
 CHAT_STATE_ROOT_LAYOUT = build_wa_resource_id_xpath_widget('LinearLayout', 'conversation_root_layout')
 CHAT_STATE_CONTACT_HEADER = build_wa_resource_id_xpath_widget('TextView', 'conversation_contact_name')
-CHAT_STATE_CONTACT_HEADER_WITH_NAME = '//android.widget.TextView[@resource-id="com.whatsapp:id/conversation_contact_name" and @text="{conversation}"]'
+CHAT_STATE_CONTACT_HEADER_WITH_NAME = build_wa_resource_id_text_xpath_widget('TextView', 'conversation_contact_name', '{conversation}')
 
 VOICE_CALL_STATE_CAMERA_BUTTON = '//android.widget.Button[@content-desc="Turn camera on" and @resource-id="com.whatsapp:id/camera_button"]'
 
@@ -82,15 +92,14 @@ ATTACH_LOCATION_BUTTON = build_wa_resource_id_xpath_widget('Button', 'pickfilety
 OPEN_SETTINGS_BY_TITLE = build_text_xpath_widget('TextView', 'Settings')
 PROFILE_INFO = build_wa_resource_id_xpath_widget('TextView', 'profile_info_name')
 
-#previously fstring templates
-NEW_BROADCAST_TITLE = "//*[@resource-id='com.whatsapp:id/title' and @text='New broadcast']"
+NEW_BROADCAST_TITLE = build_wa_resource_id_text_xpath('title', 'New broadcast')
 SEARCH_BAR = build_wa_resource_id_xpath_widget('EditText', 'search_view_edit_text')
 END_CALL_BUTTON = ('//*[@content-desc="Leave call" or '
                    '@resource-id="com.whatsapp:id/end_call_button" or '
                    '@resource-id="com.whatsapp:id/footer_end_call_btn"]')
 CALL_SCREEN_BACKGROUND = build_wa_resource_id_xpath_widget('RelativeLayout', 'call_screen')
-CALLS_TAB = '//android.widget.TextView[@resource-id="com.whatsapp:id/navigation_bar_item_small_label_view" and @text="Calls"]'
-UPDATES_TAB = '//android.widget.TextView[@resource-id="com.whatsapp:id/navigation_bar_item_small_label_view" and @text="Updates"]'
+CALLS_TAB = build_wa_resource_id_text_xpath_widget('TextView', 'navigation_bar_item_small_label_view', 'Calls')
+UPDATES_TAB = build_wa_resource_id_text_xpath_widget('TextView', 'navigation_bar_item_small_label_view', 'Updates')
 
 # Conversations State
 def conversation_row_for_subject(subject: str) -> str:
@@ -397,11 +406,11 @@ class WhatsApp(StateGraph):
 
     @action(profile_state)
     def change_profile_picture(self, photo_dir_name, index=1):
-        self.driver.get_element(f'//android.widget.Button[@resource-id="com.whatsapp:id/profile_info_edit_btn"]').click()
-        self.driver.get_element("//*[@text='Gallery']").click()
-        self.driver.get_element('//android.widget.ImageButton[@content-desc="Folders"]').click()
+        self.driver.click(f'//android.widget.Button[@resource-id="com.whatsapp:id/profile_info_edit_btn"]')
+        self.driver.click("//*[@text='Gallery']")
+        self.driver.click('//android.widget.ImageButton[@content-desc="Folders"]')
         self._find_media_in_folder(photo_dir_name, index)
-        self.driver.get_element(f'//android.widget.Button[@resource-id="com.whatsapp:id/ok_btn"]').click()
+        self.driver.click(f'//android.widget.Button[@resource-id="com.whatsapp:id/ok_btn"]')
 
     @action(updates_state)
     def add_status(self, caption: str = None):
