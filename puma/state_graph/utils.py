@@ -37,4 +37,4 @@ def filter_arguments(func, **kwargs) -> inspect.BoundArguments:
 
 def is_valid_package_name(package_name: str) -> bool:
     pattern = r'^[a-z_][a-z0-9_]+(\.[a-z_][a-z0-9_]*)*$'
-    return bool(re.fullmatch(pattern, package_name)) and len(package_name) <= 100
+    return bool(re.fullmatch(pattern, package_name.lower())) and len(package_name) <= 100
