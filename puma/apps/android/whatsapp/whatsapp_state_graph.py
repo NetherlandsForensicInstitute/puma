@@ -8,7 +8,7 @@ from puma.state_graph.puma_driver import PumaDriver, PumaClickException
 from puma.state_graph.state import SimpleState, ContextualState, State, compose_clicks
 from puma.state_graph.state_graph import StateGraph
 from puma.utils.xpath_utils import build_resource_id_xpath_widget, build_resource_id_xpath, \
-    build_content_desc_xpath_widget
+    build_content_desc_xpath_widget, build_text_xpath_widget
 
 
 def build_wa_resource_id_xpath_widget(widget_type: str, resource_id: str) -> str:
@@ -22,48 +22,46 @@ HAMBURGER_MENU = '//android.widget.ImageView[@content-desc="More options"]'
 # Conversations overview state xpaths
 CONVERSATIONS_STATE_WHATSAPP_LOGO = build_wa_resource_id_xpath_widget('ImageView', 'toolbar_logo')
 CONVERSATIONS_STATE_NEW_CHAT_OR_SEND_MESSAGE = f'{build_content_desc_xpath_widget('ImageButton', 'New chat')} | {build_content_desc_xpath_widget('Button', 'Send message')}'
-CONVERSATIONS_STATE_CHAT_TAB = '//android.widget.FrameLayout[@content-desc="Chats"]'
-CONVERSATIONS_STATE_HOME_ROOT_FRAME = '//android.widget.FrameLayout[@resource-id="com.whatsapp:id/root_view"]'
+CONVERSATIONS_STATE_CHAT_TAB = build_content_desc_xpath_widget('FrameLayout', 'Chats')
+CONVERSATIONS_STATE_HOME_ROOT_FRAME = build_wa_resource_id_xpath_widget('FrameLayout', 'root_view')
 
-SETTINGS_STATE_QR = '//android.widget.ImageView[@resource-id="com.whatsapp:id/profile_info_qr_code"]'
-SETTINGS_STATE_ACCOUNT_SWITCH = '//android.widget.ImageView[@resource-id="com.whatsapp:id/account_switcher_button"]'
+SETTINGS_STATE_QR = build_wa_resource_id_xpath_widget('ImageView', 'profile_info_qr_code')
+SETTINGS_STATE_ACCOUNT_SWITCH = build_wa_resource_id_xpath_widget('ImageView', 'account_switcher_button')
 
-PROFILE_STATE_PROFILE_PICTURE = '//android.widget.ImageView[@resource-id="com.whatsapp:id/photo_btn"]'
+PROFILE_STATE_PROFILE_PICTURE = build_wa_resource_id_xpath_widget('ImageView', 'photo_btn')
 PROFILE_STATE_NAME = '//android.widget.Button[@resource-id="com.whatsapp:id/profile_settings_row_text" and @text="Name"]'
 PROFILE_STATE_PHONE = '//android.widget.Button[@resource-id="com.whatsapp:id/profile_settings_row_text" and @text="Phone"]'
 
 # TODO-CC: there is no 'New chat'? You pick a contect from the 'Contacts on WhatsApp' list?
-# NEW_CHAT_STATE_HEADER = '//android.widget.TextView[@text="New chat"]'
+# NEW_CHAT_STATE_HEADER = build_text_xpath_widget('TextView', 'New chat')
 NEW_CHAT_STATE_NEW_GROUP = '//android.widget.TextView[@resource-id="com.whatsapp:id/contactpicker_row_name" and @text="New group"]'
 NEW_CHAT_STATE_NEW_CONTACT = '//android.widget.TextView[@resource-id="com.whatsapp:id/contactpicker_row_name" and @text="New contact"]'
 NEW_CHAT_STATE_NEW_COMMUNITY = '//android.widget.TextView[@resource-id="com.whatsapp:id/contactpicker_row_name" and @text="New community"]'
 
-CALLS_STATE_START_CALL = '//android.widget.ImageButton[@content-desc="New call"]'
+CALLS_STATE_START_CALL = build_content_desc_xpath_widget('ImageButton', 'New call')
 CALLS_STATE_HEADER = '//android.view.ViewGroup[@resource-id="com.whatsapp:id/toolbar"]/android.widget.TextView[@text="Calls"]'
 
 UPDATES_STATE_HEADER = '//android.view.ViewGroup[@resource-id="com.whatsapp:id/toolbar"]/android.widget.TextView[@text="Updates"]'
 UPDATES_STATE_STATUS_HEADER = '//android.widget.TextView[@resource-id="com.whatsapp:id/header_textview" and @text="Status"]'
-# TODO-CC: invalid after updating status?
-# UPDATES_STATE_NEW_STATUS = '//android.view.View[@content-desc="New status update"]'
-UPDATES_STATE_NEW_STATUS = '//android.widget.ImageButton[@content-desc="New status update"]'
+UPDATES_STATE_NEW_STATUS = build_content_desc_xpath_widget('ImageButton', 'New status update')
 
 #Chat state xpaths
-CHAT_STATE_ROOT_LAYOUT = '//android.widget.LinearLayout[@resource-id="com.whatsapp:id/conversation_root_layout"]'
-CHAT_STATE_CONTACT_HEADER = '//android.widget.TextView[@resource-id="com.whatsapp:id/conversation_contact_name"]'
+CHAT_STATE_ROOT_LAYOUT = build_wa_resource_id_xpath_widget('LinearLayout', 'conversation_root_layout')
+CHAT_STATE_CONTACT_HEADER = build_wa_resource_id_xpath_widget('TextView', 'conversation_contact_name')
 CHAT_STATE_CONTACT_HEADER_WITH_NAME = '//android.widget.TextView[@resource-id="com.whatsapp:id/conversation_contact_name" and @text="{conversation}"]'
 
 VOICE_CALL_STATE_CAMERA_BUTTON = '//android.widget.Button[@content-desc="Turn camera on" and @resource-id="com.whatsapp:id/camera_button"]'
 
-CALL_STATE_CONTACT_HEADER = '//android.widget.TextView[@resource-id="com.whatsapp:id/title"]'
-START_VOICE_CALL_BUTTON = '//*[@resource-id="com.whatsapp:id/voice_call"]'
-START_VIDEO_CALL_BUTTON = '//*[@resource-id="com.whatsapp:id/video_call"]'
+CALL_STATE_CONTACT_HEADER = build_wa_resource_id_xpath_widget('TextView', 'title')
+START_VOICE_CALL_BUTTON = build_wa_resource_id_xpath('voice_call')
+START_VIDEO_CALL_BUTTON = build_wa_resource_id_xpath('video_call')
 
 VIDEO_CALL_STATE_CAMERA_BUTTON = '//android.widget.Button[@content-desc="Turn camera off" and @resource-id="com.whatsapp:id/camera_button"]'
-VIDEO_CALL_STATE_SWITCH_CAMERA = '//android.widget.Button[@resource-id="com.whatsapp:id/calling_camera_switch_wds_button"]'
+VIDEO_CALL_STATE_SWITCH_CAMERA = build_wa_resource_id_xpath_widget('Button', 'calling_camera_switch_wds_button')
 
 SEND_LOCATION_STATE_HEADER = '//android.view.ViewGroup[@resource-id="com.whatsapp:id/toolbar"]/android.widget.TextView[@text="Send location"]'
-SEND_LOCATION_STATE_LIVE_LOCATION = '//android.widget.FrameLayout[@resource-id="com.whatsapp:id/live_location_btn"]'
-SEND_LOCATION_STATE_CURRENT_LOCATION = '//android.widget.FrameLayout[@resource-id="com.whatsapp:id/send_current_location_btn"]'
+SEND_LOCATION_STATE_LIVE_LOCATION = build_wa_resource_id_xpath_widget('FrameLayout', 'live_location_btn')
+SEND_LOCATION_STATE_CURRENT_LOCATION = build_wa_resource_id_xpath_widget('FrameLayout', 'send_current_location_btn')
 
 CHAT_SETTINGS_STATE_CONTACT_NAME = ('//android.widget.TextView[@resource-id="com.whatsapp:id/contact_title"] | '
                                     '//android.widget.TextView[@resource-id="com.whatsapp:id/business_title"] | '
