@@ -9,7 +9,7 @@ from puma.state_graph.state import SimpleState, ContextualState, State, compose_
 from puma.state_graph.state_graph import StateGraph
 from puma.utils.xpath_utils import build_resource_id_xpath_widget, build_resource_id_xpath, \
     build_content_desc_xpath_widget, build_text_xpath_widget, build_resource_id_text_xpath_widget, \
-    build_resource_id_text_xpath
+    build_resource_id_text_xpath, build_text_xpath, build_content_desc_xpath
 
 
 def build_wa_resource_id_xpath_widget(widget_type: str, resource_id: str) -> str:
@@ -34,6 +34,13 @@ CONVERSATIONS_STATE_WHATSAPP_LOGO = build_wa_resource_id_xpath_widget('ImageView
 CONVERSATIONS_STATE_NEW_CHAT_OR_SEND_MESSAGE = f'{build_content_desc_xpath_widget('ImageButton', 'New chat')} | {build_content_desc_xpath_widget('Button', 'Send message')}'
 CONVERSATIONS_STATE_CHAT_TAB = build_content_desc_xpath_widget('FrameLayout', 'Chats')
 CONVERSATIONS_STATE_HOME_ROOT_FRAME = build_wa_resource_id_xpath_widget('FrameLayout', 'root_view')
+CONVERSATIONS_STATE_MENUITEM_ARCHIVE = build_wa_resource_id_xpath('menuitem_conversations_archive')
+CONVERSATIONS_STATE_ARCHIVED = f'//*[contains(@text,"archived") or @resource-id="{WHATSAPP_PACKAGE}:id/fab"]'
+CONVERSATIONS_STATE_GROUP_NAME = build_wa_resource_id_xpath('group_name')
+CONVERSATIONS_STATE_NEW_GROUP = build_text_xpath('New group')
+CONVERSATIONS_STATE_CHAT_ABLE_CONTACT = build_wa_resource_id_text_xpath('chat_able_contacts_row_name', '{receiver}')
+CONVERSATIONS_STATE_SEND = build_wa_resource_id_xpath_widget('ImageButton', 'send')
+CONVERSATIONS_STATE_NEXT_BUTTON = build_wa_resource_id_xpath('next_btn')
 
 SETTINGS_STATE_QR = build_wa_resource_id_xpath_widget('ImageView', 'profile_info_qr_code')
 SETTINGS_STATE_ACCOUNT_SWITCH = build_wa_resource_id_xpath_widget('ImageView', 'account_switcher_button')
@@ -41,6 +48,14 @@ SETTINGS_STATE_ACCOUNT_SWITCH = build_wa_resource_id_xpath_widget('ImageView', '
 PROFILE_STATE_PROFILE_PICTURE = build_wa_resource_id_xpath_widget('ImageView', 'photo_btn')
 PROFILE_STATE_NAME = build_wa_resource_id_text_xpath_widget('Button', 'profile_settings_row_text', 'Name')
 PROFILE_STATE_PHONE = build_wa_resource_id_text_xpath_widget('Button', 'profile_settings_row_text', 'Phone')
+
+PROFILE_STATE_INFO_EDIT_BUTTON = build_wa_resource_id_xpath_widget('Button', 'profile_info_edit_btn')
+PROFILE_STATE_GALLERY = build_text_xpath('Gallery')
+PROFILE_STATE_FOLDERS = build_content_desc_xpath_widget('ImageButton', 'Folders')
+PROFILE_STATE_SAVE_BUTTON = build_wa_resource_id_xpath('save_button')
+EDIT_TEXT = build_wa_resource_id_xpath('edit_text')
+PROFILE_STATE_STATUS_EDIT_ICON = build_wa_resource_id_xpath('status_tv_edit_icon')
+PROFILE_STATE_INFO_STATUS_CARD = build_wa_resource_id_xpath('profile_info_status_card')
 
 # TODO-CC: there is no 'New chat'? You pick a contect from the 'Contacts on WhatsApp' list?
 # NEW_CHAT_STATE_HEADER = build_text_xpath_widget('TextView', 'New chat')
@@ -54,11 +69,26 @@ CALLS_STATE_HEADER = '//android.view.ViewGroup[@resource-id="com.whatsapp:id/too
 UPDATES_STATE_HEADER = '//android.view.ViewGroup[@resource-id="com.whatsapp:id/toolbar"]/android.widget.TextView[@text="Updates"]'
 UPDATES_STATE_STATUS_HEADER = build_wa_resource_id_text_xpath_widget('TextView', 'header_textview', 'Status')
 UPDATES_STATE_NEW_STATUS = build_content_desc_xpath_widget('ImageButton', 'New status update')
+UPDATES_STATE_SEND_BUTTON = build_wa_resource_id_xpath_widget('ImageButton', 'send')
+UPDATES_STATE_EDIT_CAPTION = build_wa_resource_id_xpath_widget('EditText', 'caption')
+UPDATES_STATE_SHUTTER = build_wa_resource_id_xpath_widget('ImageView', 'shutter')
 
 #Chat state xpaths
 CHAT_STATE_ROOT_LAYOUT = build_wa_resource_id_xpath_widget('LinearLayout', 'conversation_root_layout')
 CHAT_STATE_CONTACT_HEADER = build_wa_resource_id_xpath_widget('TextView', 'conversation_contact_name')
 CHAT_STATE_CONTACT_HEADER_WITH_NAME = build_wa_resource_id_text_xpath_widget('TextView', 'conversation_contact_name', '{conversation}')
+CHAT_STATE_DELETE_BUTTON = build_content_desc_xpath('Delete')
+CHAT_STATE_DELETE_FOR_EVERYONE = f'//*[@resource-id="{WHATSAPP_PACKAGE}:id/buttonPanel"]//*[@text="Delete for everyone"]'
+CHAT_STATE_SEND = build_wa_resource_id_xpath('send')
+CHAT_STATE_ENTRY = build_wa_resource_id_xpath('entry')
+CHAT_STATE_REPLY = build_content_desc_xpath('Reply')
+CHAT_STATE_VIEW_ONCE_MEDIA = '//*[contains(@resource-id, "view_once_media")]'
+CHAT_STATE_VOICE_NOTE_BUTTON = build_wa_resource_id_xpath('voice_note_btn')
+CHAT_STATE_STICKER = build_wa_resource_id_xpath('sticker')
+CHAT_STATE_STICKERS = build_wa_resource_id_xpath('stickers')
+CHAT_STATE_EMOJI = build_wa_resource_id_xpath('emoji')
+CHAT_STATE_EMOJIS = build_wa_resource_id_xpath('emojis')
+CHAT_STATE_EMOJI_PICKER = build_wa_resource_id_xpath('emoji_picker_btn')
 
 VOICE_CALL_STATE_CAMERA_BUTTON = '//android.widget.Button[@content-desc="Turn camera on" and @resource-id="com.whatsapp:id/camera_button"]'
 
@@ -79,9 +109,16 @@ CHAT_SETTINGS_STATE_CONTACT_NAME = (f'{build_wa_resource_id_xpath_widget('TextVi
 CHAT_SETTINGS_STATE_NOTIFICATIONS = build_wa_resource_id_xpath_widget('LinearLayout', 'notifications_and_sounds_layout')
 CHAT_SETTINGS_STATE_MEDIA_VISIBILITY = build_wa_resource_id_xpath_widget('Button', 'media_visibility_layout')
 
+# Same!
 MESSAGE_TEXT_BOX = build_wa_resource_id_xpath_widget('EditText', 'entry')
+CONVERSATIONS_STATE_ENTRY = build_wa_resource_id_xpath_widget('EditText', 'entry')
+
+CONTAINS_DELETE_GROUP = '//*[contains(@text,"Delete group")]'
+TEXT_VIEWS = '//android.widget.TextView'
+
 MENTION_SUGGESTIONS = build_wa_resource_id_xpath_widget('ImageView', 'contact_photo')
 SEND_BUTTON = build_content_desc_xpath_widget('ImageButton', 'Send')
+OK_BUTTON = build_wa_resource_id_xpath('ok_btn')
 CAMERA_BUTTON = build_content_desc_xpath_widget('Button', 'Camera')
 # Call state xpaths
 CALL_TAB_SEARCH_BUTTON = build_content_desc_xpath_widget('ImageButton', 'Search')
@@ -406,11 +443,11 @@ class WhatsApp(StateGraph):
 
     @action(profile_state)
     def change_profile_picture(self, photo_dir_name, index=1):
-        self.driver.click(f'//android.widget.Button[@resource-id="com.whatsapp:id/profile_info_edit_btn"]')
-        self.driver.click("//*[@text='Gallery']")
-        self.driver.click('//android.widget.ImageButton[@content-desc="Folders"]')
+        self.driver.click(PROFILE_STATE_INFO_EDIT_BUTTON)
+        self.driver.click(PROFILE_STATE_GALLERY)
+        self.driver.click(PROFILE_STATE_FOLDERS)
         self._find_media_in_folder(photo_dir_name, index)
-        self.driver.click(f'//android.widget.Button[@resource-id="com.whatsapp:id/ok_btn"]')
+        self.driver.click(OK_BUTTON)
 
     @action(updates_state)
     def add_status(self, caption: str = None):
@@ -422,29 +459,29 @@ class WhatsApp(StateGraph):
         """
         self.driver.click(UPDATES_STATE_NEW_STATUS)
         self.driver.click(CAMERA_BUTTON)
-        self.driver.click(build_wa_resource_id_xpath_widget('ImageView', 'shutter'))
+        self.driver.click(UPDATES_STATE_SHUTTER)
         if caption:
-             self.driver.send_keys(build_wa_resource_id_xpath_widget('EditText', 'caption'), caption)
-        self.driver.click(build_wa_resource_id_xpath_widget('ImageButton', 'send'))
+             self.driver.send_keys(UPDATES_STATE_EDIT_CAPTION, caption)
+        self.driver.click(UPDATES_STATE_SEND_BUTTON)
 
     @action(profile_state)
     def set_about(self, about_text: str):
-        self.driver.click('//*[@resource-id="com.whatsapp:id/profile_info_status_card"]')
-        self.driver.click('//*[@resource-id="com.whatsapp:id/status_tv_edit_icon"]')
-        self.driver.send_keys('//*[@resource-id="com.whatsapp:id/edit_text"]', about_text)
-        self.driver.click('//*[@resource-id="com.whatsapp:id/save_button"]')
+        self.driver.click(PROFILE_STATE_INFO_STATUS_CARD)
+        self.driver.click(PROFILE_STATE_STATUS_EDIT_ICON)
+        self.driver.send_keys(EDIT_TEXT, about_text)
+        self.driver.click(PROFILE_STATE_SAVE_BUTTON)
         # This action ends in a screen that isn't a state, so move back one screen.
         self.driver.back()
 
     @action(new_chat_state)
-    def create_new_chat(self, contact, first_message):
+    def create_new_chat(self, conversation, first_message):
         """
         Start a new 1-on-1 conversation with a contact and send a message.
-        :param contact: Contact to start the conversation with.
+        :param conversation: Contact to start the conversation with.
         :param first_message: First message to send to the contact
         """
-        self.driver.click(f'//*[@resource-id="{WHATSAPP_PACKAGE}:id/contactpicker_text_container"]//*[@text="{contact}"]')
-        self.driver.click('//android.widget.Button[@content-desc="Message"]')
+        self.driver.click(f'//*[@resource-id="{WHATSAPP_PACKAGE}:id/contactpicker_text_container"]//*[@text="{conversation}"]')
+        self.driver.click(build_content_desc_xpath_widget('Button', 'Message'))
         self.send_message_in_current_conversation(first_message)
 
     def open_more_options(self):
@@ -466,11 +503,11 @@ class WhatsApp(StateGraph):
         self.open_more_options()
         self.driver.click(NEW_BROADCAST_TITLE)
         for receiver in receivers:
-            self.driver.click(f'//*[@resource-id="{WHATSAPP_PACKAGE}:id/chat_able_contacts_row_name" and @text="{receiver}"]')
+            self.driver.click(CONVERSATIONS_STATE_CHAT_ABLE_CONTACT)
 
-        self.driver.click(f'//android.widget.ImageButton[@resource-id="{WHATSAPP_PACKAGE}:id/next_btn"]')
-        self.driver.send_keys(f'//android.widget.EditText[@resource-id="{WHATSAPP_PACKAGE}:id/entry"]', broadcast_text)
-        self.driver.click(f'//android.widget.ImageButton[@resource-id="{WHATSAPP_PACKAGE}:id/send"]')
+        self.driver.click(CONVERSATIONS_STATE_NEXT_BUTTON)
+        self.driver.send_keys(CONVERSATIONS_STATE_ENTRY, broadcast_text)
+        self.driver.click(CONVERSATIONS_STATE_SEND)
 
     @action(chat_state)
     def delete_message_for_everyone(self, conversation: str, message_text: str):
@@ -482,8 +519,8 @@ class WhatsApp(StateGraph):
         there are multiple with the same text.
         """
         self.driver.long_press_element(f"//*[@resource-id='{WHATSAPP_PACKAGE}:id/conversation_text_row']//*[@text='{message_text}']")
-        self.driver.click('//*[@content-desc="Delete"]')
-        self.driver.click(f'//*[@resource-id="{WHATSAPP_PACKAGE}:id/buttonPanel"]//*[@text="Delete for everyone"]')
+        self.driver.click(CHAT_STATE_DELETE_BUTTON)
+        self.driver.click(CHAT_STATE_DELETE_FOR_EVERYONE)
 
     @action(conversations_state)
     def create_group(self, conversation: str, participants: Union[str, List[str]]):
@@ -493,17 +530,17 @@ class WhatsApp(StateGraph):
         :param participants: The contact(s) you want to add to the group (string or list).
         """
         self.open_more_options()
-        self.driver.click('//*[@text="New group"]')
+        self.driver.click(CONVERSATIONS_STATE_NEW_GROUP)
 
         participants = [participants] if not isinstance(participants, list) else participants
         for participant in participants:
-            contacts = self.driver.get_elements('//android.widget.TextView')
+            contacts = self.driver.get_elements(TEXT_VIEWS)
             participant_to_add = [contact for contact in contacts if contact.text.lower() == participant.lower()][0]
             participant_to_add.click()
 
-        self.driver.click(f'//*[@resource-id="{WHATSAPP_PACKAGE}:id/next_btn"]')
-        self.driver.send_keys(f'//*[@resource-id="{WHATSAPP_PACKAGE}:id/group_name"]', conversation)
-        self.driver.click(f'//*[@resource-id="{WHATSAPP_PACKAGE}:id/ok_btn"]')
+        self.driver.click(CONVERSATIONS_STATE_NEXT_BUTTON)
+        self.driver.send_keys(CONVERSATIONS_STATE_GROUP_NAME, conversation)
+        self.driver.click(OK_BUTTON)
         # Creating a group takes a few seconds
         sleep(2)
 
@@ -514,7 +551,7 @@ class WhatsApp(StateGraph):
         :param conversation: The conversation to archive.
         """
         self.driver.long_press_element(f'//*[contains(@resource-id,"{WHATSAPP_PACKAGE}:id/conversations_row_contact_name") and @text="{conversation}"]')
-        self.driver.click(f'//*[@resource-id="{WHATSAPP_PACKAGE}:id/menuitem_conversations_archive"]')
+        self.driver.click(CONVERSATIONS_STATE_MENUITEM_ARCHIVE)
         # Wait until the archive popup disappeared
         archived_popup_present = True
         tries = 0
@@ -522,7 +559,7 @@ class WhatsApp(StateGraph):
             logger.info("waiting for archived popup to disappear")
             sleep(5)
             tries += 1
-            archived_popup_present = 'archived' in self.driver.get_elements(f'//*[contains(@text,"archived") or @resource-id="{WHATSAPP_PACKAGE}:id/fab"]')[0].text
+            archived_popup_present = 'archived' in self.driver.get_elements(CONVERSATIONS_STATE_ARCHIVED)[0].text
         logger.info("Archive pop-up gone!")
 
     @action(chat_state)
@@ -532,7 +569,7 @@ class WhatsApp(StateGraph):
         photo is opened, this will be the lowest one.
         :param conversation: The chat in which the photo has to be opened
         """
-        self.driver.get_elements('//*[contains(@resource-id, "view_once_media")]')[-1].click()
+        self.driver.get_elements(CHAT_STATE_VIEW_ONCE_MEDIA)[-1].click()
 
     @action(chat_settings_state)
     def set_group_description(self, conversation: str, description: str):
@@ -541,9 +578,9 @@ class WhatsApp(StateGraph):
         :param conversation: Name of the group to set the description for.
         :param description: Description of the group.
         """
-        self.driver.swipe_to_click_element(f'//*[@resource-id="{WHATSAPP_PACKAGE}:id/no_description_view"] | //*[@resource-id="{WHATSAPP_PACKAGE}:id/has_description_view"]')
-        self.driver.send_keys(f'//*[@resource-id="{WHATSAPP_PACKAGE}:id/edit_text"]', description)
-        self.driver.click(f'//*[@resource-id="{WHATSAPP_PACKAGE}:id/ok_btn"]')
+        self.driver.swipe_to_click_element(f'{build_wa_resource_id_xpath('no_description_view')} | {build_wa_resource_id_xpath('has_description_view')}')
+        self.driver.send_keys(EDIT_TEXT, description)
+        self.driver.click(OK_BUTTON)
 
     @action(chat_settings_state)
     def delete_group(self, conversation: str):
@@ -553,8 +590,8 @@ class WhatsApp(StateGraph):
         :param conversation: the group to be deleted.
         """
         self.leave_group(conversation)
-        self.driver.click('//*[contains(@text,"Delete group")]')
-        self.driver.click('//*[contains(@text,"Delete group")]')
+        self.driver.click(CONTAINS_DELETE_GROUP)
+        self.driver.click(CONTAINS_DELETE_GROUP)
 
     @action(chat_state)
     def reply_to_message(self, conversation: str, message_to_reply_to: str, reply_text: str):
@@ -567,9 +604,9 @@ class WhatsApp(StateGraph):
         message_xpath = f'//android.widget.TextView[@resource-id="{WHATSAPP_PACKAGE}:id/message_text" and contains(@text, "{message_to_reply_to}")]'
         self.driver.swipe_to_find_element(message_xpath)
         self.driver.long_press_element(message_xpath)
-        self.driver.click('//*[@content-desc="Reply"]')
-        self.driver.send_keys(f'//*[@resource-id="{WHATSAPP_PACKAGE}:id/entry"]', reply_text)
-        self.driver.click(f'//*[@resource-id="{WHATSAPP_PACKAGE}:id/send"]')
+        self.driver.click(CHAT_STATE_REPLY)
+        self.driver.send_keys(CHAT_STATE_ENTRY, reply_text)
+        self.driver.click(CHAT_STATE_SEND)
 
     @action(chat_state)
     def send_emoji(self, conversation: str):
@@ -577,11 +614,11 @@ class WhatsApp(StateGraph):
         Send the first emoji in the emoji menu.
         :param conversation: The chat conversation in which to send this sticker.
         """
-        self.driver.click('//*[@resource-id="com.whatsapp:id/emoji_picker_btn"]')
+        self.driver.click(CHAT_STATE_EMOJI_PICKER)
         sleep(1)
-        self.driver.click('//*[@resource-id="com.whatsapp:id/emojis"]')
-        self.driver.click('//*[@resource-id="com.whatsapp:id/emoji"]')
-        self.driver.click(f'//*[@resource-id="{WHATSAPP_PACKAGE}:id/send"]')
+        self.driver.click(CHAT_STATE_EMOJIS)
+        self.driver.click(CHAT_STATE_EMOJI)
+        self.driver.click(CHAT_STATE_SEND)
 
     @action(chat_state)
     def send_sticker(self, conversation: str):
@@ -589,10 +626,10 @@ class WhatsApp(StateGraph):
         Send the first sticker in the sticker menu.
         :param conversation: The chat conversation in which to send this sticker.
         """
-        self.driver.click('//*[@resource-id="com.whatsapp:id/emoji_picker_btn"]')
+        self.driver.click(CHAT_STATE_EMOJI_PICKER)
         sleep(1)
-        self.driver.click('//*[@resource-id="com.whatsapp:id/stickers"]')
-        self.driver.click('//*[@resource-id="com.whatsapp:id/sticker"]')
+        self.driver.click(CHAT_STATE_STICKERS)
+        self.driver.click(CHAT_STATE_STICKER)
 
     @action(chat_state)
     def send_voice_recording(self, conversation: str, duration: int = 2000):
@@ -601,7 +638,7 @@ class WhatsApp(StateGraph):
         :param conversation: The chat conversation in which to send this voice recording.
         :param duration: the duration in of the voice message to send in milliseconds.
         """
-        self.driver.long_press_element('//*[@resource-id="com.whatsapp:id/voice_note_btn"]', duration=duration)
+        self.driver.long_press_element(CHAT_STATE_VOICE_NOTE_BUTTON, duration=duration)
 
     @action(send_location_state, end_state=chat_state)
     def send_current_location(self, conversation: str):
