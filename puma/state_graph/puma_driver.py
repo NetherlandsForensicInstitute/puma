@@ -8,6 +8,7 @@ from uuid import uuid4
 from adb_pywrapper.adb_device import AdbDevice
 from adb_pywrapper.adb_screen_recorder import AdbScreenRecorder
 from appium.options.android import UiAutomator2Options
+from appium.webdriver import WebElement
 from appium.webdriver.common.appiumby import AppiumBy
 from appium import webdriver
 from appium.webdriver.extensions.android.nativekey import AndroidKey
@@ -21,7 +22,10 @@ from puma.state_graph import logger
 from puma.utils import CACHE_FOLDER
 from puma.utils.gtl_logging import create_gtl_logger
 
+# Keycode constants, found at
+KEYCODE_LEFT_ARROW = 21
 KEYCODE_ENTER = 66
+KEYCODE_BACKSPACE = 67
 
 class PumaClickException(Exception):
     """
@@ -234,19 +238,31 @@ class PumaDriver:
                 return self.driver.find_element(by=AppiumBy.XPATH, value=xpath)
         raise PumaClickException(f'Could not find element with xpath {xpath}')
 
-    def swipe_to_click_element(self, xpath: str, max_swipes: int = 10):
+    def get_elements(self, xpath: str) -> list[WebElement]:
         """
-        Swipes down to find and click an element specified by its XPath. This is necessary when the element you want to
-        click on is out of view.
+        Retrieves all elements matching the specified XPath.
 
-        :param xpath: The XPath of the element to find and click.
+        :param xpath: The XPath of the elements to retrieve.
+        :return: A list of WebElements corresponding to the XPath.
+        :raises PumaClickException: If no elements can be found after multiple attempts.
+        """
+        for attempt in range(3):
+            if self.is_present(xpath, self.implicit_wait):
+                return self.driver.find_elements(by=AppiumBy.XPATH, value=xpath)
+        raise PumaClickException(f'Could not find elements with xpath {xpath}')
+
+    def swipe_to_find_element(self, xpath: str, max_swipes: int = 10):
+        """
+        Swipes down to find an element specified by its XPath. This is necessary when the element you want to click on
+        is out of view.
+
+        :param xpath: The XPath of the element to find.
         :param max_swipes: The maximum number of swipe attempts to find the element.
         :raises PumaClickException: If the element cannot be found after the maximum number of swipes.
         """
         for attempt in range(max_swipes):
             if self.is_present(xpath):
-                self.click(xpath)
-                return
+                return self.get_element(xpath)
             else:
                 self.gtl_logger.warning(f"Attempt {attempt + 1}: Element not found, swiping down")
                 window_size = self.driver.get_window_size()
@@ -257,6 +273,17 @@ class PumaDriver:
                 time.sleep(0.5)
         raise PumaClickException(f'After {max_swipes} swipes, cannot find element with xpath {xpath}')
 
+    def swipe_to_click_element(self, xpath: str, max_swipes: int = 10):
+        """
+        Swipes down to find and click an element specified by its XPath. This is necessary when the element you want to
+        click on is out of view.
+
+        :param xpath: The XPath of the element to find and click.
+        :param max_swipes: The maximum number of swipe attempts to find the element.
+        :raises PumaClickException: If the element cannot be found after the maximum number of swipes.
+        """
+        self.swipe_to_find_element(xpath, max_swipes)
+        self.click(xpath)
 
     def long_press_element(self, xpath: str, duration: int = 1000):
         """
@@ -284,6 +311,10 @@ class PumaDriver:
         self.gtl_logger.info(f'Entering text "{text}" in text box')
         element = self.get_element(xpath)
         element.click() # TODO check all usages
+        time.sleep(0.5)
+        # The element has changed after clicking due to the keyboard appearing, so find it again.
+        element = self.get_element(xpath)
+        element.clear()
         element.send_keys(text)
 
     def press_enter(self):
@@ -292,6 +323,18 @@ class PumaDriver:
         """
         self.driver.press_keycode(KEYCODE_ENTER)
 
+    def press_backspace(self):
+        """
+        Presses the BACKSPACE key.
+        """
+        self.driver.press_keycode(KEYCODE_BACKSPACE)
+
+    def press_left_arrow(self):
+        """
+        Presses the LEFT ARROW key.
+        """
+        self.driver.press_keycode(KEYCODE_LEFT_ARROW)
+
     def open_url(self, url: str, package_name:str=None):
         """
         Opens a given URL. A package name can be opened to define an app to open the link with.
@@ -299,7 +342,7 @@ class PumaDriver:
         """
         self.adb.open_intent(url, package_name)
 
-    def open_notification(self):
+    def open_notifications(self):
         """
         Opens the Android notifications panel.
         """
@@ -381,6 +424,9 @@ class PumaDriver:
         settings = self.driver.get_settings()
         settings.update({"waitForIdleTimeout": timeout})
         self.driver.update_settings(settings)
+
+    def execute_script(self, script: str):
+        self.driver.execute_script(script)
 
     def __repr__(self):
         """
