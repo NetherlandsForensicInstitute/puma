@@ -1,7 +1,8 @@
 import unittest
 from time import sleep
 
-from puma.apps.android.whatsapp.whatsapp_state_graph import WhatsApp, conversation_row_for_subject
+from puma.apps.android.whatsapp.whatsapp_state_graph import WhatsApp
+from puma.apps.android.whatsapp.xpaths import CONVERSATIONS_ROW_BY_SUBJECT
 
 # Fill in the udids below. Run ADB devices to see the udids.
 device_udids = {
@@ -46,7 +47,7 @@ class TestWhatsapp(unittest.TestCase):
         self.photo_directory_name = "photos"
 
     def conversation_present(self, subject):
-        return self.alice.driver.is_present(conversation_row_for_subject(subject))
+        return self.alice.driver.is_present(CONVERSATIONS_ROW_BY_SUBJECT.format(conversation=subject))
 
     def ensure_bob_conversation_present(self):
         if not self.conversation_present(self.contact_bob):
