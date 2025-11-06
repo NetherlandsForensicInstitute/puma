@@ -8,7 +8,7 @@ from puma.state_graph.puma_driver import PumaDriver, PumaClickException
 from puma.state_graph.state import SimpleState, ContextualState, State, compose_clicks
 from puma.state_graph.state_graph import StateGraph
 from puma.utils.xpath_utils import build_resource_id_xpath_widget, build_resource_id_xpath, \
-    build_content_desc_xpath_widget
+    build_content_desc_xpath_widget, build_text_xpath_widget
 
 
 def build_wa_resource_id_xpath_widget(widget_type: str, resource_id: str) -> str:
@@ -65,32 +65,32 @@ SEND_LOCATION_STATE_HEADER = '//android.view.ViewGroup[@resource-id="com.whatsap
 SEND_LOCATION_STATE_LIVE_LOCATION = '//android.widget.FrameLayout[@resource-id="com.whatsapp:id/live_location_btn"]'
 SEND_LOCATION_STATE_CURRENT_LOCATION = '//android.widget.FrameLayout[@resource-id="com.whatsapp:id/send_current_location_btn"]'
 
-CHAT_SETTINGS_STATE_CONTACT_NAME = ('//android.widget.TextView[@resource-id="com.whatsapp:id/contact_title"] | '
-                                    '//android.widget.TextView[@resource-id="com.whatsapp:id/business_title"] | '
-                                    '//android.widget.TextView[@resource-id="com.whatsapp:id/group_title"]')
-CHAT_SETTINGS_STATE_NOTIFICATIONS = '//android.widget.LinearLayout[@resource-id="com.whatsapp:id/notifications_and_sounds_layout"]'
-CHAT_SETTINGS_STATE_MEDIA_VISIBILITY = '//android.widget.Button[@resource-id="com.whatsapp:id/media_visibility_layout"]'
+CHAT_SETTINGS_STATE_CONTACT_NAME = (f'{build_wa_resource_id_xpath_widget('TextView', 'contact_title')} | '
+                                    f'{build_wa_resource_id_xpath_widget('TextView', 'business_title')} | '
+                                    f'{build_wa_resource_id_xpath_widget('TextView', 'group_title')}')
+CHAT_SETTINGS_STATE_NOTIFICATIONS = build_wa_resource_id_xpath_widget('LinearLayout', 'notifications_and_sounds_layout')
+CHAT_SETTINGS_STATE_MEDIA_VISIBILITY = build_wa_resource_id_xpath_widget('Button', 'media_visibility_layout')
 
-MESSAGE_TEXT_BOX = '//android.widget.EditText[@resource-id="com.whatsapp:id/entry"]'
-MENTION_SUGGESTIONS = '//android.widget.ImageView[@resource-id="com.whatsapp:id/contact_photo"]'
-SEND_BUTTON = '//android.widget.ImageButton[@content-desc="Send"]'
-CAMERA_BUTTON = '//android.widget.Button[@content-desc="Camera"]'
+MESSAGE_TEXT_BOX = build_wa_resource_id_xpath_widget('EditText', 'entry')
+MENTION_SUGGESTIONS = build_wa_resource_id_xpath_widget('ImageView', 'contact_photo')
+SEND_BUTTON = build_content_desc_xpath_widget('ImageButton', 'Send')
+CAMERA_BUTTON = build_content_desc_xpath_widget('Button', 'Camera')
 # Call state xpaths
-CALL_TAB_SEARCH_BUTTON = '//android.widget.ImageButton[@content-desc="Search"]'
-ATTACH_BUTTON = '//android.widget.ImageButton[@resource-id="com.whatsapp:id/input_attach_button"]'
-ATTACH_LOCATION_BUTTON = '//android.widget.Button[@resource-id="com.whatsapp:id/pickfiletype_location_holder"]'
+CALL_TAB_SEARCH_BUTTON = build_content_desc_xpath_widget('ImageButton', 'Search')
+ATTACH_BUTTON = build_wa_resource_id_xpath_widget('ImageButton', 'input_attach_button')
+ATTACH_LOCATION_BUTTON = build_wa_resource_id_xpath_widget('Button', 'pickfiletype_location_holder')
 
 # Settings state xpaths
-OPEN_SETTINGS_BY_TITLE = '//android.widget.TextView[@text="Settings"]'
-PROFILE_INFO = '//android.widget.TextView[@resource-id="com.whatsapp:id/profile_info_name"]'
+OPEN_SETTINGS_BY_TITLE = build_text_xpath_widget('TextView', 'Settings')
+PROFILE_INFO = build_wa_resource_id_xpath_widget('TextView', 'profile_info_name')
 
 #previously fstring templates
 NEW_BROADCAST_TITLE = "//*[@resource-id='com.whatsapp:id/title' and @text='New broadcast']"
-SEARCH_BAR = '//android.widget.EditText[@resource-id="com.whatsapp:id/search_view_edit_text"]'
+SEARCH_BAR = build_wa_resource_id_xpath_widget('EditText', 'search_view_edit_text')
 END_CALL_BUTTON = ('//*[@content-desc="Leave call" or '
                    '@resource-id="com.whatsapp:id/end_call_button" or '
                    '@resource-id="com.whatsapp:id/footer_end_call_btn"]')
-CALL_SCREEN_BACKGROUND = '//android.widget.RelativeLayout[@resource-id="com.whatsapp:id/call_screen"]'
+CALL_SCREEN_BACKGROUND = build_wa_resource_id_xpath_widget('RelativeLayout', 'call_screen')
 CALLS_TAB = '//android.widget.TextView[@resource-id="com.whatsapp:id/navigation_bar_item_small_label_view" and @text="Calls"]'
 UPDATES_TAB = '//android.widget.TextView[@resource-id="com.whatsapp:id/navigation_bar_item_small_label_view" and @text="Updates"]'
 
