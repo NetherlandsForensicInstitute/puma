@@ -1,5 +1,3 @@
-import time
-
 from appium.webdriver.common.appiumby import AppiumBy
 
 from puma.apps.android.state_graph.snapchat import logger
@@ -11,8 +9,23 @@ from puma.state_graph.state_graph import StateGraph
 
 APPLICATION_PACKAGE = 'com.snapchat.android'
 
-CHAT_STATE_CONVERSATION_NAME = '//android.widget.TextView[@resource-id="com.snapchat.android:id/conversation_title_text_view"]'
-CHAT_STATE_TEXT_FIELD = '//android.widget.EditText[@resource-id="com.snapchat.android:id/chat_input_text_field"]'
+ALERT_DIALOG_DESCRIPTION = '//android.widget.TextView[@resource-id="com.snapchat.android:id/alert_dialog_description"]'
+CAMERA_CAPTURE = '//android.widget.FrameLayout[@content-desc="Camera Capture"]'
+CAMERA_PAGE = '//android.widget.FrameLayout[@resource-id="com.snapchat.android:id/camera_page"]'
+CAPTION_EDIT = '//android.widget.EditText[@resource-id="com.snapchat.android:id/caption_edit_text_view"]'
+CHAT_INPUT = '//android.widget.EditText[@resource-id="com.snapchat.android:id/chat_input_text_field"]'
+CHAT_TAB = '//android.view.ViewGroup[@content-desc="Chat"]'
+CONVERSATION_TITLE = '//android.widget.TextView[@resource-id="com.snapchat.android:id/conversation_title_text_view"]'
+DISCARD = '//android.widget.ImageButton[@content-desc="Discard"]'
+DISCARD_ALERT_DIALOG_DISCARD_VIEW = '//android.view.View[@resource-id="com.snapchat.android:id/discard_alert_dialog_discard_view"]'
+FEED_NEW_CHAT = '//android.widget.FrameLayout[@resource-id="com.snapchat.android:id/feed_new_chat"]'
+FRIEND_ACTION = '//android.view.View[@resource-id="com.snapchat.android:id/friend_action_button2"]'
+FULL_SCREEN_SURFACE_VIEW = '//android.view.View[@resource-id="com.snapchat.android:id/full_screen_surface_view"]'
+MY_STORY = '//javaClass[@text="My Story · Friends Only"]/..'
+NEW_STORY = '//android.view.View[@content-desc="New Story Button"]'
+SEND = '//android.view.View[@content-desc="Send"]'
+SENT_TO = '//android.view.ViewGroup[@resource-id="com.snapchat.android:id/sent_to_button_label_mode_view"]'
+TOGGLE_CAMERA = '(//android.widget.ImageView[@resource-id="com.snapchat.android:id/camera_mode_icon_image_view"])[1]'
 
 def go_to_chat(driver: PumaDriver, conversation: str):
     """
@@ -29,7 +42,7 @@ def go_to_chat(driver: PumaDriver, conversation: str):
     logger.info(f'Clicking on conversation {conversation} with driver {driver}')
     xpath = f'//androidx.recyclerview.widget.RecyclerView[@resource-id="com.snapchat.android:id/recycler_view"]//javaClass[@text="{conversation}"]'
     driver.driver.find_elements(by=AppiumBy.XPATH, value=xpath)[-1].click()
-    driver.click('//android.view.View[@resource-id="com.snapchat.android:id/friend_action_button2"]')
+    driver.click(FRIEND_ACTION)
 
 class SnapchatChatState(SimpleState, ContextualState):
     """
@@ -45,7 +58,7 @@ class SnapchatChatState(SimpleState, ContextualState):
 
         :param parent_state: The parent state of this chat state.
         """
-        super().__init__(xpaths=[CHAT_STATE_CONVERSATION_NAME, CHAT_STATE_TEXT_FIELD],
+        super().__init__(xpaths=[CONVERSATION_TITLE, CHAT_INPUT],
                          parent_state=parent_state)
 
     def validate_context(self, driver: PumaDriver, conversation: str = None) -> bool:
@@ -62,16 +75,15 @@ class SnapchatChatState(SimpleState, ContextualState):
             return True
 
         logger.info('getting content_desc')
-        content_desc = driver.get_element('//android.widget.TextView[@resource-id="com.snapchat.android:id/conversation_title_text_view"]').get_attribute('text')
+        content_desc = driver.get_element(CONVERSATION_TITLE).get_attribute('text')
         logger.info(f'getting content_desc {content_desc}')
         logger.info(f'conversation is {conversation}')
 
         return conversation in content_desc
 
-
 class SnapchatChatSnapState(SimpleState, ContextualState):
     def __init__(self, parent_state):
-        super().__init__(xpaths=['//android.view.View[@content-desc="New Story Button"]'],
+        super().__init__(xpaths=[NEW_STORY],
                          parent_state=parent_state)
 
     def validate_context(self, driver: PumaDriver, conversation: str = None) -> bool:
@@ -89,23 +101,21 @@ class SnapchatChatSnapState(SimpleState, ContextualState):
         return conversation in content_desc
 
 class Snapchat(StateGraph):
-    camera_state = SimpleState(['//android.widget.FrameLayout[@resource-id="com.snapchat.android:id/camera_page"]'], initial_state=True)
-
-    conversation_state = SimpleState(['//android.widget.FrameLayout[@resource-id="com.snapchat.android:id/feed_new_chat"]'], parent_state=camera_state)
+    camera_state = SimpleState([CAMERA_PAGE], initial_state=True)
+    conversation_state = SimpleState([FEED_NEW_CHAT], parent_state=camera_state)
     chat_state = SnapchatChatState(parent_state=conversation_state)
-    photo_state = SimpleState(['//android.view.ViewGroup[@resource-id="com.snapchat.android:id/sent_to_button_label_mode_view"]'])
-    caption_state = SimpleState(['//android.widget.EditText[@resource-id="com.snapchat.android:id/caption_edit_text_view"]'], parent_state=photo_state)
-    snap_state = SnapchatChatSnapState(parent_state=photo_state)
-    discard_state = SimpleState(['//android.widget.TextView[@resource-id="com.snapchat.android:id/alert_dialog_description"]'])
+    captured_state = SimpleState([SENT_TO])
+    caption_state = SimpleState([CAPTION_EDIT], parent_state=captured_state)
+    snap_state = SnapchatChatSnapState(parent_state=captured_state)
+    discard_state = SimpleState([ALERT_DIALOG_DESCRIPTION])
 
-    camera_state.to(conversation_state, compose_clicks(['//android.view.ViewGroup[@content-desc="Chat"]']))
+    camera_state.to(conversation_state, compose_clicks([CHAT_TAB]))
     conversation_state.to(chat_state, go_to_chat)
-    camera_state.to(photo_state, compose_clicks(['//android.widget.FrameLayout[@content-desc="Camera Capture"]']))
-    photo_state.to(caption_state, compose_clicks(['//android.view.View[@resource-id="com.snapchat.android:id/full_screen_surface_view"]']))
-    photo_state.to(snap_state, compose_clicks(['//android.view.ViewGroup[@resource-id="com.snapchat.android:id/sent_to_button_label_mode_view"]']))
-    photo_state.to(discard_state, compose_clicks(['//android.widget.ImageButton[@content-desc="Discard"]']))
-    discard_state.to(camera_state, compose_clicks(['//android.view.View[@resource-id="com.snapchat.android:id/discard_alert_dialog_discard_view"]']))
-
+    camera_state.to(captured_state, compose_clicks([CAMERA_CAPTURE]))
+    captured_state.to(caption_state, compose_clicks([FULL_SCREEN_SURFACE_VIEW]))
+    captured_state.to(snap_state, compose_clicks([SENT_TO]))
+    captured_state.to(discard_state, compose_clicks([DISCARD]))
+    discard_state.to(camera_state, compose_clicks([DISCARD_ALERT_DIALOG_DISCARD_VIEW]))
 
     def __init__(self, device_udid):
         StateGraph.__init__(self, device_udid, APPLICATION_PACKAGE)
@@ -122,24 +132,23 @@ class Snapchat(StateGraph):
         :param msg: The message to send.
         :param conversation: The name of the conversation to send the message in.
         """
-        self.driver.click(CHAT_STATE_TEXT_FIELD)
-        self.driver.send_keys(CHAT_STATE_TEXT_FIELD, msg)
+        self.driver.click(CHAT_INPUT)
+        self.driver.send_keys(CHAT_INPUT, msg)
         self._press_enter()
 
     @action(camera_state)
     def toggle_camera(self):
-        self.driver.click('(//android.widget.ImageView[@resource-id="com.snapchat.android:id/camera_mode_icon_image_view"])[1]')
+        self.driver.click(TOGGLE_CAMERA)
 
     @action(camera_state)
-    def take_photo(self):
-        self.driver.click('//android.widget.FrameLayout[@content-desc="Camera Capture"]')
-
-    @action(photo_state)
-    def add_caption(self, caption:str):
-        self.driver.click('//android.view.View[@resource-id="com.snapchat.android:id/full_screen_surface_view"]')
-        caption_field = self.driver.driver.find_element(AppiumBy.XPATH, '//android.widget.EditText[@resource-id="com.snapchat.android:id/caption_edit_text_view"]')
-        caption_field.send_keys(caption)
-        self.driver.back()
+    def take_photo(self, caption:str):
+        self.driver.click(CAMERA_CAPTURE)
+        if caption:
+            self.driver.click(FULL_SCREEN_SURFACE_VIEW)
+            caption_field = self.driver.driver.find_element(AppiumBy.XPATH,
+                                                            CAPTION_EDIT)
+            caption_field.send_keys(caption)
+            self.driver.back()
 
     @action(snap_state)
     def send_snap_to(self, recipients: [str] = None):
@@ -150,22 +159,17 @@ class Snapchat(StateGraph):
                     f'//android.view.View[count(.//javaClass)=1]//javaClass[@text="{recipient}"]'
                 )
                 self.driver.click(recipient_xpath)
-                # self.driver.click(f'(//androidx.recyclerview.widget.RecyclerView[@resource-id="com.snapchat.android:id/send_to_recycler_view"]//javaClass[@text="{recipient}"])[1]')
         else:
-            self.driver.click(f'//javaClass[@text="My Story · Friends Only"]/..')
-        self.driver.click(f'//android.view.View[@content-desc="Send"]')
+            self.driver.click(MY_STORY)
+        self.driver.click(SEND)
 
-
-
-# TODO: continue with send snap and add the rest from the template and contributing for adding a new application
 if __name__ == "__main__":
         bob = Snapchat(device_udid="34281JEHN03866")
         contact_charlie = "Charlie"
         group_bob = "Group Bob"
 
-        # bob.send_message("hi", contact_charlie)
-        # bob.toggle_camera()
-        bob.take_photo()
-        # bob.add_caption("whoopwhoop")
+        bob.send_message("hi", contact_charlie)
+        bob.toggle_camera()
+        bob.take_photo(caption="whoopwhoop")
         bob.send_snap_to(recipients=[contact_charlie])
 
