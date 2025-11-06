@@ -45,8 +45,7 @@ PROFILE_SAVE_BUTTON = build_wa_resource_id_xpath('save_button')
 PROFILE_STATUS_EDIT_ICON = build_wa_resource_id_xpath('status_tv_edit_icon')
 PROFILE_INFO_STATUS_CARD = build_wa_resource_id_xpath('profile_info_status_card')
 
-# TODO-CC: there is no 'New chat'? You pick a contact from the 'Contacts on WhatsApp' list?
-# NEW_CHAT_HEADER = build_text_xpath_widget('TextView', 'New chat')
+NEW_CHAT_HEADER = build_text_xpath_widget('TextView', 'New chat')
 NEW_CHAT_NEW_GROUP = build_wa_resource_id_text_xpath_widget('TextView', 'contactpicker_row_name', 'New group')
 NEW_CHAT_NEW_CONTACT = build_wa_resource_id_text_xpath_widget('TextView', 'contactpicker_row_name', 'New contact')
 NEW_CHAT_NEW_COMMUNITY = build_wa_resource_id_text_xpath_widget('TextView', 'contactpicker_row_name', 'New community')

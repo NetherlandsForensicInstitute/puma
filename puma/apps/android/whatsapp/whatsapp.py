@@ -216,7 +216,8 @@ class WhatsApp(StateGraph):
                                  PROFILE_PHONE],
                                 parent_state=settings_state)
     chat_state = WhatsAppChatState(parent_state=conversations_state)
-    new_chat_state = SimpleState([NEW_CHAT_NEW_GROUP,
+    new_chat_state = SimpleState([NEW_CHAT_HEADER,
+                                  NEW_CHAT_NEW_GROUP,
                                   NEW_CHAT_NEW_CONTACT,
                                   NEW_CHAT_NEW_COMMUNITY],
                                  parent_state=conversations_state)
@@ -391,15 +392,14 @@ class WhatsApp(StateGraph):
         self.driver.click(CHAT_DELETE_BUTTON)
         self.driver.click(CHAT_DELETE_FOR_EVERYONE)
 
-    @action(conversations_state)
+    @action(new_chat_state)
     def create_group(self, conversation: str, participants: Union[str, List[str]]):
         """
         Create a new group.
         :param conversation: The subject of the group.
         :param participants: The contact(s) you want to add to the group (string or list).
         """
-        self.open_more_options()
-        self.driver.click(CONVERSATIONS_NEW_GROUP)
+        self.driver.click(NEW_CHAT_NEW_GROUP)
 
         participants = [participants] if not isinstance(participants, list) else participants
         for participant in participants:
