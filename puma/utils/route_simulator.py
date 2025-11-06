@@ -120,17 +120,8 @@ class RouteSimulator:
         cls = geopy.get_geocoder_for_service("nominatim")
         geocoder = cls(**config)
 
-        # TODO: remove eternal loop
-        while True:
-            start_location = geocoder.geocode(start_loc)
-            if start_location:
-                break
-            sleep(1)
-        while True:
-            destination_location = geocoder.geocode(destination)
-            if destination_location:
-                break
-            sleep(1)
+        start_location = geocoder.geocode(start_loc)
+        destination_location = geocoder.geocode(destination)
 
         start_lat = start_location.latitude
         start_lon = start_location.longitude
