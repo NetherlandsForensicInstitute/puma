@@ -1,6 +1,7 @@
 Version 3.0.0
 -------------
-152. Make StateGraph objects and legacy AppiumAction objects compatible
+151. Add demo script to tutorial folder
+151. Make StateGraph objects and legacy AppiumAction objects compatible
 151. Location spoofing: fixed a bug that broke route simulation
 134. Telegram: Rewrite to Puma State Machine
 148. Skip release notes test for main branch
