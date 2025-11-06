@@ -10,11 +10,17 @@ def _build_resource_id_xpath(class_name: str, package_name: str, resource_id: st
 def build_content_desc_xpath_widget(widget_type: str, content_desc: str) -> str:
     return _build_content_desc_xpath(f'android.widget.{widget_type}', content_desc)
 
+def build_content_desc_xpath(content_desc: str) -> str:
+    return _build_content_desc_xpath('*', content_desc)
+
 def _build_content_desc_xpath(class_name: str, content_desc: str) -> str:
     return f'//{class_name}[@content-desc="{content_desc}"]'
 
 def build_text_xpath_widget(widget_type: str, text: str) -> str:
-    return _build_content_desc_xpath(f'android.widget.{widget_type}', text)
+    return _build_text_xpath(f'android.widget.{widget_type}', text)
+
+def build_text_xpath(text: str) -> str:
+    return _build_text_xpath('*', text)
 
 def _build_text_xpath(class_name: str, text: str) -> str:
     return f'//{class_name}[@text="{text}"]'
