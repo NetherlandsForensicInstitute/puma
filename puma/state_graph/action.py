@@ -1,8 +1,8 @@
 import inspect
+from typing import Callable
 
 from puma.state_graph.state import State
-from puma.state_graph.utils import _safe_func_call
-
+from puma.state_graph.utils import safe_func_call
 
 def action(state: State, end_state: State = None):
     """
@@ -27,10 +27,21 @@ def action(state: State, end_state: State = None):
             :param kwargs: Keyword arguments to pass to the decorated function.
             :return: The result of the decorated function.
             """
-            post_action = kwargs.pop('post_action') if 'post_action' in kwargs.keys() else None
-            # TODO: verify this is a callable
 
-            bound_args = inspect.signature(func).bind(*args, **kwargs)
+            # check if a post_action is present, extract from kwargs
+            # and validate it is a callable, since we will call it later on
+            post_action = None
+            if 'post_action' in kwargs.keys():
+                post_action = kwargs.pop('post_action')
+                if not isinstance(post_action, Callable):
+                    raise TypeError(f'post_action must be a callable, instead is: {type(post_action)}')
+
+            # check that our decorated function has no parameter post_action, else it would be passed automatically
+            action_signature = inspect.signature(func)
+            if 'post_action' in action_signature.parameters:
+                raise Exception(f"an action (decorated function) can't contain a parameter named 'post_action'")
+
+            bound_args = action_signature.bind(*args, **kwargs)
             bound_args.apply_defaults()
             arguments = bound_args.arguments
             arguments.pop('self')
@@ -50,10 +61,23 @@ def action(state: State, end_state: State = None):
                     puma_ui_graph.go_to_state(state, **arguments)
                     gtl_logger.info(f'Retrying action {func.__name__}')
                     result = func(*args, **kwargs)
-                if post_action:
-                    print('calling post action callable!')
-                    # TODO: also pass the driver
-                    _safe_func_call(post_action, **kwargs)
+
+                # # run the post action if present, ignoring any domain exceptions
+                # state_before_post_action = puma_ui_graph.current_state
+                # if post_action is not None:
+                #     safe_func_call(post_action, driver=puma_ui_graph.driver, gtl_logger=gtl_logger, **kwargs)
+                #
+                # if puma_ui_graph.current_state != state_before_post_action:
+                #     raise Exception(f'post_action did not return to original state: '
+                #                     f'expected to be in {state_before_post_action}, actually in {puma_ui_graph.current_state}')
+
+                state_before_post_action = puma_ui_graph.current_state
+                if post_action is not None:
+                    # run the post action if present, ignoring any domain exceptions
+                    safe_func_call(post_action, driver=puma_ui_graph.driver, gtl_logger=gtl_logger, **kwargs)
+                    # return to our original state
+                    puma_ui_graph.go_to_state(state_before_post_action, **arguments)
+
                 puma_ui_graph.try_restart = True
                 gtl_logger.info(
                     f"Successfully executed action {func.__name__} with arguments: {args[1:]} and keyword arguments: {kwargs} for application: {puma_ui_graph.__class__.__name__}")
