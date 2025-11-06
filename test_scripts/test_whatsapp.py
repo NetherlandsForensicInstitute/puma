@@ -153,14 +153,14 @@ class TestWhatsapp(unittest.TestCase):
         self.alice.voice_call_contact(self.contact_bob)
         self.bob.answer_call()
         sleep(2)
-        self.alice.end_voice_call()
+        self.alice.end_voice_call(self.contact_bob)
 
     def test_answer_end_video_call(self):
         self.assert_bob_configured()
         self.alice.video_call_contact(self.contact_bob)
         self.bob.answer_call()
         sleep(2)
-        self.alice.end_video_call()
+        self.alice.end_video_call(self.contact_bob)
 
     def test_decline_voice_call(self):
         self.assert_bob_configured()

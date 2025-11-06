@@ -144,21 +144,21 @@ class WhatsAppVoiceCallState(SimpleState, ContextualState):
                                  VOICE_CALL_CAMERA_BUTTON],
                          parent_state=parent_state)
 
-    def validate_context(self, driver: PumaDriver, contact: str = None) -> bool:
+    def validate_context(self, driver: PumaDriver, conversation: str = None) -> bool:
         """
         Validates the context of the call state.
 
         This method checks if the current call screen matches the expected contact name.
 
         :param driver: The PumaDriver instance used to interact with the application.
-        :param contact: The name of the call recipient to validate against.
+        :param conversation: The name of the call recipient to validate against.
         :return: True if the context is valid, False otherwise.
         """
-        if not contact:
+        if not conversation:
             return True
 
         content_desc = (driver.get_element(CALL_CONTACT_HEADER).get_attribute('text'))
-        return contact.lower() in content_desc.lower()
+        return conversation.lower() in content_desc.lower()
 
 class WhatsAppVideoCallState(SimpleState, ContextualState):
     """
@@ -180,21 +180,21 @@ class WhatsAppVideoCallState(SimpleState, ContextualState):
                                  VIDEO_CALL_SWITCH_CAMERA],
                          parent_state=parent_state)
 
-    def validate_context(self, driver: PumaDriver, contact: str = None) -> bool:
+    def validate_context(self, driver: PumaDriver, conversation: str = None) -> bool:
         """
         Validates the context of the call state.
 
         This method checks if the current call screen matches the expected contact name.
 
         :param driver: The PumaDriver instance used to interact with the application.
-        :param contact: The name of the call recipient to validate against.
+        :param conversation: The name of the call recipient to validate against.
         :return: True if the context is valid, False otherwise.
         """
-        if not contact:
+        if not conversation:
             return True
 
         content_desc = (driver.get_element(CALL_CONTACT_HEADER).get_attribute('text'))
-        return contact.lower() in content_desc.lower()
+        return conversation.lower() in content_desc.lower()
 
 
 class WhatsApp(StateGraph):
@@ -593,14 +593,14 @@ class WhatsApp(StateGraph):
         go_to_video_call(self.driver, conversation)
 
     @action(voice_call_state, end_state=calls_state)
-    def end_voice_call(self):
+    def end_voice_call(self, conversation: str):
         """
         Ends the current voice call.
         """
         self._end_call()
 
     @action(video_call_state, end_state=calls_state)
-    def end_video_call(self):
+    def end_video_call(self, conversation: str):
         """
         Ends the current video call.
         """
