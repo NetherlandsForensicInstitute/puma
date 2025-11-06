@@ -22,8 +22,8 @@ as the abstract base class. Also see the [CONTRIBUTING.md](../../../../CONTRIBUT
 Initialization is standard:
 
 ```python
-from puma.apps.android.whatsapp.whatsapp import WhatsappActions
-phone = WhatsappActions("emulator-5444")
+from puma.apps.android.whatsapp.whatsapp import WhatsApp
+phone = WhatsApp("emulator-5444", "com.whatsapp")
 ```
 
 ### Account actions
@@ -31,10 +31,10 @@ phone = WhatsappActions("emulator-5444")
 Some account properties can be set:
 
 ```python
-# this method assumes you have a folder named "profile_picture" on your device, containing a photo
-phone.change_profile_picture()
-# Set your whatsapp status
-phone.set_status("This is my new status!")
+# this method takes the first picture in the provided folder name
+phone.change_profile_picture('Downloads')
+# add a WhatsApp status
+phone.add_status("This is my new status!")
 # set the about text on your WhatsApp profile
 phone.set_about("I'm just a developer")
 ```
@@ -44,10 +44,12 @@ phone.set_about("I'm just a developer")
 You can go to the WhatsApp start screen (the screen you see when opening the app), and opening a specific conversation:
 
 ```python
-phone.return_to_homescreen()  # returns to the WhatsApp home screen
-phone.select_chat("Bob")  # opens the conversation with Bob
-# this method doesn't require you to be at the home screen
-phone.select_chat("Cool Kidz")  # this call will first go back to the home screen, then open the other conversation
+# returns to the WhatsApp home screen
+phone.go_to_state(WhatsApp.conversations_state)
+# opens the conversation with Bob
+phone.go_to_state(WhatsApp.chat_state, conversation="Bob")
+# this call will automatically go back to the home screen first, then open the other conversation
+phone.go_to_state(WhatsApp.chat_state, conversation="Cool Kidz")
 ```
 
 ### Sending text messages
@@ -55,21 +57,16 @@ phone.select_chat("Cool Kidz")  # this call will first go back to the home scree
 Of course, you can send text messages:
 
 ```python
-phone.select_chat("Bob")  # open the conversation with Bob 
-phone.send_message("Hi Bob!")  # Send Bob a message
+# Send Bob a message
+phone.send_message("Bob", "Hi Bob!")
 # but this can be done in one call:
-phone.send_message("Hi Charlie", chat="Charlie")  # This will open the charlie conversation, then send the message
-# !!! Only use the `chat` argument the first time! If not, each send_message call will first exit the current
-# conversation, and then open the conversation again. This happens because Puma cannot detect whether you're already
-# in the desired conversation
 # The above code will not work if these contacts aren't in the list of WhatsApp conversations
 # In that case, a new conversation needs to be created to send a message:
 phone.create_new_chat("Dave", "Hi there Dave")
 # WhatsApp also has broadcast messages, which are sent to at least 2 other contacts:
 phone.send_broadcast(["Bob", "Charlie", "Dana"], "Thinking about you!")
-# We can also forward messages from one conversation to another:
-phone.forward_message("Bob", "important message!",
-                      "Charlie")  # forwards a messages containing `important message!` from Bob to Charlie
+# Forwards a messages containing `important message!` from Bob to Charlie
+phone.forward_message("Bob", "important message!", "Charlie")
 ```
 
 ### Sending media
@@ -78,11 +75,14 @@ Sending a picture or video is supported, but since the UI doesn't show full path
 which folder your desired picture or video is in. Puma will pick the first file in that folder and send it.
 
 ```python
-phone.select_chat("Bob")  # open the conversation with Bob 
-phone.send_media("Bird")  # will send the first picture or video in the folder "Bird"
-phone.send_media("Horse", chat="Charlie")  # First opens the correct conversation before sending the media
-phone.send_media("Fish", index=2, caption="look at this cool fish!")  # send media from folder "Fish" at index 2, with a caption
-phone.send_media("Turtle", view_once=True)  # activate hte 'view once' option
+# sends the first picture or video in the folder "Bird"
+phone.send_media("Bird", conversation="Bob")
+# sends the first picture or video in the folder "Horse"
+phone.send_media("Horse", conversation="Charlie")
+# send media from folder "Fish" at index 2, with a caption
+phone.send_media("Fish", conversation="Bob", index=2, caption="look at this cool fish!")
+# activate the 'view once' option
+phone.send_media("Turtle", conversation="Bob", view_once=True)
 ```
 
 ### Other chat functions
@@ -90,24 +90,24 @@ phone.send_media("Turtle", view_once=True)  # activate hte 'view once' option
 Many other functions are supported:
 
 ```python
-# NOTE: all methods here have an optional argument `chat`: when used, the method will first open the given conversation
 # Replies to a given message
-phone.reply_to_message(message_to_reply_to="Hi Alice!", reply_text="Who dis? New phone")
+phone.reply_to_message(conversation="Bob", message_to_reply_to="Hi Alice!", reply_text="Who dis? New phone")
 # send a sticker. It will simply pick the first sticker.
-phone.send_sticker()
+phone.send_sticker(conversation="Bob")
 # Sending voice recordings
-phone.send_voice_recording(duration=2000)  # duration in ms
+phone.send_voice_recording(conversation="Bob", duration=2000)  # duration in ms
 # sending location, either the current or a live location
-phone.send_current_location()
-phone.send_live_location()
-phone.stop_livelocation()  # stops live location sharing
+phone.send_current_location(conversation="Bob")
+phone.send_live_location(conversation="Bob")
+# stops live location sharing
+phone.stop_live_location(conversation="Bob")
 # contacts can also be sent
-phone.send_contact(contact_name="Auntie Flo")
+phone.send_contact(conversation="Bob", contact_name="Auntie Flo")
 # delete a message in the conversation. You need to input the full message
-phone.delete_message_for_everyone("Curpuceeno")
+phone.delete_message_for_everyone(conversation="Bob", message_text="Curpuceeno")
 # activate or deactivate automatically disappearing messages in a conversation
-phone.activate_disappearing_messages()
-phone.deactivate_disappearing_messages()
+phone.activate_disappearing_messages(conversation="Bob")
+phone.deactivate_disappearing_messages(conversation="Bob")
 ```
 
 ### Calls
@@ -115,11 +115,14 @@ phone.deactivate_disappearing_messages()
 We can start, end, and refuse calls:
 
 ```python
-phone_alice.call_contact("Bob")  # calls Bob
-phone_bob.answer_call()  # answers incoming call
-phone_alice.end_call()  # ends current call (can be called before other party answered the call)
+# calls Bob
+phone_alice.voice_call_contact("Bob")
+# answers incoming call
+phone_bob.answer_call()
+# ends current call (can be called before other party answered the call)
+phone_alice.end_voice_call("Bob")
 # video alls are also supported:
-phone.call_contact("bob", video_call=True)
+phone.video_call_contact("Bob")
 # declining incoming calls is also possible:
 phone.decline_call()
 ```
@@ -129,9 +132,13 @@ phone.decline_call()
 Many group management actions are also supported:
 
 ```python
-phone.create_group("Best friends since 2013", ["Bob", "Charlie"])  # Creates a group with a few participants
-phone.set_group_description(group_name="Best friends since 2013", description="we go way back!")
-phone.delete_group("Some group")  # leaves and deletes a group
-phone.leave_group("Some other group")  # just leaves a group
-phone.remove_participant_from_group("Friends", "Donald")  # removes a person from a group 
+# creates a group with a few participants
+phone.create_group("Best friends since 2013", ["Bob", "Charlie"])
+phone.set_group_description(conversation="Best friends since 2013", description="we go way back!")
+# leaves and deletes a group
+phone.delete_group("Some group")
+# just leaves a group
+phone.leave_group("Some other group")
+# removes a person from a group
+phone.remove_participant_from_group("Friends", "Donald") 
 ```

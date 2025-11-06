@@ -1,7 +1,7 @@
 import unittest
 from time import sleep
 
-from puma.apps.android.whatsapp.whatsapp_state_graph import WhatsApp
+from puma.apps.android.whatsapp.whatsapp import WhatsApp
 from puma.apps.android.whatsapp.xpaths import CONVERSATIONS_ROW_BY_SUBJECT
 
 # Fill in the udids below. Run ADB devices to see the udids.
