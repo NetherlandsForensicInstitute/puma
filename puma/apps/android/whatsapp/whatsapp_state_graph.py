@@ -28,152 +28,139 @@ def build_wa_resource_id_text_xpath(resource_id: str, text: str) -> str:
     return build_resource_id_text_xpath(WHATSAPP_PACKAGE, resource_id, text)
 
 WHATSAPP_PACKAGE = 'com.whatsapp'
-HAMBURGER_MENU = build_content_desc_xpath_widget('ImageView', 'More options')
-# Conversations overview state xpaths
-CONVERSATIONS_STATE_WHATSAPP_LOGO = build_wa_resource_id_xpath_widget('ImageView', 'toolbar_logo')
-CONVERSATIONS_STATE_NEW_CHAT_OR_SEND_MESSAGE = f'{build_content_desc_xpath_widget('ImageButton', 'New chat')} | {build_content_desc_xpath_widget('Button', 'Send message')}'
-CONVERSATIONS_STATE_CHAT_TAB = build_content_desc_xpath_widget('FrameLayout', 'Chats')
-CONVERSATIONS_STATE_HOME_ROOT_FRAME = build_wa_resource_id_xpath_widget('FrameLayout', 'root_view')
-CONVERSATIONS_STATE_MENUITEM_ARCHIVE = build_wa_resource_id_xpath('menuitem_conversations_archive')
-CONVERSATIONS_STATE_ARCHIVED = f'//*[contains(@text,"archived") or @resource-id="{WHATSAPP_PACKAGE}:id/fab"]'
-CONVERSATIONS_STATE_GROUP_NAME = build_wa_resource_id_xpath('group_name')
-CONVERSATIONS_STATE_NEW_GROUP = build_text_xpath('New group')
-CONVERSATIONS_STATE_CHAT_ABLE_CONTACT = build_wa_resource_id_text_xpath('chat_able_contacts_row_name', '{receiver}')
-CONVERSATIONS_STATE_SEND = build_wa_resource_id_xpath_widget('ImageButton', 'send')
-CONVERSATIONS_STATE_NEXT_BUTTON = build_wa_resource_id_xpath('next_btn')
 
-SETTINGS_STATE_QR = build_wa_resource_id_xpath_widget('ImageView', 'profile_info_qr_code')
-SETTINGS_STATE_ACCOUNT_SWITCH = build_wa_resource_id_xpath_widget('ImageView', 'account_switcher_button')
+CONVERSATIONS_WHATSAPP_LOGO = build_wa_resource_id_xpath_widget('ImageView', 'toolbar_logo')
+CONVERSATIONS_NEW_CHAT_OR_SEND_MESSAGE = f'{build_content_desc_xpath_widget('ImageButton', 'New chat')} | {build_content_desc_xpath_widget('Button', 'Send message')}'
+CONVERSATIONS_HOME_ROOT_FRAME = build_wa_resource_id_xpath_widget('FrameLayout', 'root_view')
+CONVERSATIONS_MENUITEM_ARCHIVE = build_wa_resource_id_xpath('menuitem_conversations_archive')
+CONVERSATIONS_ARCHIVED = f'//*[contains(@text,"archived") or @resource-id="{WHATSAPP_PACKAGE}:id/fab"]'
+CONVERSATIONS_GROUP_NAME = build_wa_resource_id_xpath('group_name')
+CONVERSATIONS_NEW_GROUP = build_text_xpath('New group')
+CONVERSATIONS_CHAT_ABLE_CONTACT = build_wa_resource_id_text_xpath('chat_able_contacts_row_name', '{receiver}')
+CONVERSATIONS_NEW_BROADCAST_TITLE = build_wa_resource_id_text_xpath('title', 'New broadcast')
 
-PROFILE_STATE_PROFILE_PICTURE = build_wa_resource_id_xpath_widget('ImageView', 'photo_btn')
-PROFILE_STATE_NAME = build_wa_resource_id_text_xpath_widget('Button', 'profile_settings_row_text', 'Name')
-PROFILE_STATE_PHONE = build_wa_resource_id_text_xpath_widget('Button', 'profile_settings_row_text', 'Phone')
+SETTINGS_QR = build_wa_resource_id_xpath_widget('ImageView', 'profile_info_qr_code')
+SETTINGS_ACCOUNT_SWITCH = build_wa_resource_id_xpath_widget('ImageView', 'account_switcher_button')
 
-PROFILE_STATE_INFO_EDIT_BUTTON = build_wa_resource_id_xpath_widget('Button', 'profile_info_edit_btn')
-PROFILE_STATE_GALLERY = build_text_xpath('Gallery')
-PROFILE_STATE_FOLDERS = build_content_desc_xpath_widget('ImageButton', 'Folders')
-PROFILE_STATE_SAVE_BUTTON = build_wa_resource_id_xpath('save_button')
-EDIT_TEXT = build_wa_resource_id_xpath('edit_text')
-PROFILE_STATE_STATUS_EDIT_ICON = build_wa_resource_id_xpath('status_tv_edit_icon')
-PROFILE_STATE_INFO_STATUS_CARD = build_wa_resource_id_xpath('profile_info_status_card')
+PROFILE_PROFILE_PICTURE = build_wa_resource_id_xpath_widget('ImageView', 'photo_btn')
+PROFILE_NAME = build_wa_resource_id_text_xpath_widget('Button', 'profile_settings_row_text', 'Name')
+PROFILE_PHONE = build_wa_resource_id_text_xpath_widget('Button', 'profile_settings_row_text', 'Phone')
+PROFILE_INFO_EDIT_BUTTON = build_wa_resource_id_xpath_widget('Button', 'profile_info_edit_btn')
+PROFILE_GALLERY = build_text_xpath('Gallery')
+PROFILE_FOLDERS = build_content_desc_xpath_widget('ImageButton', 'Folders')
+PROFILE_SAVE_BUTTON = build_wa_resource_id_xpath('save_button')
+PROFILE_STATUS_EDIT_ICON = build_wa_resource_id_xpath('status_tv_edit_icon')
+PROFILE_INFO_STATUS_CARD = build_wa_resource_id_xpath('profile_info_status_card')
 
 # TODO-CC: there is no 'New chat'? You pick a contect from the 'Contacts on WhatsApp' list?
-# NEW_CHAT_STATE_HEADER = build_text_xpath_widget('TextView', 'New chat')
-NEW_CHAT_STATE_NEW_GROUP = build_wa_resource_id_text_xpath_widget('TextView', 'contactpicker_row_name', 'New group')
-NEW_CHAT_STATE_NEW_CONTACT = build_wa_resource_id_text_xpath_widget('TextView', 'contactpicker_row_name', 'New contact')
-NEW_CHAT_STATE_NEW_COMMUNITY = build_wa_resource_id_text_xpath_widget('TextView', 'contactpicker_row_name', 'New community')
+# NEW_CHAT_HEADER = build_text_xpath_widget('TextView', 'New chat')
+NEW_CHAT_NEW_GROUP = build_wa_resource_id_text_xpath_widget('TextView', 'contactpicker_row_name', 'New group')
+NEW_CHAT_NEW_CONTACT = build_wa_resource_id_text_xpath_widget('TextView', 'contactpicker_row_name', 'New contact')
+NEW_CHAT_NEW_COMMUNITY = build_wa_resource_id_text_xpath_widget('TextView', 'contactpicker_row_name', 'New community')
 
-CALLS_STATE_START_CALL = build_content_desc_xpath_widget('ImageButton', 'New call')
-CALLS_STATE_HEADER = '//android.view.ViewGroup[@resource-id="com.whatsapp:id/toolbar"]/android.widget.TextView[@text="Calls"]'
+CHAT_ROOT_LAYOUT = build_wa_resource_id_xpath_widget('LinearLayout', 'conversation_root_layout')
+CHAT_CONTACT_HEADER = build_wa_resource_id_xpath_widget('TextView', 'conversation_contact_name')
+CHAT_CONTACT_HEADER_WITH_NAME = build_wa_resource_id_text_xpath_widget('TextView', 'conversation_contact_name', '{conversation}')
+CHAT_DELETE_BUTTON = build_content_desc_xpath('Delete')
+CHAT_DELETE_FOR_EVERYONE = f'//*[@resource-id="{WHATSAPP_PACKAGE}:id/buttonPanel"]//*[@text="Delete for everyone"]'
+CHAT_REPLY = build_content_desc_xpath('Reply')
+CHAT_VIEW_ONCE_MEDIA = '//*[contains(@resource-id, "view_once_media")]'
+CHAT_VOICE_NOTE_BUTTON = build_wa_resource_id_xpath('voice_note_btn')
+CHAT_STICKER = build_wa_resource_id_xpath('sticker')
+CHAT_STICKERS = build_wa_resource_id_xpath('stickers')
+CHAT_EMOJI = build_wa_resource_id_xpath('emoji')
+CHAT_EMOJIS = build_wa_resource_id_xpath('emojis')
+CHAT_EMOJI_PICKER = build_wa_resource_id_xpath('emoji_picker_btn')
+CHAT_DIRECTORY_NAME = '//android.widget.TextView[@text="{directory_name}"]'
+CHAT_DIRECTORY_MEDIA_BY_INDEX = '//androidx.compose.ui.platform.ComposeView/android.view.View/android.view.View/android.view.View[4]/android.view.View[{index}]/android.view.View[2]/android.view.View'
+CHAT_POPUP_BUTTON_OK = build_wa_resource_id_xpath_widget('Button', 'vo_sp_bottom_sheet_ok_button')
+CHAT_CAPTION_TEXT_BOX = build_wa_resource_id_xpath('caption')
+CHAT_SEND_MEDIA_VIEW_ONCE = build_wa_resource_id_xpath('view_once_toggle')
+CHAT_CONTACT_NAME = build_wa_resource_id_text_xpath_widget('TextView', 'name', '{contact_name}')
+CHAT_ATTACH_SEND_BUTTON = build_wa_resource_id_xpath('send_btn')
+CHAT_ATTACH_CONTACT_BUTTON = build_wa_resource_id_xpath('pickfiletype_contact_holder')
+CHAT_ATTACH_GALLERY_BUTTON = build_wa_resource_id_xpath('pickfiletype_gallery_holder')
+CHAT_GALLERY_FOLDERS_BUTTON = build_content_desc_xpath_widget('ImageButton', 'Folders')
+CHAT_FIRST_MEDIA_IN_FOLDER = '//androidx.compose.ui.platform.ComposeView/android.view.View/android.view.View/android.view.View[5]/android.view.View[3]/android.widget.Button'
+CHAT_STOP_SHARING = build_text_xpath('Stop sharing')
+CHAT_MESSAGE_BY_CONTENT = "//*[@resource-id='com.whatsapp:id/conversation_text_row']//*[contains(@text,'{message_contains}')]"
+CHAT_FORWARD_MESSAGE = f"//*[@resource-id='com.whatsapp:id/action_mode_bar']//*[@content-desc='Forward']"
+CHAT_FORWARD_CONTACT_BY_NAME = "//*[@resource-id='com.whatsapp:id/contact_list']//*[@text='{to_chat}']"
+CHAT_MENTION_SUGGESTIONS = build_wa_resource_id_xpath_widget('ImageView', 'contact_photo')
+CHAT_ATTACH_BUTTON = build_wa_resource_id_xpath('input_attach_button')
+CHAT_ATTACH_LOCATION_BUTTON = build_wa_resource_id_xpath_widget('Button', 'pickfiletype_location_holder')
 
-UPDATES_STATE_HEADER = '//android.view.ViewGroup[@resource-id="com.whatsapp:id/toolbar"]/android.widget.TextView[@text="Updates"]'
-UPDATES_STATE_STATUS_HEADER = build_wa_resource_id_text_xpath_widget('TextView', 'header_textview', 'Status')
-UPDATES_STATE_NEW_STATUS = build_content_desc_xpath_widget('ImageButton', 'New status update')
-UPDATES_STATE_SEND_BUTTON = build_wa_resource_id_xpath_widget('ImageButton', 'send')
-UPDATES_STATE_EDIT_CAPTION = build_wa_resource_id_xpath_widget('EditText', 'caption')
-UPDATES_STATE_SHUTTER = build_wa_resource_id_xpath_widget('ImageView', 'shutter')
-
-#Chat state xpaths
-CHAT_STATE_ROOT_LAYOUT = build_wa_resource_id_xpath_widget('LinearLayout', 'conversation_root_layout')
-CHAT_STATE_CONTACT_HEADER = build_wa_resource_id_xpath_widget('TextView', 'conversation_contact_name')
-CHAT_STATE_CONTACT_HEADER_WITH_NAME = build_wa_resource_id_text_xpath_widget('TextView', 'conversation_contact_name', '{conversation}')
-CHAT_STATE_DELETE_BUTTON = build_content_desc_xpath('Delete')
-CHAT_STATE_DELETE_FOR_EVERYONE = f'//*[@resource-id="{WHATSAPP_PACKAGE}:id/buttonPanel"]//*[@text="Delete for everyone"]'
-CHAT_STATE_SEND = build_wa_resource_id_xpath('send')
-CHAT_STATE_ENTRY = build_wa_resource_id_xpath('entry')
-CHAT_STATE_REPLY = build_content_desc_xpath('Reply')
-CHAT_STATE_VIEW_ONCE_MEDIA = '//*[contains(@resource-id, "view_once_media")]'
-CHAT_STATE_VOICE_NOTE_BUTTON = build_wa_resource_id_xpath('voice_note_btn')
-CHAT_STATE_STICKER = build_wa_resource_id_xpath('sticker')
-CHAT_STATE_STICKERS = build_wa_resource_id_xpath('stickers')
-CHAT_STATE_EMOJI = build_wa_resource_id_xpath('emoji')
-CHAT_STATE_EMOJIS = build_wa_resource_id_xpath('emojis')
-CHAT_STATE_EMOJI_PICKER = build_wa_resource_id_xpath('emoji_picker_btn')
-CHAT_STATE_DIRECTORY_NAME = '//android.widget.TextView[@text="{directory_name}"]'
-CHAT_STATE_DIRECTORY_MEDIA_BY_INDEX = '//androidx.compose.ui.platform.ComposeView/android.view.View/android.view.View/android.view.View[4]/android.view.View[{index}]/android.view.View[2]/android.view.View'
-CHAT_STATE_POPUP_BUTTON_OK = build_wa_resource_id_xpath_widget('Button', 'vo_sp_bottom_sheet_ok_button')
-CHAT_STATE_CAPTION_TEXT_BOX = build_wa_resource_id_xpath('caption')
-CHAT_STATE_SEND_MEDIA_VIEW_ONCE = build_wa_resource_id_xpath('view_once_toggle')
-CHAT_STATE_CONTACT_NAME = build_wa_resource_id_text_xpath_widget('TextView', 'name', '{contact_name}')
-CHAT_STATE_ATTACH_NEXT_BUTTON = build_wa_resource_id_xpath('next_btn')
-CHAT_STATE_ATTACH_SEND_BUTTON = build_wa_resource_id_xpath('send_btn')
-CHAT_STATE_ATTACH_CONTACT_BUTTON = build_wa_resource_id_xpath('pickfiletype_contact_holder')
-CHAT_STATE_ATTACH_GALLERY_BUTTON = build_wa_resource_id_xpath('pickfiletype_gallery_holder')
-CHAT_STATE_GALLERY_FOLDERS_BUTTON = build_content_desc_xpath_widget('ImageButton', 'Folders')
-CHAT_STATE_FIRST_MEDIA_IN_FOLDER = '//androidx.compose.ui.platform.ComposeView/android.view.View/android.view.View/android.view.View[5]/android.view.View[3]/android.widget.Button'
-CHAT_STATE_STOP_SHARING = build_text_xpath('Stop sharing')
-CHAT_STATE_MESSAGE_BY_CONTENT = "//*[@resource-id='com.whatsapp:id/conversation_text_row']//*[contains(@text,'{message_contains}')]"
-CHAT_STATE_FORWARD_MESSAGE = f"//*[@resource-id='com.whatsapp:id/action_mode_bar']//*[@content-desc='Forward']"
-CHAT_STATE_FORWARD_CONTACT_BY_NAME = "//*[@resource-id='com.whatsapp:id/contact_list']//*[@text='{to_chat}']"
-
-VOICE_CALL_STATE_CAMERA_BUTTON = '//android.widget.Button[@content-desc="Turn camera on" and @resource-id="com.whatsapp:id/camera_button"]'
-
-RECEIVE_CALL_ANSWER_BUTTON = "//android.widget.Button[@content-desc='Answer' or @content-desc='Video']"
-RECEIVE_CALL_DECLINE_BUTTON = build_content_desc_xpath_widget('Button', 'Decline')
-
-CALL_STATE_CONTACT_HEADER = build_wa_resource_id_xpath_widget('TextView', 'title')
-START_VOICE_CALL_BUTTON = build_wa_resource_id_xpath('voice_call')
-START_VIDEO_CALL_BUTTON = build_wa_resource_id_xpath('video_call')
-
-VIDEO_CALL_STATE_CAMERA_BUTTON = '//android.widget.Button[@content-desc="Turn camera off" and @resource-id="com.whatsapp:id/camera_button"]'
-VIDEO_CALL_STATE_SWITCH_CAMERA = build_wa_resource_id_xpath_widget('Button', 'calling_camera_switch_wds_button')
-
-SEND_LOCATION_STATE_HEADER = '//android.view.ViewGroup[@resource-id="com.whatsapp:id/toolbar"]/android.widget.TextView[@text="Send location"]'
-SEND_LOCATION_STATE_CURRENT_LOCATION = build_wa_resource_id_xpath_widget('FrameLayout', 'send_current_location_btn')
-SEND_LOCATION_STATE_CURRENT_LOCATION_BUTTON = build_wa_resource_id_xpath('send_current_location_btn')
-SEND_LOCATION_STATE_LIVE_LOCATION = build_wa_resource_id_xpath_widget('FrameLayout', 'live_location_btn')
-SEND_LOCATION_STATE_LIVE_LOCATION_BUTTON = build_wa_resource_id_xpath('live_location_btn')
+SEND_LOCATION_HEADER = '//android.view.ViewGroup[@resource-id="com.whatsapp:id/toolbar"]/android.widget.TextView[@text="Send location"]'
+SEND_LOCATION_CURRENT_LOCATION = build_wa_resource_id_xpath_widget('FrameLayout', 'send_current_location_btn')
+SEND_LOCATION_CURRENT_LOCATION_BUTTON = build_wa_resource_id_xpath('send_current_location_btn')
+SEND_LOCATION_LIVE_LOCATION = build_wa_resource_id_xpath_widget('FrameLayout', 'live_location_btn')
+SEND_LOCATION_LIVE_LOCATION_BUTTON = build_wa_resource_id_xpath('live_location_btn')
 SEND_LOCATION_LIVE_LOCATION_DIALOG = build_wa_resource_id_xpath_widget('LinearLayout', 'location_new_user_dialog_container')
 SEND_LOCATION_POPUP_CONTINUE = build_text_xpath_widget('Button', 'Continue')
-SEND_LOCATION_STATE_CAPTION = build_wa_resource_id_xpath('comment')
+SEND_LOCATION_CAPTION = build_wa_resource_id_xpath('comment')
 
-CHAT_SETTINGS_STATE_CONTACT_NAME = (f'{build_wa_resource_id_xpath_widget('TextView', 'contact_title')} | '
-                                    f'{build_wa_resource_id_xpath_widget('TextView', 'business_title')} | '
-                                    f'{build_wa_resource_id_xpath_widget('TextView', 'group_title')}')
-CHAT_SETTINGS_STATE_NOTIFICATIONS = build_wa_resource_id_xpath_widget('LinearLayout', 'notifications_and_sounds_layout')
-CHAT_SETTINGS_STATE_MEDIA_VISIBILITY = build_wa_resource_id_xpath_widget('Button', 'media_visibility_layout')
+CHAT_SETTINGS_CONTACT_NAME = (f'{build_wa_resource_id_xpath_widget('TextView', 'contact_title')} | '
+                              f'{build_wa_resource_id_xpath_widget('TextView', 'business_title')} | '
+                              f'{build_wa_resource_id_xpath_widget('TextView', 'group_title')}')
+CHAT_SETTINGS_NOTIFICATIONS = build_wa_resource_id_xpath_widget('LinearLayout', 'notifications_and_sounds_layout')
+CHAT_SETTINGS_MEDIA_VISIBILITY = build_wa_resource_id_xpath_widget('Button', 'media_visibility_layout')
 CHAT_SETTINGS_PARTICIPANT = build_wa_resource_id_text_xpath('name', '{participant}')
 CHAT_SETTINGS_REMOVE_PARTICIPANT = "//*[starts-with(@text, 'Remove')]"
 CHAT_SETTINGS_EXIT_GROUP_BUTTON = build_text_xpath_widget('Button', 'Exit group')
 CHAT_SETTINGS_EXIT_GROUP_LIST_ITEM = build_wa_resource_id_text_xpath('list_item_title', 'Exit group')
-CHAT_SETTINGS_STATE_DISAPPEARING_MESSAGES = '//*[@resource-id="com.whatsapp:id/list_item_title" and @text="Disappearing messages"]'
+CHAT_SETTINGS_DISAPPEARING_MESSAGES = '//*[@resource-id="com.whatsapp:id/list_item_title" and @text="Disappearing messages"]'
+CHAT_SETTINGS_OK_BUTTON = build_text_xpath_widget('Button', 'OK')
+CHAT_SETTINGS_CONTAINS_DELETE_GROUP = '//*[contains(@text,"Delete group")]'
+
 RADIO_BUTTON_24_HOURS = build_text_xpath_widget('RadioButton', '24 hours')
 RADIO_BUTTON_OFF = build_text_xpath_widget('RadioButton', 'Off')
 
-# Same!
-MESSAGE_TEXT_BOX = build_wa_resource_id_xpath_widget('EditText', 'entry')
-CONVERSATIONS_STATE_ENTRY = build_wa_resource_id_xpath_widget('EditText', 'entry')
+UPDATES_HEADER = '//android.view.ViewGroup[@resource-id="com.whatsapp:id/toolbar"]/android.widget.TextView[@text="Updates"]'
+UPDATES_STATUS_HEADER = build_wa_resource_id_text_xpath_widget('TextView', 'header_textview', 'Status')
+UPDATES_NEW_STATUS = build_content_desc_xpath_widget('ImageButton', 'New status update')
+UPDATES_EDIT_CAPTION = build_wa_resource_id_xpath_widget('EditText', 'caption')
+UPDATES_SHUTTER = build_wa_resource_id_xpath_widget('ImageView', 'shutter')
+UPDATES_CAMERA_BUTTON = build_content_desc_xpath_widget('Button', 'Camera')
 
-CONTAINS_DELETE_GROUP = '//*[contains(@text,"Delete group")]'
+CALLS_START_CALL = build_content_desc_xpath_widget('ImageButton', 'New call')
+CALLS_HEADER = '//android.view.ViewGroup[@resource-id="com.whatsapp:id/toolbar"]/android.widget.TextView[@text="Calls"]'
+
+CALL_CONTACT_HEADER = build_wa_resource_id_xpath_widget('TextView', 'title')
+CALL_TAB_SEARCH_BUTTON = build_content_desc_xpath_widget('ImageButton', 'Search')
+CALL_SCREEN_BACKGROUND = build_wa_resource_id_xpath_widget('RelativeLayout', 'call_screen')
+CALL_END_CALL_BUTTON = ('//*[@content-desc="Leave call" or '
+                        '@resource-id="com.whatsapp:id/end_call_button" or '
+                        '@resource-id="com.whatsapp:id/footer_end_call_btn"]')
+VOICE_CALL_START_BUTTON = build_wa_resource_id_xpath('voice_call')
+VIDEO_CALL_START_BUTTON = build_wa_resource_id_xpath('video_call')
+
+VOICE_CALL_CAMERA_BUTTON = '//android.widget.Button[@content-desc="Turn camera on" and @resource-id="com.whatsapp:id/camera_button"]'
+
+VIDEO_CALL_CAMERA_BUTTON = '//android.widget.Button[@content-desc="Turn camera off" and @resource-id="com.whatsapp:id/camera_button"]'
+VIDEO_CALL_SWITCH_CAMERA = build_wa_resource_id_xpath_widget('Button', 'calling_camera_switch_wds_button')
+
+RECEIVE_CALL_ANSWER_BUTTON = "//android.widget.Button[@content-desc='Answer' or @content-desc='Video']"
+RECEIVE_CALL_DECLINE_BUTTON = build_content_desc_xpath_widget('Button', 'Decline')
+
+TEXT_ENTRY = build_wa_resource_id_xpath('entry')
 TEXT_VIEWS = '//android.widget.TextView'
 
-MENTION_SUGGESTIONS = build_wa_resource_id_xpath_widget('ImageView', 'contact_photo')
-SEND_BUTTON = build_content_desc_xpath_widget('ImageButton', 'Send')
-OK_BUTTON = build_wa_resource_id_xpath('ok_btn')
-CAMERA_BUTTON = build_content_desc_xpath_widget('Button', 'Camera')
-# Call state xpaths
-CALL_TAB_SEARCH_BUTTON = build_content_desc_xpath_widget('ImageButton', 'Search')
-ATTACH_BUTTON = build_wa_resource_id_xpath_widget('ImageButton', 'input_attach_button')
-ATTACH_BUTTON2 = build_wa_resource_id_xpath('input_attach_button')
-ATTACH_LOCATION_BUTTON = build_wa_resource_id_xpath_widget('Button', 'pickfiletype_location_holder')
-
-# Settings state xpaths
 OPEN_SETTINGS_BY_TITLE = build_text_xpath_widget('TextView', 'Settings')
 PROFILE_INFO = build_wa_resource_id_xpath_widget('TextView', 'profile_info_name')
 
-NEW_BROADCAST_TITLE = build_wa_resource_id_text_xpath('title', 'New broadcast')
+HAMBURGER_MENU = build_content_desc_xpath_widget('ImageView', 'More options')
 SEARCH_BAR = build_wa_resource_id_xpath_widget('EditText', 'search_view_edit_text')
-END_CALL_BUTTON = ('//*[@content-desc="Leave call" or '
-                   '@resource-id="com.whatsapp:id/end_call_button" or '
-                   '@resource-id="com.whatsapp:id/footer_end_call_btn"]')
-
-CALL_SCREEN_BACKGROUND = build_wa_resource_id_xpath_widget('RelativeLayout', 'call_screen')
-CALLS_TAB = build_wa_resource_id_text_xpath_widget('TextView', 'navigation_bar_item_small_label_view', 'Calls')
+CONVERSATIONS_CHAT_TAB = build_content_desc_xpath_widget('FrameLayout', 'Chats')
 UPDATES_TAB = build_wa_resource_id_text_xpath_widget('TextView', 'navigation_bar_item_small_label_view', 'Updates')
+CALLS_TAB = build_wa_resource_id_text_xpath_widget('TextView', 'navigation_bar_item_small_label_view', 'Calls')
 
 SEND = build_wa_resource_id_xpath('send')
-OK_BUTTON = build_text_xpath_widget('Button', 'OK')
+SEND_CONTENT = build_content_desc_xpath_widget('ImageButton', 'Send')
+SEND_RESOURCE = build_wa_resource_id_xpath_widget('ImageButton', 'send')
 STOP_BUTTON = build_content_desc_xpath_widget('Button', 'Stop')
+NEXT_BUTTON = build_wa_resource_id_xpath('next_btn')
+EDIT_TEXT = build_wa_resource_id_xpath('edit_text')
+OK_BUTTON = build_wa_resource_id_xpath('ok_btn')
 
 
 # Conversations State
@@ -205,7 +192,7 @@ def go_to_voice_call(driver: PumaDriver, contact: str):
     """
     driver.click(CALL_TAB_SEARCH_BUTTON)
     driver.send_keys(SEARCH_BAR, contact)
-    driver.click(START_VOICE_CALL_BUTTON)
+    driver.click(VOICE_CALL_START_BUTTON)
 
 
 def go_to_video_call(driver: PumaDriver, contact: str):
@@ -217,7 +204,7 @@ def go_to_video_call(driver: PumaDriver, contact: str):
     """
     driver.click(CALL_TAB_SEARCH_BUTTON)
     driver.send_keys(SEARCH_BAR, contact)
-    driver.click(START_VIDEO_CALL_BUTTON)
+    driver.click(VIDEO_CALL_START_BUTTON)
 
 
 class WhatsAppChatState(SimpleState, ContextualState):
@@ -234,8 +221,8 @@ class WhatsAppChatState(SimpleState, ContextualState):
 
         :param parent_state: The parent state of this chat state.
         """
-        super().__init__(xpaths=[CHAT_STATE_CONTACT_HEADER,
-                                 CHAT_STATE_ROOT_LAYOUT],
+        super().__init__(xpaths=[CHAT_CONTACT_HEADER,
+                                 CHAT_ROOT_LAYOUT],
                          parent_state=parent_state)
 
     def validate_context(self, driver: PumaDriver, conversation: str = None) -> bool:
@@ -251,12 +238,12 @@ class WhatsAppChatState(SimpleState, ContextualState):
         if not conversation:
             return True
 
-        content_desc = (driver.get_element(CHAT_STATE_CONTACT_HEADER).get_attribute('text'))
+        content_desc = (driver.get_element(CHAT_CONTACT_HEADER).get_attribute('text'))
         return conversation.lower() in content_desc.lower()
 
     @staticmethod
     def open_chat_settings(driver: PumaDriver, conversation: str):
-        driver.click(CHAT_STATE_CONTACT_HEADER_WITH_NAME.format(conversation=conversation))
+        driver.click(CHAT_CONTACT_HEADER_WITH_NAME.format(conversation=conversation))
 
 
 class WhatsAppChatSettingsState(SimpleState, ContextualState):
@@ -273,9 +260,9 @@ class WhatsAppChatSettingsState(SimpleState, ContextualState):
 
         :param parent_state: The parent state of this chat state.
         """
-        super().__init__(xpaths=[CHAT_SETTINGS_STATE_CONTACT_NAME,
-                                 CHAT_SETTINGS_STATE_NOTIFICATIONS,
-                                 CHAT_SETTINGS_STATE_MEDIA_VISIBILITY],
+        super().__init__(xpaths=[CHAT_SETTINGS_CONTACT_NAME,
+                                 CHAT_SETTINGS_NOTIFICATIONS,
+                                 CHAT_SETTINGS_MEDIA_VISIBILITY],
                          parent_state=parent_state)
 
     def validate_context(self, driver: PumaDriver, conversation: str = None) -> bool:
@@ -291,7 +278,7 @@ class WhatsAppChatSettingsState(SimpleState, ContextualState):
         if not conversation:
             return True
 
-        content_desc = (driver.get_element(CHAT_SETTINGS_STATE_CONTACT_NAME).get_attribute('text'))
+        content_desc = (driver.get_element(CHAT_SETTINGS_CONTACT_NAME).get_attribute('text'))
         return conversation.lower() in content_desc.lower()
 
 
@@ -309,9 +296,9 @@ class WhatsAppVoiceCallState(SimpleState, ContextualState):
 
         :param parent_state: The parent state of this call state.
         """
-        super().__init__(xpaths=[END_CALL_BUTTON,
+        super().__init__(xpaths=[CALL_END_CALL_BUTTON,
                                  CALL_SCREEN_BACKGROUND,
-                                 VOICE_CALL_STATE_CAMERA_BUTTON],
+                                 VOICE_CALL_CAMERA_BUTTON],
                          parent_state=parent_state)
 
     def validate_context(self, driver: PumaDriver, contact: str = None) -> bool:
@@ -327,7 +314,7 @@ class WhatsAppVoiceCallState(SimpleState, ContextualState):
         if not contact:
             return True
 
-        content_desc = (driver.get_element(CALL_STATE_CONTACT_HEADER).get_attribute('text'))
+        content_desc = (driver.get_element(CALL_CONTACT_HEADER).get_attribute('text'))
         return contact.lower() in content_desc.lower()
 
 class WhatsAppVideoCallState(SimpleState, ContextualState):
@@ -344,10 +331,10 @@ class WhatsAppVideoCallState(SimpleState, ContextualState):
 
         :param parent_state: The parent state of this call state.
         """
-        super().__init__(xpaths=[END_CALL_BUTTON,
+        super().__init__(xpaths=[CALL_END_CALL_BUTTON,
                                  CALL_SCREEN_BACKGROUND,
-                                 VIDEO_CALL_STATE_CAMERA_BUTTON,
-                                 VIDEO_CALL_STATE_SWITCH_CAMERA],
+                                 VIDEO_CALL_CAMERA_BUTTON,
+                                 VIDEO_CALL_SWITCH_CAMERA],
                          parent_state=parent_state)
 
     def validate_context(self, driver: PumaDriver, contact: str = None) -> bool:
@@ -363,7 +350,7 @@ class WhatsAppVideoCallState(SimpleState, ContextualState):
         if not contact:
             return True
 
-        content_desc = (driver.get_element(CALL_STATE_CONTACT_HEADER).get_attribute('text'))
+        content_desc = (driver.get_element(CALL_CONTACT_HEADER).get_attribute('text'))
         return contact.lower() in content_desc.lower()
 
 
@@ -372,47 +359,47 @@ class WhatsApp(StateGraph):
     TODO
     """
 
-    conversations_state = SimpleState([CONVERSATIONS_STATE_WHATSAPP_LOGO,
-                                      CONVERSATIONS_STATE_HOME_ROOT_FRAME,
-                                      CONVERSATIONS_STATE_NEW_CHAT_OR_SEND_MESSAGE,
-                                      CONVERSATIONS_STATE_CHAT_TAB],
+    conversations_state = SimpleState([CONVERSATIONS_WHATSAPP_LOGO,
+                                      CONVERSATIONS_HOME_ROOT_FRAME,
+                                      CONVERSATIONS_NEW_CHAT_OR_SEND_MESSAGE,
+                                      CONVERSATIONS_CHAT_TAB],
                                       initial_state=True)
-    settings_state = SimpleState([SETTINGS_STATE_QR,
-                                  SETTINGS_STATE_ACCOUNT_SWITCH],
+    settings_state = SimpleState([SETTINGS_QR,
+                                  SETTINGS_ACCOUNT_SWITCH],
                                  parent_state=conversations_state)
-    profile_state = SimpleState([PROFILE_STATE_PROFILE_PICTURE,
-                                 PROFILE_STATE_NAME,
-                                 PROFILE_STATE_PHONE],
+    profile_state = SimpleState([PROFILE_PROFILE_PICTURE,
+                                 PROFILE_NAME,
+                                 PROFILE_PHONE],
                                 parent_state=settings_state)
     chat_state = WhatsAppChatState(parent_state=conversations_state)
-    new_chat_state = SimpleState([NEW_CHAT_STATE_NEW_GROUP,
-                                  NEW_CHAT_STATE_NEW_CONTACT,
-                                  NEW_CHAT_STATE_NEW_COMMUNITY],
+    new_chat_state = SimpleState([NEW_CHAT_NEW_GROUP,
+                                  NEW_CHAT_NEW_CONTACT,
+                                  NEW_CHAT_NEW_COMMUNITY],
                                  parent_state=conversations_state)
-    calls_state = SimpleState([CALLS_STATE_HEADER,
-                               CALLS_STATE_START_CALL],
+    calls_state = SimpleState([CALLS_HEADER,
+                               CALLS_START_CALL],
                               parent_state=conversations_state)
-    updates_state = SimpleState([UPDATES_STATE_HEADER,
-                                 UPDATES_STATE_STATUS_HEADER,
-                                 UPDATES_STATE_NEW_STATUS],
+    updates_state = SimpleState([UPDATES_HEADER,
+                                 UPDATES_STATUS_HEADER,
+                                 UPDATES_NEW_STATUS],
                                 parent_state=conversations_state)
     voice_call_state = WhatsAppVoiceCallState(parent_state=calls_state)
     video_call_state = WhatsAppVideoCallState(parent_state=calls_state)
-    send_location_state = SimpleState([SEND_LOCATION_STATE_HEADER,
-                                       SEND_LOCATION_STATE_LIVE_LOCATION,
-                                       SEND_LOCATION_STATE_CURRENT_LOCATION],
+    send_location_state = SimpleState([SEND_LOCATION_HEADER,
+                                       SEND_LOCATION_LIVE_LOCATION,
+                                       SEND_LOCATION_CURRENT_LOCATION],
                                       parent_state=chat_state)
     chat_settings_state = WhatsAppChatSettingsState(parent_state=chat_state)
 
     conversations_state.to(chat_state, go_to_chat)
     conversations_state.to(settings_state, compose_clicks([HAMBURGER_MENU, OPEN_SETTINGS_BY_TITLE]))
-    conversations_state.to(new_chat_state, compose_clicks([CONVERSATIONS_STATE_NEW_CHAT_OR_SEND_MESSAGE]))
+    conversations_state.to(new_chat_state, compose_clicks([CONVERSATIONS_NEW_CHAT_OR_SEND_MESSAGE]))
     conversations_state.to(calls_state, compose_clicks([CALLS_TAB]))
     conversations_state.to(updates_state, compose_clicks([UPDATES_TAB]))
     calls_state.to(voice_call_state, go_to_voice_call)
     calls_state.to(video_call_state, go_to_video_call)
     settings_state.to(profile_state, compose_clicks([PROFILE_INFO]))
-    chat_state.to(send_location_state, compose_clicks([ATTACH_BUTTON, ATTACH_LOCATION_BUTTON]))
+    chat_state.to(send_location_state, compose_clicks([CHAT_ATTACH_BUTTON, CHAT_ATTACH_LOCATION_BUTTON]))
     chat_state.to(chat_settings_state, WhatsAppChatState.open_chat_settings)
 
 
@@ -424,7 +411,7 @@ class WhatsApp(StateGraph):
         Make sure to convert a @name to an actual mention. Only one mention is allowed.
         :param message: The message containing the mention.
         """
-        self.driver.send_keys(MESSAGE_TEXT_BOX, message)
+        self.driver.send_keys(TEXT_ENTRY, message)
         sleep(1)
         # Find the mentioned name in the message. Note that it will search until the last word character. This means for
         # @jan-willem or @jan willem, only @jan will be found.
@@ -432,7 +419,7 @@ class WhatsApp(StateGraph):
         mentioned_name = mention_match.group(0).strip("@")
 
         self.driver.press_left_arrow()
-        while not (mention_suggestions := self.driver.get_elements(MENTION_SUGGESTIONS)):
+        while not (mention_suggestions := self.driver.get_elements(CHAT_MENTION_SUGGESTIONS)):
              self.driver.press_left_arrow()
 
         mentioned_person_el = \
@@ -456,15 +443,15 @@ class WhatsApp(StateGraph):
         return message_status_el
 
     def send_message_in_current_conversation(self, message_text, wait_until_sent=False):
-        self.driver.click(MESSAGE_TEXT_BOX)
+        self.driver.click(TEXT_ENTRY)
         self._handle_mention(message_text) \
             if "@" in message_text \
-            else self.driver.send_keys(MESSAGE_TEXT_BOX, message_text)
+            else self.driver.send_keys(TEXT_ENTRY, message_text)
 
         #Allow time for the link preview to load
         if 'http' in message_text:
             sleep(2)
-        self.driver.click(SEND_BUTTON)
+        self.driver.click(SEND_CONTENT)
         # TODO convert to post action validation
         if wait_until_sent:
             _ = self._ensure_message_sent(message_text)
@@ -481,9 +468,9 @@ class WhatsApp(StateGraph):
 
     @action(profile_state)
     def change_profile_picture(self, photo_dir_name, index=1):
-        self.driver.click(PROFILE_STATE_INFO_EDIT_BUTTON)
-        self.driver.click(PROFILE_STATE_GALLERY)
-        self.driver.click(PROFILE_STATE_FOLDERS)
+        self.driver.click(PROFILE_INFO_EDIT_BUTTON)
+        self.driver.click(PROFILE_GALLERY)
+        self.driver.click(PROFILE_FOLDERS)
         self._find_media_in_folder(photo_dir_name, index)
         self.driver.click(OK_BUTTON)
 
@@ -495,19 +482,19 @@ class WhatsApp(StateGraph):
         handled once manually.
         :param caption: the caption to publish with the status.
         """
-        self.driver.click(UPDATES_STATE_NEW_STATUS)
-        self.driver.click(CAMERA_BUTTON)
-        self.driver.click(UPDATES_STATE_SHUTTER)
+        self.driver.click(UPDATES_NEW_STATUS)
+        self.driver.click(UPDATES_CAMERA_BUTTON)
+        self.driver.click(UPDATES_SHUTTER)
         if caption:
-             self.driver.send_keys(UPDATES_STATE_EDIT_CAPTION, caption)
-        self.driver.click(UPDATES_STATE_SEND_BUTTON)
+             self.driver.send_keys(UPDATES_EDIT_CAPTION, caption)
+        self.driver.click(SEND_RESOURCE)
 
     @action(profile_state)
     def set_about(self, about_text: str):
-        self.driver.click(PROFILE_STATE_INFO_STATUS_CARD)
-        self.driver.click(PROFILE_STATE_STATUS_EDIT_ICON)
+        self.driver.click(PROFILE_INFO_STATUS_CARD)
+        self.driver.click(PROFILE_STATUS_EDIT_ICON)
         self.driver.send_keys(EDIT_TEXT, about_text)
-        self.driver.click(PROFILE_STATE_SAVE_BUTTON)
+        self.driver.click(PROFILE_SAVE_BUTTON)
         # This action ends in a screen that isn't a state, so move back one screen.
         self.driver.back()
 
@@ -539,13 +526,13 @@ class WhatsApp(StateGraph):
             raise Exception(f"Error: minimum of 2 receivers required for a broadcast, got: {receivers}")
 
         self.open_more_options()
-        self.driver.click(NEW_BROADCAST_TITLE)
+        self.driver.click(CONVERSATIONS_NEW_BROADCAST_TITLE)
         for receiver in receivers:
-            self.driver.click(CONVERSATIONS_STATE_CHAT_ABLE_CONTACT)
+            self.driver.click(CONVERSATIONS_CHAT_ABLE_CONTACT)
 
-        self.driver.click(CONVERSATIONS_STATE_NEXT_BUTTON)
-        self.driver.send_keys(CONVERSATIONS_STATE_ENTRY, broadcast_text)
-        self.driver.click(CONVERSATIONS_STATE_SEND)
+        self.driver.click(NEXT_BUTTON)
+        self.driver.send_keys(TEXT_ENTRY, broadcast_text)
+        self.driver.click(SEND_RESOURCE)
 
     @action(chat_state)
     def delete_message_for_everyone(self, conversation: str, message_text: str):
@@ -557,8 +544,8 @@ class WhatsApp(StateGraph):
         there are multiple with the same text.
         """
         self.driver.long_press_element(f"//*[@resource-id='{WHATSAPP_PACKAGE}:id/conversation_text_row']//*[@text='{message_text}']")
-        self.driver.click(CHAT_STATE_DELETE_BUTTON)
-        self.driver.click(CHAT_STATE_DELETE_FOR_EVERYONE)
+        self.driver.click(CHAT_DELETE_BUTTON)
+        self.driver.click(CHAT_DELETE_FOR_EVERYONE)
 
     @action(conversations_state)
     def create_group(self, conversation: str, participants: Union[str, List[str]]):
@@ -568,7 +555,7 @@ class WhatsApp(StateGraph):
         :param participants: The contact(s) you want to add to the group (string or list).
         """
         self.open_more_options()
-        self.driver.click(CONVERSATIONS_STATE_NEW_GROUP)
+        self.driver.click(CONVERSATIONS_NEW_GROUP)
 
         participants = [participants] if not isinstance(participants, list) else participants
         for participant in participants:
@@ -576,8 +563,8 @@ class WhatsApp(StateGraph):
             participant_to_add = [contact for contact in contacts if contact.text.lower() == participant.lower()][0]
             participant_to_add.click()
 
-        self.driver.click(CONVERSATIONS_STATE_NEXT_BUTTON)
-        self.driver.send_keys(CONVERSATIONS_STATE_GROUP_NAME, conversation)
+        self.driver.click(NEXT_BUTTON)
+        self.driver.send_keys(CONVERSATIONS_GROUP_NAME, conversation)
         self.driver.click(OK_BUTTON)
         # Creating a group takes a few seconds
         sleep(2)
@@ -589,7 +576,7 @@ class WhatsApp(StateGraph):
         :param conversation: The conversation to archive.
         """
         self.driver.long_press_element(f'//*[contains(@resource-id,"{WHATSAPP_PACKAGE}:id/conversations_row_contact_name") and @text="{conversation}"]')
-        self.driver.click(CONVERSATIONS_STATE_MENUITEM_ARCHIVE)
+        self.driver.click(CONVERSATIONS_MENUITEM_ARCHIVE)
         # Wait until the archive popup disappeared
         archived_popup_present = True
         tries = 0
@@ -597,7 +584,7 @@ class WhatsApp(StateGraph):
             logger.info("waiting for archived popup to disappear")
             sleep(5)
             tries += 1
-            archived_popup_present = 'archived' in self.driver.get_elements(CONVERSATIONS_STATE_ARCHIVED)[0].text
+            archived_popup_present = 'archived' in self.driver.get_elements(CONVERSATIONS_ARCHIVED)[0].text
         logger.info("Archive pop-up gone!")
 
     @action(chat_state)
@@ -607,7 +594,7 @@ class WhatsApp(StateGraph):
         photo is opened, this will be the lowest one.
         :param conversation: The chat in which the photo has to be opened
         """
-        self.driver.get_elements(CHAT_STATE_VIEW_ONCE_MEDIA)[-1].click()
+        self.driver.get_elements(CHAT_VIEW_ONCE_MEDIA)[-1].click()
 
     @action(chat_settings_state)
     def set_group_description(self, conversation: str, description: str):
@@ -628,8 +615,8 @@ class WhatsApp(StateGraph):
         :param conversation: the group to be deleted.
         """
         self.leave_group(conversation)
-        self.driver.click(CONTAINS_DELETE_GROUP)
-        self.driver.click(CONTAINS_DELETE_GROUP)
+        self.driver.click(CHAT_SETTINGS_CONTAINS_DELETE_GROUP)
+        self.driver.click(CHAT_SETTINGS_CONTAINS_DELETE_GROUP)
 
     @action(chat_state)
     def reply_to_message(self, conversation: str, message_to_reply_to: str, reply_text: str):
@@ -642,9 +629,9 @@ class WhatsApp(StateGraph):
         message_xpath = f'//android.widget.TextView[@resource-id="{WHATSAPP_PACKAGE}:id/message_text" and contains(@text, "{message_to_reply_to}")]'
         self.driver.swipe_to_find_element(message_xpath)
         self.driver.long_press_element(message_xpath)
-        self.driver.click(CHAT_STATE_REPLY)
-        self.driver.send_keys(CHAT_STATE_ENTRY, reply_text)
-        self.driver.click(CHAT_STATE_SEND)
+        self.driver.click(CHAT_REPLY)
+        self.driver.send_keys(TEXT_ENTRY, reply_text)
+        self.driver.click(SEND)
 
     @action(chat_state)
     def send_emoji(self, conversation: str):
@@ -652,11 +639,11 @@ class WhatsApp(StateGraph):
         Send the first emoji in the emoji menu.
         :param conversation: The chat conversation in which to send this sticker.
         """
-        self.driver.click(CHAT_STATE_EMOJI_PICKER)
+        self.driver.click(CHAT_EMOJI_PICKER)
         sleep(1)
-        self.driver.click(CHAT_STATE_EMOJIS)
-        self.driver.click(CHAT_STATE_EMOJI)
-        self.driver.click(CHAT_STATE_SEND)
+        self.driver.click(CHAT_EMOJIS)
+        self.driver.click(CHAT_EMOJI)
+        self.driver.click(SEND)
 
     @action(chat_state)
     def send_sticker(self, conversation: str):
@@ -664,10 +651,10 @@ class WhatsApp(StateGraph):
         Send the first sticker in the sticker menu.
         :param conversation: The chat conversation in which to send this sticker.
         """
-        self.driver.click(CHAT_STATE_EMOJI_PICKER)
+        self.driver.click(CHAT_EMOJI_PICKER)
         sleep(1)
-        self.driver.click(CHAT_STATE_STICKERS)
-        self.driver.click(CHAT_STATE_STICKER)
+        self.driver.click(CHAT_STICKERS)
+        self.driver.click(CHAT_STICKER)
 
     @action(chat_state)
     def send_voice_recording(self, conversation: str, duration: int = 2000):
@@ -676,7 +663,7 @@ class WhatsApp(StateGraph):
         :param conversation: The chat conversation in which to send this voice recording.
         :param duration: the duration in of the voice message to send in milliseconds.
         """
-        self.driver.long_press_element(CHAT_STATE_VOICE_NOTE_BUTTON, duration=duration)
+        self.driver.long_press_element(CHAT_VOICE_NOTE_BUTTON, duration=duration)
 
     @action(send_location_state, end_state=chat_state)
     def send_current_location(self, conversation: str):
@@ -685,7 +672,7 @@ class WhatsApp(StateGraph):
         :param conversation: The chat conversation in which to send the location.
         """
         sleep(5)  # it takes some time to fix the location
-        self.driver.click(SEND_LOCATION_STATE_CURRENT_LOCATION_BUTTON)
+        self.driver.click(SEND_LOCATION_CURRENT_LOCATION_BUTTON)
 
     @action(send_location_state, end_state=chat_state)
     def send_live_location(self, conversation: str, caption=None):
@@ -694,11 +681,11 @@ class WhatsApp(StateGraph):
         :param conversation: The chat conversation in which to start the live location sharing.
         :param caption: Optional caption sent along with the live location
         """
-        self.driver.click(SEND_LOCATION_STATE_LIVE_LOCATION_BUTTON)
+        self.driver.click(SEND_LOCATION_LIVE_LOCATION_BUTTON)
         if self.driver.is_present(SEND_LOCATION_LIVE_LOCATION_DIALOG):
             self.driver.click(SEND_LOCATION_POPUP_CONTINUE)
         if caption is not None:
-            self.driver.send_keys(SEND_LOCATION_STATE_CAPTION, caption)
+            self.driver.send_keys(SEND_LOCATION_CAPTION, caption)
         self.driver.click(SEND)
 
     @action(chat_state)
@@ -707,7 +694,7 @@ class WhatsApp(StateGraph):
         Stops the current live location sharing.
         :param conversation: The chat conversation in which to stop the live location sharing.
         """
-        self.driver.swipe_to_click_element(CHAT_STATE_STOP_SHARING)
+        self.driver.swipe_to_click_element(CHAT_STOP_SHARING)
 
         if self.driver.is_present(STOP_BUTTON):
             self.driver.click(STOP_BUTTON)
@@ -719,11 +706,11 @@ class WhatsApp(StateGraph):
         :param contact_name: the name of the contact to send.
         :param conversation: The chat conversation in which to send the contact.
         """
-        self.driver.click(ATTACH_BUTTON2)
-        self.driver.click(CHAT_STATE_ATTACH_CONTACT_BUTTON)
-        self.driver.swipe_to_click_element(CHAT_STATE_CONTACT_NAME.format(contact_name=contact_name))
-        self.driver.click(CHAT_STATE_ATTACH_NEXT_BUTTON)
-        self.driver.click(CHAT_STATE_ATTACH_SEND_BUTTON)
+        self.driver.click(CHAT_ATTACH_BUTTON)
+        self.driver.click(CHAT_ATTACH_CONTACT_BUTTON)
+        self.driver.swipe_to_click_element(CHAT_CONTACT_NAME.format(contact_name=contact_name))
+        self.driver.click(NEXT_BUTTON)
+        self.driver.click(CHAT_ATTACH_SEND_BUTTON)
 
     @action(chat_settings_state)
     def activate_disappearing_messages(self, conversation: str):
@@ -732,7 +719,7 @@ class WhatsApp(StateGraph):
         Messages will now auto-delete after 24h.
         :param conversation: The conversation for which disappearing messages should be activated.
         """
-        self.driver.swipe_to_click_element(CHAT_SETTINGS_STATE_DISAPPEARING_MESSAGES)
+        self.driver.swipe_to_click_element(CHAT_SETTINGS_DISAPPEARING_MESSAGES)
         self.driver.click(RADIO_BUTTON_24_HOURS)
         self.driver.back()
 
@@ -742,7 +729,7 @@ class WhatsApp(StateGraph):
         Disables disappearing messages (auto delete) in the current or a given chat.
         :param conversation: The conversation for which disappearing messages should be activated.
         """
-        self.driver.swipe_to_click_element(CHAT_SETTINGS_STATE_DISAPPEARING_MESSAGES)
+        self.driver.swipe_to_click_element(CHAT_SETTINGS_DISAPPEARING_MESSAGES)
         self.driver.click(RADIO_BUTTON_OFF)
         self.driver.back()
 
@@ -777,10 +764,10 @@ class WhatsApp(StateGraph):
         self._end_call()
 
     def _end_call(self):
-        if not self.driver.is_present(END_CALL_BUTTON, implicit_wait=1):
+        if not self.driver.is_present(CALL_END_CALL_BUTTON, implicit_wait=1):
             # tap screen to make call button visible
             self.driver.click(CALL_SCREEN_BACKGROUND)
-        self.driver.click(END_CALL_BUTTON)
+        self.driver.click(CALL_END_CALL_BUTTON)
 
     # This method is not an @action, since it is not tied to a state.
     def answer_call(self):
@@ -819,7 +806,7 @@ class WhatsApp(StateGraph):
         """
         self.driver.swipe_to_click_element(CHAT_SETTINGS_PARTICIPANT.format(participant=participant))
         self.driver.click(CHAT_SETTINGS_REMOVE_PARTICIPANT)
-        self.driver.click(OK_BUTTON)
+        self.driver.click(CHAT_SETTINGS_OK_BUTTON)
 
     @action(chat_state)
     def forward_message(self, conversation: str, message_contains, to_chat):
@@ -831,44 +818,44 @@ class WhatsApp(StateGraph):
         of the message is needed, but be sure the given text is enough to match your intended message uniquely.
         :param to_chat: The chat to which the message has to be forwarded.
         """
-        self.driver.long_press_element(CHAT_STATE_MESSAGE_BY_CONTENT.format(message_contains=message_contains))
-        self.driver.click(CHAT_STATE_FORWARD_MESSAGE)
-        self.driver.click(CHAT_STATE_FORWARD_CONTACT_BY_NAME.format(to_chat=to_chat))
+        self.driver.long_press_element(CHAT_MESSAGE_BY_CONTENT.format(message_contains=message_contains))
+        self.driver.click(CHAT_FORWARD_MESSAGE)
+        self.driver.click(CHAT_FORWARD_CONTACT_BY_NAME.format(to_chat=to_chat))
         self.driver.click(SEND)
 
     @action(chat_state)
     def send_media(self, conversation: str, directory_name, index=1, caption=None, view_once=False):
         # Go to gallery
-        self.driver.click(ATTACH_BUTTON2)
-        self.driver.click(CHAT_STATE_ATTACH_GALLERY_BUTTON)
-        self.driver.click(CHAT_STATE_GALLERY_FOLDERS_BUTTON)
+        self.driver.click(CHAT_ATTACH_BUTTON)
+        self.driver.click(CHAT_ATTACH_GALLERY_BUTTON)
+        self.driver.click(CHAT_GALLERY_FOLDERS_BUTTON)
         self._find_media_in_folder(directory_name, index)
         sleep(0.5)
-        self.driver.click(CHAT_STATE_FIRST_MEDIA_IN_FOLDER)
+        self.driver.click(CHAT_FIRST_MEDIA_IN_FOLDER)
 
         if caption:
             sleep(0.5)
-            self.driver.send_keys(CHAT_STATE_CAPTION_TEXT_BOX, caption)
+            self.driver.send_keys(CHAT_CAPTION_TEXT_BOX, caption)
             # Clicking the text box after sending keys is required for Whatsapp to notice text has been inserted.
-            self.driver.click(CHAT_STATE_CAPTION_TEXT_BOX)
+            self.driver.click(CHAT_CAPTION_TEXT_BOX)
             self.driver.back()
 
         if view_once:
-            self.driver.click(CHAT_STATE_SEND_MEDIA_VIEW_ONCE)
-            if self.driver.is_present(CHAT_STATE_POPUP_BUTTON_OK):
-                self.driver.click(CHAT_STATE_POPUP_BUTTON_OK)
+            self.driver.click(CHAT_SEND_MEDIA_VIEW_ONCE)
+            if self.driver.is_present(CHAT_POPUP_BUTTON_OK):
+                self.driver.click(CHAT_POPUP_BUTTON_OK)
         sleep(1)
         self.driver.click(SEND)
 
     def _find_media_in_folder(self, directory_name, index):
         try:
-            self.driver.swipe_to_click_element(CHAT_STATE_DIRECTORY_NAME.format(directory_name=directory_name))
+            self.driver.swipe_to_click_element(CHAT_DIRECTORY_NAME.format(directory_name=directory_name))
         except PumaClickException:
             raise PumaClickException(f'The directory {directory_name} could not be found.')
-        self.driver.click(CHAT_STATE_DIRECTORY_NAME.format(directory_name=directory_name))
+        self.driver.click(CHAT_DIRECTORY_NAME.format(directory_name=directory_name))
         sleep(0.5)
         try:
-            self.driver.click(CHAT_STATE_DIRECTORY_MEDIA_BY_INDEX.format(index=index))
+            self.driver.click(CHAT_DIRECTORY_MEDIA_BY_INDEX.format(index=index))
         except PumaClickException:
             raise PumaClickException(
                 f'The media at index {index} could not be found. The index is likely too large or negative.')
