@@ -9,7 +9,9 @@ from puma.state_graph.state import SimpleState, ContextualState, State, compose_
 from puma.state_graph.state_graph import StateGraph
 from puma.utils.xpath_utils import build_resource_id_xpath_widget, build_resource_id_xpath, \
     build_content_desc_xpath_widget, build_text_xpath_widget, build_resource_id_text_xpath_widget, \
-    build_resource_id_text_xpath
+    build_resource_id_text_xpath, build_text_xpath
+
+
 
 
 def build_wa_resource_id_xpath_widget(widget_type: str, resource_id: str) -> str:
@@ -59,8 +61,27 @@ UPDATES_STATE_NEW_STATUS = build_content_desc_xpath_widget('ImageButton', 'New s
 CHAT_STATE_ROOT_LAYOUT = build_wa_resource_id_xpath_widget('LinearLayout', 'conversation_root_layout')
 CHAT_STATE_CONTACT_HEADER = build_wa_resource_id_xpath_widget('TextView', 'conversation_contact_name')
 CHAT_STATE_CONTACT_HEADER_WITH_NAME = build_wa_resource_id_text_xpath_widget('TextView', 'conversation_contact_name', '{conversation}')
+CHAT_STATE_DIRECTORY_NAME = '//android.widget.TextView[@text="{directory_name}"]'
+CHAT_STATE_DIRECTORY_MEDIA_BY_INDEX = '//androidx.compose.ui.platform.ComposeView/android.view.View/android.view.View/android.view.View[4]/android.view.View[{index}]/android.view.View[2]/android.view.View'
+CHAT_STATE_POPUP_BUTTON_OK = build_wa_resource_id_xpath_widget('Button', 'vo_sp_bottom_sheet_ok_button')
+CHAT_STATE_CAPTION_TEXT_BOX = build_wa_resource_id_xpath('caption')
+CHAT_STATE_SEND_MEDIA_VIEW_ONCE = build_wa_resource_id_xpath('view_once_toggle')
+CHAT_STATE_CONTACT_NAME = build_wa_resource_id_text_xpath_widget('TextView', 'name', '{contact_name}')
+CHAT_STATE_ATTACH_NEXT_BUTTON = build_wa_resource_id_xpath('next_btn')
+CHAT_STATE_ATTACH_SEND_BUTTON = build_wa_resource_id_xpath('send_btn')
+CHAT_STATE_ATTACH_CONTACT_BUTTON = build_wa_resource_id_xpath('pickfiletype_contact_holder')
+CHAT_STATE_ATTACH_GALLERY_BUTTON = build_wa_resource_id_xpath('pickfiletype_gallery_holder')
+CHAT_STATE_GALLERY_FOLDERS_BUTTON = build_content_desc_xpath_widget('ImageButton', 'Folders')
+CHAT_STATE_FIRST_MEDIA_IN_FOLDER = '//androidx.compose.ui.platform.ComposeView/android.view.View/android.view.View/android.view.View[5]/android.view.View[3]/android.widget.Button'
+CHAT_STATE_STOP_SHARING = build_text_xpath('Stop sharing')
+CHAT_STATE_MESSAGE_BY_CONTENT = "//*[@resource-id='com.whatsapp:id/conversation_text_row']//*[contains(@text,'{message_contains}')]"
+CHAT_STATE_FORWARD_MESSAGE = f"//*[@resource-id='com.whatsapp:id/action_mode_bar']//*[@content-desc='Forward']"
+CHAT_STATE_FORWARD_CONTACT_BY_NAME = "//*[@resource-id='com.whatsapp:id/contact_list']//*[@text='{to_chat}']"
 
 VOICE_CALL_STATE_CAMERA_BUTTON = '//android.widget.Button[@content-desc="Turn camera on" and @resource-id="com.whatsapp:id/camera_button"]'
+
+RECEIVE_CALL_ANSWER_BUTTON = "//android.widget.Button[@content-desc='Answer' or @content-desc='Video']"
+RECEIVE_CALL_DECLINE_BUTTON = build_content_desc_xpath_widget('Button', 'Decline')
 
 CALL_STATE_CONTACT_HEADER = build_wa_resource_id_xpath_widget('TextView', 'title')
 START_VOICE_CALL_BUTTON = build_wa_resource_id_xpath('voice_call')
@@ -70,14 +91,26 @@ VIDEO_CALL_STATE_CAMERA_BUTTON = '//android.widget.Button[@content-desc="Turn ca
 VIDEO_CALL_STATE_SWITCH_CAMERA = build_wa_resource_id_xpath_widget('Button', 'calling_camera_switch_wds_button')
 
 SEND_LOCATION_STATE_HEADER = '//android.view.ViewGroup[@resource-id="com.whatsapp:id/toolbar"]/android.widget.TextView[@text="Send location"]'
-SEND_LOCATION_STATE_LIVE_LOCATION = build_wa_resource_id_xpath_widget('FrameLayout', 'live_location_btn')
 SEND_LOCATION_STATE_CURRENT_LOCATION = build_wa_resource_id_xpath_widget('FrameLayout', 'send_current_location_btn')
+SEND_LOCATION_STATE_CURRENT_LOCATION_BUTTON = build_wa_resource_id_xpath('send_current_location_btn')
+SEND_LOCATION_STATE_LIVE_LOCATION = build_wa_resource_id_xpath_widget('FrameLayout', 'live_location_btn')
+SEND_LOCATION_STATE_LIVE_LOCATION_BUTTON = build_wa_resource_id_xpath('live_location_btn')
+SEND_LOCATION_LIVE_LOCATION_DIALOG = build_wa_resource_id_xpath_widget('LinearLayout', 'location_new_user_dialog_container')
+SEND_LOCATION_POPUP_CONTINUE = build_text_xpath_widget('Button', 'Continue')
+SEND_LOCATION_STATE_CAPTION = build_wa_resource_id_xpath('comment')
 
 CHAT_SETTINGS_STATE_CONTACT_NAME = (f'{build_wa_resource_id_xpath_widget('TextView', 'contact_title')} | '
                                     f'{build_wa_resource_id_xpath_widget('TextView', 'business_title')} | '
                                     f'{build_wa_resource_id_xpath_widget('TextView', 'group_title')}')
 CHAT_SETTINGS_STATE_NOTIFICATIONS = build_wa_resource_id_xpath_widget('LinearLayout', 'notifications_and_sounds_layout')
 CHAT_SETTINGS_STATE_MEDIA_VISIBILITY = build_wa_resource_id_xpath_widget('Button', 'media_visibility_layout')
+CHAT_SETTINGS_PARTICIPANT = build_wa_resource_id_text_xpath('name', '{participant}')
+CHAT_SETTINGS_REMOVE_PARTICIPANT = "//*[starts-with(@text, 'Remove')]"
+CHAT_SETTINGS_EXIT_GROUP_BUTTON = build_text_xpath_widget('Button', 'Exit group')
+CHAT_SETTINGS_EXIT_GROUP_LIST_ITEM = build_wa_resource_id_text_xpath('list_item_title', 'Exit group')
+CHAT_SETTINGS_STATE_DISAPPEARING_MESSAGES = '//*[@resource-id="com.whatsapp:id/list_item_title" and @text="Disappearing messages"]'
+RADIO_BUTTON_24_HOURS = build_text_xpath_widget('RadioButton', '24 hours')
+RADIO_BUTTON_OFF = build_text_xpath_widget('RadioButton', 'Off')
 
 MESSAGE_TEXT_BOX = build_wa_resource_id_xpath_widget('EditText', 'entry')
 MENTION_SUGGESTIONS = build_wa_resource_id_xpath_widget('ImageView', 'contact_photo')
@@ -86,6 +119,7 @@ CAMERA_BUTTON = build_content_desc_xpath_widget('Button', 'Camera')
 # Call state xpaths
 CALL_TAB_SEARCH_BUTTON = build_content_desc_xpath_widget('ImageButton', 'Search')
 ATTACH_BUTTON = build_wa_resource_id_xpath_widget('ImageButton', 'input_attach_button')
+ATTACH_BUTTON2 = build_wa_resource_id_xpath('input_attach_button')
 ATTACH_LOCATION_BUTTON = build_wa_resource_id_xpath_widget('Button', 'pickfiletype_location_holder')
 
 # Settings state xpaths
@@ -97,9 +131,15 @@ SEARCH_BAR = build_wa_resource_id_xpath_widget('EditText', 'search_view_edit_tex
 END_CALL_BUTTON = ('//*[@content-desc="Leave call" or '
                    '@resource-id="com.whatsapp:id/end_call_button" or '
                    '@resource-id="com.whatsapp:id/footer_end_call_btn"]')
+
 CALL_SCREEN_BACKGROUND = build_wa_resource_id_xpath_widget('RelativeLayout', 'call_screen')
 CALLS_TAB = build_wa_resource_id_text_xpath_widget('TextView', 'navigation_bar_item_small_label_view', 'Calls')
 UPDATES_TAB = build_wa_resource_id_text_xpath_widget('TextView', 'navigation_bar_item_small_label_view', 'Updates')
+
+SEND = build_wa_resource_id_xpath('send')
+OK_BUTTON = build_text_xpath_widget('Button', 'OK')
+STOP_BUTTON = build_content_desc_xpath_widget('Button', 'Stop')
+
 
 # Conversations State
 def conversation_row_for_subject(subject: str) -> str:
@@ -610,7 +650,7 @@ class WhatsApp(StateGraph):
         :param conversation: The chat conversation in which to send the location.
         """
         sleep(5)  # it takes some time to fix the location
-        self.driver.click('//*[@resource-id="com.whatsapp:id/send_current_location_btn"]')
+        self.driver.click(SEND_LOCATION_STATE_CURRENT_LOCATION_BUTTON)
 
     @action(send_location_state, end_state=chat_state)
     def send_live_location(self, conversation: str, caption=None):
@@ -619,13 +659,12 @@ class WhatsApp(StateGraph):
         :param conversation: The chat conversation in which to start the live location sharing.
         :param caption: Optional caption sent along with the live location
         """
-        self.driver.click('//*[@resource-id="com.whatsapp:id/live_location_btn"]')
-        dialog = f'//android.widget.LinearLayout[@resource-id="com.whatsapp:id/location_new_user_dialog_container"]'
-        if self.driver.is_present(dialog):
-            self.driver.click('//android.widget.Button[@text="Continue"]')
+        self.driver.click(SEND_LOCATION_STATE_LIVE_LOCATION_BUTTON)
+        if self.driver.is_present(SEND_LOCATION_LIVE_LOCATION_DIALOG):
+            self.driver.click(SEND_LOCATION_POPUP_CONTINUE)
         if caption is not None:
-            self.driver.send_keys('//*[@resource-id="com.whatsapp:id/comment"]', caption)
-        self.driver.click('//*[@resource-id="com.whatsapp:id/send"]')
+            self.driver.send_keys(SEND_LOCATION_STATE_CAPTION, caption)
+        self.driver.click(SEND)
 
     @action(chat_state)
     def stop_live_location(self, conversation: str):
@@ -633,11 +672,10 @@ class WhatsApp(StateGraph):
         Stops the current live location sharing.
         :param conversation: The chat conversation in which to stop the live location sharing.
         """
-        self.driver.swipe_to_click_element('//*[@text="Stop sharing"]')
+        self.driver.swipe_to_click_element(CHAT_STATE_STOP_SHARING)
 
-        popup_button_xpath = '//android.widget.Button[@content-desc="Stop"]'
-        if self.driver.is_present(popup_button_xpath):
-            self.driver.click(popup_button_xpath)
+        if self.driver.is_present(STOP_BUTTON):
+            self.driver.click(STOP_BUTTON)
 
     @action(chat_state)
     def send_contact(self, conversation: str, contact_name: str):
@@ -646,11 +684,11 @@ class WhatsApp(StateGraph):
         :param contact_name: the name of the contact to send.
         :param conversation: The chat conversation in which to send the contact.
         """
-        self.driver.click('//*[@resource-id="com.whatsapp:id/input_attach_button"]')
-        self.driver.click('//*[@resource-id="com.whatsapp:id/pickfiletype_contact_holder"]')
-        self.driver.swipe_to_click_element(f'//android.widget.TextView[@resource-id="com.whatsapp:id/name" and @text="{contact_name}"]')
-        self.driver.click('//*[@resource-id="com.whatsapp:id/next_btn"]')
-        self.driver.click('//*[@resource-id="com.whatsapp:id/send_btn"]')
+        self.driver.click(ATTACH_BUTTON2)
+        self.driver.click(CHAT_STATE_ATTACH_CONTACT_BUTTON)
+        self.driver.swipe_to_click_element(CHAT_STATE_CONTACT_NAME.format(contact_name=contact_name))
+        self.driver.click(CHAT_STATE_ATTACH_NEXT_BUTTON)
+        self.driver.click(CHAT_STATE_ATTACH_SEND_BUTTON)
 
     @action(chat_settings_state)
     def activate_disappearing_messages(self, conversation: str):
@@ -659,8 +697,8 @@ class WhatsApp(StateGraph):
         Messages will now auto-delete after 24h.
         :param conversation: The conversation for which disappearing messages should be activated.
         """
-        self.driver.swipe_to_click_element('//*[@resource-id="com.whatsapp:id/list_item_title" and @text="Disappearing messages"]')
-        self.driver.click('//android.widget.RadioButton[@text="24 hours"]')
+        self.driver.swipe_to_click_element(CHAT_SETTINGS_STATE_DISAPPEARING_MESSAGES)
+        self.driver.click(RADIO_BUTTON_24_HOURS)
         self.driver.back()
 
     @action(chat_settings_state)
@@ -669,8 +707,8 @@ class WhatsApp(StateGraph):
         Disables disappearing messages (auto delete) in the current or a given chat.
         :param conversation: The conversation for which disappearing messages should be activated.
         """
-        self.driver.swipe_to_click_element('//*[@resource-id="com.whatsapp:id/list_item_title" and @text="Disappearing messages"]')
-        self.driver.click('//android.widget.RadioButton[@text="Off"]')
+        self.driver.swipe_to_click_element(CHAT_SETTINGS_STATE_DISAPPEARING_MESSAGES)
+        self.driver.click(RADIO_BUTTON_OFF)
         self.driver.back()
 
     @action(calls_state, end_state=voice_call_state)
@@ -704,11 +742,10 @@ class WhatsApp(StateGraph):
         self._end_call()
 
     def _end_call(self):
-        end_call_button = f'//*[@content-desc="Leave call" or @resource-id="com.whatsapp:id/end_call_button" or @resource-id="com.whatsapp:id/footer_end_call_btn"]'
-        if not self.driver.is_present(end_call_button, implicit_wait=1):
+        if not self.driver.is_present(END_CALL_BUTTON, implicit_wait=1):
             # tap screen to make call button visible
             self.driver.click(CALL_SCREEN_BACKGROUND)
-        self.driver.click(end_call_button)
+        self.driver.click(END_CALL_BUTTON)
 
     # This method is not an @action, since it is not tied to a state.
     def answer_call(self):
@@ -717,7 +754,7 @@ class WhatsApp(StateGraph):
         """
         self.driver.open_notifications()
         sleep(2)
-        self.driver.click("//android.widget.Button[@content-desc='Answer' or @content-desc='Video']")
+        self.driver.click(RECEIVE_CALL_ANSWER_BUTTON)
 
     # This method is not an @action, since it is not tied to a state.
     def decline_call(self):
@@ -726,7 +763,7 @@ class WhatsApp(StateGraph):
         """
         self.driver.open_notifications()
         sleep(2)
-        self.driver.click("//android.widget.Button[@content-desc='Decline']")
+        self.driver.click(RECEIVE_CALL_DECLINE_BUTTON)
 
     @action(chat_settings_state)
     def leave_group(self, conversation: str):
@@ -734,8 +771,8 @@ class WhatsApp(StateGraph):
         This method will leave the given group. It will not delete that group.
         :param conversation: Name of the group we want to leave.
         """
-        self.driver.swipe_to_click_element('//*[@resource-id="com.whatsapp:id/list_item_title" and @text="Exit group"]')
-        self.driver.click('//android.widget.Button[@text="Exit group"]')
+        self.driver.swipe_to_click_element(CHAT_SETTINGS_EXIT_GROUP_LIST_ITEM)
+        self.driver.click(CHAT_SETTINGS_EXIT_GROUP_BUTTON)
 
     @action(chat_settings_state)
     def remove_participant_from_group(self, conversation: str, participant):
@@ -745,9 +782,9 @@ class WhatsApp(StateGraph):
         :param conversation: The group
         :param participant: The participant to remove
         """
-        self.driver.swipe_to_click_element(f'//*[@resource-id="com.whatsapp:id/name" and @text="{participant}"]')
-        self.driver.click("//*[starts-with(@text, 'Remove')]")
-        self.driver.click("//*[@class='android.widget.Button' and @text='OK']")
+        self.driver.swipe_to_click_element(CHAT_SETTINGS_PARTICIPANT.format(participant=participant))
+        self.driver.click(CHAT_SETTINGS_REMOVE_PARTICIPANT)
+        self.driver.click(OK_BUTTON)
 
     @action(chat_state)
     def forward_message(self, conversation: str, message_contains, to_chat):
@@ -759,47 +796,44 @@ class WhatsApp(StateGraph):
         of the message is needed, but be sure the given text is enough to match your intended message uniquely.
         :param to_chat: The chat to which the message has to be forwarded.
         """
-        self.driver.long_press_element(f"//*[@resource-id='com.whatsapp:id/conversation_text_row']//*[contains(@text,'{message_contains}')]")
-        self.driver.click(f"//*[@resource-id='com.whatsapp:id/action_mode_bar']//*[@content-desc='Forward']")
-        self.driver.click(f"//*[@resource-id='com.whatsapp:id/contact_list']//*[@text='{to_chat}']")
-        self.driver.click('//*[@resource-id="com.whatsapp:id/send"]')
+        self.driver.long_press_element(CHAT_STATE_MESSAGE_BY_CONTENT.format(message_contains=message_contains))
+        self.driver.click(CHAT_STATE_FORWARD_MESSAGE)
+        self.driver.click(CHAT_STATE_FORWARD_CONTACT_BY_NAME.format(to_chat=to_chat))
+        self.driver.click(SEND)
 
     @action(chat_state)
     def send_media(self, conversation: str, directory_name, index=1, caption=None, view_once=False):
         # Go to gallery
-        self.driver.click(f'//*[@resource-id="{WHATSAPP_PACKAGE}:id/input_attach_button"]')
-        self.driver.click(f'//*[@resource-id="{WHATSAPP_PACKAGE}:id/pickfiletype_gallery_holder"]')
-
-        self.driver.click('//android.widget.ImageButton[@content-desc="Folders"]')
+        self.driver.click(ATTACH_BUTTON2)
+        self.driver.click(CHAT_STATE_ATTACH_GALLERY_BUTTON)
+        self.driver.click(CHAT_STATE_GALLERY_FOLDERS_BUTTON)
         self._find_media_in_folder(directory_name, index)
         sleep(0.5)
-        self.driver.click('//androidx.compose.ui.platform.ComposeView/android.view.View/android.view.View/android.view.View[5]/android.view.View[3]/android.widget.Button')
+        self.driver.click(CHAT_STATE_FIRST_MEDIA_IN_FOLDER)
 
         if caption:
             sleep(0.5)
-            caption_xpath = f'//*[@resource-id="{WHATSAPP_PACKAGE}:id/caption"]'
-            self.driver.send_keys(caption_xpath, caption)
+            self.driver.send_keys(CHAT_STATE_CAPTION_TEXT_BOX, caption)
             # Clicking the text box after sending keys is required for Whatsapp to notice text has been inserted.
-            self.driver.click(caption_xpath)
+            self.driver.click(CHAT_STATE_CAPTION_TEXT_BOX)
             self.driver.back()
 
         if view_once:
-            self.driver.click(f'//*[@resource-id="{WHATSAPP_PACKAGE}:id/view_once_toggle"]')
-            popup_button = f'//android.widget.Button[@resource-id="{WHATSAPP_PACKAGE}:id/vo_sp_bottom_sheet_ok_button"]'
-            if self.driver.is_present(popup_button):
-                self.driver.click(popup_button)
+            self.driver.click(CHAT_STATE_SEND_MEDIA_VIEW_ONCE)
+            if self.driver.is_present(CHAT_STATE_POPUP_BUTTON_OK):
+                self.driver.click(CHAT_STATE_POPUP_BUTTON_OK)
         sleep(1)
-        self.driver.click(f'//*[@resource-id="{WHATSAPP_PACKAGE}:id/send"]')
+        self.driver.click(SEND)
 
     def _find_media_in_folder(self, directory_name, index):
         try:
-            self.driver.swipe_to_click_element(xpath=f'//android.widget.TextView[@text="{directory_name}"]')
+            self.driver.swipe_to_click_element(CHAT_STATE_DIRECTORY_NAME.format(directory_name=directory_name))
         except PumaClickException:
             raise PumaClickException(f'The directory {directory_name} could not be found.')
-        self.driver.click(f'//android.widget.TextView[@text="{directory_name}"]')
+        self.driver.click(CHAT_STATE_DIRECTORY_NAME.format(directory_name=directory_name))
         sleep(0.5)
         try:
-            self.driver.click(f'//androidx.compose.ui.platform.ComposeView/android.view.View/android.view.View/android.view.View[4]/android.view.View[{index}]/android.view.View[2]/android.view.View')
+            self.driver.click(CHAT_STATE_DIRECTORY_MEDIA_BY_INDEX.format(index=index))
         except PumaClickException:
             raise PumaClickException(
                 f'The media at index {index} could not be found. The index is likely too large or negative.')
