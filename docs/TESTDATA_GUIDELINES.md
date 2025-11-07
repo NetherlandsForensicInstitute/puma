@@ -88,9 +88,9 @@ If you use Puma, your script will look something like this:
 ```python
 alice = WhatsappActions('emulator-5554')
 bob = WhatsappActions('emulator-5556')
-alice.send_message(f'1. This is the first message, sent by Alice to Bob, sent at {current_time()}', chat='Bob')
+alice.send_message(, None, f'1. This is the first message, sent by Alice to Bob, sent at {current_time()}'
 sleep(60)
-bob.send_message(f'2. This message is sent by Bob to Alice, sent at {current_time()}', chat='Alice')
+bob.send_message(, None, f'2. This message is sent by Bob to Alice, sent at {current_time()}'
 ```
 
 If you create the test data manually, your script won't be Python code but will look similar:

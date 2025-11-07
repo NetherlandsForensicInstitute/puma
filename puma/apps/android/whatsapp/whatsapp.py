@@ -22,7 +22,7 @@ def go_to_chat(driver: PumaDriver, conversation: str):
     :param driver: The PumaDriver instance used to interact with the application.
     :param conversation: The name of the conversation to navigate to.
     """
-    logger.info(f'Clicking on conversation {conversation} with driver {driver}')
+    driver.gtl_logger.info(f'Clicking on conversation {conversation} with driver {driver}')
     driver.get_elements(CONVERSATIONS_ROW_BY_SUBJECT.format(conversation=conversation))[-1].click()
 
 
@@ -251,7 +251,7 @@ class WhatsApp(StateGraph):
     def __init__(self, device_udid: str, app_package: str):
         StateGraph.__init__(self, device_udid, app_package)
 
-    def _handle_mention(self, message):
+    def _handle_mention(self, message:str):
         """
         Make sure to convert a @name to an actual mention. Only one mention is allowed.
         :param message: The message containing the mention.
@@ -287,29 +287,26 @@ class WhatsApp(StateGraph):
             sleep(10)
         return message_status_el
 
-    def send_message_in_current_conversation(self, message_text, wait_until_sent=False):
+    @action(chat_state)
+    def send_message(self, message_text, conversation: str=None, wait_until_sent=False):
+        """
+        Send a message in the current chat. If the message contains a mention, this is handled correctly.
+        :param message_text: The text that the message contains.
+        :param conversation: The chat conversation in which to send this message. Optional: not needed when already in a conversation
+        :param wait_until_sent: Exit this function only when the message has been sent.
+        """
         self.driver.click(TEXT_ENTRY)
         self._handle_mention(message_text) \
             if "@" in message_text \
             else self.driver.send_keys(TEXT_ENTRY, message_text)
 
-        #Allow time for the link preview to load
+        # Allow time for the link preview to load
         if 'http' in message_text:
             sleep(2)
         self.driver.click(SEND_CONTENT)
         # TODO convert to post action validation
         if wait_until_sent:
             _ = self._ensure_message_sent(message_text)
-
-    @action(chat_state)
-    def send_message(self, conversation: str, message_text, wait_until_sent=False):
-        """
-        Send a message in the current chat. If the message contains a mention, this is handled correctly.
-        :param wait_until_sent: Exit this function only when the message has been sent.
-        :param conversation: The chat conversation in which to send this message.
-        :param message_text: The text that the message contains.
-        """
-        self.send_message_in_current_conversation(message_text, wait_until_sent)
 
     @action(profile_state)
     def change_profile_picture(self, photo_dir_name, index=1):
@@ -352,7 +349,7 @@ class WhatsApp(StateGraph):
         """
         self.driver.click(f'//*[@resource-id="{WHATSAPP_PACKAGE}:id/contactpicker_text_container"]//*[@text="{conversation}"]')
         self.driver.click(build_content_desc_xpath_widget('Button', 'Message'))
-        self.send_message_in_current_conversation(first_message)
+        self.send_message(first_message)
 
     def open_more_options(self):
         """
