@@ -288,7 +288,7 @@ class WhatsApp(StateGraph):
         return message_status_el
 
     @action(chat_state)
-    def send_message(self, message_text, conversation: str=None, wait_until_sent=False):
+    def send_message(self, message_text, conversation: str = None, wait_until_sent=False):
         """
         Send a message in the current chat. If the message contains a mention, this is handled correctly.
         :param message_text: The text that the message contains.
@@ -309,7 +309,7 @@ class WhatsApp(StateGraph):
             _ = self._ensure_message_sent(message_text)
 
     @action(profile_state)
-    def change_profile_picture(self, photo_dir_name, index=1):
+    def change_profile_picture(self, photo_dir_name: str, index: int = 1):
         self.driver.click(PROFILE_INFO_EDIT_BUTTON)
         self.driver.click(PROFILE_GALLERY)
         self.driver.click(PROFILE_FOLDERS)
@@ -341,7 +341,7 @@ class WhatsApp(StateGraph):
         self.driver.back()
 
     @action(new_chat_state)
-    def create_new_chat(self, conversation, first_message):
+    def create_new_chat(self, conversation: str, first_message: str):
         """
         Start a new 1-on-1 conversation with a contact and send a message.
         :param conversation: Contact to start the conversation with.
@@ -385,7 +385,7 @@ class WhatsApp(StateGraph):
         :param message_text: literal message text of the message to remove. The first match will be removed in case
         there are multiple with the same text.
         """
-        self.driver.long_press_element(f"//*[@resource-id='{WHATSAPP_PACKAGE}:id/conversation_text_row']//*[@text='{message_text}']")
+        self.driver.long_click_element(f"//*[@resource-id='{WHATSAPP_PACKAGE}:id/conversation_text_row']//*[@text='{message_text}']")
         self.driver.click(CHAT_DELETE_BUTTON)
         self.driver.click(CHAT_DELETE_FOR_EVERYONE)
 
@@ -416,7 +416,7 @@ class WhatsApp(StateGraph):
         Archives a given conversation.
         :param conversation: The conversation to archive.
         """
-        self.driver.long_press_element(f'//*[contains(@resource-id,"{WHATSAPP_PACKAGE}:id/conversations_row_contact_name") and @text="{conversation}"]')
+        self.driver.long_click_element(f'//*[contains(@resource-id,"{WHATSAPP_PACKAGE}:id/conversations_row_contact_name") and @text="{conversation}"]')
         self.driver.click(CONVERSATIONS_MENUITEM_ARCHIVE)
         # Wait until the archive popup disappeared
         archived_popup_present = True
@@ -469,7 +469,7 @@ class WhatsApp(StateGraph):
         """
         message_xpath = f'//android.widget.TextView[@resource-id="{WHATSAPP_PACKAGE}:id/message_text" and contains(@text, "{message_to_reply_to}")]'
         self.driver.swipe_to_find_element(message_xpath)
-        self.driver.long_press_element(message_xpath)
+        self.driver.long_click_element(message_xpath)
         self.driver.click(CHAT_REPLY)
         self.driver.send_keys(TEXT_ENTRY, reply_text)
         self.driver.click(SEND)
@@ -504,7 +504,7 @@ class WhatsApp(StateGraph):
         :param conversation: The chat conversation in which to send this voice recording.
         :param duration: the duration in of the voice message to send in milliseconds.
         """
-        self.driver.long_press_element(CHAT_VOICE_NOTE_BUTTON, duration=duration)
+        self.driver.long_click_element(CHAT_VOICE_NOTE_BUTTON, duration=duration)
 
     @action(send_location_state, end_state=chat_state)
     def send_current_location(self, conversation: str):
@@ -659,7 +659,7 @@ class WhatsApp(StateGraph):
         of the message is needed, but be sure the given text is enough to match your intended message uniquely.
         :param to_chat: The chat to which the message has to be forwarded.
         """
-        self.driver.long_press_element(CHAT_MESSAGE_BY_CONTENT.format(message_contains=message_contains))
+        self.driver.long_click_element(CHAT_MESSAGE_BY_CONTENT.format(message_contains=message_contains))
         self.driver.click(CHAT_FORWARD_MESSAGE)
         self.driver.click(CHAT_FORWARD_CONTACT_BY_NAME.format(to_chat=to_chat))
         self.driver.click(SEND)
