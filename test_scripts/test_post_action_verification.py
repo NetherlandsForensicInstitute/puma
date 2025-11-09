@@ -10,7 +10,8 @@ from puma.utils import gtl_logging
 # TODO-CC:
 #   * require driver + logger as parameters of verification function?
 #   * pass State to post_action function (either static method first arg, or instance method 'self')
-#   * changing states in post_action currently manual, also use state annotations? (e.g. @post_action(state))
+#   * changing states in post_action currently manual, also use state annotations? (e.g. @post_action(state))\
+#   * DOCUMENT THAT API IS IN FLUX?
 
 class MockChatState(SimpleState, ContextualState):
 
@@ -49,111 +50,142 @@ class MockApplication(StateGraph):
         self.messages.append(message)
 
 
-class TestPostAction(unittest.TestCase):
+class TestVerifyWith(unittest.TestCase):
 
-    def test_post_action_callable_is_called(self):
+    def setUp(self):
+        # used to capture values inside passed 'verify_with' functions
+        self.captures = []
+
+    def test_verify_with_callable_is_called(self):
+        # test if the verify_with is called by just capturing a boolean
+        def should_be_called():
+            self.captures.append(True)
+            return True
+
+        application = MockApplication()
+        application.change_username(new_name='Capture this', verify_with=should_be_called)
+
+        self.assertEqual(self.captures[0], True)
+
+    def test_verify_with_not_callable_raises_exception(self):
         application = MockApplication()
 
-        captures = []
-        # test if the post_action is called by capturing the passed argument
-        application.change_username(new_name='Capture this', post_action=
-        lambda new_name: captures.append(new_name))
+        with self.assertRaisesRegex(TypeError, "'verify_with' must be a callable"):
+            application.change_username(new_name='This is illegal', verify_with='not a callable')
 
-        self.assertEqual(captures[0], 'Capture this')
+    def test_driver_is_passed_to_verify_with(self):
+        # test if the verify_with receives the driver by capturing it inside the function
+        def should_receive_driver(driver):
+            self.captures.append(driver)
+            return True
 
-    def test_post_action_not_callable_raises_exception(self):
-        application = MockApplication()
-
-        with self.assertRaisesRegex(TypeError, 'post_action must be a callable'):
-            application.change_username(new_name='This is illegal', post_action='not a callable')
-
-    def test_driver_is_passed_to_post_action(self):
         driver_to_pass = Mock(name='passed_mock_driver')
         application = MockApplication(driver_to_pass)
+        application.change_username(new_name='ignore', verify_with=should_receive_driver)
 
-        captures = []
-        # test if the post_action receives the driver by capturing it inside the post_action lambda
-        application.change_username(new_name='ignore', post_action=lambda driver: captures.append(driver))
+        self.assertIs(self.captures[0], driver_to_pass)
 
-        self.assertIs(captures[0], driver_to_pass)
-        self.assertRegex(str(captures[0]), 'passed_mock_driver')
+    def test_driver_and_context_are_passed_to_verify_with(self):
+        # test if the verify_with receives both by capturing them inside the function
+        def should_receive_both(driver, conversation):
+            self.captures.append(driver)
+            self.captures.append(conversation)
+            return True
 
-    def test_driver_and_context_are_passed_to_post_action(self):
         driver_to_pass = Mock(name='passed_mock_driver')
         application = MockApplication(driver_to_pass)
+        application.send_message(conversation='Bob', message='ignore', verify_with=should_receive_both)
 
-        captures = []
-        # test if the post_action receives both by capturing them inside the post_action lambda
-        application.send_message(conversation='Bob', message='ignore', post_action=
-            lambda driver, conversation: (captures.append(conversation), captures.append(driver)))
+        self.assertIs(self.captures[0], driver_to_pass)
+        self.assertEqual(self.captures[1], 'Bob')
 
-        self.assertEqual(captures[0], 'Bob')
-        self.assertIs(captures[1], driver_to_pass)
-        self.assertRegex(str(captures[1]), 'passed_mock_driver')
+    def test_driver_and_context_and_argument_are_passed_to_verify_with(self):
+        # test if the verify_with receives all by capturing them inside the function
+        def should_receive_all(driver, conversation, message):
+            self.captures.append(driver)
+            self.captures.append(conversation)
+            self.captures.append(message)
+            return True
 
-    def test_driver_and_context_and_argument_are_passed_to_post_action(self):
         driver_to_pass = Mock(name='passed_mock_driver')
         application = MockApplication(driver_to_pass)
+        application.send_message(conversation='Bob', message='Hello', verify_with=should_receive_all)
 
-        captures = []
-        # test if the post_action receives all by capturing them inside the post_action lambda
-        application.send_message(conversation='Bob', message='Hello', post_action=
-            lambda driver, conversation, message: (captures.append(conversation),
-                                                   captures.append(driver),
-                                                   captures.append(message)))
+        # our verify_with should have received the conversation
+        self.assertIs(self.captures[0], driver_to_pass)
+        self.assertEqual(self.captures[1], 'Bob')
+        self.assertEqual(self.captures[2], 'Hello')
 
-        # our post_action should have received the conversation
-        self.assertEqual(captures[0], 'Bob')
-        self.assertIs(captures[1], driver_to_pass)
-        self.assertRegex(str(captures[1]), 'passed_mock_driver')
-        self.assertEqual(captures[2], 'Hello')
+    def test_verify_with_logs_and_succeeds(self):
+        def log_warning_and_return_true(gtl_logger):
+            gtl_logger.info('post verification succeeded')
+            return True
 
-    def test_post_action_fail_logs_and_continues(self):
+        mock_logger = gtl_logging.create_gtl_logger('mock_udid')
+
+        with self.assertLogs(mock_logger, level='INFO') as logs:
+            application = MockApplication(gtl_logger=mock_logger)
+            application.change_username(new_name='MyName', verify_with=log_warning_and_return_true)
+
+            # assert we called the gtl_logger we passed to our application, and it logged the expected message
+            self.assertIn('INFO:mock_udid:post verification succeeded', logs.output)
+            # assert the action happened, i.e. our username has changed
+            self.assertEqual(application.username, 'MyName')
+
+    def test_verify_with_logs_and_fails(self):
+        def log_warning_and_return_false(gtl_logger):
+            gtl_logger.warn('post verification failed')
+            return False
+
         mock_logger = gtl_logging.create_gtl_logger('mock_udid')
 
         with self.assertLogs(mock_logger, level='WARN') as logs:
             application = MockApplication(gtl_logger=mock_logger)
-            application.change_username(new_name='MyName', post_action=
-                lambda gtl_logger, new_name: gtl_logger.warn('post verification failed'))
+            application.change_username(new_name='MyName', verify_with=log_warning_and_return_false)
 
             # assert we called the gtl_logger we passed to our application, and it logged the expected message
-            self.assertEqual(logs.output, ['WARNING:mock_udid:post verification failed'])
+            self.assertIn('WARNING:mock_udid:post verification failed', logs.output)
             # assert the action still happened, i.e. our username has changed
             self.assertEqual(application.username, 'MyName')
 
-    def test_post_action_changes_state_and_does_not_return_throws_exception(self):
-        application = MockApplication()
-
-        with self.assertRaisesRegex(Exception, 'post_action did not return to original state'):
-            application.change_username(new_name='ignore', post_action=
-                lambda: application.go_to_state(application.main_state))
-
-    def test_post_action_can_change_states_but_return_to_simple_state_before(self):
-        application = MockApplication()
-
+    def test_verify_with_can_change_states_but_framework_returns_to_simple_state_before(self):
+        # inside we move away from the settings_state simple state
         def change_states_and_return():
             application.go_to_state(application.main_state)
-            application.go_to_state(application.settings_state)
+            return True
 
-        application.change_username(new_name='ignore', post_action=change_states_and_return)
+        application = MockApplication()
+        application.change_username(new_name='ignore', verify_with=change_states_and_return)
 
         self.assertIs(application.current_state, application.settings_state)
 
-    def test_post_action_can_change_states_but_return_to_contextual_state_before(self):
-        application = MockApplication()
-
+    def test_verify_with_can_change_states_but_framework_returns_to_contextual_state_before(self):
+        # inside we move away from the chat contextual state
         def change_states_and_return():
             application.go_to_state(application.main_state)
-            application.go_to_state(application.chat_state)
+            return True
 
-        application.send_message(conversation='ignore', message='ignore', post_action=change_states_and_return)
+        application = MockApplication()
+        application.send_message(conversation='ignore', message='ignore', verify_with=change_states_and_return)
 
         self.assertIs(application.current_state, application.chat_state)
 
-    def test_action_decorated_function_contains_post_action_parameter_throws_exception(self):
+    def test_verify_with_can_change_states_and_manually_returns_to_contextual_state_before(self):
+        # inside we move away and back to the chat contextual state
+        def change_states_and_return():
+            application.go_to_state(application.main_state)
+            application.go_to_state(application.chat_state)
+            return True
+
+        application = MockApplication()
+        application.send_message(conversation='ignore', message='ignore', verify_with=change_states_and_return)
+
+        self.assertIs(application.current_state, application.chat_state)
+
+    def test_action_decorated_function_contains_parameter_named_verify_with_throws_exception(self):
         @action(MockApplication.settings_state)
-        def this_should_throw_exception(post_action):
+        def this_should_throw_exception(verify_with):
             pass
 
-        with self.assertRaisesRegex(Exception, "can't contain a parameter named 'post_action'"):
+        with self.assertRaisesRegex(Exception, "can't contain a parameter named 'verify_with'"):
             this_should_throw_exception()
