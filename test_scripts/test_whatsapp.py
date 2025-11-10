@@ -72,20 +72,20 @@ class TestWhatsapp(unittest.TestCase):
 
     def test_send_and_delete_message_for_everyone(self):
         self.ensure_bob_conversation_present()
-        self.alice.send_message(self.contact_bob, "message to delete")
+        self.alice.send_message("message to delete", conversation=self.contact_bob)
         self.alice.delete_message_for_everyone(self.contact_bob, "message to delete")
 
     def test_forward_message(self):
         self.ensure_bob_conversation_present()
         message_to_forward = "message to forward"
-        self.alice.send_message(self.contact_bob, message_to_forward, True)
+        self.alice.send_message(message_to_forward, conversation=self.contact_bob, wait_until_sent=True)
         self.alice.forward_message(self.contact_bob, message_to_forward, self.contact_bob)
 
     def test_reply_to_message(self):
         self.ensure_bob_conversation_present()
         message = "message to reply to"
-        self.alice.send_message(self.contact_bob, message, True)
-        self.alice.reply_to_message(self.contact_bob, message, "reply")
+        self.alice.send_message(message, conversation=self.contact_bob, wait_until_sent=True)
+        self.alice.reply_to_message(message, "reply")
 
     def test_send_media(self):
         self.alice.send_media(self.contact_bob, "Screenshots", caption="caption", view_once=False)
@@ -101,7 +101,7 @@ class TestWhatsapp(unittest.TestCase):
 
     def test_send_contact(self):
         self.ensure_bob_conversation_present()
-        self.alice.send_contact(self.contact_bob, self.contact_bob)
+        self.alice.send_contact(self.contact_bob, conversation=self.contact_bob)
 
     def test_send_current_location(self):
         self.ensure_bob_conversation_present()
@@ -109,12 +109,12 @@ class TestWhatsapp(unittest.TestCase):
 
     def test_send_and_stop_live_location(self):
         self.ensure_bob_conversation_present()
-        self.alice.send_live_location(self.contact_bob, "caption")
+        self.alice.send_live_location(conversation=self.contact_bob, caption="caption")
         self.alice.stop_live_location(self.contact_bob)
 
     def test_send_voice_recording(self):
         self.ensure_bob_conversation_present()
-        self.alice.send_voice_recording(self.contact_bob)
+        self.alice.send_voice_recording(conversation=self.contact_bob)
 
     # Group related tests
     def test_set_group_description(self):

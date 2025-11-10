@@ -22,7 +22,7 @@ def go_to_chat(driver: PumaDriver, conversation: str):
     :param driver: The PumaDriver instance used to interact with the application.
     :param conversation: The name of the conversation to navigate to.
     """
-    logger.info(f'Clicking on conversation {conversation} with driver {driver}')
+    driver.gtl_logger.info(f'Clicking on conversation {conversation} with driver {driver}')
     driver.get_elements(CONVERSATIONS_ROW_BY_SUBJECT.format(conversation=conversation))[-1].click()
 
 
@@ -251,7 +251,7 @@ class WhatsApp(StateGraph):
     def __init__(self, device_udid: str, app_package: str):
         StateGraph.__init__(self, device_udid, app_package)
 
-    def _handle_mention(self, message):
+    def _handle_mention(self, message:str):
         """
         Make sure to convert a @name to an actual mention. Only one mention is allowed.
         :param message: The message containing the mention.
@@ -287,13 +287,20 @@ class WhatsApp(StateGraph):
             sleep(10)
         return message_status_el
 
-    def send_message_in_current_conversation(self, message_text, wait_until_sent=False):
+    @action(chat_state)
+    def send_message(self, message_text, conversation: str = None, wait_until_sent: bool = False):
+        """
+        Send a message in the current chat. If the message contains a mention, this is handled correctly.
+        :param message_text: The text that the message contains.
+        :param conversation: The chat conversation in which to send this message. Optional: not needed when already in a conversation
+        :param wait_until_sent: Exit this function only when the message has been sent.
+        """
         self.driver.click(TEXT_ENTRY)
         self._handle_mention(message_text) \
             if "@" in message_text \
             else self.driver.send_keys(TEXT_ENTRY, message_text)
 
-        #Allow time for the link preview to load
+        # Allow time for the link preview to load
         if 'http' in message_text:
             sleep(2)
         self.driver.click(SEND_CONTENT)
@@ -301,18 +308,8 @@ class WhatsApp(StateGraph):
         if wait_until_sent:
             _ = self._ensure_message_sent(message_text)
 
-    @action(chat_state)
-    def send_message(self, conversation: str, message_text, wait_until_sent=False):
-        """
-        Send a message in the current chat. If the message contains a mention, this is handled correctly.
-        :param wait_until_sent: Exit this function only when the message has been sent.
-        :param conversation: The chat conversation in which to send this message.
-        :param message_text: The text that the message contains.
-        """
-        self.send_message_in_current_conversation(message_text, wait_until_sent)
-
     @action(profile_state)
-    def change_profile_picture(self, photo_dir_name, index=1):
+    def change_profile_picture(self, photo_dir_name: str, index: int = 1):
         self.driver.click(PROFILE_INFO_EDIT_BUTTON)
         self.driver.click(PROFILE_GALLERY)
         self.driver.click(PROFILE_FOLDERS)
@@ -344,7 +341,7 @@ class WhatsApp(StateGraph):
         self.driver.back()
 
     @action(new_chat_state)
-    def create_new_chat(self, conversation, first_message):
+    def create_new_chat(self, conversation: str, first_message: str):
         """
         Start a new 1-on-1 conversation with a contact and send a message.
         :param conversation: Contact to start the conversation with.
@@ -352,7 +349,7 @@ class WhatsApp(StateGraph):
         """
         self.driver.click(f'//*[@resource-id="{WHATSAPP_PACKAGE}:id/contactpicker_text_container"]//*[@text="{conversation}"]')
         self.driver.click(build_content_desc_xpath_widget('Button', 'Message'))
-        self.send_message_in_current_conversation(first_message)
+        self.send_message(first_message)
 
     def open_more_options(self):
         """
@@ -388,7 +385,7 @@ class WhatsApp(StateGraph):
         :param message_text: literal message text of the message to remove. The first match will be removed in case
         there are multiple with the same text.
         """
-        self.driver.long_press_element(f"//*[@resource-id='{WHATSAPP_PACKAGE}:id/conversation_text_row']//*[@text='{message_text}']")
+        self.driver.long_click_element(f"//*[@resource-id='{WHATSAPP_PACKAGE}:id/conversation_text_row']//*[@text='{message_text}']")
         self.driver.click(CHAT_DELETE_BUTTON)
         self.driver.click(CHAT_DELETE_FOR_EVERYONE)
 
@@ -419,7 +416,7 @@ class WhatsApp(StateGraph):
         Archives a given conversation.
         :param conversation: The conversation to archive.
         """
-        self.driver.long_press_element(f'//*[contains(@resource-id,"{WHATSAPP_PACKAGE}:id/conversations_row_contact_name") and @text="{conversation}"]')
+        self.driver.long_click_element(f'//*[contains(@resource-id,"{WHATSAPP_PACKAGE}:id/conversations_row_contact_name") and @text="{conversation}"]')
         self.driver.click(CONVERSATIONS_MENUITEM_ARCHIVE)
         # Wait until the archive popup disappeared
         archived_popup_present = True
@@ -463,7 +460,7 @@ class WhatsApp(StateGraph):
         self.driver.click(CHAT_SETTINGS_CONTAINS_DELETE_GROUP)
 
     @action(chat_state)
-    def reply_to_message(self, conversation: str, message_to_reply_to: str, reply_text: str):
+    def reply_to_message(self, message_to_reply_to: str, reply_text: str, conversation: str=None):
         """
         Reply to a message.
         :param conversation: The chat conversation in which to send this message.
@@ -472,7 +469,7 @@ class WhatsApp(StateGraph):
         """
         message_xpath = f'//android.widget.TextView[@resource-id="{WHATSAPP_PACKAGE}:id/message_text" and contains(@text, "{message_to_reply_to}")]'
         self.driver.swipe_to_find_element(message_xpath)
-        self.driver.long_press_element(message_xpath)
+        self.driver.long_click_element(message_xpath)
         self.driver.click(CHAT_REPLY)
         self.driver.send_keys(TEXT_ENTRY, reply_text)
         self.driver.click(SEND)
@@ -490,7 +487,7 @@ class WhatsApp(StateGraph):
         self.driver.click(SEND)
 
     @action(chat_state)
-    def send_sticker(self, conversation: str):
+    def send_sticker(self, conversation: str=None):
         """
         Send the first sticker in the sticker menu.
         :param conversation: The chat conversation in which to send this sticker.
@@ -501,16 +498,16 @@ class WhatsApp(StateGraph):
         self.driver.click(CHAT_STICKER)
 
     @action(chat_state)
-    def send_voice_recording(self, conversation: str, duration: int = 2000):
+    def send_voice_recording(self, duration: int = 2, conversation: str = None):
         """
         Sends a voice message in the specified conversation.
         :param conversation: The chat conversation in which to send this voice recording.
-        :param duration: the duration in of the voice message to send in milliseconds.
+        :param duration: the duration in of the voice message to send in seconds.
         """
-        self.driver.long_press_element(CHAT_VOICE_NOTE_BUTTON, duration=duration)
+        self.driver.long_click_element(CHAT_VOICE_NOTE_BUTTON, duration=duration)
 
     @action(send_location_state, end_state=chat_state)
-    def send_current_location(self, conversation: str):
+    def send_current_location(self, conversation: str = None):
         """
         Send the current location in the specified chat.
         :param conversation: The chat conversation in which to send the location.
@@ -519,7 +516,7 @@ class WhatsApp(StateGraph):
         self.driver.click(SEND_LOCATION_CURRENT_LOCATION_BUTTON)
 
     @action(send_location_state, end_state=chat_state)
-    def send_live_location(self, conversation: str, caption=None):
+    def send_live_location(self, caption: str = None, conversation: str = None):
         """
         Send a live location in the specified chat.
         :param conversation: The chat conversation in which to start the live location sharing.
@@ -533,7 +530,7 @@ class WhatsApp(StateGraph):
         self.driver.click(SEND)
 
     @action(chat_state)
-    def stop_live_location(self, conversation: str):
+    def stop_live_location(self, conversation: str = None):
         """
         Stops the current live location sharing.
         :param conversation: The chat conversation in which to stop the live location sharing.
@@ -544,7 +541,7 @@ class WhatsApp(StateGraph):
             self.driver.click(STOP_BUTTON)
 
     @action(chat_state)
-    def send_contact(self, conversation: str, contact_name: str):
+    def send_contact(self, contact_name: str, conversation: str = None):
         """
         Send a contact in the specified chat.
         :param contact_name: the name of the contact to send.
@@ -557,7 +554,7 @@ class WhatsApp(StateGraph):
         self.driver.click(CHAT_ATTACH_SEND_BUTTON)
 
     @action(chat_settings_state)
-    def activate_disappearing_messages(self, conversation: str):
+    def activate_disappearing_messages(self, conversation: str = None):
         """
         Activates disappearing messages (auto delete) in the current or a given chat.
         Messages will now auto-delete after 24h.
@@ -568,7 +565,7 @@ class WhatsApp(StateGraph):
         self.driver.back()
 
     @action(chat_settings_state)
-    def deactivate_disappearing_messages(self, conversation: str):
+    def deactivate_disappearing_messages(self, conversation: str = None):
         """
         Disables disappearing messages (auto delete) in the current or a given chat.
         :param conversation: The conversation for which disappearing messages should be activated.
@@ -594,14 +591,14 @@ class WhatsApp(StateGraph):
         go_to_video_call(self.driver, conversation)
 
     @action(voice_call_state, end_state=calls_state)
-    def end_voice_call(self, conversation: str):
+    def end_voice_call(self, conversation: str = None):
         """
         Ends the current voice call.
         """
         self._end_call()
 
     @action(video_call_state, end_state=calls_state)
-    def end_video_call(self, conversation: str):
+    def end_video_call(self, conversation: str = None):
         """
         Ends the current video call.
         """
@@ -632,7 +629,7 @@ class WhatsApp(StateGraph):
         self.driver.click(RECEIVE_CALL_DECLINE_BUTTON)
 
     @action(chat_settings_state)
-    def leave_group(self, conversation: str):
+    def leave_group(self, conversation: str = None):
         """
         This method will leave the given group. It will not delete that group.
         :param conversation: Name of the group we want to leave.
@@ -653,7 +650,7 @@ class WhatsApp(StateGraph):
         self.driver.click(CHAT_SETTINGS_OK_BUTTON)
 
     @action(chat_state)
-    def forward_message(self, conversation: str, message_contains, to_chat):
+    def forward_message(self, conversation: str, message_contains: str, to_chat: str):
         """
         Forwards a message from one conversation to another.
         It is assumed the message and both conversations exists.
@@ -662,13 +659,14 @@ class WhatsApp(StateGraph):
         of the message is needed, but be sure the given text is enough to match your intended message uniquely.
         :param to_chat: The chat to which the message has to be forwarded.
         """
-        self.driver.long_press_element(CHAT_MESSAGE_BY_CONTENT.format(message_contains=message_contains))
+        self.driver.long_click_element(CHAT_MESSAGE_BY_CONTENT.format(message_contains=message_contains))
         self.driver.click(CHAT_FORWARD_MESSAGE)
         self.driver.click(CHAT_FORWARD_CONTACT_BY_NAME.format(to_chat=to_chat))
         self.driver.click(SEND)
 
     @action(chat_state)
-    def send_media(self, conversation: str, directory_name, index=1, caption=None, view_once=False):
+    def send_media(self, directory_name: str, conversation: str = None, index: int = 1, caption: str = None,
+                   view_once: bool = False):
         # Go to gallery
         self.driver.click(CHAT_ATTACH_BUTTON)
         self.driver.click(CHAT_ATTACH_GALLERY_BUTTON)
@@ -691,7 +689,7 @@ class WhatsApp(StateGraph):
         sleep(1)
         self.driver.click(SEND)
 
-    def _find_media_in_folder(self, directory_name, index):
+    def _find_media_in_folder(self, directory_name: str, index: int):
         try:
             self.driver.swipe_to_click_element(CHAT_DIRECTORY_NAME.format(directory_name=directory_name))
         except PumaClickException:

@@ -58,7 +58,7 @@ Of course, you can send text messages:
 
 ```python
 # Send Bob a message
-phone.send_message("Bob", "Hi Bob!")
+phone.send_message("Hi Bob!", "Bob")
 # but this can be done in one call:
 # The above code will not work if these contacts aren't in the list of WhatsApp conversations
 # In that case, a new conversation needs to be created to send a message:
