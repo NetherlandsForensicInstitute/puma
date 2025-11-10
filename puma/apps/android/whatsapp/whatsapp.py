@@ -565,3 +565,23 @@ class WhatsApp(StateGraph):
         except PumaClickException:
             raise PumaClickException(
                 f'The media at index {index} could not be found. The index is likely too large or negative.')
+
+    @staticmethod
+    def verify_message_sent(driver: PumaDriver, gtl_logger: logging.Logger, message: str):
+        pass
+
+    @staticmethod
+    def verify_message_received(driver: PumaDriver, gtl_logger: logging.Logger, message: str):
+        pass
+
+    @staticmethod
+    def verify_message_read(driver: PumaDriver, gtl_logger: logging.Logger, message: str):
+        pass
+
+    @staticmethod
+    def verify_call_connected(driver: PumaDriver, gtl_logger: logging.Logger):
+        pass
+    
+    @staticmethod
+    def verify_members_of_group(driver: PumaDriver, gtl_logger: logging.Logger, conversation: str, members: Union[str, List[str]]):
+        pass
