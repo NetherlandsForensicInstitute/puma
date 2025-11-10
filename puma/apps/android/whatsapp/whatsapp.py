@@ -23,7 +23,6 @@ def go_to_chat(driver: PumaDriver, conversation: str):
     :param driver: The PumaDriver instance used to interact with the application.
     :param conversation: The name of the conversation to navigate to.
     """
-    driver.gtl_logger.info(f'Clicking on conversation {conversation} with driver {driver}')
     driver.get_elements(CONVERSATIONS_ROW_BY_SUBJECT.format(conversation=conversation))[-1].click()
 
 

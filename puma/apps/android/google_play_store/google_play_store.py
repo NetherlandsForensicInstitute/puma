@@ -104,7 +104,7 @@ class AppPage(SimpleState, ContextualState):
         """
         if not is_valid_package_name(package_name):
             raise ValueError(f'Invalid package name: {package_name}')
-        driver.open_url(f'https://play.google.com/store/apps/details?id={package_name}', APPLICATION_PACKAGE)
+        driver.open_url(f'https://play.google.com/store/apps/details?id={package_name}')
         self.last_opened[driver.udid] = package_name
 
 
