@@ -114,7 +114,7 @@ def action(state: State, end_state: State = None):
                     result = func(*args, **kwargs)
 
                 if verify_with is not None:
-                    gtl_logger.info(f"Verifying action with "{verify_with.__name__}" using arguments: {args[1:]} and keyword arguments: {kwargs} for application: {puma_ui_graph.__class__.__name__}")
+                    gtl_logger.info(f"Verifying action with '{verify_with.__name__}' using arguments: {args[1:]} and keyword arguments: {kwargs} for application: {puma_ui_graph.__class__.__name__}")
                     _execute_post_action_verification(puma_ui_graph, verify_with, arguments, gtl_logger)
 
                 puma_ui_graph.try_restart = True
