@@ -38,7 +38,7 @@ def _execute_post_action_verification(puma_ui_graph, verify_with, arguments, gtl
     try:
         success = verify_with(**bound_args.arguments)
     except PumaClickException as e:
-        gtl_logger.warn(f'Verifying with {verify_with.__name__} failed due to exception: {str(e)}')
+        gtl_logger.warn(f'Verifying with "{verify_with.__name__}" failed due to exception: {str(e)}')
     else:
         # enforce type here, since we have no typed API call to enforce it with
         if not isinstance(success, bool):
