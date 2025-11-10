@@ -133,7 +133,7 @@ class Telegram(StateGraph):
         """
         if not self._in_voice_message_mode():
             self.driver.click(CHAT_STATE_RECORD_VIDEO_OR_AUDIO_MESSAGE)
-        self.driver.press_and_hold(CHAT_STATE_RECORD_VIDEO_OR_AUDIO_MESSAGE, duration)
+        self.driver.long_click_element(CHAT_STATE_RECORD_VIDEO_OR_AUDIO_MESSAGE, duration)
 
     @action(chat_state)
     def send_video_message(self, duration: int, conversation: str = None):
@@ -146,7 +146,7 @@ class Telegram(StateGraph):
         """
         if self._in_voice_message_mode():
             self.driver.click(CHAT_STATE_RECORD_VIDEO_OR_AUDIO_MESSAGE)
-        self.driver.press_and_hold(CHAT_STATE_RECORD_VIDEO_OR_AUDIO_MESSAGE, duration)
+        self.driver.long_click_element(CHAT_STATE_RECORD_VIDEO_OR_AUDIO_MESSAGE, duration)
 
     @action(send_from_gallery_state, end_state=chat_state)
     def send_media_from_gallery(self, media_index: int | list[int],
@@ -184,7 +184,7 @@ class Telegram(StateGraph):
         for i in media_index:
             try:
                 if i in [2, 3]:  # these switches can be obscured by other UI elements. We do a long press for those
-                    self.driver.long_click(f'{SEND_FROM_GALLERY_MEDIA_SWITCH.format(index=i)}/..')
+                    self.driver.long_click_element(f'{SEND_FROM_GALLERY_MEDIA_SWITCH.format(index=i)}/..')
                 else:
                     self.driver.click(SEND_FROM_GALLERY_MEDIA_SWITCH.format(index=i))
                 self.gtl_logger.info(f'Selected gallery item with index {i}')
@@ -350,7 +350,7 @@ class Telegram(StateGraph):
         if not Telegram.chat_settings_state.can_add_members(self.driver):
             raise PumaClickException(f"Cannot remove members in conversation {conversation}. "
                                      f"Check whether it is a group and whether permissions are setup correctly.")
-        self.driver.long_click(CHAT_SETTINGS_STATE_MEMBER_CONTEXT.format(member=member))
+        self.driver.long_click_element(CHAT_SETTINGS_STATE_MEMBER_CONTEXT.format(member=member))
         self.driver.click(CHAT_SETTINGS_STATE_REMOVE_MEMBER_BUTTON)
 
     @action(chat_settings_state)
