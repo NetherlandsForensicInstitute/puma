@@ -96,8 +96,8 @@ CHAT_SETTINGS_CONTACT_NAME = (f'{build_wa_resource_id_xpath_widget('TextView', '
                               f'{build_wa_resource_id_xpath_widget('TextView', 'group_title')}')
 CHAT_SETTINGS_NOTIFICATIONS = build_wa_resource_id_xpath_widget('LinearLayout', 'notifications_and_sounds_layout')
 CHAT_SETTINGS_MEDIA_VISIBILITY = build_wa_resource_id_xpath_widget('Button', 'media_visibility_layout')
-CHAT_SETTINGS_PARTICIPANT = build_wa_resource_id_text_xpath('name', '{participant}')
-CHAT_SETTINGS_REMOVE_PARTICIPANT = "//*[starts-with(@text, 'Remove')]"
+CHAT_SETTINGS_MEMBER = build_wa_resource_id_text_xpath('name', '{member}')
+CHAT_SETTINGS_REMOVE_MEMBER = "//*[starts-with(@text, 'Remove')]"
 CHAT_SETTINGS_EXIT_GROUP_BUTTON = build_text_xpath_widget('Button', 'Exit group')
 CHAT_SETTINGS_EXIT_GROUP_LIST_ITEM = build_wa_resource_id_text_xpath('list_item_title', 'Exit group')
 CHAT_SETTINGS_DISAPPEARING_MESSAGES = f'//*[@resource-id="{WHATSAPP_PACKAGE}:id/list_item_title" and @text="Disappearing messages"]'

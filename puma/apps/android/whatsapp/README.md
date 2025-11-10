@@ -95,7 +95,7 @@ phone.reply_to_message(conversation="Bob", message_to_reply_to="Hi Alice!", repl
 # send a sticker. It will simply pick the first sticker.
 phone.send_sticker(conversation="Bob")
 # Sending voice recordings
-phone.send_voice_recording(conversation="Bob", duration=2000)  # duration in ms
+phone.send_voice_message(conversation="Bob", duration=2000)  # duration in ms
 # sending location, either the current or a live location
 phone.send_current_location(conversation="Bob")
 phone.send_live_location(conversation="Bob")
@@ -116,13 +116,13 @@ We can start, end, and refuse calls:
 
 ```python
 # calls Bob
-phone_alice.voice_call_contact("Bob")
+phone_alice.start_voice_call("Bob")
 # answers incoming call
 phone_bob.answer_call()
 # ends current call (can be called before other party answered the call)
 phone_alice.end_voice_call("Bob")
 # video alls are also supported:
-phone.video_call_contact("Bob")
+phone.start_video_call("Bob")
 # declining incoming calls is also possible:
 phone.decline_call()
 ```
@@ -140,5 +140,5 @@ phone.delete_group("Some group")
 # just leaves a group
 phone.leave_group("Some other group")
 # removes a person from a group
-phone.remove_participant_from_group("Friends", "Donald") 
+phone.remove_member_from_group("Friends", "Donald")
 ```

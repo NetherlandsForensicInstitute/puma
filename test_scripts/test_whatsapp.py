@@ -114,7 +114,7 @@ class TestWhatsapp(unittest.TestCase):
 
     def test_send_voice_recording(self):
         self.ensure_bob_conversation_present()
-        self.alice.send_voice_recording(conversation=self.contact_bob)
+        self.alice.send_voice_message(conversation=self.contact_bob)
 
     # Group related tests
     def test_set_group_description(self):
@@ -140,7 +140,7 @@ class TestWhatsapp(unittest.TestCase):
     def test_remove_participant_from_group(self):
         group = "remove bob group"
         self.alice.create_group(group, self.contact_bob)
-        self.alice.remove_participant_from_group(group, self.contact_bob)
+        self.alice.remove_member_from_group(group, self.contact_bob)
 
     # Call related tests. Note that you need two phones for these tests, otherwise these tests will fail
     def assert_bob_configured(self):
@@ -150,26 +150,26 @@ class TestWhatsapp(unittest.TestCase):
 
     def test_answer_end_voice_call(self):
         self.assert_bob_configured()
-        self.alice.voice_call_contact(self.contact_bob)
+        self.alice.start_voice_call(self.contact_bob)
         self.bob.answer_call()
         sleep(2)
         self.alice.end_voice_call(self.contact_bob)
 
     def test_answer_end_video_call(self):
         self.assert_bob_configured()
-        self.alice.video_call_contact(self.contact_bob)
+        self.alice.start_video_call(self.contact_bob)
         self.bob.answer_call()
         sleep(2)
         self.alice.end_video_call(self.contact_bob)
 
     def test_decline_voice_call(self):
         self.assert_bob_configured()
-        self.alice.voice_call_contact(self.contact_bob)
+        self.alice.start_voice_call(self.contact_bob)
         self.bob.decline_call()
 
     def test_decline_video_call(self):
         self.assert_bob_configured()
-        self.alice.video_call_contact(self.contact_bob)
+        self.alice.start_video_call(self.contact_bob)
         self.bob.decline_call()
 
     def test_open_view_once_photo(self):

@@ -276,7 +276,7 @@ class WhatsApp(StateGraph):
         # Remove a space resulting from selecting the mention person
         self.driver.press_backspace()
 
-    def _ensure_message_sent(self, message_text):
+    def _ensure_message_sent(self, message_text: str):
         message_status_el = self.driver.get_element(
             f"//*[@resource-id='com.whatsapp:id/conversation_text_row']"
             f"//*[@text='{message_text}']"  # Text field element containing message text
@@ -288,7 +288,7 @@ class WhatsApp(StateGraph):
         return message_status_el
 
     @action(chat_state)
-    def send_message(self, message_text, conversation: str = None, wait_until_sent: bool = False):
+    def send_message(self, message_text: str, conversation: str = None, wait_until_sent: bool = False):
         """
         Send a message in the current chat. If the message contains a mention, this is handled correctly.
         :param message_text: The text that the message contains.
@@ -390,19 +390,19 @@ class WhatsApp(StateGraph):
         self.driver.click(CHAT_DELETE_FOR_EVERYONE)
 
     @action(new_chat_state)
-    def create_group(self, conversation: str, participants: Union[str, List[str]]):
+    def create_group(self, conversation: str, members: Union[str, List[str]]):
         """
         Create a new group.
         :param conversation: The subject of the group.
-        :param participants: The contact(s) you want to add to the group (string or list).
+        :param members: The contact(s) you want to add to the group (string or list).
         """
         self.driver.click(NEW_CHAT_NEW_GROUP)
 
-        participants = [participants] if not isinstance(participants, list) else participants
-        for participant in participants:
+        members = [members] if not isinstance(members, list) else members
+        for member in members:
             contacts = self.driver.get_elements(TEXT_VIEWS)
-            participant_to_add = [contact for contact in contacts if contact.text.lower() == participant.lower()][0]
-            participant_to_add.click()
+            member_to_add = [contact for contact in contacts if contact.text.lower() == member.lower()][0]
+            member_to_add.click()
 
         self.driver.click(NEXT_BUTTON)
         self.driver.send_keys(CONVERSATIONS_GROUP_NAME, conversation)
@@ -460,7 +460,7 @@ class WhatsApp(StateGraph):
         self.driver.click(CHAT_SETTINGS_CONTAINS_DELETE_GROUP)
 
     @action(chat_state)
-    def reply_to_message(self, message_to_reply_to: str, reply_text: str, conversation: str=None):
+    def reply_to_message(self, message_to_reply_to: str, reply_text: str, conversation: str = None):
         """
         Reply to a message.
         :param conversation: The chat conversation in which to send this message.
@@ -487,7 +487,7 @@ class WhatsApp(StateGraph):
         self.driver.click(SEND)
 
     @action(chat_state)
-    def send_sticker(self, conversation: str=None):
+    def send_sticker(self, conversation: str = None):
         """
         Send the first sticker in the sticker menu.
         :param conversation: The chat conversation in which to send this sticker.
@@ -498,7 +498,7 @@ class WhatsApp(StateGraph):
         self.driver.click(CHAT_STICKER)
 
     @action(chat_state)
-    def send_voice_recording(self, duration: int = 2, conversation: str = None):
+    def send_voice_message(self, duration: int = 2, conversation: str = None):
         """
         Sends a voice message in the specified conversation.
         :param conversation: The chat conversation in which to send this voice recording.
@@ -575,7 +575,7 @@ class WhatsApp(StateGraph):
         self.driver.back()
 
     @action(calls_state, end_state=voice_call_state)
-    def voice_call_contact(self, conversation: str):
+    def start_voice_call(self, conversation: str):
         """
         Make a WhatsApp voice call. The call is made to a given contact.
         :param conversation: name of the contact to call.
@@ -583,7 +583,7 @@ class WhatsApp(StateGraph):
         go_to_voice_call(self.driver, conversation)
 
     @action(calls_state, end_state=video_call_state)
-    def video_call_contact(self, conversation: str):
+    def start_video_call(self, conversation: str):
         """
         Make a WhatsApp voice call. The call is made to a given contact.
         :param conversation: name of the contact to call.
@@ -638,15 +638,15 @@ class WhatsApp(StateGraph):
         self.driver.click(CHAT_SETTINGS_EXIT_GROUP_BUTTON)
 
     @action(chat_settings_state)
-    def remove_participant_from_group(self, conversation: str, participant):
+    def remove_member_from_group(self, conversation: str, member: str):
         """
-        Removes a given participant from a given group chat.
-        It is assumed the group chat exists and has the given participant.
+        Removes a given member from a given group chat.
+        It is assumed the group chat exists and has the given member.
         :param conversation: The group
-        :param participant: The participant to remove
+        :param member: The member to remove
         """
-        self.driver.swipe_to_click_element(CHAT_SETTINGS_PARTICIPANT.format(participant=participant))
-        self.driver.click(CHAT_SETTINGS_REMOVE_PARTICIPANT)
+        self.driver.swipe_to_click_element(CHAT_SETTINGS_MEMBER.format(member=member))
+        self.driver.click(CHAT_SETTINGS_REMOVE_MEMBER)
         self.driver.click(CHAT_SETTINGS_OK_BUTTON)
 
     @action(chat_state)
