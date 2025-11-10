@@ -184,7 +184,7 @@ class Snapchat(StateGraph):
         self.driver.click(TOGGLE_CAMERA)
 
     @action(camera_state)
-    def take_photo(self, caption:str):
+    def take_photo(self, caption:str = None):
         """
         Takes a photo.
 
@@ -216,13 +216,13 @@ class Snapchat(StateGraph):
             self.driver.click(MY_STORY)
         self.driver.click(SEND)
 
-if __name__ == "__main__":
-        bob = Snapchat(device_udid="34281JEHN03866")
-        contact_charlie = "Charlie"
-        group_bob = "Group Bob"
-
-        bob.send_message("hi", contact_charlie)
-        bob.toggle_camera()
-        bob.take_photo(caption="whoopwhoop")
-        bob.send_snap_to(recipients=[contact_charlie])
+# if __name__ == "__main__":
+#         bob = Snapchat(device_udid="34281JEHN03866")
+#         contact_charlie = "Charlie"
+#         group_bob = "Group Bob"
+#
+#         bob.send_message("hi", contact_charlie)
+#         bob.toggle_camera()
+#         bob.take_photo(caption="whoopwhoop")
+#         bob.send_snap_to(recipients=[contact_charlie])
 

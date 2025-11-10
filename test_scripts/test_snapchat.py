@@ -1,13 +1,11 @@
 import unittest
 
-from puma.apps.android.snapchat.snapchat import SnapchatActions
-
+from puma.apps.android.state_graph.snapchat.snapchat import Snapchat
 
 # Fill in the udid below. Run ADB devices to see the udids.
 device_udids = {
-    "Alice": ""
+    "Bob": "34281JEHN03866"
 }
-
 
 class TestSnapchat(unittest.TestCase):
     """
@@ -16,39 +14,38 @@ class TestSnapchat(unittest.TestCase):
 
     Prerequisites:
     - All prerequisites mentioned in the README.
-    - 1 registered Snapchat account for Bob
+    - 1 registered Snapchat account for Alice
     - 1 phone with:
-        - Snapchat installed and registered for Alice
-        - Bob and Charlie in contacts
+        - Snapchat installed and registered for Bob
+        - Alice and Charlie in contacts
         - An existing conversation for Bob and Charlie (TODO: do this automatically)
     - Appium running
     """
     @classmethod
     def setUpClass(self):
-        if not device_udids["Alice"]:
-            print("No udid was configured for Alice. Please add at the top of the script.\nExiting....")
+        if not device_udids["Bob"]:
+            print("No udid was configured for Bob. Please add at the top of the script.\nExiting....")
             exit(1)
-        self.alice = SnapchatActions(device_udids["Alice"])
-        self.contact_bob = "Bob"
+        self.bob = Snapchat(device_udids["Bob"])
+
+        self.contact_alice = "Alice iPhone"
         self.contact_charlie = "Charlie"
 
-    def test_navigation(self):
-        self.alice.go_to_conversation_tab()
-        self.alice.go_to_camera_tab()
-        self.alice.select_chat(self.contact_bob)
+    def setUp(self):
+        """
+        Return to start screen of snapchat before each test
+        """
+        self.bob.go_to_state(Snapchat.camera_state)
 
     def test_send_message(self):
-        self.alice.select_chat(self.contact_bob)
-        self.alice.send_message("Hi Bob!")
-        self.alice.send_message("Hi charlie!", chat=self.contact_charlie)
+        self.bob.send_message(msg="Hi Charlie!", conversation=self.contact_charlie)
 
     def test_send_snap(self):
-        self.alice.send_snap(recipients=[self.contact_bob, self.contact_charlie])
-        self.alice.send_snap(recipients=[self.contact_bob], caption="Hi bob!")
-        self.alice.send_snap(caption="This is nice for my story!", front_camera=True)
-        # no arguments: post to story without caption
-        self.alice.send_snap()
-
+        self.bob.toggle_camera()
+        self.bob.take_photo(caption="Hi Charlie!")
+        self.bob.send_snap_to(recipients=[self.contact_charlie])
+        self.bob.take_photo()
+        self.bob.send_snap_to(recipients=[self.contact_alice, self.contact_charlie])
 
 if __name__ == '__main__':
     unittest.main()
