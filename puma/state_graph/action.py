@@ -63,7 +63,7 @@ def action(state: State, end_state: State = None):
     to the function which is decorated. If the 'verify_with' function has a parameter named 'driver',
     the active PumaDriver will be injected. Similarly, if it has a parameter named 'gtl_logger',
     the active ground truth logger will be injected. This function will be called at the end of the action's execution.
-    Inside the verification function  you can change to other states,
+    Inside the verification function you can change to other states,
     the framework will ensure it returns to the state it was at the end of the action. The return value of
     the 'verify_with' function must be a bool signaling if the action was executed correctly. This will be logged
     by the framework.
