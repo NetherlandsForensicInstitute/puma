@@ -110,7 +110,7 @@ class PumaDriver:
         self._screen_recorder_output_directory = None
         self.gtl_logger = create_gtl_logger(udid)
 
-    def is_present(self, xpath: str, implicit_wait: int = 0) -> bool:
+    def is_present(self, xpath: str, implicit_wait: float = 0) -> bool:
         """
         Checks if an element is present on the screen.
 

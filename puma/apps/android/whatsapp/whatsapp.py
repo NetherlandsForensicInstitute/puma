@@ -149,12 +149,11 @@ class WhatsApp(StateGraph):
         return message_status_el
 
     @action(chat_state)
-    def send_message(self, message_text: str, conversation: str = None, wait_until_sent: bool = False):
+    def send_message(self, message_text: str, conversation: str = None):
         """
         Send a message in the current chat. If the message contains a mention, this is handled correctly.
         :param message_text: The text that the message contains.
         :param conversation: The chat conversation in which to send this message. Optional: not needed when already in a conversation
-        :param wait_until_sent: Exit this function only when the message has been sent.
         """
         self.driver.click(TEXT_ENTRY)
         self._handle_mention(message_text) \
@@ -165,9 +164,6 @@ class WhatsApp(StateGraph):
         if 'http' in message_text:
             sleep(2)
         self.driver.click(SEND_CONTENT)
-        # TODO convert to post action validation
-        if wait_until_sent:
-            _ = self._ensure_message_sent(message_text)
 
     @action(profile_state)
     def change_profile_picture(self, photo_dir_name: str, index: int = 1):
@@ -567,24 +563,64 @@ class WhatsApp(StateGraph):
                 f'The media at index {index} could not be found. The index is likely too large or negative.')
 
     @staticmethod
-    def verify_message_sent(driver: PumaDriver, message_text: str):
+    def verify_message_marked_sent(driver: PumaDriver, message_text: str, implicit_wait=5):
+        """
+        Verify that a message with given text has been sent in the current conversation.
+
+        The message must be visible in the current chat view. It must also be marked specifically as sent,
+        i.e. a single uncoloured (grey) checkmark.
+
+        :param driver: the driver used for verification of the message
+        :param message_text: the text of the message which should have been sent
+        :param implicit_wait: the maximum time to wait for a message to be marked sent, in seconds
+        """
         sent_message_xpath = (f'(//android.widget.FrameLayout['
                               f'@resource-id="{WHATSAPP_PACKAGE}:id/conversation_text_row"'
                               f' and .//android.widget.TextView[@resource-id="com.whatsapp:id/message_text" and @text="{message_text}"]'
                               f' and .//android.widget.ImageView[@content-desc="Sent"]'
                               f'])')
 
-        return driver.is_present(sent_message_xpath)
+        return driver.is_present(sent_message_xpath, implicit_wait=implicit_wait)
 
     @staticmethod
-    def verify_message_received(driver: PumaDriver, message: str):
-        logger = driver.gtl_logger
-        pass
+    def verify_message_marked_delivered(driver: PumaDriver, message_text: str, implicit_wait=5):
+        """
+        Verify that a message with given text has been delivered in the current conversation.
+
+        The message must be visible in the current chat view. It must also be marked specifically as delivered,
+        i.e. two uncoloured (grey) checkmarks.
+
+        :param driver: the driver used for verification of the message
+        :param message_text: the text of the message which should have been delivered
+        :param implicit_wait: the maximum time to wait for a message to be marked delivered, in seconds
+        """
+        delivered_message_xpath = (f'(//android.widget.FrameLayout['
+                              f'@resource-id="{WHATSAPP_PACKAGE}:id/conversation_text_row"'
+                              f' and .//android.widget.TextView[@resource-id="com.whatsapp:id/message_text" and @text="{message_text}"]'
+                              f' and .//android.widget.ImageView[@content-desc="Delivered"]'
+                              f'])')
+
+        return driver.is_present(delivered_message_xpath, implicit_wait=implicit_wait)
 
     @staticmethod
-    def verify_message_read(driver: PumaDriver, message: str):
-        logger = driver.gtl_logger
-        pass
+    def verify_message_marked_read(driver: PumaDriver, message_text: str, implicit_wait=10):
+        """
+        Verify that a message with given text has been read in the current conversation.
+
+        The message must be visible in the current chat view. It must also be marked specifically as read,
+        i.e. two (blue) coloured checkmarks.
+
+        :param driver: the driver used for verification of the message
+        :param message_text: the text of the message which should have been read
+        :param implicit_wait: the maximum time to wait for a message to be marked read, in seconds
+        """
+        read_message_xpath = (f'(//android.widget.FrameLayout['
+                              f'@resource-id="{WHATSAPP_PACKAGE}:id/conversation_text_row"'
+                              f' and .//android.widget.TextView[@resource-id="com.whatsapp:id/message_text" and @text="{message_text}"]'
+                              f' and .//android.widget.ImageView[@content-desc="Read"]'
+                              f'])')
+
+        return driver.is_present(read_message_xpath, implicit_wait=implicit_wait)
 
     @staticmethod
     def verify_call_connected(driver: PumaDriver):
@@ -592,9 +628,17 @@ class WhatsApp(StateGraph):
         pass
     
     @staticmethod
-    def verify_members_of_group(driver: PumaDriver, conversation: str, members: Union[str, List[str]]):
-        logger = driver.gtl_logger
-        pass
+    def verify_group_created(driver: PumaDriver, conversation: str, members: Union[str, List[str]]):
+        go_to_chat(driver, conversation)
+        # TODO: think about best wait to use transitions
+        WhatsAppChatState.open_chat_settings(driver, conversation)
+
+        # members = members if isinstance(members, list) else [members]
+        #
+        #
+        # members
+        # logger = driver.gtl_logger
+        return False
 
     @staticmethod
     def render_elements(elements):
@@ -606,8 +650,17 @@ class WhatsApp(StateGraph):
             image.show(title=element.id)
 
 
+# TODO: should action do the waiting? verification? both?
+#       I guess the action, because follow up actions might depend on previous to be done?
+#       then again, the action is called send message... not send_and_wait_for_read,
+#       maybe it just depends on the action
 if __name__ == '__main__':
     app = WhatsApp('32131JEHN38079', 'com.whatsapp')
 
-    app.send_message(conversation='Bob', message_text='SendingMessage', verify_with=app.verify_message_sent)
-    # app.verify_message_sent(app.driver, 'TestMe2')
+    # app.send_message(message_text='ReadThis', verify_with=app.verify_message_marked_read)
+    # print(app.verify_message_marked_read(app.driver, 'ReadThis'))
+
+    # app.create_group('Group++1', ['Bob', 'Bob2'], verify_with=app.verify_group_created)
+    print(app.verify_group_created(app.driver, 'Help1', ['You', 'Bob']))
+
+
