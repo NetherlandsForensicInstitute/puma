@@ -1,5 +1,6 @@
 from appium.webdriver.common.appiumby import AppiumBy
 
+from puma.apps.android.appium_actions import supported_version
 from puma.apps.android.state_graph.snapchat import logger
 from puma.state_graph.action import action
 from puma.state_graph.app_template import APPLICATION_PACKAGE
@@ -82,11 +83,32 @@ class SnapchatChatState(SimpleState, ContextualState):
         return conversation in content_desc
 
 class SnapchatChatSnapState(SimpleState, ContextualState):
+    """
+    A state representing a snap screen, a list of all conversations to send a snap to, in the application.
+
+    This class extends both SimpleState and ContextualState to represent a snap screen
+    and validate its context based on the conversation name.
+    """
+
     def __init__(self, parent_state):
+        """
+        Initializes the SnapState with a parent state.
+
+        :param parent_state: The parent state of this snap state.
+        """
         super().__init__(xpaths=[NEW_STORY],
                          parent_state=parent_state)
 
     def validate_context(self, driver: PumaDriver, conversation: str = None) -> bool:
+        """
+        Validates the context of the snap state.
+
+        This method checks if the current snap screen matches the expected conversation name.
+
+        :param driver: The PumaDriver instance used to interact with the application.
+        :param conversation: The name of the conversation to validate against.
+        :return: True if the context is valid, False otherwise.
+        """
         if not conversation:
             return True
 
@@ -100,7 +122,16 @@ class SnapchatChatSnapState(SimpleState, ContextualState):
 
         return conversation in content_desc
 
+@supported_version('12.89.0.40')
 class Snapchat(StateGraph):
+    """
+    A class representing a state graph for managing UI states and transitions in the Snapchat application.
+
+    This class uses a state machine approach to manage transitions between different states
+    of the Snapchat user interface. It provides methods to navigate between states, validate states,
+    and handle unexpected states or errors.
+    """
+
     camera_state = SimpleState([CAMERA_PAGE], initial_state=True)
     conversation_state = SimpleState([FEED_NEW_CHAT], parent_state=camera_state)
     chat_state = SnapchatChatState(parent_state=conversation_state)
@@ -118,6 +149,14 @@ class Snapchat(StateGraph):
     discard_state.to(camera_state, compose_clicks([DISCARD_ALERT_DIALOG_DISCARD_VIEW]))
 
     def __init__(self, device_udid):
+        """
+        Initializes the TestFsm with a device UDID.
+
+        This class provides an API for interacting with the Snapchat application using Appium.
+        It can be used with an emulator or a real device attached to the computer.
+
+        :param device_udid: The unique device identifier for the Android device.
+        """
         StateGraph.__init__(self, device_udid, APPLICATION_PACKAGE)
 
     def _press_enter(self):
@@ -138,10 +177,19 @@ class Snapchat(StateGraph):
 
     @action(camera_state)
     def toggle_camera(self):
+        """
+        Toggles camera.
+        Default state is front facing camera. After closing the app the camera is faced the same direction as it was when previously closed.
+        """
         self.driver.click(TOGGLE_CAMERA)
 
     @action(camera_state)
     def take_photo(self, caption:str):
+        """
+        Takes a photo.
+
+        :param caption: The caption to add on the photo.
+        """
         self.driver.click(CAMERA_CAPTURE)
         if caption:
             self.driver.click(FULL_SCREEN_SURFACE_VIEW)
@@ -152,6 +200,11 @@ class Snapchat(StateGraph):
 
     @action(snap_state)
     def send_snap_to(self, recipients: [str] = None):
+        """
+        Sends a snap to recipients.
+
+        :param recipients: The recipients to send the snap to.
+        """
         if recipients:
             for recipient in recipients:
                 recipient_xpath = (
