@@ -567,21 +567,47 @@ class WhatsApp(StateGraph):
                 f'The media at index {index} could not be found. The index is likely too large or negative.')
 
     @staticmethod
-    def verify_message_sent(driver: PumaDriver, gtl_logger: logging.Logger, message: str):
+    def verify_message_sent(driver: PumaDriver, message_text: str):
+        sent_message_xpath = (f'(//android.widget.FrameLayout['
+                              f'@resource-id="{WHATSAPP_PACKAGE}:id/conversation_text_row"'
+                              f' and .//android.widget.TextView[@resource-id="com.whatsapp:id/message_text" and @text="{message_text}"]'
+                              f' and .//android.widget.ImageView[@content-desc="Sent"]'
+                              f'])')
+
+        return driver.is_present(sent_message_xpath)
+
+    @staticmethod
+    def verify_message_received(driver: PumaDriver, message: str):
+        logger = driver.gtl_logger
         pass
 
     @staticmethod
-    def verify_message_received(driver: PumaDriver, gtl_logger: logging.Logger, message: str):
+    def verify_message_read(driver: PumaDriver, message: str):
+        logger = driver.gtl_logger
         pass
 
     @staticmethod
-    def verify_message_read(driver: PumaDriver, gtl_logger: logging.Logger, message: str):
-        pass
-
-    @staticmethod
-    def verify_call_connected(driver: PumaDriver, gtl_logger: logging.Logger):
+    def verify_call_connected(driver: PumaDriver):
+        logger = driver.gtl_logger
         pass
     
     @staticmethod
-    def verify_members_of_group(driver: PumaDriver, gtl_logger: logging.Logger, conversation: str, members: Union[str, List[str]]):
+    def verify_members_of_group(driver: PumaDriver, conversation: str, members: Union[str, List[str]]):
+        logger = driver.gtl_logger
         pass
+
+    @staticmethod
+    def render_elements(elements):
+        import io
+        from PIL import Image
+
+        for element in elements:
+            image = Image.open(io.BytesIO(element.screenshot_as_png))
+            image.show(title=element.id)
+
+
+if __name__ == '__main__':
+    app = WhatsApp('32131JEHN38079', 'com.whatsapp')
+
+    app.send_message(conversation='Bob', message_text='SendingMessage', verify_with=app.verify_message_sent)
+    # app.verify_message_sent(app.driver, 'TestMe2')
