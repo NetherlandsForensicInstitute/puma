@@ -88,10 +88,10 @@ class TestWhatsapp(unittest.TestCase):
         self.alice.reply_to_message(message, "reply")
 
     def test_send_media(self):
-        self.alice.send_media(self.contact_bob, "Screenshots", caption="caption", view_once=False)
+        self.alice.send_media(conversation=self.contact_bob, directory_name='Screenshots', caption='caption', view_once=False)
 
     def test_send_media_view_once(self):
-        self.alice.send_media(self.contact_bob, 'Screenshots', caption="caption", view_once=True)
+        self.alice.send_media(conversation=self.contact_bob, directory_name='Screenshots', caption='caption', view_once=True)
 
     def test_send_sticker(self):
         self.alice.send_sticker(self.contact_bob)

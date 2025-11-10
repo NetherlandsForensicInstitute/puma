@@ -81,8 +81,8 @@ phone.send_media("Bird", conversation="Bob")
 phone.send_media("Horse", conversation="Charlie")
 # send media from folder "Fish" at index 2, with a caption
 phone.send_media("Fish", conversation="Bob", index=2, caption="look at this cool fish!")
-# activate the 'view once' option
-phone.send_media("Turtle", conversation="Bob", view_once=True)
+# activate the 'view once' option. The conversation does not have to be specified if the previous message was also sent to Bob.
+phone.send_media("Turtle", view_once=True)
 ```
 
 ### Other chat functions
@@ -99,12 +99,12 @@ phone.send_voice_message(conversation="Bob", duration=2000)  # duration in ms
 # sending location, either the current or a live location
 phone.send_current_location(conversation="Bob")
 phone.send_live_location(conversation="Bob")
-# stops live location sharing
-phone.stop_live_location(conversation="Bob")
+# stops live location sharing. The conversation does not have to be specified, since the previous message was also sent to Bob.
+phone.stop_live_location()
 # contacts can also be sent
-phone.send_contact(conversation="Bob", contact_name="Auntie Flo")
+phone.send_contact(contact_name="Auntie Flo", conversation="Bob")
 # delete a message in the conversation. You need to input the full message
-phone.delete_message_for_everyone(conversation="Bob", message_text="Curpuceeno")
+phone.delete_message_for_everyone(message_text="Curpuceeno", conversation="Bob")
 # activate or deactivate automatically disappearing messages in a conversation
 phone.activate_disappearing_messages(conversation="Bob")
 phone.deactivate_disappearing_messages(conversation="Bob")
@@ -134,7 +134,7 @@ Many group management actions are also supported:
 ```python
 # creates a group with a few participants
 phone.create_group("Best friends since 2013", ["Bob", "Charlie"])
-phone.set_group_description(conversation="Best friends since 2013", description="we go way back!")
+phone.set_group_description(description="we go way back!", conversation="Best friends since 2013")
 # leaves and deletes a group
 phone.delete_group("Some group")
 # just leaves a group
