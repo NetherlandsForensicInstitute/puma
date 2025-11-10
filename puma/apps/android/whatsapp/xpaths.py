@@ -52,6 +52,7 @@ NEW_CHAT_NEW_COMMUNITY = build_wa_resource_id_text_xpath_widget('TextView', 'con
 
 CHAT_ROOT_LAYOUT = build_wa_resource_id_xpath_widget('LinearLayout', 'conversation_root_layout')
 CHAT_CONTACT_HEADER = build_wa_resource_id_xpath_widget('TextView', 'conversation_contact_name')
+CHAT_CONTACT_HEADER_TEXT = f'//android.widget.TextView[@resource-id="{WHATSAPP_PACKAGE}:id/conversation_contact_name" and contains(lower-case(@text), "{{conversation}}")]'
 CHAT_CONTACT_HEADER_WITH_NAME = build_wa_resource_id_text_xpath_widget('TextView', 'conversation_contact_name', '{conversation}')
 CHAT_DELETE_BUTTON = build_content_desc_xpath('Delete')
 CHAT_DELETE_FOR_EVERYONE = f'//*[@resource-id="{WHATSAPP_PACKAGE}:id/buttonPanel"]//*[@text="Delete for everyone"]'
@@ -94,6 +95,9 @@ SEND_LOCATION_CAPTION = build_wa_resource_id_xpath('comment')
 CHAT_SETTINGS_CONTACT_NAME = (f'{build_wa_resource_id_xpath_widget('TextView', 'contact_title')} | '
                               f'{build_wa_resource_id_xpath_widget('TextView', 'business_title')} | '
                               f'{build_wa_resource_id_xpath_widget('TextView', 'group_title')}')
+CHAT_SETTINGS_CONTACT_NAME_TEXT = (f'//android.widget.TextView[@resource-id="{WHATSAPP_PACKAGE}:id/contact_title" and contains(lower-case(@text), "{{conversation}}")] | '
+                                   f'//android.widget.TextView[@resource-id="{WHATSAPP_PACKAGE}:id/business_title" and contains(lower-case(@text), "{{conversation}}")] | '
+                                   f'//android.widget.TextView[@resource-id="{WHATSAPP_PACKAGE}:id/group_title" and contains(lower-case(@text), "{{conversation}}")]')
 CHAT_SETTINGS_NOTIFICATIONS = build_wa_resource_id_xpath_widget('LinearLayout', 'notifications_and_sounds_layout')
 CHAT_SETTINGS_MEDIA_VISIBILITY = build_wa_resource_id_xpath_widget('Button', 'media_visibility_layout')
 CHAT_SETTINGS_MEMBER = build_wa_resource_id_text_xpath('name', '{member}')
@@ -118,6 +122,7 @@ CALLS_START_CALL = build_content_desc_xpath_widget('ImageButton', 'New call')
 CALLS_HEADER = f'//android.view.ViewGroup[@resource-id="{WHATSAPP_PACKAGE}:id/toolbar"]/android.widget.TextView[@text="Calls"]'
 
 CALL_CONTACT_HEADER = build_wa_resource_id_xpath_widget('TextView', 'title')
+CALL_CONTACT_HEADER_TEXT = f'//android.widget.TextView[@resource-id="{WHATSAPP_PACKAGE}:id/title" and contains(lower-case(@text), "{{conversation}}")]'
 CALL_TAB_SEARCH_BUTTON = build_content_desc_xpath_widget('ImageButton', 'Search')
 CALL_SCREEN_BACKGROUND = build_wa_resource_id_xpath_widget('RelativeLayout', 'call_screen')
 CALL_END_CALL_BUTTON = ('//*[@content-desc="Leave call" or '

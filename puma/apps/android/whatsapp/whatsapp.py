@@ -3,10 +3,11 @@ from time import sleep
 from typing import Union, List
 
 from puma.apps.android.whatsapp import logger
+from puma.apps.android.whatsapp.states import *
 from puma.apps.android.whatsapp.xpaths import *
 from puma.state_graph.action import action
 from puma.state_graph.puma_driver import PumaDriver, PumaClickException, supported_version
-from puma.state_graph.state import SimpleState, ContextualState, State, compose_clicks
+from puma.state_graph.state import SimpleState, compose_clicks
 from puma.state_graph.state_graph import StateGraph
 from puma.utils.xpath_utils import build_content_desc_xpath_widget
 
@@ -50,153 +51,6 @@ def go_to_video_call(driver: PumaDriver, contact: str):
     driver.click(VIDEO_CALL_START_BUTTON)
 
 
-class WhatsAppChatState(SimpleState, ContextualState):
-    """
-    A state representing a chat screen in the application.
-
-    This class extends both SimpleState and ContextualState to represent a chat screen
-    and validate its context based on the conversation name.
-    """
-
-    def __init__(self, parent_state: State):
-        """
-        Initializes the ChatState with a parent state.
-
-        :param parent_state: The parent state of this chat state.
-        """
-        super().__init__(xpaths=[CHAT_CONTACT_HEADER,
-                                 CHAT_ROOT_LAYOUT],
-                         parent_state=parent_state)
-
-    def validate_context(self, driver: PumaDriver, conversation: str = None) -> bool:
-        """
-        Validates the context of the chat state.
-
-        This method checks if the current chat screen matches the expected conversation name.
-
-        :param driver: The PumaDriver instance used to interact with the application.
-        :param conversation: The name of the conversation to validate against.
-        :return: True if the context is valid, False otherwise.
-        """
-        if not conversation:
-            return True
-
-        content_desc = (driver.get_element(CHAT_CONTACT_HEADER).get_attribute('text'))
-        return conversation.lower() in content_desc.lower()
-
-    @staticmethod
-    def open_chat_settings(driver: PumaDriver, conversation: str):
-        driver.click(CHAT_CONTACT_HEADER_WITH_NAME.format(conversation=conversation))
-
-
-class WhatsAppChatSettingsState(SimpleState, ContextualState):
-    """
-    A state representing a chat settings screen in the application.
-
-    This class extends both SimpleState and ContextualState to represent a chat settings screen
-    and validate its context based on the contact or group name.
-    """
-
-    def __init__(self, parent_state: State):
-        """
-        Initializes the ChatSettingsState with a parent state.
-
-        :param parent_state: The parent state of this chat state.
-        """
-        super().__init__(xpaths=[CHAT_SETTINGS_CONTACT_NAME,
-                                 CHAT_SETTINGS_NOTIFICATIONS,
-                                 CHAT_SETTINGS_MEDIA_VISIBILITY],
-                         parent_state=parent_state)
-
-    def validate_context(self, driver: PumaDriver, conversation: str = None) -> bool:
-        """
-        Validates the context of the chat settings state.
-
-        This method checks if the current chat settings screen matches the expected contact or group name.
-
-        :param driver: The PumaDriver instance used to interact with the application.
-        :param conversation: The name of the conversation to validate against.
-        :return: True if the context is valid, False otherwise.
-        """
-        if not conversation:
-            return True
-
-        content_desc = (driver.get_element(CHAT_SETTINGS_CONTACT_NAME).get_attribute('text'))
-        return conversation.lower() in content_desc.lower()
-
-
-class WhatsAppVoiceCallState(SimpleState, ContextualState):
-    """
-    A state representing a call screen in the application.
-
-    This class extends both SimpleState and ContextualState to represent a call screen
-    and validate its context based on the contact.
-    """
-
-    def __init__(self, parent_state: State):
-        """
-        Initializes the CallState with a parent state.
-
-        :param parent_state: The parent state of this call state.
-        """
-        super().__init__(xpaths=[CALL_END_CALL_BUTTON,
-                                 CALL_SCREEN_BACKGROUND,
-                                 VOICE_CALL_CAMERA_BUTTON],
-                         parent_state=parent_state)
-
-    def validate_context(self, driver: PumaDriver, conversation: str = None) -> bool:
-        """
-        Validates the context of the call state.
-
-        This method checks if the current call screen matches the expected contact name.
-
-        :param driver: The PumaDriver instance used to interact with the application.
-        :param conversation: The name of the call recipient to validate against.
-        :return: True if the context is valid, False otherwise.
-        """
-        if not conversation:
-            return True
-
-        content_desc = (driver.get_element(CALL_CONTACT_HEADER).get_attribute('text'))
-        return conversation.lower() in content_desc.lower()
-
-class WhatsAppVideoCallState(SimpleState, ContextualState):
-    """
-    A state representing a call screen in the application.
-
-    This class extends both SimpleState and ContextualState to represent a call screen
-    and validate its context based on the contact.
-    """
-
-    def __init__(self, parent_state: State):
-        """
-        Initializes the CallState with a parent state.
-
-        :param parent_state: The parent state of this call state.
-        """
-        super().__init__(xpaths=[CALL_END_CALL_BUTTON,
-                                 CALL_SCREEN_BACKGROUND,
-                                 VIDEO_CALL_CAMERA_BUTTON,
-                                 VIDEO_CALL_SWITCH_CAMERA],
-                         parent_state=parent_state)
-
-    def validate_context(self, driver: PumaDriver, conversation: str = None) -> bool:
-        """
-        Validates the context of the call state.
-
-        This method checks if the current call screen matches the expected contact name.
-
-        :param driver: The PumaDriver instance used to interact with the application.
-        :param conversation: The name of the call recipient to validate against.
-        :return: True if the context is valid, False otherwise.
-        """
-        if not conversation:
-            return True
-
-        content_desc = (driver.get_element(CALL_CONTACT_HEADER).get_attribute('text'))
-        return conversation.lower() in content_desc.lower()
-
-
 @supported_version("2.25.31.76")
 class WhatsApp(StateGraph):
     """
@@ -237,14 +91,17 @@ class WhatsApp(StateGraph):
     chat_settings_state = WhatsAppChatSettingsState(parent_state=chat_state)
 
     conversations_state.to(chat_state, go_to_chat)
-    conversations_state.to(settings_state, compose_clicks([HAMBURGER_MENU, OPEN_SETTINGS_BY_TITLE]))
-    conversations_state.to(new_chat_state, compose_clicks([CONVERSATIONS_NEW_CHAT_OR_SEND_MESSAGE]))
-    conversations_state.to(calls_state, compose_clicks([CALLS_TAB]))
-    conversations_state.to(updates_state, compose_clicks([UPDATES_TAB]))
+    conversations_state.to(settings_state, compose_clicks([HAMBURGER_MENU, OPEN_SETTINGS_BY_TITLE],
+                                                          name='navigate_to_settings'))
+    conversations_state.to(new_chat_state, compose_clicks([CONVERSATIONS_NEW_CHAT_OR_SEND_MESSAGE],
+                                                          name='press_new_chat_button'))
+    conversations_state.to(calls_state, compose_clicks([CALLS_TAB], name='press_calls_tab'))
+    conversations_state.to(updates_state, compose_clicks([UPDATES_TAB], name='press_updates_tab'))
     calls_state.to(voice_call_state, go_to_voice_call)
     calls_state.to(video_call_state, go_to_video_call)
-    settings_state.to(profile_state, compose_clicks([PROFILE_INFO]))
-    chat_state.to(send_location_state, compose_clicks([CHAT_ATTACH_BUTTON, CHAT_ATTACH_LOCATION_BUTTON]))
+    settings_state.to(profile_state, compose_clicks([PROFILE_INFO], name='press_profile'))
+    chat_state.to(send_location_state, compose_clicks([CHAT_ATTACH_BUTTON, CHAT_ATTACH_LOCATION_BUTTON],
+                                                      name='navigate_to_location'))
     chat_state.to(chat_settings_state, WhatsAppChatState.open_chat_settings)
 
 
