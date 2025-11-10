@@ -1,6 +1,6 @@
 import unittest
 
-from puma.apps.android.state_graph.snapchat.snapchat import Snapchat
+from puma.apps.android.snapchat.snapchat import Snapchat
 
 # Fill in the udid below. Run ADB devices to see the udids.
 device_udids = {

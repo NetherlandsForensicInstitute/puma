@@ -1,175 +1,218 @@
-from time import sleep
-from typing import Dict
-
 from appium.webdriver.common.appiumby import AppiumBy
-from typing_extensions import deprecated
 
-from puma.apps.android import log_action
-from puma.apps.android.appium_actions import AndroidAppiumActions, supported_version
+from puma.apps.android.appium_actions import supported_version
+from puma.apps.android.snapchat import logger
+from puma.state_graph.action import action
+from puma.state_graph.app_template import APPLICATION_PACKAGE
+from puma.state_graph.puma_driver import PumaDriver
+from puma.state_graph.state import SimpleState, ContextualState, compose_clicks
+from puma.state_graph.state_graph import StateGraph
 
-SNAPCHAT_PACKAGE = 'com.snapchat.android'
+APPLICATION_PACKAGE = 'com.snapchat.android'
 
+ALERT_DIALOG_DESCRIPTION = '//android.widget.TextView[@resource-id="com.snapchat.android:id/alert_dialog_description"]'
+CAMERA_CAPTURE = '//android.widget.FrameLayout[@content-desc="Camera Capture"]'
+CAMERA_PAGE = '//android.widget.FrameLayout[@resource-id="com.snapchat.android:id/camera_page"]'
+CAPTION_EDIT = '//android.widget.EditText[@resource-id="com.snapchat.android:id/caption_edit_text_view"]'
+CHAT_INPUT = '//android.widget.EditText[@resource-id="com.snapchat.android:id/chat_input_text_field"]'
+CHAT_TAB = '//android.view.ViewGroup[@content-desc="Chat"]'
+CONVERSATION_TITLE = '//android.widget.TextView[@resource-id="com.snapchat.android:id/conversation_title_text_view"]'
+DISCARD = '//android.widget.ImageButton[@content-desc="Discard"]'
+DISCARD_ALERT_DIALOG_DISCARD_VIEW = '//android.view.View[@resource-id="com.snapchat.android:id/discard_alert_dialog_discard_view"]'
+FEED_NEW_CHAT = '//android.widget.FrameLayout[@resource-id="com.snapchat.android:id/feed_new_chat"]'
+FRIEND_ACTION = '//android.view.View[@resource-id="com.snapchat.android:id/friend_action_button2"]'
+FULL_SCREEN_SURFACE_VIEW = '//android.view.SurfaceView[@resource-id="com.snapchat.android:id/full_screen_surface_view"]'
+MY_STORY = '//javaClass[@text="My Story · Friends Only"]/..'
+NEW_STORY = '//android.view.View[@content-desc="New Story Button"]'
+SEND = '//android.view.View[@content-desc="Send"]'
+SENT_TO = '//android.view.ViewGroup[@resource-id="com.snapchat.android:id/sent_to_button_label_mode_view"]'
+TOGGLE_CAMERA = '(//android.widget.ImageView[@resource-id="com.snapchat.android:id/camera_mode_icon_image_view"])[1]'
 
-@deprecated('This class does not use the Puma state machine, and will therefore not be maintained. ' +
-            'If you want to add functionality, please rewrite this class using StateGraph as the abstract base class.')
-@supported_version("12.90.0.46")
-class SnapchatActions(AndroidAppiumActions):
-    def __init__(self,
-                 device_udid,
-                 desired_capabilities: Dict[str, str] = None,
-                 implicit_wait=1,
-                 appium_server='http://localhost:4723'):
-        """
-        Class with an API for Snapchat Android using Appium. Can be used with an emulator or real device attached to the computer.
-        """
-        AndroidAppiumActions.__init__(self,
-                                      device_udid,
-                                      SNAPCHAT_PACKAGE,
-                                      desired_capabilities=desired_capabilities,
-                                      implicit_wait=implicit_wait,
-                                      appium_server=appium_server)
+def go_to_chat(driver: PumaDriver, conversation: str):
+    """
+    Navigates to a specific chat conversation in the application.
 
-    def _currently_at_homescreen(self) -> bool:
-        return self.is_present(
-            '//android.widget.LinearLayout[@resource-id="com.snapchat.android:id/ngs_navigation_bar"]') \
-            and not self.is_present('//*[@text="View Profile"]')
+    This function constructs an XPath to locate and click on a conversation element
+    based on the conversation name. It is designed to be used within a state transition
+    to navigate to a specific chat state.
 
-    def _currently_in_conversation_overview(self) -> bool:
-        return self.is_present(
-            '//android.widget.TextView[@resource-id="com.snapchat.android:id/hova_page_title" and @text="Chat"]')
+    :param driver: The PumaDriver instance used to interact with the application.
+    :param conversation: The name of the conversation to navigate to.
+    """
 
-    def _currently_on_top_of_conversation_overview(self) -> bool:
-        """
-        Check if the current position is at the top of the conversation view.
-        """
-        on_top = False
-        header_patterns = ["Unread", "Groups", "Unreplied"]
-        for pattern in header_patterns:
-            if self.is_present(f'//android.widget.TextView[lower-case(@content-desc)="{pattern.lower()}"]'):
-                on_top = True
-                break
-        return on_top
+    logger.info(f'Clicking on conversation {conversation} with driver {driver}')
+    xpath = f'//androidx.recyclerview.widget.RecyclerView[@resource-id="com.snapchat.android:id/recycler_view"]//javaClass[@text="{conversation}"]'
+    driver.driver.find_elements(by=AppiumBy.XPATH, value=xpath)[-1].click()
+    driver.click(FRIEND_ACTION)
 
-    def _currently_in_conversation(self) -> bool:
-        return self.is_present(
-            '//android.widget.EditText[@resource-id="com.snapchat.android:id/chat_input_text_field"]')
+class SnapchatChatState(SimpleState, ContextualState):
+    """
+    A state representing a chat screen in the application.
 
-    def _currently_in_camera_tab(self) -> bool:
-        """
-        Check if the current position is the camera tab.
-        The camera button is checked, but this element also occurs in the camera view when sending a photo to a contact.
-        Thus, an additional check is needed if "Send To" is not present is required.
-        :return:
-        """
-        return (
-                self.is_present('//android.widget.FrameLayout[@content-desc="Camera Capture"]')
-                and not self.is_present('//android.widget.TextView[@text="Send To"]')
-        )
+    This class extends both SimpleState and ContextualState to represent a chat screen
+    and validate its context based on the conversation name.
+    """
 
-    def _go_to_main_tab(self, tab_name: str):
+    def __init__(self, parent_state):
         """
-        Navigate to one of the main tabs.
-        :param tab_name: One of the main tabs of snapchat: Map, Chat, Camera, Stories, or Spotlight
-        """
-        if self.driver.current_package != SNAPCHAT_PACKAGE:
-            self.driver.activate_app(SNAPCHAT_PACKAGE)
-        while not self._currently_at_homescreen():
-            self.driver.back()
-        self.driver.find_element(by=AppiumBy.XPATH,
-                                 value=f'//android.widget.LinearLayout[@resource-id="com.snapchat.android:id/ngs_navigation_bar"]/android.view.ViewGroup[@content-desc="{tab_name}"]').click()
+        Initializes the ChatState with a parent state.
 
-    # TODO create a separate function for each tab, so the user cannot make any typos
-    @log_action
-    def go_to_conversation_tab(self):
+        :param parent_state: The parent state of this chat state.
         """
-        Navigate to the top of the conversation tab.
-        When tapping "navigate to chat" when already in the conversation
-        tab, the focus shifts down to the Quick Add section. This poses a problem when selecting a specific
-        conversation that is out of view. This method makes sure to be at the top
-        """
-        if not self._currently_in_conversation_overview():
-            self._go_to_main_tab("Chat")
-        if not self._currently_on_top_of_conversation_overview():
-            self._go_to_main_tab("Chat")
+        super().__init__(xpaths=[CONVERSATION_TITLE, CHAT_INPUT],
+                         parent_state=parent_state)
 
-    @log_action
-    def go_to_camera_tab(self):
+    def validate_context(self, driver: PumaDriver, conversation: str = None) -> bool:
         """
-        Navigate to camera tab.
-        """
-        if not self._currently_in_camera_tab():
-            self._go_to_main_tab("Camera")
+        Validates the context of the chat state.
 
-    @log_action
-    def select_chat(self, chat_subject: str):
-        """
-        Opens a given conversation.
-        :param chat_subject: the name of the conversation to open
-        """
-        self.go_to_conversation_tab()
-        self.driver.find_element(by=AppiumBy.XPATH,
-                                 value=f'//javaClass[contains(lower-case(@text), "{chat_subject.lower()}")]/..').click()
+        This method checks if the current chat screen matches the expected conversation name.
 
-    def _if_chat_go_to_chat(self, chat: str):
-        if chat is not None:
-            self.select_chat(chat)
-        sleep(1)
-        if not self._currently_in_conversation():
-            raise Exception('Expected to be in conversation screen now, but screen contents are unknown')
+        :param driver: The PumaDriver instance used to interact with the application.
+        :param conversation: The name of the conversation to validate against.
+        :return: True if the context is valid, False otherwise.
+        """
+        if not conversation:
+            return True
 
-    @log_action
-    def send_message(self, message: str, chat: str = None):
+        logger.info('getting content_desc')
+        content_desc = driver.get_element(CONVERSATION_TITLE).get_attribute('text')
+        logger.info(f'getting content_desc {content_desc}')
+        logger.info(f'conversation is {conversation}')
+
+        return conversation in content_desc
+
+class SnapchatChatSnapState(SimpleState, ContextualState):
+    """
+    A state representing a snap screen, a list of all conversations to send a snap to, in the application.
+
+    This class extends both SimpleState and ContextualState to represent a snap screen
+    and validate its context based on the conversation name.
+    """
+
+    def __init__(self, parent_state):
         """
-        Sends a text message, either in the current conversation, or in a given conversation.
-        :param message: the message to send
-        :param chat: optional: the conversation in which to send the message. If not used, it is assumed the
-                     conversation is already opened.
+        Initializes the SnapState with a parent state.
+
+        :param parent_state: The parent state of this snap state.
         """
-        self._if_chat_go_to_chat(chat)
-        self.driver.find_element(by=AppiumBy.XPATH,
-                                 value='//android.widget.EditText[@resource-id="com.snapchat.android:id/chat_input_text_field"]') \
-            .send_keys(message)
-        self._press_enter()
+        super().__init__(xpaths=[NEW_STORY],
+                         parent_state=parent_state)
+
+    def validate_context(self, driver: PumaDriver, conversation: str = None) -> bool:
+        """
+        Validates the context of the snap state.
+
+        This method checks if the current snap screen matches the expected conversation name.
+
+        :param driver: The PumaDriver instance used to interact with the application.
+        :param conversation: The name of the conversation to validate against.
+        :return: True if the context is valid, False otherwise.
+        """
+        if not conversation:
+            return True
+
+        logger.info('getting content_desc')
+        conversation_xpath = f'//androidx.recyclerview.widget.RecyclerView[@resource-id="com.snapchat.android:id/send_to_recycler_view"]//javaClass[@text="{conversation}"]'
+        elements = driver.driver.find_elements(AppiumBy.XPATH, conversation_xpath)
+        content_desc = elements[0].get_attribute("text")
+        logger.info(f'getting content_desc {content_desc}')
+        logger.info(f'conversation is {conversation}')
+        logger.info(conversation in content_desc)
+
+        return conversation in content_desc
+
+@supported_version('12.89.0.40')
+class Snapchat(StateGraph):
+    """
+    A class representing a state graph for managing UI states and transitions in the Snapchat application.
+
+    This class uses a state machine approach to manage transitions between different states
+    of the Snapchat user interface. It provides methods to navigate between states, validate states,
+    and handle unexpected states or errors.
+    """
+
+    camera_state = SimpleState([CAMERA_PAGE], initial_state=True)
+    conversation_state = SimpleState([FEED_NEW_CHAT], parent_state=camera_state)
+    chat_state = SnapchatChatState(parent_state=conversation_state)
+    captured_state = SimpleState([SENT_TO])
+    caption_state = SimpleState([CAPTION_EDIT], parent_state=captured_state)
+    snap_state = SnapchatChatSnapState(parent_state=captured_state)
+    discard_state = SimpleState([ALERT_DIALOG_DESCRIPTION])
+
+    camera_state.to(conversation_state, compose_clicks([CHAT_TAB]))
+    conversation_state.to(chat_state, go_to_chat)
+    camera_state.to(captured_state, compose_clicks([CAMERA_CAPTURE]))
+    captured_state.to(caption_state, compose_clicks([FULL_SCREEN_SURFACE_VIEW]))
+    captured_state.to(snap_state, compose_clicks([SENT_TO]))
+    captured_state.to(discard_state, compose_clicks([DISCARD]))
+    discard_state.to(camera_state, compose_clicks([DISCARD_ALERT_DIALOG_DISCARD_VIEW]))
+
+    def __init__(self, device_udid):
+        """
+        Initializes the TestFsm with a device UDID.
+
+        This class provides an API for interacting with the Snapchat application using Appium.
+        It can be used with an emulator or a real device attached to the computer.
+
+        :param device_udid: The unique device identifier for the Android device.
+        """
+        StateGraph.__init__(self, device_udid, APPLICATION_PACKAGE)
 
     def _press_enter(self):
         enter_keycode = 66
-        self.driver.press_keycode(enter_keycode)
+        self.driver.driver.press_keycode(enter_keycode)
 
-    @log_action
-    def send_snap(self, recipients: [str] = None, caption: str = None, front_camera: bool = True):
+    @action(chat_state)
+    def send_message(self, msg: str, conversation: str = None):
         """
-        Sends a snap (picture), either to one or more contacts, or posts it to `My story`
-        :param recipients: Optional: a list of recipients to send the snap to
-        :param caption: Optional: a caption to set on the snap
-        :param front_camera: Optional: whether or not to use the front camera (True by default)
+        Sends a message in the current chat conversation.
+
+        :param msg: The message to send.
+        :param conversation: The name of the conversation to send the message in.
         """
-        # go to camera and snap picture
-        self.go_to_camera_tab()
-        if not front_camera:
-            self.driver.find_element(by=AppiumBy.XPATH,
-                                     value='//android.view.ViewGroup[@content-desc="Flip Camera"]').click()
-            sleep(0.5)
-        self.driver.find_element(by=AppiumBy.XPATH,
-                                 value='//android.widget.FrameLayout[@content-desc="Camera Capture"]').click()
-        # write caption if needed
+        self.driver.click(CHAT_INPUT)
+        self.driver.send_keys(CHAT_INPUT, msg)
+        self._press_enter()
+
+    @action(camera_state)
+    def toggle_camera(self):
+        """
+        Toggles camera.
+        Default state is front facing camera. After closing the app the camera is faced the same direction as it was when previously closed.
+        """
+        self.driver.click(TOGGLE_CAMERA)
+
+    @action(camera_state)
+    def take_photo(self, caption:str = None):
+        """
+        Takes a photo.
+
+        :param caption: The caption to add on the photo.
+        """
+        self.driver.click(CAMERA_CAPTURE)
         if caption:
-            self.driver.find_element(by=AppiumBy.XPATH,
-                                     value='//android.view.View[@resource-id="com.snapchat.android:id/full_screen_surface_view"]').click()
-            self.driver.find_element(by=AppiumBy.XPATH,
-                                     value='//android.widget.EditText[@resource-id="com.snapchat.android:id/caption_edit_text_view"]').send_keys(
-                caption)
+            self.driver.click(FULL_SCREEN_SURFACE_VIEW)
+            caption_field = self.driver.driver.find_element(AppiumBy.XPATH,
+                                                            CAPTION_EDIT)
+            caption_field.send_keys(caption)
             self.driver.back()
-        # press send
-        self.driver.find_element(by=AppiumBy.XPATH,
-                                 value='//android.widget.ImageButton[lower-case(@content-desc)="send"]').click()
 
-        # select recipients, or post as story, and send
+    @action(snap_state)
+    def send_snap_to(self, recipients: [str] = None):
+        """
+        Sends a snap to recipients.
+
+        :param recipients: The recipients to send the snap to.
+        """
         if recipients:
             for recipient in recipients:
-                self.driver.find_element(by=AppiumBy.XPATH,
-                                         value=f'//javaClass[lower-case(@text) ="{recipient.lower()}"]').click()
+                recipient_xpath = (
+                    f'//androidx.recyclerview.widget.RecyclerView[@resource-id="com.snapchat.android:id/send_to_recycler_view"]'
+                    f'//android.view.View[count(.//javaClass)=1]//javaClass[@text="{recipient}"]'
+                )
+                self.driver.click(recipient_xpath)
         else:
-            self.driver.find_element(by=AppiumBy.XPATH,
-                                     value='//javaClass[lower-case(@text)="my story · friends only"]/..').click()
-        self.driver.find_element(by=AppiumBy.XPATH,
-                                 value='//android.view.View[lower-case(@content-desc)="send"]').click()
+            self.driver.click(MY_STORY)
+        self.driver.click(SEND)
+
