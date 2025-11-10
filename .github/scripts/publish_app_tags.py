@@ -11,7 +11,7 @@ from puma.apps.android.open_camera.open_camera import OpenCamera
 from puma.apps.android.snapchat.snapchat import Snapchat
 from puma.apps.android.telegram.telegram import Telegram
 from puma.apps.android.teleguard.teleguard import TeleGuard
-from puma.apps.android.whatsapp.whatsapp import WhatsappActions
+from puma.apps.android.whatsapp.whatsapp import WhatsApp
 from puma.apps.android.whatsapp_business.whatsapp_business import WhatsappBusinessActions
 
 all_app_actions = [
@@ -23,7 +23,7 @@ all_app_actions = [
     Snapchat,
     Telegram,
     TeleGuard,
-    WhatsappActions,
+    WhatsApp,
     WhatsappBusinessActions
 ]
 APP_MODULE = 'puma.apps'
