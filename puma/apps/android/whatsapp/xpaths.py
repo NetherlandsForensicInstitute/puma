@@ -125,6 +125,7 @@ CALL_CONTACT_HEADER = build_wa_resource_id_xpath_widget('TextView', 'title')
 CALL_CONTACT_HEADER_TEXT = f'//android.widget.TextView[@resource-id="{WHATSAPP_PACKAGE}:id/title" and contains(lower-case(@text), "{{conversation}}")]'
 CALL_TAB_SEARCH_BUTTON = build_content_desc_xpath_widget('ImageButton', 'Search')
 CALL_SCREEN_BACKGROUND = build_wa_resource_id_xpath_widget('RelativeLayout', 'call_screen')
+CALL_CONTACT_ROW = f'//android.widget.TextView[@resource-id="{WHATSAPP_PACKAGE}:id/contact_name" and @text="{{conversation}}"]'
 CALL_END_CALL_BUTTON = ('//*[@content-desc="Leave call" or '
                         f'@resource-id="{WHATSAPP_PACKAGE}:id/end_call_button" or '
                         f'@resource-id="{WHATSAPP_PACKAGE}:id/footer_end_call_btn"]')

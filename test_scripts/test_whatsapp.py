@@ -2,7 +2,7 @@ import unittest
 from time import sleep
 
 from puma.apps.android.whatsapp.whatsapp import WhatsApp
-from puma.apps.android.whatsapp.xpaths import CONVERSATIONS_ROW_BY_SUBJECT
+from puma.apps.android.whatsapp.xpaths import CONVERSATIONS_ROW_BY_SUBJECT, CALL_END_CALL_BUTTON
 
 # Fill in the udids below. Run ADB devices to see the udids.
 device_udids = {
@@ -182,6 +182,14 @@ class TestWhatsapp(unittest.TestCase):
     def test_send_broadcast(self):
         message = "broadcast message"
         self.alice.send_broadcast([self.contact_bob, self.contact_charlie], message)
+
+    def test_transitions(self):
+        self.ensure_bob_conversation_present()
+        for to_state in self.alice.states:
+            self.alice.go_to_state(to_state, conversation='Bob', contact='Bob')
+            if self.alice.driver.is_present(CALL_END_CALL_BUTTON):
+                self.alice._end_call()
+        self.alice.go_to_state(self.alice.initial_state)
 
 
 if __name__ == '__main__':

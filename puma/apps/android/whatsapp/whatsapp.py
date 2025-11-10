@@ -470,6 +470,9 @@ class WhatsApp(StateGraph):
             # tap screen to make call button visible
             self.driver.click(CALL_SCREEN_BACKGROUND)
         self.driver.click(CALL_END_CALL_BUTTON)
+        # Go back twice to ensure we are back in a recognized state.
+        self.driver.back()
+        self.driver.back()
 
     # This method is not an @action, since it is not tied to a state.
     def answer_call(self):
