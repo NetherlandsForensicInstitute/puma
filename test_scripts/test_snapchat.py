@@ -4,7 +4,7 @@ from puma.apps.android.state_graph.snapchat.snapchat import Snapchat
 
 # Fill in the udid below. Run ADB devices to see the udids.
 device_udids = {
-    "Bob": "34281JEHN03866"
+    "Bob": ""
 }
 
 class TestSnapchat(unittest.TestCase):
