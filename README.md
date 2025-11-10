@@ -55,6 +55,9 @@ The code below shows a small example on how to search for the Eiffel Tower in Go
 
 ```python
 from puma.apps.android.google_maps.google_maps import GoogleMapsActions
+from puma.utils import configure_default_logging
+
+configure_default_logging()# Use Puma's logging configuration. You can also implement your own
 
 phone = GoogleMapsActions("emulator-5444")
 phone.search_place('eiffel tower')
@@ -72,6 +75,9 @@ with the code below:
 
 ```python
 from puma.apps.android.whatsapp.whatsapp import WhatsappActions
+from puma.utils import configure_default_logging
+
+configure_default_logging() # Use Puma's logging configuration. You can also implement your own
 
 alice = WhatsappActions("<INSERT UDID HERE>")  # Initialize a connection with device
 alice.create_new_chat(contact="<Insert the contact name>",
@@ -93,11 +99,13 @@ example implementations:
 * [Google Camera](puma/apps/android/google_camera/google_camera.py)
 * [Google Chrome](puma/apps/android/google_chrome/README.md)
 * [Google Maps](puma/apps/android/google_maps/README.md)
+* [Google Play Store](puma/apps/android/google_play_store/README.md)
 * [Open Camera](puma/apps/android/open_camera/README.md)
 * [Snapchat](puma/apps/android/snapchat/README.md)
 * [Telegram](puma/apps/android/telegram/README.md)
 * [TeleGuard](puma/apps/android/teleguard/README.md)
 * [WhatsApp](puma/apps/android/whatsapp/README.md)
+* [WhatsApp for Business](puma/apps/android/whatsapp_business/README.md)
 
 Right now only Android is supported.
 
@@ -132,7 +140,9 @@ most methods give you the option to navigate to a specific conversation. 2 examp
 
 ```python
 from puma.apps.android.whatsapp.whatsapp import WhatsappActions
+from puma.utils import configure_default_logging
 
+configure_default_logging() # Use Puma's logging configuration. You can also implement your own
 alice = WhatsappActions("emulator-5554")  # initialize a connection with device emulator-5554
 alice.select_chat("Bob")
 alice.send_message("message_text")
@@ -145,7 +155,9 @@ are in the correct conversation. So, you will have to have called `select_chat` 
 
 ```python
 from puma.apps.android.whatsapp.whatsapp import WhatsappActions
+from puma.utils import configure_default_logging
 
+configure_default_logging() # Use Puma's logging configuration. You can also implement your own
 alice = WhatsappActions("emulator-5554")  # initialize a connection with device emulator-5554
 alice.send_message("message_text", chat="Bob")
 ```
@@ -225,6 +237,34 @@ sudo apt install ffmpeg
 
 This utils code offers a way to process screen recordings (namely concatenating videos and stitching them together
 horizontally).
+
+## Logging in Puma
+
+Puma uses Python’s standard `logging` library.
+
+### Default Behavior
+
+- **As a CLI or main module:** Puma configures default logging so INFO and higher messages are visible.
+- **In Jupyter notebooks:** Puma enables default logging so logs are visible in notebook cells.
+- **As a module in another project:** Puma does not configure logging; messages are only shown if your application configures logging.
+
+### Ground Truth Logging
+
+Puma contains a separate 'Ground Truth' logger (GTL), which logs all actions and navigation steps that are performed on a
+device during a Puma run. These logs are stored in separate log files with the `_gtl` suffix. The log lines produced by
+this logger are also present in the regular log files, but the GTL logs only contain information about actions on a device.
+
+### How to See Puma’s Logs
+
+To see Puma logs in your own script, opt-in to Puma's default log format and level by calling:
+
+```python
+from puma.utils import configure_default_logging
+configure_default_logging()
+```
+
+This is also shown in the examples above.
+If you want to use your own logging format, you can configure Python logging (e.g., with `logging.basicConfig(level=logging.INFO)`).
 
 ## Troubleshooting
 

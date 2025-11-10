@@ -1,10 +1,10 @@
-# WhatsApp Messenger - Android
+# WhatsApp Messenger for Business - Android
 
-WhatsApp Messenger is an instant messaging VoIP service owned by Meta.
-Puma supports a wide range of actions in WhatsApp, listed below. Registration with a phone number is required.
-For detailed information on each method, see the method its PyDoc documentation.
+WhatsApp Messenger for Business is an instant messaging VoIP service owned by Meta.
+Puma supports a wide range of actions in WhatsApp for Business, listed below. Registration with a phone number is required.
+For detailed information on each method, see the PyDoc for a method.
 
-The application can be downloaded in [the Google PlayStore](https://play.google.com/store/apps/details?id=com.whatsapp.w4b&hl=nl).
+The application can be downloaded in [the Google PlayStore](https://play.google.com/store/apps/details?id=com.whatsapp).
 
 ## Deprecation
 
@@ -22,8 +22,8 @@ as the abstract base class. Also see the [CONTRIBUTING.md](../../../../CONTRIBUT
 Initialization is standard:
 
 ```python
-from puma.apps.android.whatsapp.whatsapp import WhatsappActions
-phone = WhatsappActions("emulator-5444")
+from puma.apps.android.whatsapp_business.whatsapp_business import WhatsappBusinessActions
+phone = WhatsappBusinessActions("emulator-5444")
 ```
 
 ### Account actions
@@ -31,8 +31,7 @@ phone = WhatsappActions("emulator-5444")
 Some account properties can be set:
 
 ```python
-# this method assumes you have a folder named "profile_picture" on your device, containing a photo
-phone.change_profile_picture()
+phone.change_profile_picture("folder_name", index)
 # Set your whatsapp status
 phone.set_status("This is my new status!")
 # set the about text on your WhatsApp profile
@@ -74,15 +73,14 @@ phone.forward_message("Bob", "important message!",
 
 ### Sending media
 
-Sending a picture or video is supported, but since the UI doesn't show full paths or filenames, you are required to know
-which folder your desired picture or video is in. Puma will pick the first file in that folder and send it.
+Sending picture or video is supported, but since the UI doesn't show full paths or filenames, you are required to know
+which folder your desired picture or video is in, Puma will pick the first file in that folder and send it.
 
 ```python
 phone.select_chat("Bob")  # open the conversation with Bob 
 phone.send_media("Bird")  # will send the first picture or video in the folder "Bird"
 phone.send_media("Horse", chat="Charlie")  # First opens the correct conversation before sending the media
-phone.send_media("Fish", index=2, caption="look at this cool fish!")  # send media from folder "Fish" at index 2, with a caption
-phone.send_media("Turtle", view_once=True)  # activate hte 'view once' option
+phone.send_media("Fish", index=2, caption="look at this cool fish!")  # Send the media at index 2 from the folder "Fish" with a caption
 ```
 
 ### Other chat functions

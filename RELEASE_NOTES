@@ -1,6 +1,33 @@
 Version 3.0.0
 -------------
+151. Add demo script to tutorial folder
+151. Make StateGraph objects and legacy AppiumAction objects compatible
+151. Location spoofing: fixed a bug that broke route simulation
+134. Telegram: Rewrite to Puma State Machine
+148. Skip release notes test for main branch
+136. Rewrite Google Chrome to use the StateGraph
+138. Rewrite OpenCamera to use the StateGraph
+11. Add Release notes test
+105. Google play Store: Add support for installing, updating, and uninstalling apps
+127. Add MVP of ground truth logging in the Puma state graph framework
+125. Deprecate classes which do not use StateGraph as their abstract base class
 107. Define a state graph framework to represent app screens and transitions
+
+Version 2.10.0
+-------------
+114. WhatsApp Business: Add support
+
+Version 2.9.2
+-------------
+117. Fix for tab switching in Chrome
+
+Version 2.9.1
+-------------
+113. Fix for bookmarking and creating a new tab in Chrome
+
+Version 2.9.0
+-------------
+110. Add ground truth logging
 
 Version 2.8.0
 -------------

@@ -49,7 +49,7 @@ class RecognizedText:
         return self.__str__()
 
 
-def recognize_text(path_to_image: str) -> [RecognizedText]:
+def recognize_text(path_to_image: str) -> list[RecognizedText]:
     """
     Analyzes an image and returns a list of all text recognized by Teseract
     :param path_to_image: path to the image
@@ -66,7 +66,7 @@ def recognize_text(path_to_image: str) -> [RecognizedText]:
     return all_text
 
 
-def find_text(path_to_image: str, text_to_find: str) -> [RecognizedText]:
+def find_text(path_to_image: str, text_to_find: str) -> list[RecognizedText]:
     """
     Filters the output of recognize_text for a given text to find (case-insensitive).
     :param path_to_image: path to the image

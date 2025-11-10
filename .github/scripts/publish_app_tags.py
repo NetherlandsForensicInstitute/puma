@@ -3,16 +3,28 @@ from typing import Callable, Tuple
 
 from git import Repo, Remote
 
+from puma.apps.android.google_camera.google_camera import GoogleCamera
+from puma.apps.android.google_chrome.google_chrome import GoogleChrome
 from puma.apps.android.google_maps.google_maps import GoogleMapsActions
+from puma.apps.android.google_play_store.google_play_store import GooglePlayStore
+from puma.apps.android.open_camera.open_camera import OpenCamera
 from puma.apps.android.snapchat.snapchat import SnapchatActions
-from puma.apps.android.telegram.telegram import TelegramActions
+from puma.apps.android.telegram.telegram import Telegram
+from puma.apps.android.teleguard.teleguard import TeleGuard
 from puma.apps.android.whatsapp.whatsapp import WhatsappActions
+from puma.apps.android.whatsapp_business.whatsapp_business import WhatsappBusinessActions
 
 all_app_actions = [
+    GoogleCamera,
+    GoogleChrome,
+    GoogleMapsActions,
+    GooglePlayStore,
+    OpenCamera,
     SnapchatActions,
-    TelegramActions,
+    Telegram,
+    TeleGuard,
     WhatsappActions,
-    GoogleMapsActions
+    WhatsappBusinessActions
 ]
 APP_MODULE = 'puma.apps'
 

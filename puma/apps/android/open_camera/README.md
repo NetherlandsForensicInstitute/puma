@@ -14,9 +14,9 @@ or [F-Droid](https://f-droid.org/packages/net.sourceforge.opencamera/).
 ### Initialization is standard:
 
 ```python
-from puma.apps.android.open_camera.open_camera import OpenCameraActions
+from puma.apps.android.open_camera.open_camera import OpenCamera
 
-phone = OpenCameraActions("emulator-5554")
+phone = OpenCamera("emulator-5554")
 ```
 
 ### Using the camera
@@ -27,15 +27,12 @@ You can take pictures, and switch from front to back:
 # simply take a picture
 phone.take_picture()
 # switch to the front camera to take a picture
-phone.switch_camera()
-phone.take_picture()
+phone.take_picture(front_camera=True)
 # switch back to the rear camera to take a picture
-phone.switch_camera()
 phone.take_picture()
 # taking video requires a duration:
-phone.take_video(10)  # ten seconds of recording
+phone.take_video(duration=10)  # ten seconds of recording
 # We can zoom
-phone.zoom(1)  # zoom in completely
-phone.zoom(0)  # zoom out completely
-phone.zoom(0.5)  # The middle
+phone.take_picture(zoom_amount=1.0)
+phone.take_picture(zoom_amount=0.5)
 ```
