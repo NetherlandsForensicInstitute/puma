@@ -54,7 +54,11 @@ def go_to_video_call(driver: PumaDriver, contact: str):
 @supported_version("2.25.31.76")
 class WhatsApp(StateGraph):
     """
-    TODO
+    A class representing a state graph for managing UI states and transitions in the WhatsApp application.
+
+    This class uses a state machine approach to manage transitions between different states
+    of the WhatsApp user interface. It provides methods to navigate between states, validate states,
+    and handle unexpected states or errors.
     """
 
     conversations_state = SimpleState([CONVERSATIONS_WHATSAPP_LOGO,
