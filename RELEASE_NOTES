@@ -1,6 +1,6 @@
 Version 3.0.0
 -------------
-162. Add xpaths to profile state
+162. Google Play Store: Add xpaths to profile state
 124. WhatsApp: Rewrite to Puma State Machine
 151. Add demo script to tutorial folder
 151. Make StateGraph objects and legacy AppiumAction objects compatible
