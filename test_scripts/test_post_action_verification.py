@@ -1,17 +1,13 @@
 import unittest
 from unittest.mock import Mock
 
+from build.lib.puma.state_graph.puma_driver import PumaClickException
 from puma.state_graph.action import action
 from puma.state_graph.puma_driver import PumaDriver
 from puma.state_graph.state import SimpleState, ContextualState, State
 from puma.state_graph.state_graph import StateGraph
 from puma.utils import gtl_logging
 
-# TODO-CC:
-#   * require driver + logger as parameters of verification function?
-#   * pass State to post_action function (either static method first arg, or instance method 'self')
-#   * changing states in post_action currently manual, also use state annotations? (e.g. @post_action(state))\
-#   * DOCUMENT THAT API IS IN FLUX?
 
 class MockChatState(SimpleState, ContextualState):
 
@@ -73,6 +69,30 @@ class TestVerifyWith(unittest.TestCase):
         with self.assertRaisesRegex(TypeError, "'verify_with' must be a callable"):
             application.change_username(new_name='This is illegal', verify_with='not a callable')
 
+    def test_verify_with_raises_puma_click_exception_is_logged(self):
+        def verification_throws_puma_click_exception():
+            raise PumaClickException('puma click exception')
+
+        mock_logger = gtl_logging.create_gtl_logger('mock_udid')
+
+        with self.assertLogs(mock_logger, level='INFO') as logs:
+            application = MockApplication(gtl_logger=mock_logger)
+            application.change_username(new_name='MyName', verify_with=verification_throws_puma_click_exception)
+
+            # assert we logged what happened
+            self.assertIn('WARNING:mock_udid:Verifying with verification_throws_puma_click_exception failed due to exception: puma click exception', logs.output)
+            # assert the action happened, i.e. our username has changed
+            self.assertEqual(application.username, 'MyName')
+
+    def test_verify_with_raises_generic_exception_is_propagated(self):
+        def verification_throws_puma_click_exception():
+            raise Exception('generic exception')
+
+        application = MockApplication()
+
+        with self.assertRaisesRegex(Exception, 'generic exception'):
+            application.change_username(new_name='MyName', verify_with=verification_throws_puma_click_exception)
+
     def test_driver_is_passed_to_verify_with(self):
         # test if the verify_with receives the driver by capturing it inside the function
         def should_receive_driver(driver):
@@ -132,7 +152,7 @@ class TestVerifyWith(unittest.TestCase):
             # assert the action happened, i.e. our username has changed
             self.assertEqual(application.username, 'MyName')
 
-    def test_verify_with_logs_and_fails(self):
+    def test_verify_with_logs_and_fails_still_executed_action(self):
         def log_warning_and_return_false(gtl_logger):
             gtl_logger.warn('post verification failed')
             return False
@@ -141,12 +161,29 @@ class TestVerifyWith(unittest.TestCase):
 
         with self.assertLogs(mock_logger, level='WARN') as logs:
             application = MockApplication(gtl_logger=mock_logger)
-            application.change_username(new_name='MyName', verify_with=log_warning_and_return_false)
+            application.change_username(new_name='NewName', verify_with=log_warning_and_return_false)
 
             # assert we called the gtl_logger we passed to our application, and it logged the expected message
             self.assertIn('WARNING:mock_udid:post verification failed', logs.output)
             # assert the action still happened, i.e. our username has changed
-            self.assertEqual(application.username, 'MyName')
+            self.assertEqual(application.username, 'NewName')
+
+    def test_verify_with_logs_and_fails_still_executes_following_action(self):
+        def log_warning_and_return_false(gtl_logger):
+            gtl_logger.warn('post verification failed')
+            return False
+
+        mock_logger = gtl_logging.create_gtl_logger('mock_udid')
+
+        with self.assertLogs(mock_logger, level='WARN') as logs:
+            application = MockApplication(gtl_logger=mock_logger)
+            application.change_username(new_name='OldName', verify_with=log_warning_and_return_false)
+            application.change_username(new_name='NewName')
+
+            # assert we called the gtl_logger we passed to our application, and it logged the expected message
+            self.assertIn('WARNING:mock_udid:post verification failed', logs.output)
+            # assert the follow up action still happened, i.e. our username has changed
+            self.assertEqual(application.username, 'NewName')
 
     def test_verify_with_can_change_states_but_framework_returns_to_simple_state_before(self):
         # inside we move away from the settings_state simple state
@@ -182,7 +219,7 @@ class TestVerifyWith(unittest.TestCase):
 
         self.assertIs(application.current_state, application.chat_state)
 
-    def test_action_decorated_function_contains_parameter_named_verify_with_throws_exception(self):
+    def test_action_decorated_function_cant_have_parameter_named_verify_with(self):
         @action(MockApplication.settings_state)
         def this_should_throw_exception(verify_with):
             pass
