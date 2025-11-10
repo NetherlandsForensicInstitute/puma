@@ -203,17 +203,7 @@ class PumaDriver:
         self.gtl_logger.info(f'Tapping on coordinates {coords}')
         self.driver.tap([coords])
 
-    def long_click(self, xpath:str):
-        """
-        Triggers a long_press on an element specified by its XPath.
-        This method uses press_and_hold with a duration of 1 second.
-
-        :param xpath: The XPath of the element to click.
-        :raises PumaClickException: If the element cannot be clicked after multiple attempts.
-        """
-        self.press_and_hold(xpath, 1)
-
-    def press_and_hold(self, xpath: str, duration: int):
+    def long_click_element(self, xpath: str, duration: int = 1):
         """
         Clicks on a certain element, and hold for a given duration (in seconds)
 
@@ -284,22 +274,6 @@ class PumaDriver:
         """
         self.swipe_to_find_element(xpath, max_swipes)
         self.click(xpath)
-
-    def long_press_element(self, xpath: str, duration: int = 1000):
-        """
-        Press some element for some duration.
-        :param xpath: Xpath of the element to long press.
-        :param duration: Duration of the press in milliseconds.
-        :return:
-        """
-        element = self.get_element(xpath)
-        location = element.location
-        size = element.size
-
-        # Calculate the center of the element
-        x = location['x'] + size['width'] // 2
-        y = location['y'] + size['height'] // 2
-        self.driver.execute_script('mobile: longClickGesture', {'x': x, 'y': y, 'duration': duration})
 
     def send_keys(self, xpath: str, text: str):
         """

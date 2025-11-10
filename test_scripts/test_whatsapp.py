@@ -2,7 +2,7 @@ import unittest
 from time import sleep
 
 from puma.apps.android.whatsapp.whatsapp import WhatsApp
-from puma.apps.android.whatsapp.xpaths import CONVERSATIONS_ROW_BY_SUBJECT
+from puma.apps.android.whatsapp.xpaths import CONVERSATIONS_ROW_BY_SUBJECT, CALL_END_CALL_BUTTON
 
 # Fill in the udids below. Run ADB devices to see the udids.
 device_udids = {
@@ -72,26 +72,26 @@ class TestWhatsapp(unittest.TestCase):
 
     def test_send_and_delete_message_for_everyone(self):
         self.ensure_bob_conversation_present()
-        self.alice.send_message(self.contact_bob, "message to delete")
+        self.alice.send_message("message to delete", conversation=self.contact_bob)
         self.alice.delete_message_for_everyone(self.contact_bob, "message to delete")
 
     def test_forward_message(self):
         self.ensure_bob_conversation_present()
         message_to_forward = "message to forward"
-        self.alice.send_message(self.contact_bob, message_to_forward, True)
+        self.alice.send_message(message_to_forward, conversation=self.contact_bob, wait_until_sent=True)
         self.alice.forward_message(self.contact_bob, message_to_forward, self.contact_bob)
 
     def test_reply_to_message(self):
         self.ensure_bob_conversation_present()
         message = "message to reply to"
-        self.alice.send_message(self.contact_bob, message, True)
-        self.alice.reply_to_message(self.contact_bob, message, "reply")
+        self.alice.send_message(message, conversation=self.contact_bob, wait_until_sent=True)
+        self.alice.reply_to_message(message, "reply")
 
     def test_send_media(self):
-        self.alice.send_media(self.contact_bob, "Screenshots", caption="caption", view_once=False)
+        self.alice.send_media(conversation=self.contact_bob, directory_name='Screenshots', caption='caption', view_once=False)
 
     def test_send_media_view_once(self):
-        self.alice.send_media(self.contact_bob, 'Screenshots', caption="caption", view_once=True)
+        self.alice.send_media(conversation=self.contact_bob, directory_name='Screenshots', caption='caption', view_once=True)
 
     def test_send_sticker(self):
         self.alice.send_sticker(self.contact_bob)
@@ -101,7 +101,7 @@ class TestWhatsapp(unittest.TestCase):
 
     def test_send_contact(self):
         self.ensure_bob_conversation_present()
-        self.alice.send_contact(self.contact_bob, self.contact_bob)
+        self.alice.send_contact(self.contact_bob, conversation=self.contact_bob)
 
     def test_send_current_location(self):
         self.ensure_bob_conversation_present()
@@ -109,12 +109,12 @@ class TestWhatsapp(unittest.TestCase):
 
     def test_send_and_stop_live_location(self):
         self.ensure_bob_conversation_present()
-        self.alice.send_live_location(self.contact_bob, "caption")
+        self.alice.send_live_location(conversation=self.contact_bob, caption="caption")
         self.alice.stop_live_location(self.contact_bob)
 
     def test_send_voice_recording(self):
         self.ensure_bob_conversation_present()
-        self.alice.send_voice_recording(self.contact_bob)
+        self.alice.send_voice_message(conversation=self.contact_bob)
 
     # Group related tests
     def test_set_group_description(self):
@@ -140,7 +140,7 @@ class TestWhatsapp(unittest.TestCase):
     def test_remove_participant_from_group(self):
         group = "remove bob group"
         self.alice.create_group(group, self.contact_bob)
-        self.alice.remove_participant_from_group(group, self.contact_bob)
+        self.alice.remove_member_from_group(group, self.contact_bob)
 
     # Call related tests. Note that you need two phones for these tests, otherwise these tests will fail
     def assert_bob_configured(self):
@@ -150,26 +150,26 @@ class TestWhatsapp(unittest.TestCase):
 
     def test_answer_end_voice_call(self):
         self.assert_bob_configured()
-        self.alice.voice_call_contact(self.contact_bob)
+        self.alice.start_voice_call(self.contact_bob)
         self.bob.answer_call()
         sleep(2)
         self.alice.end_voice_call(self.contact_bob)
 
     def test_answer_end_video_call(self):
         self.assert_bob_configured()
-        self.alice.video_call_contact(self.contact_bob)
+        self.alice.start_video_call(self.contact_bob)
         self.bob.answer_call()
         sleep(2)
         self.alice.end_video_call(self.contact_bob)
 
     def test_decline_voice_call(self):
         self.assert_bob_configured()
-        self.alice.voice_call_contact(self.contact_bob)
+        self.alice.start_voice_call(self.contact_bob)
         self.bob.decline_call()
 
     def test_decline_video_call(self):
         self.assert_bob_configured()
-        self.alice.video_call_contact(self.contact_bob)
+        self.alice.start_video_call(self.contact_bob)
         self.bob.decline_call()
 
     def test_open_view_once_photo(self):
@@ -182,6 +182,14 @@ class TestWhatsapp(unittest.TestCase):
     def test_send_broadcast(self):
         message = "broadcast message"
         self.alice.send_broadcast([self.contact_bob, self.contact_charlie], message)
+
+    def test_transitions(self):
+        self.ensure_bob_conversation_present()
+        for to_state in self.alice.states:
+            self.alice.go_to_state(to_state, conversation='Bob', contact='Bob')
+            if self.alice.driver.is_present(CALL_END_CALL_BUTTON):
+                self.alice._end_call()
+        self.alice.go_to_state(self.alice.initial_state)
 
 
 if __name__ == '__main__':
