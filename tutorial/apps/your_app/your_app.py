@@ -1,9 +1,13 @@
 from typing import Dict
 
+from typing_extensions import deprecated
+
 from puma.apps.android.appium_actions import AndroidAppiumActions, supported_version
 
 YOUR_APP_PACKAGE = 'TODO'
 
+@deprecated('This class does not use the Puma state machine, and will therefore not be maintained. ' +
+            'If you want to add functionality, please rewrite this class using StateGraph as the abstract base class.')
 @supported_version("TODO")
 class YourAppActions(AndroidAppiumActions):
 
