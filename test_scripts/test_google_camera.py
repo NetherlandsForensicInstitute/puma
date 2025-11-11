@@ -20,7 +20,7 @@ class TestGoogleCamera(unittest.TestCase):
     @classmethod
     def setUpClass(self):
         if not device_udids["Alice"]:
-            print("No udid was configured for Alice. Pleas add at the top of the script.")
+            print("No udid was configured for Alice. Please add at the top of the script.")
             print("Exiting....")
             exit(1)
         self.alice = GoogleCamera(device_udids["Alice"])
