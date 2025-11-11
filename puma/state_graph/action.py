@@ -1,12 +1,13 @@
 import inspect
-from typing import Callable
+from typing import Callable, OrderedDict, Any
 
 from build.lib.puma.state_graph.puma_driver import PumaClickException
 from puma.state_graph.state import State
+from puma.state_graph.state_graph import StateGraph
 from puma.state_graph.utils import filter_arguments
 
 
-def _assert_verify_with_function_is_valid(verify_with):
+def _assert_verify_with_function_is_valid(verify_with: type[Any]):
     """
     Validate that the 'verify_with' passed to the action is valid, else throw an error.
 
@@ -17,7 +18,7 @@ def _assert_verify_with_function_is_valid(verify_with):
         raise TypeError(f"'verify_with' must be a callable, instead is: {type(verify_with)}")
 
 
-def _execute_post_action_verification(puma_ui_graph, verify_with, arguments):
+def _execute_post_action_verification(puma_ui_graph: StateGraph, verify_with: Callable, arguments: OrderedDict[str, Any]):
     """
     Run the given post action verification function and log the results. Returns to the current state
     of the graph at the end of the verification execution.
