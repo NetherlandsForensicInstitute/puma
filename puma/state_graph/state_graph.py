@@ -4,7 +4,6 @@ from typing import Dict
 from puma.state_graph import logger
 from puma.state_graph.popup_handler import known_popups, PopUpHandler
 from puma.state_graph.puma_driver import PumaDriver, PumaClickException
-
 from puma.state_graph.state import State, ContextualState, Transition, _shortest_path
 from puma.state_graph.utils import safe_func_call, filter_arguments, is_valid_package_name
 
