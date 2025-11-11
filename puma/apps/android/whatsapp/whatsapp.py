@@ -23,7 +23,6 @@ def go_to_chat(driver: PumaDriver, conversation: str):
     :param driver: The PumaDriver instance used to interact with the application.
     :param conversation: The name of the conversation to navigate to.
     """
-    driver.gtl_logger.info(f'Clicking on conversation {conversation} with driver {driver}')
     driver.get_elements(CONVERSATIONS_ROW_BY_SUBJECT.format(conversation=conversation))[-1].click()
 
 
@@ -144,7 +143,7 @@ class WhatsApp(StateGraph):
             f"/.."  # Parent of the message (i.e. conversation text row)
             f"//*[@resource-id='com.whatsapp:id/status']")  # Status element
         while message_status_el.tag_name == "Pending":
-            logger.info("Message pending, waiting for the message to be sent.")
+            self.gtl_logger.info("Message pending, waiting for the message to be sent.")
             sleep(10)
         return message_status_el
 

@@ -38,22 +38,22 @@ def action(state: State, end_state: State = None):
                 puma_ui_graph.go_to_state(state, **arguments)
                 try:
                     gtl_logger.info(
-                        f"Executing action {func.__name__} with arguments: {args[1:]} and keyword arguments: {kwargs} for application: {puma_ui_graph.__class__.__name__}")
+                        f"Executing action '{func.__name__}' with arguments: {args[1:]} and keyword arguments: {kwargs} for application: {puma_ui_graph.__class__.__name__}")
                     result = func(*args, **kwargs)
                 except:
-                    gtl_logger.info(f"Failed to execute action {func.__name__}.")
+                    gtl_logger.info(f"Failed to execute action '{func.__name__}'.")
                     puma_ui_graph.recover_state(state)
                     puma_ui_graph.go_to_state(state, **arguments)
-                    gtl_logger.info(f'Retrying action {func.__name__}')
+                    gtl_logger.info(f"Retrying action '{func.__name__}'")
                     result = func(*args, **kwargs)
                 puma_ui_graph.try_restart = True
                 gtl_logger.info(
-                    f"Successfully executed action {func.__name__} with arguments: {args[1:]} and keyword arguments: {kwargs} for application: {puma_ui_graph.__class__.__name__}")
+                    f"Successfully executed action '{func.__name__}' with arguments: {args[1:]} and keyword arguments: {kwargs} for application: {puma_ui_graph.__class__.__name__}")
                 if end_state:
                     puma_ui_graph.current_state = end_state
                 return result
             except Exception as e:
-                gtl_logger.error("Unexpected exception", e)
+                gtl_logger.error("Unexpected exception while executing an action", e)
                 raise e
 
 

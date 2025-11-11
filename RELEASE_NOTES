@@ -1,6 +1,7 @@
 Version 3.1.0
 -------------
 123. SnapChat: Rewrite to Puma State Machine
+159. Improve GTL logging
 
 Version 3.0.0
 -------------
