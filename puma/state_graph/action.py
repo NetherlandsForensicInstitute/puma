@@ -16,8 +16,6 @@ def _assert_verify_with_function_is_valid(verify_with):
     if not isinstance(verify_with, Callable):
         raise TypeError(f"'verify_with' must be a callable, instead is: {type(verify_with)}")
 
-    # TODO: enforce signature, e.g. must be func(app) and optional extra args?
-
 
 def _execute_post_action_verification(puma_ui_graph, verify_with, arguments):
     """
