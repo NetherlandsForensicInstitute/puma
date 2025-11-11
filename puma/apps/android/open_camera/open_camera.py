@@ -101,7 +101,6 @@ class OpenCamera(StateGraph):
         """
         switch_camera_button = self.driver.get_element(SWITCH_CAMERA_XPATH)
         currently_in_front = 'back' in switch_camera_button.get_attribute("content-desc")
-        logger.info(f"Currently in front camera view: {currently_in_front}")
         if currently_in_front != front_camera:
             switch_camera_button.click()
             self.gtl_logger.info("Switched camera view")
