@@ -39,6 +39,7 @@ APP_PAGE_CANCEL_INSTALL_BUTTON = '//android.view.View[@content-desc="Cancel"]'
 APP_PAGE_THREE_DOTS = '//android.view.View[@content-desc="More options"]'
 APP_PAGE_NAVIGATE_UP = '//android.view.View[@content-desc="Navigate up"]'
 
+PROFILE_GOOGLE = '//android.widget.Button[@resource-id="com.android.vending:id/0_resource_name_obfuscated" and @text="Google Account"]'
 UPDATE_ALL_BUTTON = '//android.view.View[@content-desc="Update all"]'
 MANAGE_APP_STATE = '//android.widget.TextView[@text="Manage apps and device"]'
 MANAGE_APP_STATE_SYNC = '//android.widget.TextView[@text="Sync apps to devices"]'
@@ -118,7 +119,7 @@ class GooglePlayStore(StateGraph):
     and handle unexpected states or errors.
     """
     apps_tab_state = SimpleState([ACCOUNT_ICON, HOME_SCREEN_TABS, APPS_TAB_SELECTED], initial_state=True)
-    profile_state = SimpleState([], parent_state=apps_tab_state)
+    profile_state = SimpleState([MANAGE_APPS_AND_DEVICES, PROFILE_GOOGLE], parent_state=apps_tab_state)
     manage_apps_state = SimpleState([MANAGE_APP_STATE, MANAGE_APP_STATE_SYNC], parent_state=apps_tab_state)
     app_page_state = AppPage(parent_state=apps_tab_state)
 

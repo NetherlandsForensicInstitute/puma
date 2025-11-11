@@ -1,11 +1,14 @@
 from typing import Dict
 
 from appium.webdriver.common.appiumby import AppiumBy
+from typing_extensions import deprecated
 
 from puma.apps.android.appium_actions import AndroidAppiumActions, supported_version
 
 GOOGLE_CHROME_PACKAGE = 'com.android.chrome'
 
+@deprecated('This class does not use the Puma state machine, and will therefore not be maintained. ' +
+            'If you want to add functionality, please rewrite this class using StateGraph as the abstract base class.')
 @supported_version("124.0.6367.219")
 class GoogleChromeActionsTutorial(AndroidAppiumActions):
     def __init__(self,
