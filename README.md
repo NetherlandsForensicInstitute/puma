@@ -144,7 +144,7 @@ from puma.utils import configure_default_logging
 
 configure_default_logging() # Use Puma's logging configuration. You can also implement your own
 alice = WhatsApp("emulator-5554")  # initialize a connection with device emulator-5554
-alice.go_to_state(alice.chat_state, conversation="Bob")
+alice.go_to_state(WhatsApp.chat_state, conversation="Bob")
 alice.send_message("message_text")
 ```
 
