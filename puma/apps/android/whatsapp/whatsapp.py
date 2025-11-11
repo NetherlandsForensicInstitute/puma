@@ -573,11 +573,7 @@ class WhatsApp(StateGraph):
         :param implicit_wait: the maximum time to wait for a message to be marked sent, in seconds
         :return: True if the expected message is marked as sent, False otherwise
         """
-        sent_message_xpath = (f'(//android.widget.FrameLayout['
-                              f'@resource-id="{WHATSAPP_PACKAGE}:id/conversation_text_row"'
-                              f' and .//android.widget.TextView[@resource-id="com.whatsapp:id/message_text" and @text="{message_text}"]'
-                              f' and .//android.widget.ImageView[@content-desc="Sent"]'
-                              f'])')
+        sent_message_xpath = CHAT_MESSAGE_BY_CONTENT_AND_STATE.format(message_text=message_text, state='Sent')
 
         return self.driver.is_present(sent_message_xpath, implicit_wait=implicit_wait)
 
@@ -592,11 +588,7 @@ class WhatsApp(StateGraph):
         :param implicit_wait: the maximum time to wait for a message to be marked delivered, in seconds
         :return: True if the expected message is marked as delivered, False otherwise
         """
-        delivered_message_xpath = (f'(//android.widget.FrameLayout['
-                              f'@resource-id="{WHATSAPP_PACKAGE}:id/conversation_text_row"'
-                              f' and .//android.widget.TextView[@resource-id="com.whatsapp:id/message_text" and @text="{message_text}"]'
-                              f' and .//android.widget.ImageView[@content-desc="Delivered"]'
-                              f'])')
+        delivered_message_xpath = CHAT_MESSAGE_BY_CONTENT_AND_STATE.format(message_text=message_text, state='Delivered')
 
         return self.driver.is_present(delivered_message_xpath, implicit_wait=implicit_wait)
 
@@ -611,11 +603,7 @@ class WhatsApp(StateGraph):
         :param implicit_wait: the maximum time to wait for a message to be marked read, in seconds
         :return: True if the expected message is marked as read, False otherwise
         """
-        read_message_xpath = (f'(//android.widget.FrameLayout['
-                              f'@resource-id="{WHATSAPP_PACKAGE}:id/conversation_text_row"'
-                              f' and .//android.widget.TextView[@resource-id="com.whatsapp:id/message_text" and @text="{message_text}"]'
-                              f' and .//android.widget.ImageView[@content-desc="Read"]'
-                              f'])')
+        read_message_xpath = CHAT_MESSAGE_BY_CONTENT_AND_STATE.format(message_text=message_text, state='Read')
 
         return self.driver.is_present(read_message_xpath, implicit_wait=implicit_wait)
 
@@ -657,7 +645,7 @@ class WhatsApp(StateGraph):
         else:
             WhatsAppChatState.open_chat_settings(driver, conversation)
 
-            found_member_elements = driver.swipe_to_find_elements('//android.widget.TextView[@resource-id="com.whatsapp:id/name"]', max_swipes=4)
+            found_member_elements = driver.swipe_to_find_elements(CHAT_SETTINGS_ANY_MEMBER, max_swipes=4)
             found_member_names = [member.text for member in found_member_elements]
 
             if set(found_member_names) != set(expected_member_names):

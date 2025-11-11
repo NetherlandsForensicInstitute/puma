@@ -77,6 +77,10 @@ CHAT_GALLERY_FOLDERS_BUTTON = build_content_desc_xpath_widget('ImageButton', 'Fo
 CHAT_FIRST_MEDIA_IN_FOLDER = '//androidx.compose.ui.platform.ComposeView/android.view.View/android.view.View/android.view.View[5]/android.view.View[3]/android.widget.Button'
 CHAT_STOP_SHARING = build_text_xpath('Stop sharing')
 CHAT_MESSAGE_BY_CONTENT = f"//*[@resource-id='{WHATSAPP_PACKAGE}:id/conversation_text_row']//*[contains(@text,'{{message_contains}}')]"
+CHAT_MESSAGE_BY_CONTENT_AND_STATE = (f'(//android.widget.FrameLayout['
+                              f'@resource-id="{WHATSAPP_PACKAGE}:id/conversation_text_row"'
+                              f' and .//android.widget.TextView[@resource-id="com.whatsapp:id/message_text" and @text="{{message_text}}"]'
+                              f' and .//android.widget.ImageView[@content-desc="{{state}}"]])')
 CHAT_FORWARD_MESSAGE = f"//*[@resource-id='{WHATSAPP_PACKAGE}:id/action_mode_bar']//*[@content-desc='Forward']"
 CHAT_FORWARD_CONTACT_BY_NAME = f"//*[@resource-id='{WHATSAPP_PACKAGE}:id/contact_list']//*[@text='{{to_chat}}']"
 CHAT_MENTION_SUGGESTIONS = build_wa_resource_id_xpath_widget('ImageView', 'contact_photo')
@@ -100,6 +104,7 @@ CHAT_SETTINGS_CONTACT_NAME_TEXT = (f'//android.widget.TextView[@resource-id="{WH
                                    f'//android.widget.TextView[@resource-id="{WHATSAPP_PACKAGE}:id/group_title" and contains(lower-case(@text), "{{conversation}}")]')
 CHAT_SETTINGS_NOTIFICATIONS = build_wa_resource_id_xpath_widget('LinearLayout', 'notifications_and_sounds_layout')
 CHAT_SETTINGS_MEDIA_VISIBILITY = build_wa_resource_id_xpath_widget('Button', 'media_visibility_layout')
+CHAT_SETTINGS_ANY_MEMBER = f'//android.widget.TextView[@resource-id="{WHATSAPP_PACKAGE}:id/name"]'
 CHAT_SETTINGS_MEMBER = build_wa_resource_id_text_xpath('name', '{member}')
 CHAT_SETTINGS_REMOVE_MEMBER = "//*[starts-with(@text, 'Remove')]"
 CHAT_SETTINGS_EXIT_GROUP_BUTTON = build_text_xpath_widget('Button', 'Exit group')
