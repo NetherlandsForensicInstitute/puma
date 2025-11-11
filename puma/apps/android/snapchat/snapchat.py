@@ -1,30 +1,11 @@
-from appium.webdriver.common.appiumby import AppiumBy
-
 from puma.apps.android.appium_actions import supported_version
+from puma.apps.android.snapchat.xpaths import *
 from puma.state_graph.action import action
 from puma.state_graph.puma_driver import PumaDriver
 from puma.state_graph.state import SimpleState, ContextualState, compose_clicks
 from puma.state_graph.state_graph import StateGraph
 
 APPLICATION_PACKAGE = 'com.snapchat.android'
-
-ALERT_DIALOG_DESCRIPTION = '//android.widget.TextView[@resource-id="com.snapchat.android:id/alert_dialog_description"]'
-CAMERA_CAPTURE = '//android.widget.FrameLayout[@content-desc="Camera Capture"]'
-CAMERA_PAGE = '//android.widget.FrameLayout[@resource-id="com.snapchat.android:id/camera_page"]'
-CAPTION_EDIT = '//android.widget.EditText[@resource-id="com.snapchat.android:id/caption_edit_text_view"]'
-CHAT_INPUT = '//android.widget.EditText[@resource-id="com.snapchat.android:id/chat_input_text_field"]'
-CHAT_TAB = '//android.view.ViewGroup[@content-desc="Chat"]'
-CONVERSATION_TITLE = '//android.widget.TextView[@resource-id="com.snapchat.android:id/conversation_title_text_view"]'
-DISCARD = '//android.widget.ImageButton[@content-desc="Discard"]'
-DISCARD_ALERT_DIALOG_DISCARD_VIEW = '//android.view.View[@resource-id="com.snapchat.android:id/discard_alert_dialog_discard_view"]'
-FEED_NEW_CHAT = '//android.widget.FrameLayout[@resource-id="com.snapchat.android:id/feed_new_chat"]'
-FRIEND_ACTION = '//android.view.View[@resource-id="com.snapchat.android:id/friend_action_button2"]'
-FULL_SCREEN_SURFACE_VIEW = '//android.view.SurfaceView[@resource-id="com.snapchat.android:id/full_screen_surface_view"]'
-MY_STORY = '//javaClass[@text="My Story · Friends Only"]/..'
-NEW_STORY = '//android.view.View[@content-desc="New Story Button"]'
-SEND = '//android.view.View[@content-desc="Send"]'
-SENT_TO = '//android.view.ViewGroup[@resource-id="com.snapchat.android:id/sent_to_button_label_mode_view"]'
-TOGGLE_CAMERA = '(//android.widget.ImageView[@resource-id="com.snapchat.android:id/camera_mode_icon_image_view"])[1]'
 
 
 def go_to_chat(driver: PumaDriver, conversation: str):
@@ -39,8 +20,7 @@ def go_to_chat(driver: PumaDriver, conversation: str):
     :param conversation: The name of the conversation to navigate to.
     """
 
-    xpath = f'//androidx.recyclerview.widget.RecyclerView[@resource-id="com.snapchat.android:id/recycler_view"]//javaClass[@text="{conversation}"]'
-    driver.get_elements(xpath)[-1].click()
+    driver.get_elements(CHAT_CONVERSATION.format(conversation=conversation))[-1].click()
     driver.click(FRIEND_ACTION)
 
 class SnapchatChatState(SimpleState, ContextualState):
@@ -106,8 +86,7 @@ class SnapchatChatSnapState(SimpleState, ContextualState):
         if not conversation:
             return True
 
-        conversation_xpath = f'//androidx.recyclerview.widget.RecyclerView[@resource-id="com.snapchat.android:id/send_to_recycler_view"]//javaClass[@text="{conversation}"]'
-        elements = driver.get_elements(conversation_xpath)
+        elements = driver.get_elements(CHAT_CONVERSATION_SEND_TO.format(conversation=conversation))
         content_desc = elements[0].get_attribute("text")
 
         return conversation in content_desc
@@ -136,14 +115,14 @@ class Snapchat(StateGraph):
     camera_state.to(captured_state, compose_clicks([CAMERA_CAPTURE]))
     captured_state.to(caption_state, compose_clicks([FULL_SCREEN_SURFACE_VIEW]))
     captured_state.to(snap_state, compose_clicks([SENT_TO]))
-    captured_state.to(discard_state, compose_clicks([DISCARD]))
+    captured_state.to(discard_state, compose_clicks([DISCARD_BUTTON]))
     discard_state.to(camera_state, compose_clicks([DISCARD_ALERT_DIALOG_DISCARD_VIEW]))
 
     def __init__(self, device_udid):
         """
-        Initializes the TestFsm with a device UDID.
+        Initializes Snapchat with a device UDID.
 
-        This class provides an API for interacting with the Snapchat application using Appium.
+        This class provides an API for interacting with the Snapchat application.
         It can be used with an emulator or a real device attached to the computer.
 
         :param device_udid: The unique device identifier for the Android device.
@@ -153,10 +132,10 @@ class Snapchat(StateGraph):
     @action(chat_state)
     def send_message(self, message: str, conversation: str = None):
         """
-        Sends a message in the current chat conversation.
+        Sends a message in the specified chat conversation.
 
         :param message: The message to send.
-        :param conversation: The name of the conversation to send the message in.
+        :param conversation: The name of the conversation to send the message in. If nothing is specified, the current chat will be used.
         """
         self.driver.click(CHAT_INPUT)
         self.driver.send_keys(CHAT_INPUT, message)
@@ -189,15 +168,11 @@ class Snapchat(StateGraph):
         """
         Sends a snap to recipients.
 
-        :param recipients: The recipients to send the snap to.
+        :param recipients: The recipients to send the snap to. If no recipients are specified, the snap will be sent to 'My Story'.
         """
         if recipients:
             for recipient in recipients:
-                recipient_xpath = (
-                    f'//androidx.recyclerview.widget.RecyclerView[@resource-id="com.snapchat.android:id/send_to_recycler_view"]'
-                    f'//android.view.View[count(.//javaClass)=1]//javaClass[@text="{recipient}"]'
-                )
-                self.driver.click(recipient_xpath)
+                self.driver.click(RECIPIENTS_TO_ADD.format(recipient=recipient))
         else:
             self.driver.click(MY_STORY)
-        self.driver.click(SEND)
+        self.driver.click(SEND_BUTTON)
