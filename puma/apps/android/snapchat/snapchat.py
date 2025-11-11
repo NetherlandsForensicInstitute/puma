@@ -3,7 +3,6 @@ from appium.webdriver.common.appiumby import AppiumBy
 from puma.apps.android.appium_actions import supported_version
 from puma.apps.android.snapchat import logger
 from puma.state_graph.action import action
-from puma.state_graph.app_template import APPLICATION_PACKAGE
 from puma.state_graph.puma_driver import PumaDriver
 from puma.state_graph.state import SimpleState, ContextualState, compose_clicks
 from puma.state_graph.state_graph import StateGraph
@@ -28,6 +27,7 @@ SEND = '//android.view.View[@content-desc="Send"]'
 SENT_TO = '//android.view.ViewGroup[@resource-id="com.snapchat.android:id/sent_to_button_label_mode_view"]'
 TOGGLE_CAMERA = '(//android.widget.ImageView[@resource-id="com.snapchat.android:id/camera_mode_icon_image_view"])[1]'
 
+
 def go_to_chat(driver: PumaDriver, conversation: str):
     """
     Navigates to a specific chat conversation in the application.
@@ -40,10 +40,10 @@ def go_to_chat(driver: PumaDriver, conversation: str):
     :param conversation: The name of the conversation to navigate to.
     """
 
-    logger.info(f'Clicking on conversation {conversation} with driver {driver}')
     xpath = f'//androidx.recyclerview.widget.RecyclerView[@resource-id="com.snapchat.android:id/recycler_view"]//javaClass[@text="{conversation}"]'
-    driver.driver.find_elements(by=AppiumBy.XPATH, value=xpath)[-1].click()
+    driver.find_elements(by=AppiumBy.XPATH, value=xpath)[-1].click()
     driver.click(FRIEND_ACTION)
+
 
 class SnapchatChatState(SimpleState, ContextualState):
     """
@@ -75,11 +75,7 @@ class SnapchatChatState(SimpleState, ContextualState):
         if not conversation:
             return True
 
-        logger.info('getting content_desc')
         content_desc = driver.get_element(CONVERSATION_TITLE).get_attribute('text')
-        logger.info(f'getting content_desc {content_desc}')
-        logger.info(f'conversation is {conversation}')
-
         return conversation in content_desc
 
 class SnapchatChatSnapState(SimpleState, ContextualState):
@@ -114,13 +110,14 @@ class SnapchatChatSnapState(SimpleState, ContextualState):
 
         logger.info('getting content_desc')
         conversation_xpath = f'//androidx.recyclerview.widget.RecyclerView[@resource-id="com.snapchat.android:id/send_to_recycler_view"]//javaClass[@text="{conversation}"]'
-        elements = driver.driver.find_elements(AppiumBy.XPATH, conversation_xpath)
+        elements = driver.find_elements(AppiumBy.XPATH, conversation_xpath)
         content_desc = elements[0].get_attribute("text")
         logger.info(f'getting content_desc {content_desc}')
         logger.info(f'conversation is {conversation}')
         logger.info(conversation in content_desc)
 
         return conversation in content_desc
+
 
 @supported_version('12.89.0.40')
 class Snapchat(StateGraph):
@@ -161,7 +158,7 @@ class Snapchat(StateGraph):
 
     def _press_enter(self):
         enter_keycode = 66
-        self.driver.driver.press_keycode(enter_keycode)
+        self.driver.press_keycode(enter_keycode)
 
     @action(chat_state)
     def send_message(self, msg: str, conversation: str = None):
@@ -184,7 +181,7 @@ class Snapchat(StateGraph):
         self.driver.click(TOGGLE_CAMERA)
 
     @action(camera_state)
-    def take_photo(self, caption:str = None):
+    def take_photo(self, caption: str = None):
         """
         Takes a photo.
 
@@ -193,13 +190,13 @@ class Snapchat(StateGraph):
         self.driver.click(CAMERA_CAPTURE)
         if caption:
             self.driver.click(FULL_SCREEN_SURFACE_VIEW)
-            caption_field = self.driver.driver.find_element(AppiumBy.XPATH,
-                                                            CAPTION_EDIT)
+            caption_field = self.driver.find_element(AppiumBy.XPATH,
+                                                     CAPTION_EDIT)
             caption_field.send_keys(caption)
             self.driver.back()
 
     @action(snap_state)
-    def send_snap_to(self, recipients: [str] = None):
+    def send_snap_to(self, recipients: list[str] = None):
         """
         Sends a snap to recipients.
 
@@ -215,4 +212,3 @@ class Snapchat(StateGraph):
         else:
             self.driver.click(MY_STORY)
         self.driver.click(SEND)
-
