@@ -2,12 +2,15 @@ from time import sleep
 from typing import Dict
 
 from appium.webdriver.common.appiumby import AppiumBy
+from typing_extensions import deprecated
 
 from puma.apps.android.appium_actions import supported_version, AndroidAppiumActions
 from tutorial.apps.teleguard import tutorial_logger
 
 APPLICATION_PACKAGE = 'ch.swisscows.messenger.teleguardapp'
 
+@deprecated('This class does not use the Puma state machine, and will therefore not be maintained. ' +
+            'If you want to add functionality, please rewrite this class using StateGraph as the abstract base class.')
 @supported_version("4.0.7")
 class TeleguardActionsTutorial(AndroidAppiumActions):
     def __init__(self,
