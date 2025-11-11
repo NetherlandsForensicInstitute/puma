@@ -1,7 +1,6 @@
 from appium.webdriver.common.appiumby import AppiumBy
 
 from puma.apps.android.appium_actions import supported_version
-from puma.apps.android.snapchat import logger
 from puma.state_graph.action import action
 from puma.state_graph.puma_driver import PumaDriver
 from puma.state_graph.state import SimpleState, ContextualState, compose_clicks
@@ -41,9 +40,8 @@ def go_to_chat(driver: PumaDriver, conversation: str):
     """
 
     xpath = f'//androidx.recyclerview.widget.RecyclerView[@resource-id="com.snapchat.android:id/recycler_view"]//javaClass[@text="{conversation}"]'
-    driver.find_elements(by=AppiumBy.XPATH, value=xpath)[-1].click()
+    driver.get_elements(xpath)[-1].click()
     driver.click(FRIEND_ACTION)
-
 
 class SnapchatChatState(SimpleState, ContextualState):
     """
@@ -108,13 +106,9 @@ class SnapchatChatSnapState(SimpleState, ContextualState):
         if not conversation:
             return True
 
-        logger.info('getting content_desc')
         conversation_xpath = f'//androidx.recyclerview.widget.RecyclerView[@resource-id="com.snapchat.android:id/send_to_recycler_view"]//javaClass[@text="{conversation}"]'
-        elements = driver.find_elements(AppiumBy.XPATH, conversation_xpath)
+        elements = driver.get_elements(conversation_xpath)
         content_desc = elements[0].get_attribute("text")
-        logger.info(f'getting content_desc {content_desc}')
-        logger.info(f'conversation is {conversation}')
-        logger.info(conversation in content_desc)
 
         return conversation in content_desc
 
@@ -156,10 +150,6 @@ class Snapchat(StateGraph):
         """
         StateGraph.__init__(self, device_udid, APPLICATION_PACKAGE)
 
-    def _press_enter(self):
-        enter_keycode = 66
-        self.driver.press_keycode(enter_keycode)
-
     @action(chat_state)
     def send_message(self, msg: str, conversation: str = None):
         """
@@ -170,7 +160,7 @@ class Snapchat(StateGraph):
         """
         self.driver.click(CHAT_INPUT)
         self.driver.send_keys(CHAT_INPUT, msg)
-        self._press_enter()
+        self.driver.press_enter()
 
     @action(camera_state)
     def toggle_camera(self):
@@ -190,8 +180,7 @@ class Snapchat(StateGraph):
         self.driver.click(CAMERA_CAPTURE)
         if caption:
             self.driver.click(FULL_SCREEN_SURFACE_VIEW)
-            caption_field = self.driver.find_element(AppiumBy.XPATH,
-                                                     CAPTION_EDIT)
+            caption_field = self.driver.get_element(CAPTION_EDIT)
             caption_field.send_keys(caption)
             self.driver.back()
 
