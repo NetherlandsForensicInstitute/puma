@@ -562,17 +562,16 @@ class WhatsApp(StateGraph):
             raise PumaClickException(
                 f'The media at index {index} could not be found. The index is likely too large or negative.')
 
-    @staticmethod
-    def verify_message_marked_sent(driver: PumaDriver, message_text: str, implicit_wait=5):
+    def verify_message_marked_sent(self, message_text: str, implicit_wait=5):
         """
         Verify that a message with given text has been sent in the current conversation.
 
         The message must be visible in the current chat view. It must also be marked specifically as sent,
         i.e. a single uncoloured (grey) checkmark.
 
-        :param driver: the driver used for verification of the message
         :param message_text: the text of the message which should have been sent
         :param implicit_wait: the maximum time to wait for a message to be marked sent, in seconds
+        :return: True if the expected message is marked as sent, False otherwise
         """
         sent_message_xpath = (f'(//android.widget.FrameLayout['
                               f'@resource-id="{WHATSAPP_PACKAGE}:id/conversation_text_row"'
@@ -580,19 +579,18 @@ class WhatsApp(StateGraph):
                               f' and .//android.widget.ImageView[@content-desc="Sent"]'
                               f'])')
 
-        return driver.is_present(sent_message_xpath, implicit_wait=implicit_wait)
+        return self.driver.is_present(sent_message_xpath, implicit_wait=implicit_wait)
 
-    @staticmethod
-    def verify_message_marked_delivered(driver: PumaDriver, message_text: str, implicit_wait=5):
+    def verify_message_marked_delivered(self, message_text: str, implicit_wait=5):
         """
         Verify that a message with given text has been delivered in the current conversation.
 
         The message must be visible in the current chat view. It must also be marked specifically as delivered,
         i.e. two uncoloured (grey) checkmarks.
 
-        :param driver: the driver used for verification of the message
         :param message_text: the text of the message which should have been delivered
         :param implicit_wait: the maximum time to wait for a message to be marked delivered, in seconds
+        :return: True if the expected message is marked as delivered, False otherwise
         """
         delivered_message_xpath = (f'(//android.widget.FrameLayout['
                               f'@resource-id="{WHATSAPP_PACKAGE}:id/conversation_text_row"'
@@ -600,19 +598,18 @@ class WhatsApp(StateGraph):
                               f' and .//android.widget.ImageView[@content-desc="Delivered"]'
                               f'])')
 
-        return driver.is_present(delivered_message_xpath, implicit_wait=implicit_wait)
+        return self.driver.is_present(delivered_message_xpath, implicit_wait=implicit_wait)
 
-    @staticmethod
-    def verify_message_marked_read(driver: PumaDriver, message_text: str, implicit_wait=10):
+    def verify_message_marked_read(self, message_text: str, implicit_wait=10):
         """
         Verify that a message with given text has been read in the current conversation.
 
         The message must be visible in the current chat view. It must also be marked specifically as read,
         i.e. two (blue) coloured checkmarks.
 
-        :param driver: the driver used for verification of the message
         :param message_text: the text of the message which should have been read
         :param implicit_wait: the maximum time to wait for a message to be marked read, in seconds
+        :return: True if the expected message is marked as read, False otherwise
         """
         read_message_xpath = (f'(//android.widget.FrameLayout['
                               f'@resource-id="{WHATSAPP_PACKAGE}:id/conversation_text_row"'
@@ -620,25 +617,46 @@ class WhatsApp(StateGraph):
                               f' and .//android.widget.ImageView[@content-desc="Read"]'
                               f'])')
 
-        return driver.is_present(read_message_xpath, implicit_wait=implicit_wait)
+        return self.driver.is_present(read_message_xpath, implicit_wait=implicit_wait)
 
-    @staticmethod
-    def verify_call_connected(driver: PumaDriver):
-        logger = driver.gtl_logger
+    def verify_call_connected(self):
+        logger = self.driver.gtl_logger
         pass
-    
-    @staticmethod
-    def verify_group_created(driver: PumaDriver, conversation: str, members: Union[str, List[str]]):
-        go_to_chat(driver, conversation)
-        # TODO: think about best wait to use transitions
-        WhatsAppChatState.open_chat_settings(driver, conversation)
 
-        # members = members if isinstance(members, list) else [members]
-        #
-        #
-        # members
-        # logger = driver.gtl_logger
-        return False
+    def verify_group_created(self, conversation: str, members: Union[str, List[str]]):
+        """
+        Verify that a group has been created with given name and members. Will log a warning when
+        the expected group can't be found, or doesn't contain expected members.
+
+        You should currently be in the 'conversations_state' state, i.e. the WhatsApp initial state.
+
+        :param conversation: the expected name of the group
+        :param members: the expected members of the group
+        :return: True if the expected group with given members exists, False otherwise
+        """
+        driver = self.driver
+        logger = self.gtl_logger
+
+        expected_member_names = members if isinstance(members, list) else [members]
+
+        try:
+            go_to_chat(driver, conversation)
+        except PumaClickException as e:
+            logger.warning(f'Failed to find group with name {conversation}: {str(e)}')
+            return False
+        else:
+            WhatsAppChatState.open_chat_settings(driver, conversation)
+
+            found_member_elements = driver.swipe_to_find_elements('//android.widget.TextView[@resource-id="com.whatsapp:id/name"]', max_swipes=4)
+            found_member_names = [member.text for member in found_member_elements]
+
+            if set(found_member_names) != set(expected_member_names):
+                logger.warning(f"Group with name '{conversation}' does not contain expected members:"
+                               f" expected {sorted(expected_member_names)},"
+                               f" actual {sorted(found_member_names)}")
+                return False
+
+        return True
 
     @staticmethod
     def render_elements(elements):
@@ -654,13 +672,18 @@ class WhatsApp(StateGraph):
 #       I guess the action, because follow up actions might depend on previous to be done?
 #       then again, the action is called send message... not send_and_wait_for_read,
 #       maybe it just depends on the action
+# TODO: should action always navigate to certain state? or can we just declare 'should be in state x',
+#       i.e. the state after the action probably
 if __name__ == '__main__':
     app = WhatsApp('32131JEHN38079', 'com.whatsapp')
 
-    # app.send_message(message_text='ReadThis', verify_with=app.verify_message_marked_read)
+    # app.send_message(conversation='Bob2', message_text='FreeWilly5', verify_with=app.verify_message_marked_delivered)
     # print(app.verify_message_marked_read(app.driver, 'ReadThis'))
 
     # app.create_group('Group++1', ['Bob', 'Bob2'], verify_with=app.verify_group_created)
-    print(app.verify_group_created(app.driver, 'Help1', ['You', 'Bob']))
+    # print(app.verify_group_created(app, 'Help1', ['You', 'Bob']))
+
+    app.go_to_state(WhatsApp.initial_state)
+    print(app.verify_group_created('Help1', ['You', 'Bo2b']))
 
 
