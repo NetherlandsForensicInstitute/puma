@@ -175,7 +175,7 @@ class GooglePlayStore(StateGraph):
         :param package_name: The exact package name of the application.
         """
         if self._get_app_state_internal() != AppState.NOT_INSTALLED:
-            logger.warn(f'Tried to install app {package_name}, but it was already installed')
+            self.gtl_logger.warn(f'Tried to install app {package_name}, but it was already installed')
             return
         self.driver.click(APP_PAGE_INSTALL_BUTTON)
 
@@ -187,7 +187,7 @@ class GooglePlayStore(StateGraph):
         :param package_name: The exact package name of the application.
         """
         if self._get_app_state_internal() not in [AppState.INSTALLED, AppState.UPDATE_AVAILABLE]:
-            logger.warn(f'Tried to uninstall app {package_name}, but it was not installed')
+            self.gtl_logger.warn(f'Tried to uninstall app {package_name}, but it was not installed')
             return
         self.driver.click(APP_PAGE_UNINSTALL_BUTTON)
         self.driver.click(APP_PAGE_UNINSTALL_SURE_BUTTON)
@@ -199,7 +199,7 @@ class GooglePlayStore(StateGraph):
         :param package_name: The exact package name of the application.
         """
         if self._get_app_state_internal() != AppState.UPDATE_AVAILABLE:
-            logger.warn(f'Tried to update app {package_name}, but there is no update available')
+            self.gtl_logger.warn(f'Tried to update app {package_name}, but there is no update available')
             return
         self.driver.click(APP_PAGE_UPDATE_BUTTON)
 
@@ -209,6 +209,6 @@ class GooglePlayStore(StateGraph):
         Updates all applications. If no updates are available this method will log a warning and do nothing.
         """
         if not self.driver.is_present(UPDATE_ALL_BUTTON):
-            logger.warn('Tried to update all apps, but update button not visible. All apps are probably up-to-date.')
+            self.gtl_logger.warn('Tried to update all apps, but update button not visible. All apps are probably up-to-date.')
             return
         self.driver.click(UPDATE_ALL_BUTTON)

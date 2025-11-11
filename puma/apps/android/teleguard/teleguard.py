@@ -31,7 +31,6 @@ def go_to_chat(driver: PumaDriver, conversation: str):
     :param driver: The PumaDriver instance used to interact with the application.
     :param conversation: The name of the conversation to navigate to.
     """
-    logger.info(f'Clicking on conversation {conversation} with driver {driver}')
     xpath = f'//android.widget.ImageView[contains(lower-case(@content-desc), "{conversation.lower()}")] | ' \
             f'//android.view.View[contains(lower-case(@content-desc), "{conversation.lower()}")]'
     driver.driver.find_elements(by=AppiumBy.XPATH, value=xpath)[-1].click()

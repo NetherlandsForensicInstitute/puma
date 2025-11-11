@@ -143,7 +143,7 @@ class WhatsApp(StateGraph):
             f"/.."  # Parent of the message (i.e. conversation text row)
             f"//*[@resource-id='com.whatsapp:id/status']")  # Status element
         while message_status_el.tag_name == "Pending":
-            logger.info("Message pending, waiting for the message to be sent.")
+            self.gtl_logger.info("Message pending, waiting for the message to be sent.")
             sleep(10)
         return message_status_el
 

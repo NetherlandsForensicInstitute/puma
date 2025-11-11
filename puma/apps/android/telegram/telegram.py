@@ -234,7 +234,7 @@ class Telegram(StateGraph):
         Ends the current Telegram call. If no call is in progress, this will log a warning but not raise an error.
         """
         if self.current_state != Telegram.call_state:
-            logger.warning(f'Tried to end a call, but no call was in progress')
+            self.gtl_logger.warning(f'Tried to end a call, but no call was in progress')
         self.driver.click(CALL_STATE_END_CALL_BUTTON)
 
     @action(send_media_state, end_state=chat_state)
@@ -262,7 +262,7 @@ class Telegram(StateGraph):
         """
         self.driver.click(SEND_MEDIA_STATE_LOCATION_BUTTON)
         if not self.driver.is_present(SEND_MEDIA_STATE_LIVE_LOCATION_BUTTON, implicit_wait=1):
-            logger.warning(f'Could not share live location, was live location already being shared?')
+            self.gtl_logger.warning(f'Could not share live location, was live location already being shared?')
             self.driver.back()
             return
         self.driver.click(SEND_MEDIA_STATE_LIVE_LOCATION_BUTTON)
@@ -284,7 +284,7 @@ class Telegram(StateGraph):
         :param conversation: the conversation (group or 1 on 1) to send the message in. Not needed when already in a conversation.
         """
         if not self.driver.is_present(CHAT_STATE_STOP_LIVE_LOCATION_SHARING_BUTTON):
-            logger.warning(f'Could not stop sharing live location as it wasn\'t shared.')
+            self.gtl_logger.warning(f'Could not stop sharing live location as it wasn\'t shared.')
             return
         self.driver.click(CHAT_STATE_STOP_LIVE_LOCATION_SHARING_BUTTON)
         self.driver.click(CHAT_STATE_STOP_LIVE_LOCATION_CONFIRM_BUTTON)

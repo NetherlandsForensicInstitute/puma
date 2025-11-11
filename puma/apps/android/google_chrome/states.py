@@ -82,7 +82,6 @@ class CurrentTab(SimpleState, ContextualState):
         :param driver: The PumaDriver instance used to interact with the application
         :param tab_index: Index of the tab to navigate to
         """
-        logger.info(f'Clicking on tab at index {tab_index}.')
         tab_content_view = f'({TAB_LIST}//*[@resource-id="com.android.chrome:id/content_view"])[{tab_index}]'
         if driver.is_present(f'{tab_content_view}'
                              f'//*'
