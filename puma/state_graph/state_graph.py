@@ -100,12 +100,16 @@ class StateGraphMeta(type):
     @staticmethod
     def _validate_every_state_reachable(states):
         initial_state = next(s for s in states if s.initial_state)
-        unreachable_states = [s for s in states if not s.initial_state and not (
-                    bool(_shortest_path(initial_state, s)) and bool(_shortest_path(s, initial_state)))]
-        if unreachable_states:
+        unreachable_transitions = [s for s in states if not s.initial_state and not (
+                    bool(_shortest_path(initial_state, s)))]
+        unreachable_parents = [s for s in states if not s.initial_state and not (
+            bool(_shortest_path(s, initial_state)))]
+        if unreachable_parents or unreachable_parents:
             raise ValueError(
-                f"Some states cannot be reached from the initial state '{initial_state}'. The following states are unreachable: {unreachable_states}.\n"
-                f"Add the missing transitions to your Puma StateGraph to fix this issue."
+                f"Some states cannot be reached from the initial state '{initial_state}'.\n"
+                f"Add the missing transitions or missing parent states to your Puma StateGraph to fix this issue.\n"
+                f"Missing transitions: {unreachable_transitions}\n"
+                f"Missing parent states: {unreachable_parents}"
             )
 
     @staticmethod
