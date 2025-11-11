@@ -619,9 +619,9 @@ class WhatsApp(StateGraph):
 
         return self.driver.is_present(read_message_xpath, implicit_wait=implicit_wait)
 
-    def verify_call_connected(self):
+    def verify_in_connected_call(self):
         """
-        Verify that we are in a connected call. This can be both a voice call and a video call.
+        Verify that we are in a connected call. This can be either a voice call or a video call.
 
         :return: True if we are in an active call, False otherwise
         """
@@ -633,9 +633,9 @@ class WhatsApp(StateGraph):
         # now check again if we see a call end button
         return self.driver.is_present(CALL_END_CALL_BUTTON, implicit_wait=1)
 
-    def verify_group_created(self, conversation: str, members: Union[str, List[str]]):
+    def verify_group_exists(self, conversation: str, members: Union[str, List[str]]):
         """
-        Verify that a group has been created with given name and members. Will log a warning when
+        Verify that a group exists with given name and members. Will log a warning when
         the expected group can't be found, or doesn't contain expected members.
 
         You should currently be in the 'conversations_state' state, i.e. the WhatsApp initial state.
@@ -676,6 +676,8 @@ class WhatsApp(StateGraph):
 #       >> then again, as I understand, verify methods should also be independently called
 # TODO: should action always navigate to certain state? or can we just declare 'should be in state x',
 #       i.e. the state after the action probably
+# TODO: should verify with return message with result? raise exception?
+# TODO: drop verify prefix
 if __name__ == '__main__':
     app = WhatsApp('32131JEHN38079', 'com.whatsapp')
 
@@ -689,6 +691,6 @@ if __name__ == '__main__':
     # print(app.verify_group_created('Help1', ['You', 'Bo2b']))
 
     app.answer_call()
-    print(app.verify_call_connected())
+    print(app.verify_in_connected_call())
 
 

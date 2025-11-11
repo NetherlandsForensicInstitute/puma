@@ -1,5 +1,6 @@
 Version 3.0.0
 -------------
+164. Add verification methods for WhatsApp
 129. Add post action verification
 124. WhatsApp: Rewrite to Puma State Machine
 151. Add demo script to tutorial folder
