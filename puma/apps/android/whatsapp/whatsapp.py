@@ -620,8 +620,18 @@ class WhatsApp(StateGraph):
         return self.driver.is_present(read_message_xpath, implicit_wait=implicit_wait)
 
     def verify_call_connected(self):
-        logger = self.driver.gtl_logger
-        pass
+        """
+        Verify that we are in a connected call. This can be both a voice call and a video call.
+
+        :return: True if we are in an active call, False otherwise
+        """
+        # first check if we see the end call button
+        if not self.driver.is_present(CALL_END_CALL_BUTTON, implicit_wait=1):
+            # if not, tap screen to (try and) make call button visible
+            self.driver.click(CALL_SCREEN_BACKGROUND)
+
+        # now check again if we see a call end button
+        return self.driver.is_present(CALL_END_CALL_BUTTON, implicit_wait=1)
 
     def verify_group_created(self, conversation: str, members: Union[str, List[str]]):
         """
@@ -658,20 +668,12 @@ class WhatsApp(StateGraph):
 
         return True
 
-    @staticmethod
-    def render_elements(elements):
-        import io
-        from PIL import Image
-
-        for element in elements:
-            image = Image.open(io.BytesIO(element.screenshot_as_png))
-            image.show(title=element.id)
-
 
 # TODO: should action do the waiting? verification? both?
 #       I guess the action, because follow up actions might depend on previous to be done?
 #       then again, the action is called send message... not send_and_wait_for_read,
 #       maybe it just depends on the action
+#       >> then again, as I understand, verify methods should also be independently called
 # TODO: should action always navigate to certain state? or can we just declare 'should be in state x',
 #       i.e. the state after the action probably
 if __name__ == '__main__':
@@ -683,7 +685,10 @@ if __name__ == '__main__':
     # app.create_group('Group++1', ['Bob', 'Bob2'], verify_with=app.verify_group_created)
     # print(app.verify_group_created(app, 'Help1', ['You', 'Bob']))
 
-    app.go_to_state(WhatsApp.initial_state)
-    print(app.verify_group_created('Help1', ['You', 'Bo2b']))
+    # app.go_to_state(WhatsApp.initial_state)
+    # print(app.verify_group_created('Help1', ['You', 'Bo2b']))
+
+    app.answer_call()
+    print(app.verify_call_connected())
 
 
