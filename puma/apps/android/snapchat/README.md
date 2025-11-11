@@ -27,8 +27,8 @@ We can send a simple text message:
 
 ```python
 # Send a message to a recipient
-phone.send_message(msg="Hi charlie!", recipients="Charlie")
-phone.send_message(msg="Hi charlie!", recipients="Charlie")
+phone.send_message(msg="Hi charlie!", conversation="Charlie")
+phone.send_message(msg="Hi charlie!", conversation="Charlie")
 ```
 
 ### Send a Snap

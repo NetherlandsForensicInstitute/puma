@@ -151,15 +151,15 @@ class Snapchat(StateGraph):
         StateGraph.__init__(self, device_udid, APPLICATION_PACKAGE)
 
     @action(chat_state)
-    def send_message(self, msg: str, conversation: str = None):
+    def send_message(self, message: str, conversation: str = None):
         """
         Sends a message in the current chat conversation.
 
-        :param msg: The message to send.
+        :param message: The message to send.
         :param conversation: The name of the conversation to send the message in.
         """
         self.driver.click(CHAT_INPUT)
-        self.driver.send_keys(CHAT_INPUT, msg)
+        self.driver.send_keys(CHAT_INPUT, message)
         self.driver.press_enter()
 
     @action(camera_state)
