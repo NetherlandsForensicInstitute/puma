@@ -45,6 +45,13 @@ class MockApplication(StateGraph):
             self.messages = []
         self.messages.append(message)
 
+    def instance_verify_username_equals(self, new_name):
+        return self.username == new_name
+
+    @staticmethod
+    def static_verify_username_equals(app, new_name):
+        return app.username == new_name
+
 
 class TestVerifyWith(unittest.TestCase):
 
@@ -69,6 +76,24 @@ class TestVerifyWith(unittest.TestCase):
         with self.assertRaisesRegex(TypeError, "'verify_with' must be a callable"):
             application.change_username(new_name='This is illegal', verify_with='not a callable')
 
+    def test_verify_with_using_static_method(self):
+        mock_logger = gtl_logging.create_gtl_logger('mock_udid')
+
+        with self.assertLogs(mock_logger, level='INFO') as logs:
+            application = MockApplication(gtl_logger=mock_logger)
+            application.change_username(new_name='NewName', verify_with=MockApplication.static_verify_username_equals)
+
+            self.assertIn('INFO:mock_udid:Action succeeded', logs.output)
+
+    def test_verify_with_using_instance_method(self):
+        mock_logger = gtl_logging.create_gtl_logger('mock_udid')
+
+        with self.assertLogs(mock_logger, level='INFO') as logs:
+            application = MockApplication(gtl_logger=mock_logger)
+            application.change_username(new_name='NewName', verify_with=application.instance_verify_username_equals)
+
+            self.assertIn('INFO:mock_udid:Action succeeded', logs.output)
+
     def test_verify_with_raises_puma_click_exception_is_logged(self):
         def verification_throws_puma_click_exception():
             raise PumaClickException('puma click exception')
@@ -80,7 +105,7 @@ class TestVerifyWith(unittest.TestCase):
             application.change_username(new_name='MyName', verify_with=verification_throws_puma_click_exception)
 
             # assert we logged what happened
-            self.assertIn('WARNING:mock_udid:Verifying with verification_throws_puma_click_exception failed due to exception: puma click exception', logs.output)
+            self.assertIn("WARNING:mock_udid:Verifying with 'verification_throws_puma_click_exception' failed due to exception: puma click exception", logs.output)
             # assert the action happened, i.e. our username has changed
             self.assertEqual(application.username, 'MyName')
 
@@ -93,51 +118,49 @@ class TestVerifyWith(unittest.TestCase):
         with self.assertRaisesRegex(Exception, 'generic exception'):
             application.change_username(new_name='MyName', verify_with=verification_throws_puma_click_exception)
 
-    def test_driver_is_passed_to_verify_with(self):
-        # test if the verify_with receives the driver by capturing it inside the function
-        def should_receive_driver(driver):
-            self.captures.append(driver)
+    def test_state_graph_is_passed_to_verify_with(self):
+        # test if the verify_with receives the app by capturing it inside the function
+        def should_receive_app(app):
+            self.captures.append(app)
             return True
 
-        driver_to_pass = Mock(name='passed_mock_driver')
-        application = MockApplication(driver_to_pass)
-        application.change_username(new_name='ignore', verify_with=should_receive_driver)
+        application = MockApplication()
+        application.change_username(new_name='ignore', verify_with=should_receive_app)
 
-        self.assertIs(self.captures[0], driver_to_pass)
+        self.assertIs(self.captures[0], application)
 
-    def test_driver_and_context_are_passed_to_verify_with(self):
+    def test_app_and_context_are_passed_to_verify_with(self):
         # test if the verify_with receives both by capturing them inside the function
-        def should_receive_both(driver, conversation):
-            self.captures.append(driver)
+        def should_receive_both(app, conversation):
+            self.captures.append(app)
             self.captures.append(conversation)
             return True
 
-        driver_to_pass = Mock(name='passed_mock_driver')
-        application = MockApplication(driver_to_pass)
+        application = MockApplication()
         application.send_message(conversation='Bob', message='ignore', verify_with=should_receive_both)
 
-        self.assertIs(self.captures[0], driver_to_pass)
+        self.assertIs(self.captures[0], application)
         self.assertEqual(self.captures[1], 'Bob')
 
-    def test_driver_and_context_and_argument_are_passed_to_verify_with(self):
+    def test_app_and_context_and_argument_are_passed_to_verify_with(self):
         # test if the verify_with receives all by capturing them inside the function
-        def should_receive_all(driver, conversation, message):
-            self.captures.append(driver)
+        def should_receive_all(app, conversation, message):
+            self.captures.append(app)
             self.captures.append(conversation)
             self.captures.append(message)
             return True
 
-        driver_to_pass = Mock(name='passed_mock_driver')
-        application = MockApplication(driver_to_pass)
+        application = MockApplication()
         application.send_message(conversation='Bob', message='Hello', verify_with=should_receive_all)
 
         # our verify_with should have received the conversation
-        self.assertIs(self.captures[0], driver_to_pass)
+        self.assertIs(self.captures[0], application)
         self.assertEqual(self.captures[1], 'Bob')
         self.assertEqual(self.captures[2], 'Hello')
 
     def test_verify_with_logs_and_succeeds(self):
-        def log_warning_and_return_true(gtl_logger):
+        def log_warning_and_return_true(app):
+            gtl_logger = app.gtl_logger
             gtl_logger.info('post verification succeeded')
             return True
 
@@ -153,8 +176,10 @@ class TestVerifyWith(unittest.TestCase):
             self.assertEqual(application.username, 'MyName')
 
     def test_verify_with_logs_and_fails_still_executed_action(self):
-        def log_warning_and_return_false(gtl_logger):
-            gtl_logger.warn('post verification failed')
+        # failed verification should still result in the action being executed
+
+        def log_warning_and_return_false(app):
+            app.gtl_logger.warn('post verification failed')
             return False
 
         mock_logger = gtl_logging.create_gtl_logger('mock_udid')
@@ -169,8 +194,10 @@ class TestVerifyWith(unittest.TestCase):
             self.assertEqual(application.username, 'NewName')
 
     def test_verify_with_logs_and_fails_still_executes_following_action(self):
-        def log_warning_and_return_false(gtl_logger):
-            gtl_logger.warn('post verification failed')
+        # failed verification should still result in follow-up actions being executed
+
+        def log_warning_and_return_false(app):
+            app.gtl_logger.warn('post verification failed')
             return False
 
         mock_logger = gtl_logging.create_gtl_logger('mock_udid')
