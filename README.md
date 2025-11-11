@@ -85,6 +85,19 @@ alice.create_new_chat(conversation="<Insert the contact name>",
 alice.send_message("Sorry for the spam :)")  # we can send a second message in the open conversation
 ```
 
+An action might not always execute properly. If you want to verify that the action succeeded, you can add a special
+named argument to the action, which points to the function you want to verify the action with. We supply some
+commonly used verifications for users to use.
+
+For example, verifying a Whatsapp message has been sent:
+```python
+app = WhatsApp('<INSERT UDID HERE>')
+app.send_message(conversation='Bob', message_text='Sorry for the spam :)', verify_with=app.verify_message_marked_sent)
+```
+
+This will verify if the expected message has indeed been sent. If not, it will log this using the Ground Truth logger.
+It will not stop the execution of the following steps. For more information, see the [action](puma/state_graph/action.py) documentation.
+
 Congratulations, you just did a search query in Google Maps and/or sent a WhatsApp message without touching your phone!
 You can now explore what other functions are possible with Puma in [WhatsApp](puma/apps/android/whatsapp/README.md), or
 try a
