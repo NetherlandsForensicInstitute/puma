@@ -6,7 +6,33 @@ from puma.state_graph.puma_driver import supported_version
 from puma.state_graph.state_graph import StateGraph
 from puma.state_graph.state import SimpleState, compose_clicks
 
+
+PHOTO_STATE_TAKE_PHOTO = '//android.widget.ImageButton[@content-desc="Take photo"]'
+PHOTO_STATE_CAMERA = '//android.widget.TextView[@content-desc="Camera"]'
+PHOTO_STATE_SWITCH_TO_VIDEO = '//android.widget.TextView[@content-desc="Switch to Video Camera"]'
+PHOTO_STATE_SHUTTER_BUTTON = '//android.widget.ImageButton[@resource-id="com.google.android.GoogleCamera:id/shutter_button"]'
+
+VIDEO_STATE_VIDEO = '//android.widget.TextView[@content-desc="Video"]'
+VIDEO_STATE_TAKE_VIDEO = '//android.widget.ImageButton[@content-desc="Start video"]'
+VIDEO_STATE_SWITCH_TO_PHOTO = '//android.widget.TextView[@content-desc="Switch to Camera Mode"]'
+VIDEO_STATE_STOP_VIDEO = '//android.widget.ImageButton[@content-desc="Stop video"]'
+
+SWITCH_CAMERA_BUTTON = '//android.widget.ImageButton[@resource-id="com.google.android.GoogleCamera:id/camera_switch_button"]'
+
+SETTINGS_STATE_CAMERA_SETTINGS = '//android.widget.TextView[@text="Camera settings"]'
+SETTINGS_STATE_TITLE = '//android.widget.TextView[@resource-id="android:id/title" and @text="General"]'
+
+OPEN_OPTIONS_MENU = '//android.widget.ImageView[@content-desc="Open options menu"]'
+OPEN_SETTINGS = '//android.widget.Button[@content-desc="Open settings"]'
+
+POPUP_TURN_ON_BY_DEFAULT = '//android.widget.TextView[@text="Turned on by default"]'
+POPUP_BOTTOMSHEET = '//android.widget.LinearLayout[@resource-id="com.google.android.GoogleCamera:id/bottomsheet_container"]'
+POPUP_GOT_IT = '//android.widget.Button[@resource-id="com.google.android.GoogleCamera:id/got_it_button"]'
+DONE = '//android.widget.Button[@text="Done"]'
+
 APPLICATION_PACKAGE = 'com.google.android.GoogleCamera'
+
+
 @supported_version("8.8.225.510547499.09")
 class GoogleCamera(StateGraph):
     """
@@ -18,21 +44,19 @@ class GoogleCamera(StateGraph):
     """
 
     # Define states
-    photo = SimpleState(xpaths=['//android.widget.ImageButton[@content-desc="Take photo"]',
-                                '//android.widget.TextView[@content-desc="Camera"]'],
+    photo = SimpleState(xpaths=[PHOTO_STATE_TAKE_PHOTO,
+                                PHOTO_STATE_CAMERA],
                         initial_state=True)
-    video = SimpleState(xpaths=['//android.widget.TextView[@content-desc="Video"]',
-                                '//android.widget.ImageButton[@content-desc="Start video"]'])
-    settings = SimpleState(xpaths=['//android.widget.TextView[@text="Camera settings"]',
-                                   '//android.widget.TextView[@resource-id="android:id/title" and @text="General"]'],
+    video = SimpleState(xpaths=[VIDEO_STATE_VIDEO,
+                                VIDEO_STATE_TAKE_VIDEO])
+    settings = SimpleState(xpaths=[SETTINGS_STATE_CAMERA_SETTINGS,
+                                   SETTINGS_STATE_TITLE],
                            parent_state=photo)  # note that settings does not have a real parent state. the back restores the last state before navigating to settings.
 
     # Define transitions. Only forward transitions are needed, back transitions are added automatically
-    photo.to(video, compose_clicks(['//android.widget.TextView[@content-desc="Switch to Video Camera"]'], name='go_to_video'))
-    video.to(photo, compose_clicks(['//android.widget.TextView[@content-desc="Switch to Camera Mode"]'], name='go_to_camera'))
-    go_to_settings = compose_clicks(['//android.widget.ImageView[@content-desc="Open options menu"]',
-                                     '//android.widget.Button[@content-desc="Open settings"]'],
-                                    name= 'go_to_settings')
+    photo.to(video, compose_clicks([PHOTO_STATE_SWITCH_TO_VIDEO], name='go_to_video'))
+    video.to(photo, compose_clicks([VIDEO_STATE_SWITCH_TO_PHOTO], name='go_to_camera'))
+    go_to_settings = compose_clicks([OPEN_OPTIONS_MENU, OPEN_SETTINGS], name= 'go_to_settings')
     photo.to(settings, go_to_settings)
     video.to(settings, go_to_settings)
 
@@ -43,11 +67,11 @@ class GoogleCamera(StateGraph):
         :param device_udid: The unique device identifier for the Android device.
         """
         StateGraph.__init__(self, device_udid, APPLICATION_PACKAGE)
-        self.add_popup_handler(PopUpHandler(['//android.widget.TextView[@text="Turned on by default"]'], ['//android.widget.Button[@text="Done"]']))
-        self.add_popup_handler(PopUpHandler(['//android.widget.LinearLayout[@resource-id="com.google.android.GoogleCamera:id/bottomsheet_container"]'], ['//android.widget.Button[@resource-id="com.google.android.GoogleCamera:id/got_it_button"]']))
+        self.add_popup_handler(PopUpHandler([POPUP_TURN_ON_BY_DEFAULT], [DONE]))
+        self.add_popup_handler(PopUpHandler([POPUP_BOTTOMSHEET], [POPUP_GOT_IT]))
 
     @action(photo)
-    def take_picture(self, front_camera=None):
+    def take_picture(self, front_camera: bool = None):
         """
         Takes a single picture.
 
@@ -56,10 +80,10 @@ class GoogleCamera(StateGraph):
         :param front_camera: If True, uses the front camera; if False, uses the back camera; if None, no change is made.
         """
         self._ensure_correct_camera_view(front_camera)
-        self.driver.click('//android.widget.ImageButton[@resource-id="com.google.android.GoogleCamera:id/shutter_button"]')
+        self.driver.click(PHOTO_STATE_SHUTTER_BUTTON)
 
     @action(video)
-    def record_video(self, duration, front_camera=None):
+    def record_video(self, duration, front_camera: bool = None):
         """
         Records a video for the given duration.
 
@@ -69,9 +93,9 @@ class GoogleCamera(StateGraph):
         :param front_camera: If True, uses the front camera; if False, uses the back camera; if None, no change is made.
         """
         self._ensure_correct_camera_view(front_camera)
-        self.driver.click('//android.widget.ImageButton[@content-desc="Start video"]')
+        self.driver.click(VIDEO_STATE_TAKE_VIDEO)
         sleep(duration)
-        self.driver.click('//android.widget.ImageButton[@content-desc="Stop video"]')
+        self.driver.click(VIDEO_STATE_STOP_VIDEO)
 
     def _ensure_correct_camera_view(self, front_camera):
         """
@@ -81,7 +105,7 @@ class GoogleCamera(StateGraph):
         """
         if front_camera is None:
             return
-        switch_button = self.driver.get_element('//android.widget.ImageButton[@resource-id="com.google.android.GoogleCamera:id/camera_switch_button"]')
+        switch_button = self.driver.get_element(SWITCH_CAMERA_BUTTON)
         currently_in_front = 'front' not in switch_button.get_attribute("content-desc")
         if currently_in_front != front_camera:
             switch_button.click()
