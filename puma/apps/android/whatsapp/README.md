@@ -75,11 +75,11 @@ phone.forward_message("Bob", "important message!", "Charlie")
 Sending messages can also be verified, depending on the expected result:
 
 ```python
-# verify the message ends in state 'sent'
+# verify the message ended up in state 'sent'
 phone.send_message("Hi Bob!", "Bob", verify_with=phone.verify_message_marked_sent)
-# verify the message ends in state 'delivered'
+# verify the message ended up in state 'delivered'
 phone.send_message("Hi Bob!", "Bob", verify_with=phone.verify_message_marked_delivered)
-# verify the message ends in state 'read'
+# verify the message ended up in state 'read'
 phone.send_message("Hi Bob!", "Bob", verify_with=phone.verify_message_marked_read)
 ```
 

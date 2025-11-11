@@ -667,30 +667,3 @@ class WhatsApp(StateGraph):
                 return False
 
         return True
-
-
-# TODO: should action do the waiting? verification? both?
-#       I guess the action, because follow up actions might depend on previous to be done?
-#       then again, the action is called send message... not send_and_wait_for_read,
-#       maybe it just depends on the action
-#       >> then again, as I understand, verify methods should also be independently called
-# TODO: should action always navigate to certain state? or can we just declare 'should be in state x',
-#       i.e. the state after the action probably
-# TODO: should verify with return message with result? raise exception?
-# TODO: drop verify prefix
-if __name__ == '__main__':
-    app = WhatsApp('32131JEHN38079', 'com.whatsapp')
-
-    # app.send_message(conversation='Bob2', message_text='FreeWilly5', verify_with=app.verify_message_marked_delivered)
-    # print(app.verify_message_marked_read(app.driver, 'ReadThis'))
-
-    # app.create_group('Group++1', ['Bob', 'Bob2'], verify_with=app.verify_group_created)
-    # print(app.verify_group_created(app, 'Help1', ['You', 'Bob']))
-
-    # app.go_to_state(WhatsApp.initial_state)
-    # print(app.verify_group_created('Help1', ['You', 'Bo2b']))
-
-    app.answer_call()
-    print(app.verify_in_connected_call())
-
-
