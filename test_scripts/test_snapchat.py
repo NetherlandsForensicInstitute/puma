@@ -4,7 +4,7 @@ from puma.apps.android.snapchat.snapchat import Snapchat
 
 # Fill in the udid below. Run ADB devices to see the udids.
 device_udids = {
-    "Bob": ""
+    'Alice': ''
 }
 
 class TestSnapchat(unittest.TestCase):
@@ -23,29 +23,37 @@ class TestSnapchat(unittest.TestCase):
     """
     @classmethod
     def setUpClass(self):
-        if not device_udids["Bob"]:
-            print("No udid was configured for Bob. Please add at the top of the script.\nExiting....")
+        if not device_udids['Alice']:
+            print('No udid was configured for Alice. Please add at the top of the script.')
+            print('Exiting...')
             exit(1)
-        self.bob = Snapchat(device_udids["Bob"])
+        self.alice = Snapchat(device_udids['Alice'])
 
-        self.contact_alice = "Alice iPhone"
-        self.contact_charlie = "Charlie"
+        self.contact_bob = 'Bob'
+        self.contact_charlie = 'Charlie'
 
     def setUp(self):
         """
         Return to start screen of snapchat before each test
         """
-        self.bob.go_to_state(Snapchat.camera_state)
+        self.alice.go_to_state(Snapchat.camera_state)
 
     def test_send_message(self):
-        self.bob.send_message(msg="Hi Charlie!", conversation=self.contact_charlie)
+        self.alice.send_message(message="Hi Charlie!", conversation=self.contact_charlie)
 
     def test_send_snap(self):
-        self.bob.toggle_camera()
-        self.bob.take_photo(caption="Hi Charlie!")
-        self.bob.send_snap_to(recipients=[self.contact_charlie])
-        self.bob.take_photo()
-        self.bob.send_snap_to(recipients=[self.contact_alice, self.contact_charlie])
+        self.alice.toggle_camera()
+        self.alice.take_photo(caption="Hi Charlie!")
+        self.alice.send_snap_to(recipients=[self.contact_charlie])
+        self.alice.take_photo()
+        self.alice.send_snap_to(recipients=[self.contact_bob, self.contact_charlie])
+
+    # TODO: test send_snap_to_my_story
+
+    def test_transitions(self):
+        for to_state in self.alice.states:
+            self.alice.go_to_state(to_state, conversation=self.contact_bob)
+        self.alice.go_to_state(self.alice.initial_state)
 
 if __name__ == '__main__':
     unittest.main()

@@ -1,7 +1,6 @@
-from puma.apps.android.appium_actions import supported_version
 from puma.apps.android.snapchat.xpaths import *
 from puma.state_graph.action import action
-from puma.state_graph.puma_driver import PumaDriver
+from puma.state_graph.puma_driver import PumaDriver, supported_version
 from puma.state_graph.state import SimpleState, ContextualState, compose_clicks
 from puma.state_graph.state_graph import StateGraph
 
@@ -53,8 +52,7 @@ class SnapchatChatState(SimpleState, ContextualState):
         if not conversation:
             return True
 
-        content_desc = driver.get_element(CONVERSATION_TITLE).get_attribute('text')
-        return conversation in content_desc
+        return driver.is_present(CONVERSATION_TITLE_TEXT.format(conversation=conversation.lower()))
 
 class SnapchatChatSnapState(SimpleState, ContextualState):
     """
@@ -86,10 +84,7 @@ class SnapchatChatSnapState(SimpleState, ContextualState):
         if not conversation:
             return True
 
-        elements = driver.get_elements(CHAT_CONVERSATION_SEND_TO.format(conversation=conversation))
-        content_desc = elements[0].get_attribute("text")
-
-        return conversation in content_desc
+        return driver.is_present(CHAT_CONVERSATION_SEND_TO.format(conversation=conversation.lower()))
 
 
 @supported_version('12.89.0.40')
@@ -101,7 +96,6 @@ class Snapchat(StateGraph):
     of the Snapchat user interface. It provides methods to navigate between states, validate states,
     and handle unexpected states or errors.
     """
-
     camera_state = SimpleState([CAMERA_PAGE], initial_state=True)
     conversation_state = SimpleState([FEED_NEW_CHAT], parent_state=camera_state)
     chat_state = SnapchatChatState(parent_state=conversation_state)
@@ -110,13 +104,13 @@ class Snapchat(StateGraph):
     snap_state = SnapchatChatSnapState(parent_state=captured_state)
     discard_state = SimpleState([ALERT_DIALOG_DESCRIPTION])
 
-    camera_state.to(conversation_state, compose_clicks([CHAT_TAB]))
+    camera_state.to(conversation_state, compose_clicks([CHAT_TAB], name='press_chat_tab'))
     conversation_state.to(chat_state, go_to_chat)
-    camera_state.to(captured_state, compose_clicks([CAMERA_CAPTURE]))
-    captured_state.to(caption_state, compose_clicks([FULL_SCREEN_SURFACE_VIEW]))
-    captured_state.to(snap_state, compose_clicks([SENT_TO]))
-    captured_state.to(discard_state, compose_clicks([DISCARD_BUTTON]))
-    discard_state.to(camera_state, compose_clicks([DISCARD_ALERT_DIALOG_DISCARD_VIEW]))
+    camera_state.to(captured_state, compose_clicks([CAMERA_CAPTURE], name='press_camera_capture'))
+    captured_state.to(caption_state, compose_clicks([FULL_SCREEN_SURFACE_VIEW], name='press_screen_surface'))
+    captured_state.to(snap_state, compose_clicks([SENT_TO], name='press_sent_to'))
+    captured_state.to(discard_state, compose_clicks([DISCARD_BUTTON], name='press_discard_button'))
+    discard_state.to(camera_state, compose_clicks([DISCARD_ALERT_DIALOG_DISCARD_VIEW], name='press_discard_alert'))
 
     def __init__(self, device_udid):
         """
@@ -164,15 +158,20 @@ class Snapchat(StateGraph):
             self.driver.back()
 
     @action(snap_state)
-    def send_snap_to(self, recipients: list[str] = None):
+    def send_snap_to(self, recipients: list[str]):
         """
         Sends a snap to recipients.
 
-        :param recipients: The recipients to send the snap to. If no recipients are specified, the snap will be sent to 'My Story'.
+        :param recipients: The recipients to send the snap to.
         """
-        if recipients:
-            for recipient in recipients:
-                self.driver.click(RECIPIENTS_TO_ADD.format(recipient=recipient))
-        else:
-            self.driver.click(MY_STORY)
+        for recipient in recipients:
+            self.driver.click(RECIPIENTS_TO_ADD.format(recipient=recipient))
+        self.driver.click(SEND_BUTTON)
+
+    @action(snap_state)
+    def send_snap_to_my_story(self):
+        """
+        Sends a snap to my story.
+        """
+        self.driver.click(MY_STORY)
         self.driver.click(SEND_BUTTON)
