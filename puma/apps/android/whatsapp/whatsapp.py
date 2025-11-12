@@ -632,24 +632,21 @@ class WhatsApp(StateGraph):
         :param members: the expected members of the group
         :return: True if the expected group with given members exists, False otherwise
         """
-        driver = self.driver
-        logger = self.gtl_logger
-
         expected_member_names = members if isinstance(members, list) else [members]
 
         try:
-            go_to_chat(driver, conversation)
+            go_to_chat(self.driver, conversation)
         except PumaClickException as e:
-            logger.warning(f'Failed to find group with name {conversation}: {str(e)}')
+            self.gtl_logger.warning(f'Failed to find group with name {conversation}: {str(e)}')
             return False
         else:
-            WhatsAppChatState.open_chat_settings(driver, conversation)
+            WhatsAppChatState.open_chat_settings(self.driver, conversation)
 
-            found_member_elements = driver.swipe_to_find_elements(CHAT_SETTINGS_ANY_MEMBER, max_swipes=4)
+            found_member_elements = self.driver.swipe_to_find_elements(CHAT_SETTINGS_ANY_MEMBER, max_swipes=4)
             found_member_names = [member.text for member in found_member_elements]
 
             if set(found_member_names) != set(expected_member_names):
-                logger.warning(f"Group with name '{conversation}' does not contain expected members:"
+                self.gtl_logger.warning(f"Group with name '{conversation}' does not contain expected members:"
                                f" expected {sorted(expected_member_names)},"
                                f" actual {sorted(found_member_names)}")
                 return False
