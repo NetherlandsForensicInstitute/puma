@@ -82,7 +82,7 @@ class Snapchat(StateGraph):
     camera_state = SimpleState([CAMERA_PAGE], initial_state=True)
     conversation_state = SimpleState([FEED_NEW_CHAT], parent_state=camera_state)
     chat_state = SnapchatChatState(parent_state=conversation_state)
-    captured_state = SimpleState([SENT_TO], parent_state=camera_state)
+    captured_state = SimpleState([SENT_TO], parent_state=camera_state, invalid_xpaths=[ALERT_DIALOG_DESCRIPTION])
     snap_state = SimpleState([NEW_STORY], parent_state=captured_state)
 
     camera_state.to(conversation_state, compose_clicks([CHAT_TAB], name='press_chat_tab'))
@@ -100,7 +100,7 @@ class Snapchat(StateGraph):
         :param device_udid: The unique device identifier for the Android device.
         """
         StateGraph.__init__(self, device_udid, APPLICATION_PACKAGE)
-        self.add_popup_handler(PopUpHandler([ALERT_DIALOG_DESCRIPTION], DISCARD_ALERT_DIALOG_DISCARD_VIEW))
+        self.add_popup_handler(PopUpHandler([ALERT_DIALOG_DESCRIPTION], [DISCARD_BUTTON]))
 
     @action(chat_state)
     def send_message(self, message: str, conversation: str = None):
@@ -141,7 +141,7 @@ class Snapchat(StateGraph):
         self.driver.click(SEND_BUTTON)
 
     @action(snap_state, end_state=camera_state)
-    def send_snap_to_my_story(self):
+    def send_snap_to_my_story(self, caption: str = None):
         """
         Sends a snap to my story.
         """

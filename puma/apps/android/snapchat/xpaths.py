@@ -6,14 +6,11 @@ CHAT_INPUT = '//android.widget.EditText[@resource-id="com.snapchat.android:id/ch
 CHAT_CONVERSATION = ('//android.view.View['
                      '@resource-id="com.snapchat.android:id/ff_item"'
                      ' and .//javaClass[@text="{conversation}"]]')
-CHAT_CONVERSATION_SEND_TO = '//androidx.recyclerview.widget.RecyclerView[@resource-id="com.snapchat.android:id/send_to_recycler_view"]//javaClass[contains(lower-case(@text), "{conversation}")]'
 CHAT_TAB = '//android.view.ViewGroup[@content-desc="Chat"]'
 CONVERSATION_TITLE = '//android.widget.TextView[@resource-id="com.snapchat.android:id/conversation_title_text_view"]'
 CONVERSATION_TITLE_TEXT = '//android.widget.TextView[@resource-id="com.snapchat.android:id/conversation_title_text_view" and contains(lower-case(@text), "{conversation}")]'
-DISCARD_BUTTON = '//android.widget.ImageButton[@content-desc="Discard"]'
-DISCARD_ALERT_DIALOG_DISCARD_VIEW = '//android.view.View[@resource-id="com.snapchat.android:id/discard_alert_dialog_discard_view"]'
+DISCARD_BUTTON = '//android.widget.LinearLayout[@resource-id="com.snapchat.android:id/dialog_content"]/android.view.View'
 FEED_NEW_CHAT = '//android.widget.FrameLayout[@resource-id="com.snapchat.android:id/feed_new_chat"]'
-FRIEND_ACTION = '//android.view.View[@resource-id="com.snapchat.android:id/friend_action_button2"]'
 FULL_SCREEN_SURFACE_VIEW = '//android.view.SurfaceView[@resource-id="com.snapchat.android:id/full_screen_surface_view"]'
 RECIPIENTS_TO_ADD = ('//androidx.recyclerview.widget.RecyclerView[@resource-id="com.snapchat.android:id/send_to_recycler_view"]'
                   '//android.view.View[count(.//javaClass)=1]//javaClass[@text="{recipient}"]')

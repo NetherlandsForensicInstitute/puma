@@ -39,16 +39,15 @@ class TestSnapchat(unittest.TestCase):
         self.alice.go_to_state(Snapchat.camera_state)
 
     def test_send_message(self):
-        self.alice.send_message(message="Hi Charlie!", conversation=self.contact_charlie)
+        self.alice.send_message(message='Hi Charlie!', conversation=self.contact_charlie)
 
     def test_send_snap(self):
         self.alice.toggle_camera()
-        self.alice.take_photo(caption="Hi Charlie!")
-        self.alice.send_snap_to(recipients=[self.contact_charlie])
-        self.alice.take_photo()
+        self.alice.send_snap_to(recipients=[self.contact_charlie], caption='Hi Charlie!')
         self.alice.send_snap_to(recipients=[self.contact_bob, self.contact_charlie])
 
-    # TODO: test send_snap_to_my_story
+    def test_send_snap_to_my_story(self):
+        self.alice.send_snap_to_my_story(caption='Hello!')
 
     def test_transitions(self):
         for to_state in self.alice.states:
