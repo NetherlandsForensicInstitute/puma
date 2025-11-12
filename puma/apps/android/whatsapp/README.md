@@ -76,11 +76,11 @@ Sending messages can also be verified, depending on the expected result:
 
 ```python
 # verify the message ended up in state 'sent'
-phone.send_message("Hi Bob!", "Bob", verify_with=phone.verify_message_marked_sent)
+phone.send_message("Hi Bob!", "Bob", verify_with=phone.is_message_marked_sent)
 # verify the message ended up in state 'delivered'
-phone.send_message("Hi Bob!", "Bob", verify_with=phone.verify_message_marked_delivered)
+phone.send_message("Hi Bob!", "Bob", verify_with=phone.is_message_marked_delivered)
 # verify the message ended up in state 'read'
-phone.send_message("Hi Bob!", "Bob", verify_with=phone.verify_message_marked_read)
+phone.send_message("Hi Bob!", "Bob", verify_with=phone.is_message_marked_read)
 ```
 
 ### Sending media
@@ -149,7 +149,7 @@ phone_alice.start_voice_call("Bob")
 # answers incoming call
 phone_bob.answer_call()
 # now verify we are in a call
-if not phone_bob.verify_in_connected_call():
+if not phone_bob.in_connected_call():
     logger.warning('Connecting to call failed!')
 ```
 
@@ -172,5 +172,5 @@ phone.remove_member_from_group("Friends", "Donald")
 You can also verify that a group was correctly created:
 
 ```python
-phone.create_group("Best friends since 2013", ["Bob", "Charlie"], verify_with=phone.verify_group_exists)
+phone.create_group("Best friends since 2013", ["Bob", "Charlie"], verify_with=phone.group_exists)
 ```

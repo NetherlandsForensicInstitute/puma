@@ -562,7 +562,7 @@ class WhatsApp(StateGraph):
             raise PumaClickException(
                 f'The media at index {index} could not be found. The index is likely too large or negative.')
 
-    def verify_message_marked_sent(self, message_text: str, implicit_wait=5):
+    def is_message_marked_sent(self, message_text: str, implicit_wait=5):
         """
         Verify that a message with given text has been sent in the current conversation.
 
@@ -577,7 +577,7 @@ class WhatsApp(StateGraph):
 
         return self.driver.is_present(sent_message_xpath, implicit_wait=implicit_wait)
 
-    def verify_message_marked_delivered(self, message_text: str, implicit_wait=5):
+    def is_message_marked_delivered(self, message_text: str, implicit_wait=5):
         """
         Verify that a message with given text has been delivered in the current conversation.
 
@@ -592,7 +592,7 @@ class WhatsApp(StateGraph):
 
         return self.driver.is_present(delivered_message_xpath, implicit_wait=implicit_wait)
 
-    def verify_message_marked_read(self, message_text: str, implicit_wait=10):
+    def is_message_marked_read(self, message_text: str, implicit_wait=10):
         """
         Verify that a message with given text has been read in the current conversation.
 
@@ -607,7 +607,7 @@ class WhatsApp(StateGraph):
 
         return self.driver.is_present(read_message_xpath, implicit_wait=implicit_wait)
 
-    def verify_in_connected_call(self):
+    def in_connected_call(self):
         """
         Verify that we are in a connected call. This can be either a voice call or a video call.
 
@@ -621,7 +621,7 @@ class WhatsApp(StateGraph):
         # now check again if we see a call end button
         return self.driver.is_present(CALL_END_CALL_BUTTON, implicit_wait=1)
 
-    def verify_group_exists(self, conversation: str, members: Union[str, List[str]]):
+    def group_exists(self, conversation: str, members: Union[str, List[str]]):
         """
         Verify that a group exists with given name and members. Will log a warning when
         the expected group can't be found, or doesn't contain expected members.
