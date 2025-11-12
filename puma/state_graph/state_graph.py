@@ -177,7 +177,7 @@ class StateGraph(metaclass=StateGraphMeta):
         try:
             self._validate_state(self.current_state, **kwargs)
         except PumaClickException as pce:
-            logger.warn(f"Initial state validation encountered a problem {pce}")
+            logger.warning(f"Initial state validation encountered a problem {pce}")
         while self.current_state != to_state and counter < max_transitions:
             counter += 1
             try:
@@ -188,7 +188,7 @@ class StateGraph(metaclass=StateGraphMeta):
 
                 self._validate_state(transition.to_state, **kwargs)
             except PumaClickException as pce:
-                logger.warn(f"Transition or state validation failed, recover? {pce}")
+                logger.warning(f"Transition or state validation failed, recover? {pce}")
         if counter >= max_transitions:
             raise ValueError(f"Too many transitions, state is unrecoverable")
         return True

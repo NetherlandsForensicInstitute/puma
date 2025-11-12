@@ -101,7 +101,7 @@ class TeleGuard(StateGraph):
         """
         Initializes the TestFsm with a device UDID.
 
-        This class provides an API for interacting with the TeleGuard application using Appium.
+        This class provides an API for interacting with the TeleGuard application.
         It can be used with an emulator or a real device attached to the computer.
 
         :param device_udid: The unique device identifier for the Android device.
