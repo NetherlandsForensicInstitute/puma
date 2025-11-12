@@ -18,12 +18,13 @@ def _assert_verify_with_function_is_valid(verify_with: type[Any]):
         raise TypeError(f"'verify_with' must be a callable, instead is: {type(verify_with)}")
 
 
-def _execute_post_action_verification(puma_ui_graph: StateGraph, verify_with: Callable, arguments: OrderedDict[str, Any]):
+def _execute_post_action_verification(puma_ui_graph: StateGraph, action: Callable, verify_with: Callable, arguments: OrderedDict[str, Any]):
     """
     Run the given post action verification function and log the results. Returns to the current state
     of the graph at the end of the verification execution.
 
     :param puma_ui_graph: the application state graph, in the state after the execution of the action
+    :param action: function executed as action
     :param verify_with: the post action verification function
     :param arguments: the bound arguments of the action which will be passed to the verification
     """
@@ -43,7 +44,7 @@ def _execute_post_action_verification(puma_ui_graph: StateGraph, verify_with: Ca
         if not isinstance(success, bool):
             raise ValueError(f"result of 'verify_with' should be a bool, instead is: {type(success)}, with value: {success}")
 
-        gtl_logger.info(f"Action {'succeeded' if success else 'failed'}")
+        gtl_logger.info(f"Action '{action.__name__}' {'succeeded' if success else 'failed'}")
 
     # always return to our original state, even if verification failed
     puma_ui_graph.go_to_state(state_before_verify_with, **arguments)
@@ -119,7 +120,7 @@ def action(state: State, end_state: State = None):
 
                 if verify_with is not None:
                     gtl_logger.info(f"Verifying action with '{verify_with.__name__}' using arguments: {args[1:]} and keyword arguments: {kwargs} for application: {puma_ui_graph.__class__.__name__}")
-                    _execute_post_action_verification(puma_ui_graph, verify_with, arguments)
+                    _execute_post_action_verification(puma_ui_graph, func, verify_with, arguments)
 
                 puma_ui_graph.try_restart = True
 
