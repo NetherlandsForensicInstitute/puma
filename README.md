@@ -74,13 +74,13 @@ to do this manually the first time while running Puma. After registering, you ca
 with the code below:
 
 ```python
-from puma.apps.android.whatsapp.whatsapp import WhatsappActions
+from puma.apps.android.whatsapp.whatsapp import WhatsApp
 from puma.utils import configure_default_logging
 
 configure_default_logging() # Use Puma's logging configuration. You can also implement your own
 
-alice = WhatsappActions("<INSERT UDID HERE>")  # Initialize a connection with device
-alice.create_new_chat(contact="<Insert the contact name>",
+alice = WhatsApp("<INSERT UDID HERE>")  # Initialize a connection with device
+alice.create_new_chat(conversation="<Insert the contact name>",
                       first_message="Hello world!")  # Send a message to contact in your contact list
 alice.send_message("Sorry for the spam :)")  # we can send a second message in the open conversation
 ```
@@ -153,36 +153,35 @@ most methods give you the option to navigate to a specific conversation. 2 examp
 ##### Example 1
 
 ```python
-from puma.apps.android.whatsapp.whatsapp import WhatsappActions
+from puma.apps.android.whatsapp.whatsapp import WhatsApp
 from puma.utils import configure_default_logging
 
 configure_default_logging() # Use Puma's logging configuration. You can also implement your own
-alice = WhatsappActions("emulator-5554")  # initialize a connection with device emulator-5554
-alice.select_chat("Bob")
+alice = WhatsApp("emulator-5554")  # initialize a connection with device emulator-5554
+alice.go_to_state(WhatsApp.chat_state, conversation="Bob")
 alice.send_message("message_text")
 ```
 
-In this example, the message is sent in the current conversation. It is the responsibility of the user to make sure you
-are in the correct conversation. So, you will have to have called `select_chat` first.
+In this example, the message is sent to the conversation with "Bob", by selecting the conversation manually. The second
+example below automates this step.
 
 ##### Example 2
 
 ```python
-from puma.apps.android.whatsapp.whatsapp import WhatsappActions
+from puma.apps.android.whatsapp.whatsapp import WhatsApp
 from puma.utils import configure_default_logging
 
 configure_default_logging() # Use Puma's logging configuration. You can also implement your own
-alice = WhatsappActions("emulator-5554")  # initialize a connection with device emulator-5554
-alice.send_message("message_text", chat="Bob")
+alice = WhatsApp("emulator-5554")  # initialize a connection with device emulator-5554
+alice.send_message("message_text", conversation="Bob")
+alice.send_message("message_text2")
 ```
 
 In the second example, the chat conversation to send the message in is supplied as a parameter. Before the message is
 sent, there will be navigated to the home screen first, and then the chat "Bob" will be selected.
 
-Although the latter one is the safest, it is slower as it will always do some navigation before sending the message.
-When you send multiple messages in the same conversation consecutively, this will result in going to the home screen and
-into the conversation each time you send a message. Therefore, it is advised to use `select_chat` or the optional `chat`
-argument only once, and then sticking to `send_message` without the secondary argument.
+Note that the second message is sent to the current chat conversation. Puma will detect that a conversation was
+already opened, so it will not navigate back to the main screen and reopen the same conversation.
 
 ## Requirements
 

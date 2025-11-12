@@ -1,6 +1,6 @@
 import unittest
 
-from puma.apps.android.google_camera.google_camera import GoogleCameraActions
+from puma.apps.android.google_camera.google_camera import GoogleCamera
 
 # Fill in the udid below. Run ADB devices to see the udids.
 device_udids = {
@@ -20,26 +20,28 @@ class TestGoogleCamera(unittest.TestCase):
     @classmethod
     def setUpClass(self):
         if not device_udids["Alice"]:
-            print("No udid was configured for Alice. Pleas add at the top of the script.\nExiting....")
+            print("No udid was configured for Alice. Please add at the top of the script.")
+            print("Exiting....")
             exit(1)
-        self.alice = GoogleCameraActions(device_udids["Alice"])
+        self.alice = GoogleCamera(device_udids["Alice"])
 
-    def test_take_picture(self):
+    def test_take_picture_using_back_camera(self):
         self.alice.take_picture()
 
-    def test_switch_camera(self):
-        # test multiple times to ensure switching works properly
-        self.alice.switch_camera()
-        self.alice.switch_camera()
-        self.alice.switch_camera()
-        self.alice.switch_camera()
+    def test_take_picture_using_front_camera(self):
+        self.alice.take_picture(front_camera=True)
 
-    def test_swtich_and_take_picture(self):
+    def test_take_pictures_using_by_switching_cameras(self):
         self.alice.take_picture()
-        self.alice.switch_camera()
+        self.alice.take_picture(front_camera=True)
         self.alice.take_picture()
-        self.alice.switch_camera()
-        self.alice.take_picture()
+        self.alice.take_picture(front_camera=True)
+
+    def test_record_video_using_back_camera(self):
+        self.alice.record_video(duration=2)
+
+    def test_record_video_using_front_camera(self):
+        self.alice.record_video(duration=2, front_camera=True)
 
 if __name__ == '__main__':
     unittest.main()

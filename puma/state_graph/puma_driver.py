@@ -343,18 +343,17 @@ class PumaDriver:
         """
         self.driver.press_keycode(KEYCODE_LEFT_ARROW)
 
-    def open_url(self, url: str, package_name:str=None):
+    def open_url(self, url: str):
         """
-        Opens a given URL. A package name can be opened to define an app to open the link with.
-        If not, the URl will open in the default app configured for that URL.
+        Opens a given URL. The URl will open in the default app configured for that URL.
         """
-        self.adb.open_intent(url, package_name)
+        self.adb.open_intent(url)
 
     def open_notifications(self):
         """
         Opens the Android notifications panel.
         """
-        self.gtl_logger.info("Opening notifications panel.")
+        self.gtl_logger.info('Opening notifications panel')
         self.driver.open_notifications()
 
     def start_recording(self, output_directory: str):
@@ -390,7 +389,7 @@ class PumaDriver:
             screenshot_taken = self.driver.get_screenshot_as_file(path)
             if not screenshot_taken:
                 raise Exception(f'Screenshot could not be stored to {path}')
-            self.gtl_logger.info(f'Using OCR to find text {text_to_find}')
+            self.gtl_logger.info(f'Using OCR to find text "{text_to_find}"')
             found_text = ocr.find_text(str(path), text_to_find)
             return found_text
         finally:
@@ -408,17 +407,17 @@ class PumaDriver:
         self.gtl_logger.info(f'Using OCR to click on text "{text_to_click}"')
         found_text = self._find_text_ocr(text_to_click)
         if len(found_text) == 0:
-            msg = f'Could not find text {text_to_click} on screen so could not click it'
+            msg = f'Could not find text "{text_to_click}" on screen so could not click it'
             raise PumaClickException(msg)
         if len(found_text) > 1:
-            msg = f'Found multiple occurrences of text {text_to_click} on screen so could not determine what to click'
+            msg = f'Found multiple occurrences of text "{text_to_click}" on screen so could not determine what to click'
             if not click_first_when_multiple:
                 raise PumaClickException(msg)
             else:
-                logger.warning(f'Found multiple occurrences of text {text_to_click} on screen, clicking first one')
+                self.gtl_logger.warning(f'Found multiple occurrences of text "{text_to_click}" on screen, clicking first one')
         x = found_text[0].bounding_box.middle[0]
         y = found_text[0].bounding_box.middle[1]
-        self.gtl_logger.info(f'Clicking found text {found_text} at coordinates {(x,y)}')
+        self.gtl_logger.info(f'Clicking found text "{found_text}" at coordinates {(x,y)}')
         self.driver.execute_script('mobile: clickGesture', {'x': x, 'y': y})
 
     def set_idle_timeout(self, timeout: int):

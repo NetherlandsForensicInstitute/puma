@@ -1,12 +1,13 @@
 import inspect
-from typing import Callable
+from typing import Callable, OrderedDict, Any
 
 from build.lib.puma.state_graph.puma_driver import PumaClickException
 from puma.state_graph.state import State
+from puma.state_graph.state_graph import StateGraph
 from puma.state_graph.utils import filter_arguments
 
 
-def _assert_verify_with_function_is_valid(verify_with):
+def _assert_verify_with_function_is_valid(verify_with: type[Any]):
     """
     Validate that the 'verify_with' passed to the action is valid, else throw an error.
 
@@ -16,10 +17,8 @@ def _assert_verify_with_function_is_valid(verify_with):
     if not isinstance(verify_with, Callable):
         raise TypeError(f"'verify_with' must be a callable, instead is: {type(verify_with)}")
 
-    # TODO: enforce signature, e.g. must be func(app) and optional extra args?
 
-
-def _execute_post_action_verification(puma_ui_graph, verify_with, arguments):
+def _execute_post_action_verification(puma_ui_graph: StateGraph, verify_with: Callable, arguments: OrderedDict[str, Any]):
     """
     Run the given post action verification function and log the results. Returns to the current state
     of the graph at the end of the verification execution.
@@ -106,17 +105,17 @@ def action(state: State, end_state: State = None):
                 puma_ui_graph.go_to_state(state, **arguments)
                 try:
                     gtl_logger.info(
-                        f"Executing action {func.__name__} with arguments: {args[1:]} and keyword arguments: {kwargs} for application: {puma_ui_graph.__class__.__name__}")
+                        f"Executing action '{func.__name__}' with arguments: {args[1:]} and keyword arguments: {kwargs} for application: {puma_ui_graph.__class__.__name__}")
                     result = func(*args, **kwargs)
                 except:
-                    gtl_logger.info(f"Failed to execute action {func.__name__}.")
+                    gtl_logger.info(f"Failed to execute action '{func.__name__}'.")
                     puma_ui_graph.recover_state(state)
                     puma_ui_graph.go_to_state(state, **arguments)
-                    gtl_logger.info(f'Retrying action {func.__name__}')
+                    gtl_logger.info(f"Retrying action '{func.__name__}'")
                     result = func(*args, **kwargs)
 
                 gtl_logger.info(
-                    f"Executed action {func.__name__} with arguments: {args[1:]} and keyword arguments: {kwargs} for application: {puma_ui_graph.__class__.__name__}")
+                        f"Executed action '{func.__name__}' with arguments: {args[1:]} and keyword arguments: {kwargs} for application: {puma_ui_graph.__class__.__name__}")
 
                 if verify_with is not None:
                     gtl_logger.info(f"Verifying action with '{verify_with.__name__}' using arguments: {args[1:]} and keyword arguments: {kwargs} for application: {puma_ui_graph.__class__.__name__}")
@@ -128,7 +127,7 @@ def action(state: State, end_state: State = None):
                     puma_ui_graph.current_state = end_state
                 return result
             except Exception as e:
-                gtl_logger.error("Unexpected exception", e)
+                gtl_logger.error("Unexpected exception while executing an action", e)
                 raise e
 
 

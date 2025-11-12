@@ -1,7 +1,14 @@
-Version 3.0.0
+Version 3.1.0
 -------------
 164. Add verification methods for WhatsApp
 129. Add post action verification
+168. Fix Google Camera and TeleGuard tests and examples in README.md
+159. Improve GTL logging
+
+Version 3.0.0
+-------------
+155. Skip release notes test when not on a branch
+162. Google Play Store: Add xpaths to profile state
 124. WhatsApp: Rewrite to Puma State Machine
 151. Add demo script to tutorial folder
 151. Make StateGraph objects and legacy AppiumAction objects compatible

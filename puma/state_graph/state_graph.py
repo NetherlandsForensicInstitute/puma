@@ -100,12 +100,17 @@ class StateGraphMeta(type):
     @staticmethod
     def _validate_every_state_reachable(states):
         initial_state = next(s for s in states if s.initial_state)
-        unreachable_states = [s for s in states if not s.initial_state and not (
-                    bool(_shortest_path(initial_state, s)) and bool(_shortest_path(s, initial_state)))]
-        if unreachable_states:
-            # TODO make this error message more specific: exactly log which transition cannot be done (to or from the initial state)
+        unreachable_transitions = [s for s in states if not s.initial_state and not (
+                    bool(_shortest_path(initial_state, s)))]
+        unreachable_parents = [s for s in states if not s.initial_state and not (
+            bool(_shortest_path(s, initial_state)))]
+        if unreachable_parents or unreachable_parents:
             raise ValueError(
-                f'Some states cannot be reached from the initial state, or cannot go back to the initial state: {unreachable_states}')
+                f"Some states cannot be reached from the initial state '{initial_state}'.\n"
+                f"Add the missing transitions or missing parent states to your Puma StateGraph to fix this issue.\n"
+                f"Missing transitions: {unreachable_transitions}\n"
+                f"Missing parent states: {unreachable_parents}"
+            )
 
     @staticmethod
     def _validate_contextual_states(states):
@@ -178,15 +183,14 @@ class StateGraph(metaclass=StateGraphMeta):
             try:
                 transition = self._find_shortest_path(to_state)[0]
 
-                self.gtl_logger.info(f'Going from state {self.current_state} to {to_state}, calling transition {transition.ui_actions.__name__}')
+                self.gtl_logger.info(f"Going from state '{self.current_state}' to '{to_state}', calling transition '{transition.ui_actions.__name__}'")
                 safe_func_call(transition.ui_actions, **kwargs)
 
                 self._validate_state(transition.to_state, **kwargs)
             except PumaClickException as pce:
                 logger.warn(f"Transition or state validation failed, recover? {pce}")
         if counter >= max_transitions:
-            logger.error(f"Too many transitions, state is unrecoverable")
-            raise ValueError(f"Too many transitions, unrecoverable")
+            raise ValueError(f"Too many transitions, state is unrecoverable")
         return True
 
     def _validate_state(self, expected_state: State, **kwargs):
@@ -207,14 +211,14 @@ class StateGraph(metaclass=StateGraphMeta):
 
         # handle validation results
         if not valid:
-            self.gtl_logger.error(f'Expected to be in state {expected_state}, but the validation failed')
+            self.gtl_logger.error(f"Expected to be in state '{expected_state}', but the validation failed")
 
              # state is totally unexpected
             self.recover_state(expected_state)
             self._validate_state(self.current_state, **kwargs)
         elif not context_valid:
             relevant_kwargs = filter_arguments(expected_state.validate_context, **kwargs)
-            self.gtl_logger.error(f'Was in the expected state {expected_state}, but context {relevant_kwargs} did not match')
+            self.gtl_logger.error(f"Was in the expected state '{expected_state}', but context '{relevant_kwargs}' did not match")
             # correct state, but wrong context (e.g. we want a conversation with Alice, but we're in a conversation with Bob)
             # recovery: always go back to the parent state
             # Go to the first non-contextual parent state, context is lost when recovering from a contextual state
@@ -223,7 +227,7 @@ class StateGraph(metaclass=StateGraphMeta):
                 go_to_state = go_to_state.parent_state
             self.go_to_state(go_to_state)
         else:
-            self.gtl_logger.info(f'Validated that current state is the expected state {expected_state}')
+            self.gtl_logger.info(f"Validated that current state is the expected state '{expected_state}'")
             self.current_state = expected_state
 
     def recover_state(self, expected_state):
@@ -235,7 +239,8 @@ class StateGraph(metaclass=StateGraphMeta):
 
         :param expected_state: The state that is expected to be the current state.
         """
-        self.gtl_logger.info(f"Recovering state to {expected_state}")
+        current_state = self.current_state if self.current_state != expected_state else 'unknown'
+        self.gtl_logger.info(f"Recovering state to '{expected_state}', current state is '{current_state}'")
         # Ensure app active
         if not self.driver.app_open():
             self.driver.activate_app()
@@ -268,14 +273,14 @@ class StateGraph(metaclass=StateGraphMeta):
                 if len(current_states) > 1:
                     raise ValueError(f"More than one state matches the current UI. Write stricter XPaths. states: {current_states}")
                 else:
-                    raise ValueError("Unknown state, cannot recover.")
+                    raise ValueError("Unknown state, cannot recover")
             logger.warning(f'Not in a known state. Restarting app {self.driver.app_package} once')
             self.driver.restart_app()
             sleep(3)
             self.try_restart = False
             return
         self.gtl_logger.info(
-            f'Was in unknown state, expected {expected_state}. Recognized state, setting current state to: {current_states[0]}')
+            f"Was in unknown state, expected '{expected_state}'. Recognized state, setting current state to '{current_states[0]}'")
         self.current_state = current_states[0]
 
     def add_popup_handler(self, popup_handler: PopUpHandler):
