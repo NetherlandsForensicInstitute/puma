@@ -278,7 +278,7 @@ class WhatsApp(StateGraph):
         archived_popup_present = True
         tries = 0
         while archived_popup_present and tries < 5:
-            logger.info("waiting for archived popup to disappear")
+            logger.info("Waiting for archived popup to disappear")
             sleep(5)
             tries += 1
             archived_popup_present = 'archived' in self.driver.get_elements(CONVERSATIONS_ARCHIVED)[0].text

@@ -1,7 +1,7 @@
 import inspect
 from typing import Callable, OrderedDict, Any
 
-from build.lib.puma.state_graph.puma_driver import PumaClickException
+from puma.state_graph.puma_driver import PumaClickException
 from puma.state_graph.state import State
 from puma.state_graph.state_graph import StateGraph
 from puma.state_graph.utils import filter_arguments

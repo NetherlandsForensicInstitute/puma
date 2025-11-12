@@ -1,6 +1,7 @@
-Version 3.1.0
+Version 4.0.0
 -------------
 164. Add verification methods for WhatsApp
+123. SnapChat: Rewrite to Puma State Machine
 129. Add post action verification
 168. Fix Google Camera and TeleGuard tests and examples in README.md
 159. Improve GTL logging
