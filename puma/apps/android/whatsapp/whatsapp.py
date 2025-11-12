@@ -561,7 +561,7 @@ class WhatsApp(StateGraph):
             raise PumaClickException(
                 f'The media at index {index} could not be found. The index is likely too large or negative.')
 
-    def is_message_marked_sent(self, message_text: str, implicit_wait=5):
+    def is_message_marked_sent(self, message_text: str, implicit_wait: float = 5):
         """
         Verify that a message with given text has been sent in the current conversation.
 
@@ -576,7 +576,7 @@ class WhatsApp(StateGraph):
 
         return self.driver.is_present(sent_message_xpath, implicit_wait=implicit_wait)
 
-    def is_message_marked_delivered(self, message_text: str, implicit_wait=5):
+    def is_message_marked_delivered(self, message_text: str, implicit_wait: float = 5):
         """
         Verify that a message with given text has been delivered in the current conversation.
 
@@ -591,7 +591,7 @@ class WhatsApp(StateGraph):
 
         return self.driver.is_present(delivered_message_xpath, implicit_wait=implicit_wait)
 
-    def is_message_marked_read(self, message_text: str, implicit_wait=10):
+    def is_message_marked_read(self, message_text: str, implicit_wait: float = 10):
         """
         Verify that a message with given text has been read in the current conversation.
 
@@ -606,18 +606,21 @@ class WhatsApp(StateGraph):
 
         return self.driver.is_present(read_message_xpath, implicit_wait=implicit_wait)
 
-    def in_connected_call(self):
+    def in_connected_call(self, implicit_wait: float = 5):
         """
         Verify that we are in a connected call. This can be either a voice call or a video call.
 
+        :param implicit_wait: the maximum time to wait until a call is connected, in seconds
         :return: True if we are in an active call, False otherwise
         """
         # first check if we see the end call button
-        if not self.driver.is_present(CALL_END_CALL_BUTTON, implicit_wait=1):
+        if not self.driver.is_present(CALL_END_CALL_BUTTON, implicit_wait=implicit_wait):
             # if not, tap screen to (try and) make call button visible
             self.driver.click(CALL_SCREEN_BACKGROUND)
 
-        # now check again if we see a call end button
+        # now check again if we see a call end button; not using the passed
+        # implicit wait, since we already waited, and it should not take more than a second to make
+        # the call button visible after touch
         return self.driver.is_present(CALL_END_CALL_BUTTON, implicit_wait=1)
 
     def group_exists(self, conversation: str, members: Union[str, List[str]]):
@@ -626,6 +629,7 @@ class WhatsApp(StateGraph):
         the expected group can't be found, or doesn't contain expected members.
 
         You should currently be in the 'conversations_state' state, i.e. the WhatsApp initial state.
+        Will wait a short amount of time if necessary for the group to be created.
 
         :param conversation: the expected name of the group
         :param members: the expected members of the group
