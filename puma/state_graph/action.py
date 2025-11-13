@@ -1,3 +1,4 @@
+import functools
 import inspect
 from typing import Callable, OrderedDict, Any
 
@@ -132,6 +133,30 @@ def action(state: State, end_state: State = None):
                 raise e
 
 
+        return wrapper
+
+    return decorator
+
+
+def verification(state_to_start_from: State):
+    def decorator(verification_function):
+        @functools.wraps(verification_function)
+        def wrapper(*args, **kwargs):
+            print(f'args: {args}, kwargs: {kwargs}')
+            exit(0)
+            # print(verification_function)
+            # verification_signature = inspect.signature(verification_function)
+            # bound_args = verification_signature.bind(*args, **kwargs)
+            # bound_args.apply_defaults()
+            # arguments = bound_args.arguments
+            #
+            #
+            #
+            # arguments.pop('self', None)
+            # puma_ui_graph = args[0]
+            # # print(f'Verifying {verification_function.__name__} from {state_to_start_from} with arguments: {args[1:]} and keyword arguments: {kwargs} for application: {puma_ui_graph.__class__.__name__}')
+            # puma_ui_graph.go_to_state(state_to_start_from, **arguments)
+            # return verification_function(*args, **kwargs)
         return wrapper
 
     return decorator

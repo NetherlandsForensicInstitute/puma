@@ -2,7 +2,7 @@ import unittest
 from unittest.mock import Mock
 
 from puma.state_graph.puma_driver import PumaClickException
-from puma.state_graph.action import action
+from puma.state_graph.action import action, verification
 from puma.state_graph.puma_driver import PumaDriver
 from puma.state_graph.state import SimpleState, ContextualState, State
 from puma.state_graph.state_graph import StateGraph
@@ -51,6 +51,10 @@ class MockApplication(StateGraph):
     @staticmethod
     def static_verify_username_equals(app, new_name):
         return app.username == new_name
+
+    @verification(settings_state)
+    def annotated_instance_verify_username_equals(self, new_name):
+        return self.username == new_name
 
 
 class TestVerifyWith(unittest.TestCase):
@@ -253,3 +257,15 @@ class TestVerifyWith(unittest.TestCase):
 
         with self.assertRaisesRegex(Exception, "can't contain a parameter named 'verify_with'"):
             this_should_throw_exception()
+
+    def test_annotated_verification_in_action_works(self):
+        @verification(MockApplication.settings_state)
+        def username_should_equal(app, new_name):
+            return app.username == new_name
+
+        application = MockApplication()
+        application.change_username(new_name='UpdatedName', verify_with=username_should_equal)
+
+    def test_annotated_verification_in_action_worksw(self):
+        application = MockApplication()
+        application.change_username(new_name='UpdatedName', verify_with=application.annotated_instance_verify_username_equals)

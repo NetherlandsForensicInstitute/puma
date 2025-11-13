@@ -5,7 +5,7 @@ from typing import Union, List
 from puma.apps.android.whatsapp import logger
 from puma.apps.android.whatsapp.states import *
 from puma.apps.android.whatsapp.xpaths import *
-from puma.state_graph.action import action
+from puma.state_graph.action import action, verification
 from puma.state_graph.puma_driver import PumaDriver, PumaClickException, supported_version
 from puma.state_graph.state import SimpleState, compose_clicks
 from puma.state_graph.state_graph import StateGraph
@@ -561,7 +561,8 @@ class WhatsApp(StateGraph):
             raise PumaClickException(
                 f'The media at index {index} could not be found. The index is likely too large or negative.')
 
-    def is_message_marked_sent(self, message_text: str, implicit_wait: float = 5):
+    @verification(chat_state)
+    def is_message_marked_sent(self, message_text: str, conversation: str = None, implicit_wait: float = 5):
         """
         Verify that a message with given text has been sent in the current conversation.
 
