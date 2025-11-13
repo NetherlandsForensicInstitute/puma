@@ -1,7 +1,7 @@
 import unittest
 from unittest.mock import Mock
 
-from build.lib.puma.state_graph.puma_driver import PumaClickException
+from puma.state_graph.puma_driver import PumaClickException
 from puma.state_graph.action import action
 from puma.state_graph.puma_driver import PumaDriver
 from puma.state_graph.state import SimpleState, ContextualState, State
