@@ -300,7 +300,7 @@ class WhatsApp(StateGraph):
         :param conversation: Name of the group to set the description for.
         :param description: Description of the group.
         """
-        self.driver.swipe_to_click_element(f'{build_wa_resource_id_xpath('no_description_view')} | {build_wa_resource_id_xpath('has_description_view')}')
+        self.driver.swipe_to_click_element(f'{build_wa_resource_id_xpath("no_description_view")} | {build_wa_resource_id_xpath("has_description_view")}')
         self.driver.send_keys(EDIT_TEXT, description)
         self.driver.click(OK_BUTTON)
 

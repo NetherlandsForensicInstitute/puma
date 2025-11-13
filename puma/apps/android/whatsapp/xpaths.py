@@ -22,7 +22,7 @@ def build_wa_resource_id_text_xpath(resource_id: str, text: str) -> str:
 WHATSAPP_PACKAGE = 'com.whatsapp'
 
 CONVERSATIONS_WHATSAPP_LOGO = build_wa_resource_id_xpath_widget('ImageView', 'toolbar_logo')
-CONVERSATIONS_NEW_CHAT_OR_SEND_MESSAGE = f'{build_content_desc_xpath_widget('ImageButton', 'New chat')} | {build_content_desc_xpath_widget('Button', 'Send message')}'
+CONVERSATIONS_NEW_CHAT_OR_SEND_MESSAGE = f'{build_content_desc_xpath_widget("ImageButton", "New chat")} | {build_content_desc_xpath_widget("Button", "Send message")}'
 CONVERSATIONS_HOME_ROOT_FRAME = build_wa_resource_id_xpath_widget('FrameLayout', 'root_view')
 CONVERSATIONS_MENUITEM_ARCHIVE = build_wa_resource_id_xpath('menuitem_conversations_archive')
 CONVERSATIONS_ARCHIVED = f'//*[contains(@text,"archived") or @resource-id="{WHATSAPP_PACKAGE}:id/fab"]'
@@ -96,9 +96,9 @@ SEND_LOCATION_LIVE_LOCATION_DIALOG = build_wa_resource_id_xpath_widget('LinearLa
 SEND_LOCATION_POPUP_CONTINUE = build_text_xpath_widget('Button', 'Continue')
 SEND_LOCATION_CAPTION = build_wa_resource_id_xpath('comment')
 
-CHAT_SETTINGS_CONTACT_NAME = (f'{build_wa_resource_id_xpath_widget('TextView', 'contact_title')} | '
-                              f'{build_wa_resource_id_xpath_widget('TextView', 'business_title')} | '
-                              f'{build_wa_resource_id_xpath_widget('TextView', 'group_title')}')
+CHAT_SETTINGS_CONTACT_NAME = (f'{build_wa_resource_id_xpath_widget("TextView", "contact_title")} | '
+                              f'{build_wa_resource_id_xpath_widget("TextView", "business_title")} | '
+                              f'{build_wa_resource_id_xpath_widget("TextView", "group_title")}')
 CHAT_SETTINGS_CONTACT_NAME_TEXT = (f'//android.widget.TextView[@resource-id="{WHATSAPP_PACKAGE}:id/contact_title" and contains(lower-case(@text), "{{conversation}}")] | '
                                    f'//android.widget.TextView[@resource-id="{WHATSAPP_PACKAGE}:id/business_title" and contains(lower-case(@text), "{{conversation}}")] | '
                                    f'//android.widget.TextView[@resource-id="{WHATSAPP_PACKAGE}:id/group_title" and contains(lower-case(@text), "{{conversation}}")]')
