@@ -1,5 +1,6 @@
 Version 4.0.1
 -------------
+175. Move post verification tests to test directory and fix logging bug
 173. Fix string literals for Python 3.10 and 3.11
 
 Version 4.0.0
