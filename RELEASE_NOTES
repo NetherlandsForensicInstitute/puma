@@ -1,3 +1,7 @@
+Version 4.0.1
+-------------
+173. Fix string literals for Python 3.10 and 3.11
+
 Version 4.0.0
 -------------
 164. Add verification methods for WhatsApp
