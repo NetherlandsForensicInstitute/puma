@@ -128,7 +128,7 @@ def action(state: State, end_state: State = None):
                     puma_ui_graph.current_state = end_state
                 return result
             except Exception as e:
-                gtl_logger.error("Unexpected exception while executing an action", e)
+                gtl_logger.error("Unexpected exception while executing an action", exc_info=e)
                 raise e
 
 

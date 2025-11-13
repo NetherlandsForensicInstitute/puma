@@ -1,5 +1,6 @@
 Version 4.0.1
 -------------
+177. Fixed generic exception logging in action decorator
 175. Move post verification tests to test directory and fixed bad import
 173. Fix string literals for Python 3.10 and 3.11
 
