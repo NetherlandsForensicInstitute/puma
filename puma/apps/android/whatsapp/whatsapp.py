@@ -148,12 +148,11 @@ class WhatsApp(StateGraph):
         return message_status_el
 
     @action(chat_state)
-    def send_message(self, message_text: str, conversation: str = None, wait_until_sent: bool = False):
+    def send_message(self, message_text: str, conversation: str = None):
         """
         Send a message in the current chat. If the message contains a mention, this is handled correctly.
         :param message_text: The text that the message contains.
         :param conversation: The chat conversation in which to send this message. Optional: not needed when already in a conversation
-        :param wait_until_sent: Exit this function only when the message has been sent.
         """
         self.driver.click(TEXT_ENTRY)
         self._handle_mention(message_text) \
@@ -164,9 +163,6 @@ class WhatsApp(StateGraph):
         if 'http' in message_text:
             sleep(2)
         self.driver.click(SEND_CONTENT)
-        # TODO convert to post action validation
-        if wait_until_sent:
-            _ = self._ensure_message_sent(message_text)
 
     @action(profile_state)
     def change_profile_picture(self, photo_dir_name: str, index: int = 1):
@@ -564,3 +560,98 @@ class WhatsApp(StateGraph):
         except PumaClickException:
             raise PumaClickException(
                 f'The media at index {index} could not be found. The index is likely too large or negative.')
+
+    def is_message_marked_sent(self, message_text: str, implicit_wait: float = 5):
+        """
+        Verify that a message with given text has been sent in the current conversation.
+
+        The message must be visible in the current chat view. It must also be marked specifically as sent,
+        i.e. a single uncoloured (grey) checkmark.
+
+        :param message_text: the text of the message which should have been sent
+        :param implicit_wait: the maximum time to wait for a message to be marked sent, in seconds
+        :return: True if the expected message is marked as sent, False otherwise
+        """
+        sent_message_xpath = CHAT_MESSAGE_BY_CONTENT_AND_STATE.format(message_text=message_text, state='Sent')
+
+        return self.driver.is_present(sent_message_xpath, implicit_wait=implicit_wait)
+
+    def is_message_marked_delivered(self, message_text: str, implicit_wait: float = 5):
+        """
+        Verify that a message with given text has been delivered in the current conversation.
+
+        The message must be visible in the current chat view. It must also be marked specifically as delivered,
+        i.e. two uncoloured (grey) checkmarks.
+
+        :param message_text: the text of the message which should have been delivered
+        :param implicit_wait: the maximum time to wait for a message to be marked delivered, in seconds
+        :return: True if the expected message is marked as delivered, False otherwise
+        """
+        delivered_message_xpath = CHAT_MESSAGE_BY_CONTENT_AND_STATE.format(message_text=message_text, state='Delivered')
+
+        return self.driver.is_present(delivered_message_xpath, implicit_wait=implicit_wait)
+
+    def is_message_marked_read(self, message_text: str, implicit_wait: float = 10):
+        """
+        Verify that a message with given text has been read in the current conversation.
+
+        The message must be visible in the current chat view. It must also be marked specifically as read,
+        i.e. two (blue) coloured checkmarks.
+
+        :param message_text: the text of the message which should have been read
+        :param implicit_wait: the maximum time to wait for a message to be marked read, in seconds
+        :return: True if the expected message is marked as read, False otherwise
+        """
+        read_message_xpath = CHAT_MESSAGE_BY_CONTENT_AND_STATE.format(message_text=message_text, state='Read')
+
+        return self.driver.is_present(read_message_xpath, implicit_wait=implicit_wait)
+
+    def in_connected_call(self, implicit_wait: float = 5):
+        """
+        Verify that we are in a connected call. This can be either a voice call or a video call.
+
+        :param implicit_wait: the maximum time to wait until a call is connected, in seconds
+        :return: True if we are in an active call, False otherwise
+        """
+        # first check if we see the end call button
+        if not self.driver.is_present(CALL_END_CALL_BUTTON, implicit_wait=implicit_wait):
+            # if not, tap screen to (try and) make call button visible
+            self.driver.click(CALL_SCREEN_BACKGROUND)
+
+        # now check again if we see a call end button; not using the passed
+        # implicit wait, since we already waited, and it should not take more than a second to make
+        # the call button visible after touch
+        return self.driver.is_present(CALL_END_CALL_BUTTON, implicit_wait=1)
+
+    def group_exists(self, conversation: str, members: Union[str, List[str]]):
+        """
+        Verify that a group exists with given name and members. Will log a warning when
+        the expected group can't be found, or doesn't contain expected members.
+
+        You should currently be in the 'conversations_state' state, i.e. the WhatsApp initial state.
+        Will wait a short amount of time if necessary for the group to be created.
+
+        :param conversation: the expected name of the group
+        :param members: the expected members of the group
+        :return: True if the expected group with given members exists, False otherwise
+        """
+        expected_member_names = members if isinstance(members, list) else [members]
+
+        try:
+            go_to_chat(self.driver, conversation)
+        except PumaClickException as e:
+            self.gtl_logger.warning(f'Failed to find group with name {conversation}: {str(e)}')
+            return False
+        else:
+            WhatsAppChatState.open_chat_settings(self.driver, conversation)
+
+            found_member_elements = self.driver.swipe_to_find_elements(CHAT_SETTINGS_ANY_MEMBER, max_swipes=4)
+            found_member_names = [member.text for member in found_member_elements]
+
+            if set(found_member_names) != set(expected_member_names):
+                self.gtl_logger.warning(f"Group with name '{conversation}' does not contain expected members:"
+                               f" expected {sorted(expected_member_names)},"
+                               f" actual {sorted(found_member_names)}")
+                return False
+
+        return True

@@ -4,6 +4,9 @@ WhatsApp Messenger is an instant messaging VoIP service owned by Meta.
 Puma supports a wide range of actions in WhatsApp, listed below. Registration with a phone number is required.
 For detailed information on each method, see the method its PyDoc documentation.
 
+Actions can also be verified. For more information, see examples below 
+and the [action](../../../../puma/state_graph/action.py) documentation. 
+
 The application can be downloaded in [the Google PlayStore](https://play.google.com/store/apps/details?id=com.whatsapp.w4b&hl=nl).
 
 ## Deprecation
@@ -69,6 +72,17 @@ phone.send_broadcast(["Bob", "Charlie", "Dana"], "Thinking about you!")
 phone.forward_message("Bob", "important message!", "Charlie")
 ```
 
+Sending messages can also be verified, depending on the expected result:
+
+```python
+# verify the message ended up in state 'sent'
+phone.send_message("Hi Bob!", "Bob", verify_with=phone.is_message_marked_sent)
+# verify the message ended up in state 'delivered'
+phone.send_message("Hi Bob!", "Bob", verify_with=phone.is_message_marked_delivered)
+# verify the message ended up in state 'read'
+phone.send_message("Hi Bob!", "Bob", verify_with=phone.is_message_marked_read)
+```
+
 ### Sending media
 
 Sending a picture or video is supported, but since the UI doesn't show full paths or filenames, you are required to know
@@ -127,6 +141,18 @@ phone.start_video_call("Bob")
 phone.decline_call()
 ```
 
+You can also verify that answering a call succeeded:
+
+```python
+# calls Bob
+phone_alice.start_voice_call("Bob")
+# answers incoming call
+phone_bob.answer_call()
+# now verify we are in a call
+if not phone_bob.in_connected_call():
+    logger.warning('Connecting to call failed!')
+```
+
 ### WhatsApp group chats
 
 Many group management actions are also supported:
@@ -141,4 +167,10 @@ phone.delete_group("Some group")
 phone.leave_group("Some other group")
 # removes a person from a group
 phone.remove_member_from_group("Friends", "Donald")
+```
+
+You can also verify that a group was correctly created:
+
+```python
+phone.create_group("Best friends since 2013", ["Bob", "Charlie"], verify_with=phone.group_exists)
 ```

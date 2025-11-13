@@ -110,7 +110,7 @@ class PumaDriver:
         self._screen_recorder_output_directory = None
         self.gtl_logger = create_gtl_logger(udid)
 
-    def is_present(self, xpath: str, implicit_wait: int = 0) -> bool:
+    def is_present(self, xpath: str, implicit_wait: float = 0) -> bool:
         """
         Checks if an element is present on the screen.
 
@@ -241,6 +241,14 @@ class PumaDriver:
                 return self.driver.find_elements(by=AppiumBy.XPATH, value=xpath)
         raise PumaClickException(f'Could not find elements with xpath {xpath}')
 
+    def _swipe_down(self):
+        window_size = self.driver.get_window_size()
+        start_x = window_size['width'] / 2
+        start_y = window_size['height'] * 0.8
+        end_y = window_size['height'] * 0.2
+        self.driver.swipe(start_x, start_y, start_x, end_y, 500)
+        time.sleep(0.5)
+
     def swipe_to_find_element(self, xpath: str, max_swipes: int = 10):
         """
         Swipes down to find an element specified by its XPath. This is necessary when the element you want to click on
@@ -255,13 +263,39 @@ class PumaDriver:
                 return self.get_element(xpath)
             else:
                 self.gtl_logger.warning(f"Attempt {attempt + 1}: Element not found, swiping down")
-                window_size = self.driver.get_window_size()
-                start_x = window_size['width'] / 2
-                start_y = window_size['height'] * 0.8
-                end_y = window_size['height'] * 0.2
-                self.driver.swipe(start_x, start_y, start_x, end_y, 500)
-                time.sleep(0.5)
+                self._swipe_down()
         raise PumaClickException(f'After {max_swipes} swipes, cannot find element with xpath {xpath}')
+
+    def swipe_to_find_elements(self, xpath: str, num_swipes: int = 10):
+        """
+        Collects all elements matching given XPath. Next, swipes down a number of times and collects
+        all new elements matching given XPath in each resulting view.
+
+        :param xpath: the xpath of the elements to find
+        :param num_swipes: the number of swipes to execute
+        :raises PumaClickException: if no matching element can be found after given number of swipes
+        """
+        seen_elements = set()
+        results = []
+
+        for attempt in range(num_swipes):
+            try:
+                found_elements = self.get_elements(xpath)
+            except PumaClickException as e:
+                self.gtl_logger.info(f'Unable to get elements with XPath {xpath}, reason: {str(e)}')
+                self.gtl_logger.info(f'Swiping down')
+            else:
+                for element in found_elements:
+                    if element not in seen_elements:
+                        seen_elements.add(element)
+                        results.append(element)
+
+            self._swipe_down()
+
+        if not results:
+            raise PumaClickException(f'After {num_swipes} swipes, no element with xpath {xpath} found')
+
+        return results
 
     def swipe_to_click_element(self, xpath: str, max_swipes: int = 10):
         """

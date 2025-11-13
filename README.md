@@ -90,9 +90,10 @@ named argument to the action, which points to the function you want to verify th
 commonly used verifications for users to use.
 
 For example, verifying a Whatsapp message has been sent:
+
 ```python
 app = WhatsApp('<INSERT UDID HERE>')
-app.send_message(conversation='Bob', message_text='Sorry for the spam :)', verify_with=app.verify_message_marked_sent)
+app.send_message(conversation='Bob', message_text='Sorry for the spam :)', verify_with=app.is_message_marked_sent)
 ```
 
 This will verify if the expected message has indeed been sent. If not, it will log this using the Ground Truth logger.

@@ -83,7 +83,7 @@ class TestVerifyWith(unittest.TestCase):
             application = MockApplication(gtl_logger=mock_logger)
             application.change_username(new_name='NewName', verify_with=MockApplication.static_verify_username_equals)
 
-            self.assertIn('INFO:mock_udid:Action succeeded', logs.output)
+            self.assertIn("INFO:mock_udid:Action 'change_username' succeeded", logs.output)
 
     def test_verify_with_using_instance_method(self):
         mock_logger = gtl_logging.create_gtl_logger('mock_udid')
@@ -92,7 +92,7 @@ class TestVerifyWith(unittest.TestCase):
             application = MockApplication(gtl_logger=mock_logger)
             application.change_username(new_name='NewName', verify_with=application.instance_verify_username_equals)
 
-            self.assertIn('INFO:mock_udid:Action succeeded', logs.output)
+            self.assertIn("INFO:mock_udid:Action 'change_username' succeeded", logs.output)
 
     def test_verify_with_raises_puma_click_exception_is_logged(self):
         def verification_throws_puma_click_exception():
