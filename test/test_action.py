@@ -20,6 +20,7 @@ class MockApplication(StateGraph):
     def action_throws_generic_exception(self):
         raise Exception('test generic exception')
 
+
 class TestAction(unittest.TestCase):
 
     def test_generic_exception_during_action_is_logged_and_propagated(self):
