@@ -7,7 +7,6 @@ from uuid import uuid4
 
 from adb_pywrapper.adb_device import AdbDevice
 from adb_pywrapper.adb_screen_recorder import AdbScreenRecorder
-from appium import webdriver
 from appium.options.android import UiAutomator2Options
 from appium.webdriver import WebElement
 from appium.webdriver.common.appiumby import AppiumBy
@@ -15,32 +14,13 @@ from appium.webdriver.extensions.android.nativekey import AndroidKey
 from appium.webdriver.webdriver import WebDriver
 from selenium.common import NoSuchElementException
 from typing_extensions import deprecated
-from urllib3.exceptions import MaxRetryError
 
 from puma.apps.android import logger
 from puma.computer_vision import ocr
+from puma.state_graph.puma_driver import _get_appium_driver
 from puma.utils.video_utils import CACHE_FOLDER, log_error_and_raise_exception
 
 __drivers: dict[str, WebDriver] = {}
-
-def _get_appium_driver(appium_server: str, udid: str, options) -> WebDriver:
-    key = f"{appium_server}${udid}"
-    if key not in __drivers.keys():
-        try:
-            __drivers[key] = webdriver.Remote(appium_server, options=options)
-        except MaxRetryError:
-            logger.error("Connecting to the Appium server has failed.\n"
-                  "Make sure that the appium server is running!\n"
-                  "This can be done by running the `appium` command from the command line.")
-            exit(1)
-    else:
-        logger.warning(f'WARNING: there already was an initialized driver for appium server {appium_server} and udid {udid}. '
-              'This driver will be used, which might mean your appium capabilities are ignored as these cannot be'
-              'altered for a driver that has already been initialized. If you need specific capabilities, please '
-              'rewrite your Puma code to ensure the correct capabilities are loaded the first time you connect to '
-              f'server {appium_server} and device {udid}.')
-    return __drivers[key]
-
 
 def _get_android_default_options():
     options = UiAutomator2Options()

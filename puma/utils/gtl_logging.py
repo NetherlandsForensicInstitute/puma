@@ -16,16 +16,12 @@ def create_gtl_logger(udid: str) -> logging.Logger:
     gtl_logger = logging.getLogger(f'{udid}')
 
     # format of log lines
-    formatter = logging.Formatter(f'%(asctime)s - DEVICE {udid} - %(levelname)s - %(message)s',
+    formatter = logging.Formatter(fmt=f'%(asctime)s [%(levelname)s] [{udid}] %(message)s',
                                   datefmt='%Y-%m-%d %H:%M:%S')
     # file name of log file
     file_handler = logging.FileHandler(Path(LOG_FOLDER) / f'{PUMA_INIT_TIMESTAMP}_gtl.log')
     file_handler.setFormatter(formatter)
-    # also log to stdout
-    stream_handler = logging.StreamHandler(stdout)
-    stream_handler.setFormatter(formatter)
 
     gtl_logger.addHandler(file_handler)
-    gtl_logger.addHandler(stream_handler)
 
     return gtl_logger

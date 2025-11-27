@@ -22,7 +22,7 @@ def safe_func_call(func, **kwargs):
     try:
         return func(**bound_args.arguments)
     except PumaClickException as pce:
-        logger.warn(f"A problem occurred during a safe function call, recovering.. {pce}")
+        logger.warning(f"A problem occurred during a safe function call, recovering.. {pce}")
         return None
 
 

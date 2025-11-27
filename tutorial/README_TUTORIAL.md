@@ -3,6 +3,15 @@
 Welcome to the Puma tutorial! This section of the repository is dedicated to guiding you through the process of learning
 how to use Puma and how to contribute to Puma.
 
+# Deprecation
+
+With version 3.0.0 Puma introduced its State Graph framework, which vastly improves Puma's stability and capabilities.
+You can read more about this in the [contributing.md](../CONTRIBUTING.md).
+However, this means all app-specific code needs to be updated. Not all code has been updated yet, including the
+tutorial, which still uses the deprecated `AndroidAppiumActions` class.
+
+We plan on updating the tutorial in the future to include training on the new framework.
+
 ### Prerequisites
 
 Before you begin, make sure you have the following:

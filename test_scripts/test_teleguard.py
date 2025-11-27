@@ -1,6 +1,7 @@
-from puma.apps.android.teleguard.teleguard import TeleguardActions
 # Fill in the udids below. Run ADB devices to see the udids.
 import unittest
+
+from puma.apps.android.teleguard.teleguard import TeleGuard
 
 device_udids = {
     "Alice": "",
@@ -11,7 +12,7 @@ teleguard_ids = {
     "Bob": ""
 }
 
-class TestTeleguard(unittest.TestCase):
+class TestTeleGuard(unittest.TestCase):
     """
     With this test, you can check whether all Appium functionality works for the current version of TeleGuard.
     The test can only be run manually, as you need a setup with at least one but preferably two phones.
@@ -27,13 +28,16 @@ class TestTeleguard(unittest.TestCase):
     def setUpClass(self):
         for udid_key in ("Alice", "Bob"):
             if not device_udids[udid_key]:
-                print(f"No udid was configured for {udid_key}. Please add at the top of the script.\nExiting....")
+                print(f"No udid was configured for {udid_key}. Please add at the top of the script.")
+                print("Exiting....")
                 exit(1)
         if not teleguard_ids["Bob"]:
-            print("No TeleGuard ID was configured for Bob. Please add at the top of the script.\nExiting....")
+            print("No TeleGuard ID was configured for Bob. Please add at the top of the script.")
+            print("Exiting....")
+            exit(1)
 
-        self.alice = TeleguardActions(device_udids["Alice"])
-        self.bob = TeleguardActions(device_udids["Bob"])
+        self.alice = TeleGuard(device_udids["Alice"])
+        self.bob = TeleGuard(device_udids["Bob"])
 
         self.contact_alice = "Alice"
         self.contact_bob = "Bob"
@@ -42,12 +46,5 @@ class TestTeleguard(unittest.TestCase):
         self.bob.accept_invite()
 
     def test_select_chat_send_message(self):
-        self.alice.select_chat("Bob")
-        self.alice.send_message("Test message from Alice to Bob")
-
-    def test_send_message(self):
-        self.alice.return_to_homescreen()
-        self.alice.send_message("Test message and selecting Bob chat in one go", "Bob")
-
-
+        self.alice.send_message("Test message from Alice to Bob", conversation="Bob")
 
