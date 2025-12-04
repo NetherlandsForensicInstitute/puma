@@ -190,8 +190,7 @@ class WhatsApp(StateGraph):
     @action(profile_state)
     def set_about(self, about_text: str):
         self.driver.click(PROFILE_INFO_STATUS_CARD)
-        self.driver.click(PROFILE_STATUS_EDIT_ICON)
-        self.driver.send_keys(EDIT_TEXT, about_text)
+        self.driver.send_keys(EDIT_TEXT2, about_text)
         self.driver.click(PROFILE_SAVE_BUTTON)
         # This action ends in a screen that isn't a state, so move back one screen.
         self.driver.back()

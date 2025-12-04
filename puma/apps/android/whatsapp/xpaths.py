@@ -42,7 +42,6 @@ PROFILE_INFO_EDIT_BUTTON = build_wa_resource_id_xpath_widget('Button', 'profile_
 PROFILE_GALLERY = build_text_xpath('Gallery')
 PROFILE_FOLDERS = build_content_desc_xpath_widget('ImageButton', 'Folders')
 PROFILE_SAVE_BUTTON = build_wa_resource_id_xpath('save_button')
-PROFILE_STATUS_EDIT_ICON = build_wa_resource_id_xpath('status_tv_edit_icon')
 PROFILE_INFO_STATUS_CARD = build_wa_resource_id_xpath('profile_info_status_card')
 
 NEW_CHAT_HEADER = build_text_xpath_widget('TextView', 'New chat')
@@ -161,5 +160,6 @@ SEND_CONTENT = build_content_desc_xpath_widget('ImageButton', 'Send')
 SEND_RESOURCE = build_wa_resource_id_xpath_widget('ImageButton', 'send')
 STOP_BUTTON = build_content_desc_xpath_widget('Button', 'Stop')
 NEXT_BUTTON = build_wa_resource_id_xpath('next_btn')
+EDIT_TEXT2 = "//android.widget.EditText"
 EDIT_TEXT = build_wa_resource_id_xpath('edit_text')
 OK_BUTTON = build_wa_resource_id_xpath('ok_btn')
