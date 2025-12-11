@@ -35,13 +35,13 @@ CONVERSATIONS_ROW_BY_SUBJECT = f'//*[contains(@resource-id,"{WHATSAPP_PACKAGE}:i
 SETTINGS_QR = build_wa_resource_id_xpath_widget('ImageView', 'profile_info_qr_code')
 SETTINGS_ACCOUNT_SWITCH = build_wa_resource_id_xpath_widget('ImageView', 'account_switcher_button')
 
-PROFILE_PROFILE_PICTURE = build_wa_resource_id_xpath_widget('ImageView', 'photo_btn')
+PROFILE_PROFILE_PICTURE = build_content_desc_xpath_widget('ImageView', 'Profile photo')
 PROFILE_NAME = build_wa_resource_id_text_xpath_widget('Button', 'profile_settings_row_text', 'Name')
 PROFILE_PHONE = build_wa_resource_id_text_xpath_widget('Button', 'profile_settings_row_text', 'Phone')
 PROFILE_INFO_EDIT_BUTTON = build_wa_resource_id_xpath_widget('Button', 'profile_info_edit_btn')
 PROFILE_GALLERY = build_text_xpath('Gallery')
 PROFILE_FOLDERS = build_content_desc_xpath_widget('ImageButton', 'Folders')
-PROFILE_SAVE_BUTTON = build_wa_resource_id_xpath('save_button')
+PROFILE_SAVE_BUTTON = build_wa_resource_id_xpath('done_btn')
 PROFILE_INFO_STATUS_CARD = build_wa_resource_id_xpath('profile_info_status_card')
 
 NEW_CHAT_HEADER = build_text_xpath_widget('TextView', 'New chat')
@@ -71,7 +71,7 @@ CHAT_SEND_MEDIA_VIEW_ONCE = build_wa_resource_id_xpath('view_once_toggle')
 CHAT_CONTACT_NAME = build_wa_resource_id_text_xpath_widget('TextView', 'name', '{contact_name}')
 CHAT_ATTACH_SEND_BUTTON = build_wa_resource_id_xpath('send_btn')
 CHAT_ATTACH_CONTACT_BUTTON = build_wa_resource_id_xpath('pickfiletype_contact_holder')
-CHAT_ATTACH_GALLERY_BUTTON = build_wa_resource_id_xpath('pickfiletype_gallery_holder')
+CHAT_ATTACH_GALLERY_BUTTON = build_content_desc_xpath_widget('Button', 'Gallery')
 CHAT_GALLERY_FOLDERS_BUTTON = build_content_desc_xpath_widget('ImageButton', 'Folders')
 CHAT_FIRST_MEDIA_IN_FOLDER = '//androidx.compose.ui.platform.ComposeView/android.view.View/android.view.View/android.view.View[5]/android.view.View[3]/android.widget.Button'
 CHAT_STOP_SHARING = build_text_xpath('Stop sharing')
@@ -119,7 +119,7 @@ UPDATES_HEADER = f'//android.view.ViewGroup[@resource-id="{WHATSAPP_PACKAGE}:id/
 UPDATES_STATUS_HEADER = build_wa_resource_id_text_xpath_widget('TextView', 'header_textview', 'Status')
 UPDATES_NEW_STATUS = build_content_desc_xpath_widget('ImageButton', 'New status update')
 UPDATES_EDIT_CAPTION = build_wa_resource_id_xpath_widget('EditText', 'caption')
-UPDATES_SHUTTER = build_wa_resource_id_xpath_widget('ImageView', 'shutter')
+UPDATES_SHUTTER = build_content_desc_xpath_widget('ImageView', 'Shutter, Button. Double tap to take a picture, double tap and hold to start recording, release to stop recording.')
 UPDATES_CAMERA_BUTTON = build_content_desc_xpath_widget('Button', 'Camera')
 
 CALLS_START_CALL = build_content_desc_xpath_widget('ImageButton', 'New call')
