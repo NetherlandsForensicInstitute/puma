@@ -30,7 +30,7 @@ CONVERSATIONS_GROUP_NAME = build_wa_resource_id_xpath('group_name')
 CONVERSATIONS_NEW_GROUP = build_text_xpath('New group')
 CONVERSATIONS_CHAT_ABLE_CONTACT = build_wa_resource_id_text_xpath('chat_able_contacts_row_name', '{receiver}')
 CONVERSATIONS_NEW_BROADCAST_TITLE = build_wa_resource_id_text_xpath('title', 'New broadcast')
-CONVERSATIONS_ROW_BY_SUBJECT = f'//*[contains(@resource-id,"{WHATSAPP_PACKAGE}:id/conversations_row_contact_name") and @text="{{conversation}}"]'
+CONVERSATIONS_ROW_BY_SUBJECT = f'//android.widget.TextView[@resource-id="{WHATSAPP_PACKAGE}:id/conversations_row_contact_name" and @text="{{conversation}}"]'
 
 SETTINGS_QR = build_wa_resource_id_xpath_widget('ImageView', 'profile_info_qr_code')
 SETTINGS_ACCOUNT_SWITCH = build_wa_resource_id_xpath_widget('ImageView', 'account_switcher_button')
@@ -151,7 +151,7 @@ PROFILE_INFO = build_wa_resource_id_xpath_widget('TextView', 'profile_info_name'
 
 HAMBURGER_MENU = build_content_desc_xpath_widget('ImageView', 'More options')
 SEARCH_BAR = build_wa_resource_id_xpath_widget('EditText', 'search_view_edit_text')
-CONVERSATIONS_CHAT_TAB = build_content_desc_xpath_widget('FrameLayout', 'Chats')
+CONVERSATIONS_CHAT_TAB = "//android.widget.FrameLayout[contains(@content-desc, 'Chats')]"
 UPDATES_TAB = build_wa_resource_id_text_xpath_widget('TextView', 'navigation_bar_item_small_label_view', 'Updates')
 CALLS_TAB = build_wa_resource_id_text_xpath_widget('TextView', 'navigation_bar_item_small_label_view', 'Calls')
 
