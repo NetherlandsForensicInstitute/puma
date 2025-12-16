@@ -122,8 +122,11 @@ UPDATES_EDIT_CAPTION = build_wa_resource_id_xpath_widget('EditText', 'caption')
 UPDATES_SHUTTER = build_content_desc_xpath_widget('ImageView', 'Shutter, Button. Double tap to take a picture, double tap and hold to start recording, release to stop recording.')
 UPDATES_CAMERA_BUTTON = build_content_desc_xpath_widget('Button', 'Camera')
 
-CALLS_START_CALL = build_content_desc_xpath_widget('ImageButton', 'New call')
-CALLS_HEADER = f'//android.view.ViewGroup[@resource-id="{WHATSAPP_PACKAGE}:id/toolbar"]/android.widget.TextView[@text="Calls"]'
+CALLS_START_CALL = (
+    f'{build_content_desc_xpath_widget("Button", "Start a call")} | '
+    f'{build_content_desc_xpath_widget("ImageButton", "New call")}'
+)
+CALLS_HEADER =  f'({build_text_xpath_widget("TextView", "Calls")})[1]'
 
 CALL_CONTACT_HEADER = build_wa_resource_id_xpath_widget('TextView', 'title')
 CALL_CONTACT_HEADER_TEXT = f'//android.widget.TextView[@resource-id="{WHATSAPP_PACKAGE}:id/title" and contains(lower-case(@text), "{{conversation}}")]'
@@ -134,8 +137,8 @@ CALL_END_CALL_BUTTON = ('//*[@content-desc="Leave call" or '
                         f'@resource-id="{WHATSAPP_PACKAGE}:id/end_call_button" or '
                         f'@resource-id="{WHATSAPP_PACKAGE}:id/footer_end_call_btn"]')
 
-VOICE_CALL_START_BUTTON = build_wa_resource_id_xpath('voice_call')
-VIDEO_CALL_START_BUTTON = build_wa_resource_id_xpath('video_call')
+VOICE_CALL_START_BUTTON = build_content_desc_xpath_widget('ImageView', 'Voice call')
+VIDEO_CALL_START_BUTTON = build_content_desc_xpath_widget('ImageView', 'Video call')
 VOICE_CALL_CAMERA_BUTTON = f'//android.widget.Button[@content-desc="Turn camera on" and @resource-id="{WHATSAPP_PACKAGE}:id/camera_button"]'
 VIDEO_CALL_CAMERA_BUTTON = f'//android.widget.Button[@content-desc="Turn camera off" and @resource-id="{WHATSAPP_PACKAGE}:id/camera_button"]'
 VIDEO_CALL_SWITCH_CAMERA = build_wa_resource_id_xpath_widget('Button', 'calling_camera_switch_wds_button')
