@@ -249,21 +249,33 @@ class PumaDriver:
         self.driver.swipe(start_x, start_y, start_x, end_y, 500)
         time.sleep(0.5)
 
-    def swipe_to_find_element(self, xpath: str, max_swipes: int = 10):
+    def _swipe_up(self):
+        window_size = self.driver.get_window_size()
+        start_x = window_size['width'] / 2
+        start_y = window_size['height'] * 0.2
+        end_y = window_size['height'] * 0.8
+        self.driver.swipe(start_x, start_y, start_x, end_y, 500)
+        time.sleep(0.5)
+
+    def swipe_to_find_element(self, xpath: str, max_swipes: int = 10, swipe_down: bool = True):
         """
         Swipes down to find an element specified by its XPath. This is necessary when the element you want to click on
         is out of view.
 
         :param xpath: The XPath of the element to find.
         :param max_swipes: The maximum number of swipe attempts to find the element.
+        :param swipe_down: If the element can be found below, True, otherwise False.
         :raises PumaClickException: If the element cannot be found after the maximum number of swipes.
         """
         for attempt in range(max_swipes):
             if self.is_present(xpath):
                 return self.get_element(xpath)
             else:
-                self.gtl_logger.warning(f"Attempt {attempt + 1}: Element not found, swiping down")
-                self._swipe_down()
+                self.gtl_logger.warning(f"Attempt {attempt + 1}: Element not found, swiping")
+                if swipe_down:
+                    self._swipe_down()
+                else:
+                    self._swipe_up()
         raise PumaClickException(f'After {max_swipes} swipes, cannot find element with xpath {xpath}')
 
     def swipe_to_find_elements(self, xpath: str, num_swipes: int = 10):

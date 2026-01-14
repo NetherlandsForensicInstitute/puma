@@ -154,7 +154,7 @@ PROFILE_INFO = build_wa_resource_id_xpath_widget('TextView', 'profile_info_name'
 
 HAMBURGER_MENU = build_content_desc_xpath_widget('ImageView', 'More options')
 SEARCH_BAR = build_wa_resource_id_xpath_widget('EditText', 'search_view_edit_text')
-CONVERSATIONS_CHAT_TAB = "//android.widget.FrameLayout[contains(@content-desc, 'Chats')]"
+CONVERSATIONS_CHAT_TAB = "//android.widget.FrameLayout[starts-with(@content-desc, 'Chats')]"
 UPDATES_TAB = build_wa_resource_id_text_xpath_widget('TextView', 'navigation_bar_item_small_label_view', 'Updates')
 CALLS_TAB = build_wa_resource_id_text_xpath_widget('TextView', 'navigation_bar_item_small_label_view', 'Calls')
 

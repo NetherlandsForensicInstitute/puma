@@ -111,21 +111,33 @@ class WhatsApp(StateGraph):
     def __init__(self, device_udid: str, app_package: str):
         StateGraph.__init__(self, device_udid, app_package)
 
-    def _handle_mention(self, message:str):
+    def _handle_mention(self, message: str):
         """
         Make sure to convert a @name to an actual mention. Only one mention is allowed.
         :param message: The message containing the mention.
         """
-        self.driver.send_keys(TEXT_ENTRY, message)
-        sleep(1)
         # Find the mentioned name in the message. Note that it will search until the last word character. This means for
         # @jan-willem or @jan willem, only @jan will be found.
         mention_match = re.search(r"@\w+", message)
         mentioned_name = mention_match.group(0).strip("@")
 
-        self.driver.press_left_arrow()
-        while not (mention_suggestions := self.driver.get_elements(CHAT_MENTION_SUGGESTIONS)):
-             self.driver.press_left_arrow()
+        # at_index = message.find('@')
+        # # Find the next space or end of the string to get the name
+        # end_index = message.find(' ', at_index)
+        # if end_index == -1:
+        #     end_index = len(message)  # If no space is found, consider the end of the string
+        #
+        # first_part = message[:end_index]
+        # second_part = message[end_index:]
+
+        self.driver.send_keys(TEXT_ENTRY, message)
+        sleep(1)
+
+        self.driver.press_backspace()
+        while not (self.driver.is_present(CHAT_MENTION_SUGGESTIONS)):
+             self.driver.press_backspace()
+
+        mention_suggestions = self.driver.get_elements(CHAT_MENTION_SUGGESTIONS)
 
         mentioned_person_el = \
             [person for person in
@@ -135,6 +147,8 @@ class WhatsApp(StateGraph):
 
         # Remove a space resulting from selecting the mention person
         self.driver.press_backspace()
+        # text_field = self.driver.get_element(TEXT_ENTRY)
+        # text_field.send_keys(second_part)
 
     def _ensure_message_sent(self, message_text: str):
         message_status_el = self.driver.get_element(
@@ -225,14 +239,14 @@ class WhatsApp(StateGraph):
         self.open_more_options()
         self.driver.click(CONVERSATIONS_NEW_BROADCAST_TITLE)
         for receiver in receivers:
-            self.driver.click(CONVERSATIONS_CHAT_ABLE_CONTACT)
+            self.driver.click(CONVERSATIONS_CHAT_ABLE_CONTACT.format(receiver=receiver))
 
         self.driver.click(NEXT_BUTTON)
         self.driver.send_keys(TEXT_ENTRY, broadcast_text)
         self.driver.click(SEND_RESOURCE)
 
     @action(chat_state)
-    def delete_message_for_everyone(self, conversation: str, message_text: str):
+    def delete_message_for_everyone(self, message_text: str, conversation: str = None):
         """
         Remove a message with the message text. Should be recently sent, so it is still in view and still possible to
         delete for everyone.
@@ -323,7 +337,7 @@ class WhatsApp(StateGraph):
         :param reply_text: message text you are sending in your reply.
         """
         message_xpath = f'//android.widget.TextView[@resource-id="{WHATSAPP_PACKAGE}:id/message_text" and contains(@text, "{message_to_reply_to}")]'
-        self.driver.swipe_to_find_element(message_xpath)
+        self.driver.swipe_to_find_element(message_xpath, swipe_down=False)
         self.driver.long_click_element(message_xpath)
         self.driver.click(CHAT_REPLY)
         self.driver.send_keys(TEXT_ENTRY, reply_text)

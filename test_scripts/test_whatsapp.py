@@ -6,8 +6,8 @@ from puma.apps.android.whatsapp.xpaths import CONVERSATIONS_ROW_BY_SUBJECT, CALL
 
 # Fill in the udids below. Run ADB devices to see the udids.
 device_udids = {
-    "Alice": "",
-    "Bob": ""
+    "Alice": "32131JEHN38079",
+    "Bob": "34281JEHN03866"
 }
 
 
@@ -141,6 +141,11 @@ class TestWhatsapp(unittest.TestCase):
         group = "remove bob group"
         self.alice.create_group(group, self.contact_bob)
         self.alice.remove_member_from_group(group, self.contact_bob)
+
+    def test_mention_in_group(self):
+        mention_group = "mention group"
+        self.alice.create_group(mention_group, self.contact_bob)
+        self.alice.send_message("I want to mention @Bob", mention_group)
 
     # Call related tests. Note that you need two phones for these tests, otherwise these tests will fail
     def assert_bob_configured(self):
