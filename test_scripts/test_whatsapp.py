@@ -6,8 +6,8 @@ from puma.apps.android.whatsapp.xpaths import CONVERSATIONS_ROW_BY_SUBJECT, CALL
 
 # Fill in the udids below. Run ADB devices to see the udids.
 device_udids = {
-    "Alice": "32131JEHN38079",
-    "Bob": "34281JEHN03866"
+    "Alice": "",
+    "Bob": ""
 }
 
 
