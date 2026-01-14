@@ -199,6 +199,8 @@ class WhatsApp(StateGraph):
         self.driver.click(UPDATES_SHUTTER)
         if caption:
              self.driver.send_keys(UPDATES_EDIT_CAPTION, caption)
+             # The send button is not always present after entering the caption, so hit back before sending.
+             self.driver.back()
         self.driver.click(SEND_RESOURCE)
 
     @action(profile_state)
@@ -304,7 +306,7 @@ class WhatsApp(StateGraph):
         photo is opened, this will be the lowest one.
         :param conversation: The chat in which the photo has to be opened
         """
-        self.driver.get_elements(CHAT_VIEW_ONCE_MEDIA)[-1].click()
+        self.driver.swipe_to_click_element(CHAT_VIEW_ONCE_MEDIA)
 
     @action(chat_settings_state)
     def set_group_description(self, conversation: str, description: str):
