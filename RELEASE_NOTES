@@ -1,3 +1,7 @@
+Version 4.1.0
+-------------
+184. Update dependencies to newest version
+
 Version 4.0.1
 -------------
 175. Move post verification tests to test directory and fixed bad import
