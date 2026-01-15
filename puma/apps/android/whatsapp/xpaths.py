@@ -41,8 +41,7 @@ PROFILE_PHONE = build_wa_resource_id_text_xpath_widget('Button', 'profile_settin
 PROFILE_INFO_EDIT_BUTTON = build_wa_resource_id_xpath_widget('Button', 'profile_info_edit_btn')
 PROFILE_GALLERY = build_text_xpath('Gallery')
 PROFILE_FOLDERS = build_content_desc_xpath_widget('ImageButton', 'Folders')
-PROFILE_SAVE_BUTTON = build_wa_resource_id_xpath('save_button')
-PROFILE_STATUS_EDIT_ICON = build_wa_resource_id_xpath('status_tv_edit_icon')
+PROFILE_SAVE_BUTTON = build_wa_resource_id_xpath('done_btn')
 PROFILE_INFO_STATUS_CARD = build_wa_resource_id_xpath('profile_info_status_card')
 
 NEW_CHAT_HEADER = build_text_xpath_widget('TextView', 'New chat')
@@ -123,7 +122,10 @@ UPDATES_EDIT_CAPTION = build_wa_resource_id_xpath_widget('EditText', 'caption')
 UPDATES_SHUTTER = build_wa_resource_id_xpath_widget('ImageView', 'shutter')
 UPDATES_CAMERA_BUTTON = build_content_desc_xpath_widget('Button', 'Camera')
 
-CALLS_START_CALL = build_content_desc_xpath_widget('ImageButton', 'New call')
+CALLS_START_CALL = (
+    f'{build_content_desc_xpath_widget("Button", "Start a call")} | '
+    f'{build_content_desc_xpath_widget("ImageButton", "New call")}'
+)
 CALLS_HEADER = f'//android.view.ViewGroup[@resource-id="{WHATSAPP_PACKAGE}:id/toolbar"]/android.widget.TextView[@text="Calls"]'
 
 CALL_CONTACT_HEADER = build_wa_resource_id_xpath_widget('TextView', 'title')
@@ -152,7 +154,7 @@ PROFILE_INFO = build_wa_resource_id_xpath_widget('TextView', 'profile_info_name'
 
 HAMBURGER_MENU = build_content_desc_xpath_widget('ImageView', 'More options')
 SEARCH_BAR = build_wa_resource_id_xpath_widget('EditText', 'search_view_edit_text')
-CONVERSATIONS_CHAT_TAB = build_content_desc_xpath_widget('FrameLayout', 'Chats')
+CONVERSATIONS_CHAT_TAB = "//android.widget.FrameLayout[starts-with(@content-desc, 'Chats')]"
 UPDATES_TAB = build_wa_resource_id_text_xpath_widget('TextView', 'navigation_bar_item_small_label_view', 'Updates')
 CALLS_TAB = build_wa_resource_id_text_xpath_widget('TextView', 'navigation_bar_item_small_label_view', 'Calls')
 
@@ -162,4 +164,5 @@ SEND_RESOURCE = build_wa_resource_id_xpath_widget('ImageButton', 'send')
 STOP_BUTTON = build_content_desc_xpath_widget('Button', 'Stop')
 NEXT_BUTTON = build_wa_resource_id_xpath('next_btn')
 EDIT_TEXT = build_wa_resource_id_xpath('edit_text')
+EDIT_TEXT2 = "//android.widget.EditText"
 OK_BUTTON = build_wa_resource_id_xpath('ok_btn')

@@ -1,4 +1,3 @@
-import re
 from time import sleep
 from typing import Union, List
 
@@ -50,7 +49,7 @@ def go_to_video_call(driver: PumaDriver, contact: str):
     driver.click(VIDEO_CALL_START_BUTTON)
 
 
-@supported_version("2.25.31.76")
+@supported_version("2.25.37.76")
 class WhatsApp(StateGraph):
     """
     A class representing a state graph for managing UI states and transitions in the WhatsApp application.
@@ -111,31 +110,6 @@ class WhatsApp(StateGraph):
     def __init__(self, device_udid: str, app_package: str):
         StateGraph.__init__(self, device_udid, app_package)
 
-    def _handle_mention(self, message:str):
-        """
-        Make sure to convert a @name to an actual mention. Only one mention is allowed.
-        :param message: The message containing the mention.
-        """
-        self.driver.send_keys(TEXT_ENTRY, message)
-        sleep(1)
-        # Find the mentioned name in the message. Note that it will search until the last word character. This means for
-        # @jan-willem or @jan willem, only @jan will be found.
-        mention_match = re.search(r"@\w+", message)
-        mentioned_name = mention_match.group(0).strip("@")
-
-        self.driver.press_left_arrow()
-        while not (mention_suggestions := self.driver.get_elements(CHAT_MENTION_SUGGESTIONS)):
-             self.driver.press_left_arrow()
-
-        mentioned_person_el = \
-            [person for person in
-             mention_suggestions
-             if mentioned_name.lower() in person.tag_name.lower()][0]
-        mentioned_person_el.click()
-
-        # Remove a space resulting from selecting the mention person
-        self.driver.press_backspace()
-
     def _ensure_message_sent(self, message_text: str):
         message_status_el = self.driver.get_element(
             f"//*[@resource-id='com.whatsapp:id/conversation_text_row']"
@@ -150,14 +124,11 @@ class WhatsApp(StateGraph):
     @action(chat_state)
     def send_message(self, message_text: str, conversation: str = None):
         """
-        Send a message in the current chat. If the message contains a mention, this is handled correctly.
+        Send a message in the current chat.
         :param message_text: The text that the message contains.
         :param conversation: The chat conversation in which to send this message. Optional: not needed when already in a conversation
         """
         self.driver.click(TEXT_ENTRY)
-        self._handle_mention(message_text) \
-            if "@" in message_text \
-            else self.driver.send_keys(TEXT_ENTRY, message_text)
 
         # Allow time for the link preview to load
         if 'http' in message_text:
@@ -185,13 +156,14 @@ class WhatsApp(StateGraph):
         self.driver.click(UPDATES_SHUTTER)
         if caption:
              self.driver.send_keys(UPDATES_EDIT_CAPTION, caption)
+             # The send button is not always present after entering the caption, so hit back before sending.
+             self.driver.back()
         self.driver.click(SEND_RESOURCE)
 
     @action(profile_state)
     def set_about(self, about_text: str):
         self.driver.click(PROFILE_INFO_STATUS_CARD)
-        self.driver.click(PROFILE_STATUS_EDIT_ICON)
-        self.driver.send_keys(EDIT_TEXT, about_text)
+        self.driver.send_keys(EDIT_TEXT2, about_text)
         self.driver.click(PROFILE_SAVE_BUTTON)
         # This action ends in a screen that isn't a state, so move back one screen.
         self.driver.back()
@@ -226,14 +198,14 @@ class WhatsApp(StateGraph):
         self.open_more_options()
         self.driver.click(CONVERSATIONS_NEW_BROADCAST_TITLE)
         for receiver in receivers:
-            self.driver.click(CONVERSATIONS_CHAT_ABLE_CONTACT)
+            self.driver.click(CONVERSATIONS_CHAT_ABLE_CONTACT.format(receiver=receiver))
 
         self.driver.click(NEXT_BUTTON)
         self.driver.send_keys(TEXT_ENTRY, broadcast_text)
         self.driver.click(SEND_RESOURCE)
 
     @action(chat_state)
-    def delete_message_for_everyone(self, conversation: str, message_text: str):
+    def delete_message_for_everyone(self, message_text: str, conversation: str = None):
         """
         Remove a message with the message text. Should be recently sent, so it is still in view and still possible to
         delete for everyone.
@@ -291,7 +263,7 @@ class WhatsApp(StateGraph):
         photo is opened, this will be the lowest one.
         :param conversation: The chat in which the photo has to be opened
         """
-        self.driver.get_elements(CHAT_VIEW_ONCE_MEDIA)[-1].click()
+        self.driver.swipe_to_click_element(CHAT_VIEW_ONCE_MEDIA)
 
     @action(chat_settings_state)
     def set_group_description(self, conversation: str, description: str):
@@ -324,7 +296,7 @@ class WhatsApp(StateGraph):
         :param reply_text: message text you are sending in your reply.
         """
         message_xpath = f'//android.widget.TextView[@resource-id="{WHATSAPP_PACKAGE}:id/message_text" and contains(@text, "{message_to_reply_to}")]'
-        self.driver.swipe_to_find_element(message_xpath)
+        self.driver.swipe_to_find_element(message_xpath, swipe_down=False)
         self.driver.long_click_element(message_xpath)
         self.driver.click(CHAT_REPLY)
         self.driver.send_keys(TEXT_ENTRY, reply_text)
