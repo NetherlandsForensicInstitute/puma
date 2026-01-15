@@ -30,12 +30,12 @@ CONVERSATIONS_GROUP_NAME = build_wa_resource_id_xpath('group_name')
 CONVERSATIONS_NEW_GROUP = build_text_xpath('New group')
 CONVERSATIONS_CHAT_ABLE_CONTACT = build_wa_resource_id_text_xpath('chat_able_contacts_row_name', '{receiver}')
 CONVERSATIONS_NEW_BROADCAST_TITLE = build_wa_resource_id_text_xpath('title', 'New broadcast')
-CONVERSATIONS_ROW_BY_SUBJECT = f'//android.widget.TextView[@resource-id="{WHATSAPP_PACKAGE}:id/conversations_row_contact_name" and @text="{{conversation}}"]'
+CONVERSATIONS_ROW_BY_SUBJECT = f'//*[contains(@resource-id,"{WHATSAPP_PACKAGE}:id/conversations_row_contact_name") and @text="{{conversation}}"]'
 
 SETTINGS_QR = build_wa_resource_id_xpath_widget('ImageView', 'profile_info_qr_code')
 SETTINGS_ACCOUNT_SWITCH = build_wa_resource_id_xpath_widget('ImageView', 'account_switcher_button')
 
-PROFILE_PROFILE_PICTURE = build_content_desc_xpath_widget('ImageView', 'Profile photo')
+PROFILE_PROFILE_PICTURE = build_wa_resource_id_xpath_widget('ImageView', 'photo_btn')
 PROFILE_NAME = build_wa_resource_id_text_xpath_widget('Button', 'profile_settings_row_text', 'Name')
 PROFILE_PHONE = build_wa_resource_id_text_xpath_widget('Button', 'profile_settings_row_text', 'Phone')
 PROFILE_INFO_EDIT_BUTTON = build_wa_resource_id_xpath_widget('Button', 'profile_info_edit_btn')
@@ -71,7 +71,7 @@ CHAT_SEND_MEDIA_VIEW_ONCE = build_wa_resource_id_xpath('view_once_toggle')
 CHAT_CONTACT_NAME = build_wa_resource_id_text_xpath_widget('TextView', 'name', '{contact_name}')
 CHAT_ATTACH_SEND_BUTTON = build_wa_resource_id_xpath('send_btn')
 CHAT_ATTACH_CONTACT_BUTTON = build_wa_resource_id_xpath('pickfiletype_contact_holder')
-CHAT_ATTACH_GALLERY_BUTTON = build_content_desc_xpath_widget('Button', 'Gallery')
+CHAT_ATTACH_GALLERY_BUTTON = build_wa_resource_id_xpath('pickfiletype_gallery_holder')
 CHAT_GALLERY_FOLDERS_BUTTON = build_content_desc_xpath_widget('ImageButton', 'Folders')
 CHAT_FIRST_MEDIA_IN_FOLDER = '//androidx.compose.ui.platform.ComposeView/android.view.View/android.view.View/android.view.View[5]/android.view.View[3]/android.widget.Button'
 CHAT_STOP_SHARING = build_text_xpath('Stop sharing')
@@ -119,14 +119,14 @@ UPDATES_HEADER = f'//android.view.ViewGroup[@resource-id="{WHATSAPP_PACKAGE}:id/
 UPDATES_STATUS_HEADER = build_wa_resource_id_text_xpath_widget('TextView', 'header_textview', 'Status')
 UPDATES_NEW_STATUS = build_content_desc_xpath_widget('ImageButton', 'New status update')
 UPDATES_EDIT_CAPTION = build_wa_resource_id_xpath_widget('EditText', 'caption')
-UPDATES_SHUTTER = build_content_desc_xpath_widget('ImageView', 'Shutter, Button. Double tap to take a picture, double tap and hold to start recording, release to stop recording.')
+UPDATES_SHUTTER = build_wa_resource_id_xpath_widget('ImageView', 'shutter')
 UPDATES_CAMERA_BUTTON = build_content_desc_xpath_widget('Button', 'Camera')
 
 CALLS_START_CALL = (
     f'{build_content_desc_xpath_widget("Button", "Start a call")} | '
     f'{build_content_desc_xpath_widget("ImageButton", "New call")}'
 )
-CALLS_HEADER =  f'({build_text_xpath_widget("TextView", "Calls")})[1]'
+CALLS_HEADER = f'//android.view.ViewGroup[@resource-id="{WHATSAPP_PACKAGE}:id/toolbar"]/android.widget.TextView[@text="Calls"]'
 
 CALL_CONTACT_HEADER = build_wa_resource_id_xpath_widget('TextView', 'title')
 CALL_CONTACT_HEADER_TEXT = f'//android.widget.TextView[@resource-id="{WHATSAPP_PACKAGE}:id/title" and contains(lower-case(@text), "{{conversation}}")]'
@@ -137,8 +137,8 @@ CALL_END_CALL_BUTTON = ('//*[@content-desc="Leave call" or '
                         f'@resource-id="{WHATSAPP_PACKAGE}:id/end_call_button" or '
                         f'@resource-id="{WHATSAPP_PACKAGE}:id/footer_end_call_btn"]')
 
-VOICE_CALL_START_BUTTON = build_content_desc_xpath_widget('ImageView', 'Voice call')
-VIDEO_CALL_START_BUTTON = build_content_desc_xpath_widget('ImageView', 'Video call')
+VOICE_CALL_START_BUTTON = build_wa_resource_id_xpath('voice_call')
+VIDEO_CALL_START_BUTTON = build_wa_resource_id_xpath('video_call')
 VOICE_CALL_CAMERA_BUTTON = f'//android.widget.Button[@content-desc="Turn camera on" and @resource-id="{WHATSAPP_PACKAGE}:id/camera_button"]'
 VIDEO_CALL_CAMERA_BUTTON = f'//android.widget.Button[@content-desc="Turn camera off" and @resource-id="{WHATSAPP_PACKAGE}:id/camera_button"]'
 VIDEO_CALL_SWITCH_CAMERA = build_wa_resource_id_xpath_widget('Button', 'calling_camera_switch_wds_button')
@@ -163,6 +163,6 @@ SEND_CONTENT = build_content_desc_xpath_widget('ImageButton', 'Send')
 SEND_RESOURCE = build_wa_resource_id_xpath_widget('ImageButton', 'send')
 STOP_BUTTON = build_content_desc_xpath_widget('Button', 'Stop')
 NEXT_BUTTON = build_wa_resource_id_xpath('next_btn')
-EDIT_TEXT2 = "//android.widget.EditText"
 EDIT_TEXT = build_wa_resource_id_xpath('edit_text')
+EDIT_TEXT2 = "//android.widget.EditText"
 OK_BUTTON = build_wa_resource_id_xpath('ok_btn')

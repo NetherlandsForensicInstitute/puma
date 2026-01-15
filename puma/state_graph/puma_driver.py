@@ -241,7 +241,10 @@ class PumaDriver:
                 return self.driver.find_elements(by=AppiumBy.XPATH, value=xpath)
         raise PumaClickException(f'Could not find elements with xpath {xpath}')
 
-    def _swipe_down(self):
+    def _scroll_down(self):
+        """
+        Moves/scrolls down a screen by simulating a 'swipe up' gesture.
+        """
         window_size = self.driver.get_window_size()
         start_x = window_size['width'] / 2
         start_y = window_size['height'] * 0.8
@@ -249,7 +252,10 @@ class PumaDriver:
         self.driver.swipe(start_x, start_y, start_x, end_y, 500)
         time.sleep(0.5)
 
-    def _swipe_up(self):
+    def _scroll_up(self):
+        """
+        Moves/scrolls up a screen by simulating a 'swipe down' gesture.
+        """
         window_size = self.driver.get_window_size()
         start_x = window_size['width'] / 2
         start_y = window_size['height'] * 0.2
@@ -259,7 +265,7 @@ class PumaDriver:
 
     def swipe_to_find_element(self, xpath: str, max_swipes: int = 10, swipe_down: bool = True):
         """
-        Swipes down to find an element specified by its XPath. This is necessary when the element you want to click on
+        Swipes up or down to find an element specified by its XPath. This is necessary when the element you want to click on
         is out of view.
 
         :param xpath: The XPath of the element to find.
@@ -273,9 +279,9 @@ class PumaDriver:
             else:
                 self.gtl_logger.warning(f"Attempt {attempt + 1}: Element not found, swiping")
                 if swipe_down:
-                    self._swipe_down()
+                    self._scroll_down()
                 else:
-                    self._swipe_up()
+                    self._scroll_up()
         raise PumaClickException(f'After {max_swipes} swipes, cannot find element with xpath {xpath}')
 
     def swipe_to_find_elements(self, xpath: str, num_swipes: int = 10):
@@ -302,7 +308,7 @@ class PumaDriver:
                         seen_elements.add(element)
                         results.append(element)
 
-            self._swipe_down()
+            self._scroll_down()
 
         if not results:
             raise PumaClickException(f'After {num_swipes} swipes, no element with xpath {xpath} found')
