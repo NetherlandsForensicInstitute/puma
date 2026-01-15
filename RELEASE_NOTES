@@ -1,3 +1,7 @@
+Version 5.0.0
+-------------
+183. Fix bugs found during creation of WhatsApp test data
+
 Version 4.0.1
 -------------
 175. Move post verification tests to test directory and fixed bad import
