@@ -1,6 +1,8 @@
-Version 4.1.0
+Version 5.0.0
 -------------
 184. Update dependencies to newest version
+177. Fixed generic exception logging in action decorator
+183. Fix bugs found during creation of WhatsApp test data
 
 Version 4.0.1
 -------------
