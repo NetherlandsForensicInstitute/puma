@@ -142,11 +142,6 @@ class TestWhatsapp(unittest.TestCase):
         self.alice.create_group(group, self.contact_bob)
         self.alice.remove_member_from_group(group, self.contact_bob)
 
-    def test_mention_in_group(self):
-        mention_group = "mention group"
-        self.alice.create_group(mention_group, self.contact_bob)
-        self.alice.send_message("I want to mention @Bob", mention_group)
-
     # Call related tests. Note that you need two phones for these tests, otherwise these tests will fail
     def assert_bob_configured(self):
         self.assertTrue(self.bob_configured, "Bob is not configured. This test cannot be executed.")

@@ -1,4 +1,3 @@
-import re
 from time import sleep
 from typing import Union, List
 
@@ -111,45 +110,6 @@ class WhatsApp(StateGraph):
     def __init__(self, device_udid: str, app_package: str):
         StateGraph.__init__(self, device_udid, app_package)
 
-    def _handle_mention(self, message: str):
-        """
-        Make sure to convert a @name to an actual mention. Only one mention is allowed.
-        :param message: The message containing the mention.
-        """
-        # Find the mentioned name in the message. Note that it will search until the last word character. This means for
-        # @jan-willem or @jan willem, only @jan will be found.
-        mention_match = re.search(r"@\w+", message)
-        mentioned_name = mention_match.group(0).strip("@")
-
-        # at_index = message.find('@')
-        # # Find the next space or end of the string to get the name
-        # end_index = message.find(' ', at_index)
-        # if end_index == -1:
-        #     end_index = len(message)  # If no space is found, consider the end of the string
-        #
-        # first_part = message[:end_index]
-        # second_part = message[end_index:]
-
-        self.driver.send_keys(TEXT_ENTRY, message)
-        sleep(1)
-
-        self.driver.press_backspace()
-        while not (self.driver.is_present(CHAT_MENTION_SUGGESTIONS)):
-             self.driver.press_backspace()
-
-        mention_suggestions = self.driver.get_elements(CHAT_MENTION_SUGGESTIONS)
-
-        mentioned_person_el = \
-            [person for person in
-             mention_suggestions
-             if mentioned_name.lower() in person.tag_name.lower()][0]
-        mentioned_person_el.click()
-
-        # Remove a space resulting from selecting the mention person
-        self.driver.press_backspace()
-        # text_field = self.driver.get_element(TEXT_ENTRY)
-        # text_field.send_keys(second_part)
-
     def _ensure_message_sent(self, message_text: str):
         message_status_el = self.driver.get_element(
             f"//*[@resource-id='com.whatsapp:id/conversation_text_row']"
@@ -164,14 +124,11 @@ class WhatsApp(StateGraph):
     @action(chat_state)
     def send_message(self, message_text: str, conversation: str = None):
         """
-        Send a message in the current chat. If the message contains a mention, this is handled correctly.
+        Send a message in the current chat.
         :param message_text: The text that the message contains.
         :param conversation: The chat conversation in which to send this message. Optional: not needed when already in a conversation
         """
         self.driver.click(TEXT_ENTRY)
-        self._handle_mention(message_text) \
-            if "@" in message_text \
-            else self.driver.send_keys(TEXT_ENTRY, message_text)
 
         # Allow time for the link preview to load
         if 'http' in message_text:
