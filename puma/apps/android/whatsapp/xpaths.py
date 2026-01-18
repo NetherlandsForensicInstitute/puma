@@ -44,7 +44,7 @@ PROFILE_FOLDERS = build_content_desc_xpath_widget('ImageButton', 'Folders')
 PROFILE_SAVE_BUTTON = build_wa_resource_id_xpath('done_btn')
 PROFILE_INFO_STATUS_CARD = build_wa_resource_id_xpath('profile_info_status_card')
 
-NEW_CHAT_HEADER = build_text_xpath_widget('TextView', 'New chat')
+NEW_CHAT_HEADER = '//android.widget.TextView[@text="Select contact" or @text="New chat"]'
 NEW_CHAT_NEW_GROUP = build_wa_resource_id_text_xpath_widget('TextView', 'contactpicker_row_name', 'New group')
 NEW_CHAT_NEW_CONTACT = build_wa_resource_id_text_xpath_widget('TextView', 'contactpicker_row_name', 'New contact')
 NEW_CHAT_NEW_COMMUNITY = build_wa_resource_id_text_xpath_widget('TextView', 'contactpicker_row_name', 'New community')

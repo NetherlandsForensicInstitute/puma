@@ -324,8 +324,7 @@ class PumaDriver:
         :param max_swipes: The maximum number of swipe attempts to find the element.
         :raises PumaClickException: If the element cannot be found after the maximum number of swipes.
         """
-        self.swipe_to_find_element(xpath, max_swipes)
-        self.click(xpath)
+        self.swipe_to_find_element(xpath, max_swipes).click()
 
     def send_keys(self, xpath: str, text: str):
         """

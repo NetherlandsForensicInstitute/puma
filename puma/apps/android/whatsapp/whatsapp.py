@@ -129,7 +129,7 @@ class WhatsApp(StateGraph):
         :param conversation: The chat conversation in which to send this message. Optional: not needed when already in a conversation
         """
         self.driver.click(TEXT_ENTRY)
-
+        self.driver.send_keys(TEXT_ENTRY, message_text)
         # Allow time for the link preview to load
         if 'http' in message_text:
             sleep(2)
@@ -140,7 +140,16 @@ class WhatsApp(StateGraph):
         self.driver.click(PROFILE_INFO_EDIT_BUTTON)
         self.driver.click(PROFILE_GALLERY)
         self.driver.click(PROFILE_FOLDERS)
-        self._find_media_in_folder(photo_dir_name, index)
+        from_device_button = "//android.view.View[count(android.view.View)=3 and count(android.widget.TextView)=1]"
+        try:
+            self._find_media_in_folder(photo_dir_name, index)
+        except PumaClickException as e:
+            if self.driver.is_present(from_device_button):
+                self.driver.click(from_device_button)
+                sleep(1)
+                self._find_media_in_folder(photo_dir_name, index)
+            else:
+                raise e
         self.driver.click(OK_BUTTON)
 
     @action(updates_state)
@@ -525,7 +534,6 @@ class WhatsApp(StateGraph):
             self.driver.swipe_to_click_element(CHAT_DIRECTORY_NAME.format(directory_name=directory_name))
         except PumaClickException:
             raise PumaClickException(f'The directory {directory_name} could not be found.')
-        self.driver.click(CHAT_DIRECTORY_NAME.format(directory_name=directory_name))
         sleep(0.5)
         try:
             self.driver.click(CHAT_DIRECTORY_MEDIA_BY_INDEX.format(index=index))

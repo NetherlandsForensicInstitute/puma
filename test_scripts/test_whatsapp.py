@@ -54,7 +54,7 @@ class TestWhatsapp(unittest.TestCase):
             self.alice.create_new_chat(self.contact_bob, "create new chat, first message")
 
     def test_change_profile_picture(self):
-        self.alice.change_profile_picture("Screenshots")
+        self.alice.change_profile_picture(self.photo_directory_name)
 
     def test_set_about(self):
         self.alice.set_about("about text")
@@ -73,7 +73,7 @@ class TestWhatsapp(unittest.TestCase):
     def test_send_and_delete_message_for_everyone(self):
         self.ensure_bob_conversation_present()
         self.alice.send_message("message to delete", conversation=self.contact_bob)
-        self.alice.delete_message_for_everyone(self.contact_bob, "message to delete")
+        self.alice.delete_message_for_everyone("message to delete", conversation=self.contact_bob)
 
     def test_forward_message(self):
         self.ensure_bob_conversation_present()
@@ -88,10 +88,10 @@ class TestWhatsapp(unittest.TestCase):
         self.alice.reply_to_message(message, "reply")
 
     def test_send_media(self):
-        self.alice.send_media(conversation=self.contact_bob, directory_name='Screenshots', caption='caption', view_once=False)
+        self.alice.send_media(conversation=self.contact_bob, directory_name=self.photo_directory_name, caption='caption', view_once=False)
 
     def test_send_media_view_once(self):
-        self.alice.send_media(conversation=self.contact_bob, directory_name='Screenshots', caption='caption', view_once=True)
+        self.alice.send_media(conversation=self.contact_bob, directory_name=self.photo_directory_name, caption='caption', view_once=True)
 
     def test_send_sticker(self):
         self.alice.send_sticker(self.contact_bob)
@@ -174,7 +174,7 @@ class TestWhatsapp(unittest.TestCase):
 
     def test_open_view_once_photo(self):
         self.assert_bob_configured()
-        self.alice.send_media(self.contact_bob, self.photo_directory_name, view_once=True)
+        self.alice.send_media(self.photo_directory_name, conversation=self.contact_bob, view_once=True)
         sleep(1)
         self.bob.open_view_once_photo(self.contact_alice)
 
