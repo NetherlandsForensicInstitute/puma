@@ -33,7 +33,7 @@ class TestWhatsapp(unittest.TestCase):
         if not device_udids["Alice"]:
             print("No udid was configured for Alice. Please add at the top of the script.\nExiting....")
             exit(1)
-        self.alice = WhatsApp(device_udids["Alice"], "com.whatsapp") # Assuming Phone class is already defined
+        self.alice = WhatsApp(device_udids["Alice"], "com.whatsapp")  # Assuming Phone class is already defined
 
         self.bob_configured = bool(device_udids["Bob"])
         if self.bob_configured:
@@ -44,14 +44,14 @@ class TestWhatsapp(unittest.TestCase):
         self.contact_alice = "Alice"
         self.contact_bob = "Bob"
         self.contact_charlie = "Charlie"
-        self.photo_directory_name = "photos"
+        self.photo_directory_name = "Screenshots"
 
-    def conversation_present(self, subject):
-        return self.alice.driver.is_present(CONVERSATIONS_ROW_BY_SUBJECT.format(conversation=subject))
-
-    def ensure_bob_conversation_present(self):
-        if not self.conversation_present(self.contact_bob):
-            self.alice.create_new_chat(self.contact_bob, "create new chat, first message")
+    def test_1_create_new_chat(self):
+        """
+        Name changes because we want to ensure this test runs first.
+        After this test we are sure there is a conversation with Bob.
+        """
+        self.alice.create_new_chat(self.contact_bob, "create new chat, first message")
 
     def test_change_profile_picture(self):
         self.alice.change_profile_picture(self.photo_directory_name)
@@ -62,27 +62,20 @@ class TestWhatsapp(unittest.TestCase):
     def test_set_status(self):
         self.alice.add_status("caption")
 
-    def test_create_new_chat(self):
-        self.alice.create_new_chat(self.contact_bob, "create new chat, first message")
-
     def test_activate_and_deactivate_disappearing_messages(self):
-        self.ensure_bob_conversation_present()
         self.alice.activate_disappearing_messages(self.contact_bob)
         self.alice.deactivate_disappearing_messages(self.contact_bob)
 
     def test_send_and_delete_message_for_everyone(self):
-        self.ensure_bob_conversation_present()
         self.alice.send_message("message to delete", conversation=self.contact_bob)
         self.alice.delete_message_for_everyone("message to delete", conversation=self.contact_bob)
 
     def test_forward_message(self):
-        self.ensure_bob_conversation_present()
         message_to_forward = "message to forward"
         self.alice.send_message(message_to_forward, conversation=self.contact_bob)
         self.alice.forward_message(self.contact_bob, message_to_forward, self.contact_bob)
 
     def test_reply_to_message(self):
-        self.ensure_bob_conversation_present()
         message = "message to reply to"
         self.alice.send_message(message, conversation=self.contact_bob)
         self.alice.reply_to_message(message, "reply")
@@ -102,20 +95,16 @@ class TestWhatsapp(unittest.TestCase):
         self.alice.send_emoji(self.contact_bob)
 
     def test_send_contact(self):
-        self.ensure_bob_conversation_present()
         self.alice.send_contact(self.contact_bob, conversation=self.contact_bob)
 
     def test_send_current_location(self):
-        self.ensure_bob_conversation_present()
         self.alice.send_current_location(self.contact_bob)
 
     def test_send_and_stop_live_location(self):
-        self.ensure_bob_conversation_present()
         self.alice.send_live_location(conversation=self.contact_bob, caption="caption")
         self.alice.stop_live_location(self.contact_bob)
 
     def test_send_voice_recording(self):
-        self.ensure_bob_conversation_present()
         self.alice.send_voice_message(conversation=self.contact_bob)
 
     # Group related tests
@@ -187,14 +176,12 @@ class TestWhatsapp(unittest.TestCase):
         self.alice.send_broadcast([self.contact_bob, self.contact_charlie], message)
 
     def test_transitions(self):
-        self.ensure_bob_conversation_present()
         for to_state in self.alice.states:
             self.alice.go_to_state(to_state, conversation='Bob', contact='Bob')
             if self.alice.driver.is_present(CALL_END_CALL_BUTTON):
+                sleep(2)
                 self.alice._end_call()
         self.alice.go_to_state(self.alice.initial_state)
 
-
 if __name__ == '__main__':
     unittest.main()
-

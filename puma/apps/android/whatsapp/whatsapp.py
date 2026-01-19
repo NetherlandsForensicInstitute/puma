@@ -106,8 +106,7 @@ class WhatsApp(StateGraph):
                                                       name='navigate_to_location'))
     chat_state.to(chat_settings_state, WhatsAppChatState.open_chat_settings)
 
-
-    def __init__(self, device_udid: str, app_package: str= 'com.whatsapp'):
+    def __init__(self, device_udid: str, app_package: str = 'com.whatsapp'):
         StateGraph.__init__(self, device_udid, app_package)
 
     def _ensure_message_sent(self, message_text: str):
@@ -142,14 +141,15 @@ class WhatsApp(StateGraph):
         self._pick_media_from_gallery(index, photo_dir_name)
         self.driver.click(OK_BUTTON)
 
-    def _pick_media_from_gallery(self, index:int, photo_dir_name:str= None):
+    def _pick_media_from_gallery(self, index: int, photo_dir_name: str = None):
         if photo_dir_name:
             self.driver.click(MEDIA_PICKER_SPINNER)
             self.driver.click(MEDIA_PICKER_FOLDER.format(photo_dir_name))
         try:
             self.driver.click(MEDIA_PICKER_THUMBNAIL.format(index))
         except PumaClickException as e:
-            raise PumaClickException(f'Could not select media {index} in folder {photo_dir_name}. Are there enough pictures in this folder?', e)
+            raise PumaClickException(f'Could not select media {index} in folder {photo_dir_name}. '
+                                     f'Are there enough pictures in this folder?', e)
 
     @action(updates_state)
     def add_status(self, caption: str = None):
@@ -163,9 +163,9 @@ class WhatsApp(StateGraph):
         self.driver.click(UPDATES_CAMERA_BUTTON)
         self.driver.click(UPDATES_SHUTTER)
         if caption:
-             self.driver.send_keys(UPDATES_EDIT_CAPTION, caption)
-             # The send button is not always present after entering the caption, so hit back before sending.
-             self.driver.back()
+            self.driver.send_keys(UPDATES_EDIT_CAPTION, caption)
+            # The send button is not always present after entering the caption, so hit back before sending.
+            self.driver.back()
         self.driver.click(SEND_RESOURCE)
 
     @action(profile_state)
@@ -183,7 +183,8 @@ class WhatsApp(StateGraph):
         :param conversation: Contact to start the conversation with.
         :param first_message: First message to send to the contact
         """
-        self.driver.click(f'//*[@resource-id="{WHATSAPP_PACKAGE}:id/contactpicker_text_container"]//*[@text="{conversation}"]')
+        self.driver.click(
+            f'//*[@resource-id="{WHATSAPP_PACKAGE}:id/contactpicker_text_container"]//*[@text="{conversation}"]')
         self.driver.click(build_content_desc_xpath_widget('Button', 'Message'))
         self.send_message(first_message)
 
@@ -221,7 +222,8 @@ class WhatsApp(StateGraph):
         :param message_text: literal message text of the message to remove. The first match will be removed in case
         there are multiple with the same text.
         """
-        self.driver.long_click_element(f"//*[@resource-id='{WHATSAPP_PACKAGE}:id/conversation_text_row']//*[@text='{message_text}']")
+        self.driver.long_click_element(
+            f"//*[@resource-id='{WHATSAPP_PACKAGE}:id/conversation_text_row']//*[@text='{message_text}']")
         self.driver.click(CHAT_DELETE_BUTTON)
         self.driver.click(CHAT_DELETE_FOR_EVERYONE)
 
@@ -252,7 +254,8 @@ class WhatsApp(StateGraph):
         Archives a given conversation.
         :param conversation: The conversation to archive.
         """
-        self.driver.long_click_element(f'//*[contains(@resource-id,"{WHATSAPP_PACKAGE}:id/conversations_row_contact_name") and @text="{conversation}"]')
+        self.driver.long_click_element(
+            f'//*[contains(@resource-id,"{WHATSAPP_PACKAGE}:id/conversations_row_contact_name") and @text="{conversation}"]')
         self.driver.click(CONVERSATIONS_MENUITEM_ARCHIVE)
         # Wait until the archive popup disappeared
         archived_popup_present = True
@@ -280,7 +283,8 @@ class WhatsApp(StateGraph):
         :param conversation: Name of the group to set the description for.
         :param description: Description of the group.
         """
-        self.driver.swipe_to_click_element(f'{build_wa_resource_id_xpath("no_description_view")} | {build_wa_resource_id_xpath("has_description_view")}')
+        self.driver.swipe_to_click_element(
+            f'{build_wa_resource_id_xpath("no_description_view")} | {build_wa_resource_id_xpath("has_description_view")}')
         self.driver.send_keys(EDIT_TEXT, description)
         self.driver.click(OK_BUTTON)
 
@@ -455,7 +459,7 @@ class WhatsApp(StateGraph):
         Answer when receiving a call via Whatsapp.
         """
         self.driver.open_notifications()
-        sleep(2)
+        self.driver.is_present(RECEIVE_CALL_ANSWER_BUTTON, implicit_wait=3)
         self.driver.click(RECEIVE_CALL_ANSWER_BUTTON)
 
     # This method is not an @action, since it is not tied to a state.
@@ -626,12 +630,8 @@ class WhatsApp(StateGraph):
 
             if set(found_member_names) != set(expected_member_names):
                 self.gtl_logger.warning(f"Group with name '{conversation}' does not contain expected members:"
-                               f" expected {sorted(expected_member_names)},"
-                               f" actual {sorted(found_member_names)}")
+                                        f" expected {sorted(expected_member_names)},"
+                                        f" actual {sorted(found_member_names)}")
                 return False
 
         return True
-
-if __name__ == '__main__':
-    phone = WhatsApp('32131JEHN38079', 'com.whatsapp')
-    phone.send_media(1, directory_name='Screenshots', conversation='Bob', view_once=True, caption='test')

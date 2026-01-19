@@ -140,8 +140,9 @@ CALL_END_CALL_BUTTON = ('//*[@content-desc="Leave call" or '
 VOICE_CALL_START_BUTTON = build_wa_resource_id_xpath('voice_call')
 VIDEO_CALL_START_BUTTON = build_wa_resource_id_xpath('video_call')
 VOICE_CALL_CAMERA_BUTTON = f'//android.widget.Button[@content-desc="Turn camera on" and @resource-id="{WHATSAPP_PACKAGE}:id/camera_button"]'
-VIDEO_CALL_CAMERA_BUTTON = f'//android.widget.Button[@content-desc="Turn camera off" and @resource-id="{WHATSAPP_PACKAGE}:id/camera_button"]'
-VIDEO_CALL_SWITCH_CAMERA = build_wa_resource_id_xpath_widget('Button', 'calling_camera_switch_wds_button')
+VIDEO_CALL_GRID = '//android.widget.FrameLayout[@resource-id="com.whatsapp:id/call_grid"]'
+VIDEO_CALL_VIDEO_CONTAINER = '//android.view.ViewGroup[@resource-id="com.whatsapp:id/video_container"]'
+
 
 RECEIVE_CALL_ANSWER_BUTTON = "//android.widget.Button[@content-desc='Answer' or @content-desc='Video']"
 RECEIVE_CALL_DECLINE_BUTTON = build_content_desc_xpath_widget('Button', 'Decline')
