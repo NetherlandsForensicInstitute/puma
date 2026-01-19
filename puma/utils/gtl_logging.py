@@ -1,6 +1,5 @@
 import logging
 from pathlib import Path
-from sys import stdout
 
 from puma.utils import LOG_FOLDER, PUMA_INIT_TIMESTAMP
 

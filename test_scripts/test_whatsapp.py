@@ -2,7 +2,7 @@ import unittest
 from time import sleep
 
 from puma.apps.android.whatsapp.whatsapp import WhatsApp
-from puma.apps.android.whatsapp.xpaths import CONVERSATIONS_ROW_BY_SUBJECT, CALL_END_CALL_BUTTON
+from puma.apps.android.whatsapp.xpaths import CALL_END_CALL_BUTTON
 
 # Fill in the udids below. Run ADB devices to see the udids.
 device_udids = {

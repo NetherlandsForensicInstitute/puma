@@ -529,18 +529,6 @@ class WhatsApp(StateGraph):
         sleep(1)
         self.driver.click(SEND)
 
-    def _find_media_in_folder(self, directory_name: str, index: int):
-        try:
-            self.driver.swipe_to_click_element(CHAT_DIRECTORY_NAME.format(directory_name=directory_name))
-        except PumaClickException:
-            raise PumaClickException(f'The directory {directory_name} could not be found.')
-        sleep(0.5)
-        try:
-            self.driver.click(CHAT_DIRECTORY_MEDIA_BY_INDEX.format(index=index))
-        except PumaClickException:
-            raise PumaClickException(
-                f'The media at index {index} could not be found. The index is likely too large or negative.')
-
     def is_message_marked_sent(self, message_text: str, implicit_wait: float = 5):
         """
         Verify that a message with given text has been sent in the current conversation.
