@@ -78,9 +78,10 @@ which folder your desired picture or video is in, Puma will pick the first file 
 
 ```python
 phone.select_chat("Bob")  # open the conversation with Bob 
-phone.send_media("Bird")  # will send the first picture or video in the folder "Bird"
-phone.send_media("Horse", chat="Charlie")  # First opens the correct conversation before sending the media
-phone.send_media("Fish", index=2, caption="look at this cool fish!")  # Send the media at index 2 from the folder "Fish" with a caption
+phone.send_media(1, directory_name="Bird")  # will send the first picture or video in the folder "Bird"
+phone.send_media(1, directory_name="Horse")  # First opens the correct conversation before sending the media
+phone.send_media(index=2, directory_name="Fish",
+                 caption="look at this cool fish!")  # Send the media at index 2 from the folder "Fish" with a caption
 ```
 
 ### Other chat functions

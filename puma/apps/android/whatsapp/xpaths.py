@@ -158,7 +158,7 @@ CONVERSATIONS_CHAT_TAB = "//android.widget.FrameLayout[starts-with(@content-desc
 UPDATES_TAB = build_wa_resource_id_text_xpath_widget('TextView', 'navigation_bar_item_small_label_view', 'Updates')
 CALLS_TAB = build_wa_resource_id_text_xpath_widget('TextView', 'navigation_bar_item_small_label_view', 'Calls')
 
-SEND = build_wa_resource_id_xpath('send')
+SEND = '//*[@resource-id="com.whatsapp:id/send" or @resource-id="com.whatsapp:id/send_media_btn"]'
 SEND_CONTENT = build_content_desc_xpath_widget('ImageButton', 'Send')
 SEND_RESOURCE = build_wa_resource_id_xpath_widget('ImageButton', 'send')
 STOP_BUTTON = build_content_desc_xpath_widget('Button', 'Stop')
@@ -166,3 +166,7 @@ NEXT_BUTTON = build_wa_resource_id_xpath('next_btn')
 EDIT_TEXT = build_wa_resource_id_xpath('edit_text')
 EDIT_TEXT2 = "//android.widget.EditText"
 OK_BUTTON = build_wa_resource_id_xpath('ok_btn')
+
+MEDIA_PICKER_SPINNER = '//android.widget.Spinner[@resource-id="com.whatsapp:id/gallery_spinner"]'
+MEDIA_PICKER_FOLDER = '//android.widget.TextView[@resource-id="com.whatsapp:id/title" and @text="{}"]'
+MEDIA_PICKER_THUMBNAIL = '//androidx.recyclerview.widget.RecyclerView[@resource-id="com.whatsapp:id/grid"]/android.widget.ImageView[{}]'

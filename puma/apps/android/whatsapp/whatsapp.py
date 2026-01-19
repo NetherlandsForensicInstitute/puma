@@ -107,7 +107,7 @@ class WhatsApp(StateGraph):
     chat_state.to(chat_settings_state, WhatsAppChatState.open_chat_settings)
 
 
-    def __init__(self, device_udid: str, app_package: str):
+    def __init__(self, device_udid: str, app_package: str= 'com.whatsapp'):
         StateGraph.__init__(self, device_udid, app_package)
 
     def _ensure_message_sent(self, message_text: str):
@@ -139,18 +139,17 @@ class WhatsApp(StateGraph):
     def change_profile_picture(self, photo_dir_name: str, index: int = 1):
         self.driver.click(PROFILE_INFO_EDIT_BUTTON)
         self.driver.click(PROFILE_GALLERY)
-        self.driver.click(PROFILE_FOLDERS)
-        from_device_button = "//android.view.View[count(android.view.View)=3 and count(android.widget.TextView)=1]"
-        try:
-            self._find_media_in_folder(photo_dir_name, index)
-        except PumaClickException as e:
-            if self.driver.is_present(from_device_button):
-                self.driver.click(from_device_button)
-                sleep(1)
-                self._find_media_in_folder(photo_dir_name, index)
-            else:
-                raise e
+        self._pick_media_from_gallery(index, photo_dir_name)
         self.driver.click(OK_BUTTON)
+
+    def _pick_media_from_gallery(self, index:int, photo_dir_name:str= None):
+        if photo_dir_name:
+            self.driver.click(MEDIA_PICKER_SPINNER)
+            self.driver.click(MEDIA_PICKER_FOLDER.format(photo_dir_name))
+        try:
+            self.driver.click(MEDIA_PICKER_THUMBNAIL.format(index))
+        except PumaClickException as e:
+            raise PumaClickException(f'Could not select media {index} in folder {photo_dir_name}. Are there enough pictures in this folder?', e)
 
     @action(updates_state)
     def add_status(self, caption: str = None):
@@ -505,15 +504,12 @@ class WhatsApp(StateGraph):
         self.driver.click(SEND)
 
     @action(chat_state)
-    def send_media(self, directory_name: str, conversation: str = None, index: int = 1, caption: str = None,
+    def send_media(self, index: int, conversation: str = None, directory_name: str = None, caption: str = None,
                    view_once: bool = False):
         # Go to gallery
         self.driver.click(CHAT_ATTACH_BUTTON)
         self.driver.click(CHAT_ATTACH_GALLERY_BUTTON)
-        self.driver.click(CHAT_GALLERY_FOLDERS_BUTTON)
-        self._find_media_in_folder(directory_name, index)
-        sleep(0.5)
-        self.driver.click(CHAT_FIRST_MEDIA_IN_FOLDER)
+        self._pick_media_from_gallery(index, directory_name)
 
         if caption:
             sleep(0.5)
