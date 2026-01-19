@@ -631,3 +631,7 @@ class WhatsApp(StateGraph):
                 return False
 
         return True
+
+if __name__ == '__main__':
+    phone = WhatsApp('32131JEHN38079', 'com.whatsapp')
+    phone.send_media(1, directory_name='Screenshots', conversation='Bob', view_once=True, caption='test')

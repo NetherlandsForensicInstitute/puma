@@ -6,8 +6,8 @@ from puma.apps.android.whatsapp.xpaths import CONVERSATIONS_ROW_BY_SUBJECT, CALL
 
 # Fill in the udids below. Run ADB devices to see the udids.
 device_udids = {
-    "Alice": "",
-    "Bob": ""
+    "Alice": "32131JEHN38079",
+    "Bob": "34281JEHN03866"
 }
 
 
@@ -88,10 +88,12 @@ class TestWhatsapp(unittest.TestCase):
         self.alice.reply_to_message(message, "reply")
 
     def test_send_media(self):
-        self.alice.send_media(conversation=self.contact_bob, directory_name=self.photo_directory_name, caption='caption', view_once=False)
+        self.alice.send_media(1, conversation=self.contact_bob, directory_name=self.photo_directory_name,
+                              caption='caption', view_once=False)
 
     def test_send_media_view_once(self):
-        self.alice.send_media(conversation=self.contact_bob, directory_name=self.photo_directory_name, caption='caption', view_once=True)
+        self.alice.send_media(1, conversation=self.contact_bob, directory_name=self.photo_directory_name,
+                              caption='caption', view_once=True)
 
     def test_send_sticker(self):
         self.alice.send_sticker(self.contact_bob)
@@ -174,7 +176,8 @@ class TestWhatsapp(unittest.TestCase):
 
     def test_open_view_once_photo(self):
         self.assert_bob_configured()
-        self.alice.send_media(self.photo_directory_name, conversation=self.contact_bob, view_once=True)
+        self.alice.send_media(1, conversation=self.contact_bob, directory_name=self.photo_directory_name,
+                              view_once=True)
         sleep(1)
         self.bob.open_view_once_photo(self.contact_alice)
 
