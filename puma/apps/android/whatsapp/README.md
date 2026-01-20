@@ -35,7 +35,7 @@ Some account properties can be set:
 
 ```python
 # this method takes the first picture in the provided folder name
-phone.change_profile_picture('Downloads')
+phone.change_profile_picture(1, 'Downloads')
 # add a WhatsApp status
 phone.add_status("This is my new status!")
 # set the about text on your WhatsApp profile

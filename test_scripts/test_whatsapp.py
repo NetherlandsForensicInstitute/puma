@@ -54,7 +54,7 @@ class TestWhatsapp(unittest.TestCase):
         self.alice.create_new_chat(self.contact_bob, "create new chat, first message")
 
     def test_change_profile_picture(self):
-        self.alice.change_profile_picture(self.photo_directory_name)
+        self.alice.change_profile_picture(1, self.photo_directory_name)
 
     def test_set_about(self):
         self.alice.set_about("about text")

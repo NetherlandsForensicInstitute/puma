@@ -5,6 +5,7 @@ from puma.apps.android.whatsapp import logger
 from puma.apps.android.whatsapp.states import *
 from puma.apps.android.whatsapp.xpaths import *
 from puma.state_graph.action import action
+from puma.state_graph.popup_handler import simple_popup_handler
 from puma.state_graph.puma_driver import PumaDriver, PumaClickException, supported_version
 from puma.state_graph.state import SimpleState, compose_clicks
 from puma.state_graph.state_graph import StateGraph
@@ -108,6 +109,7 @@ class WhatsApp(StateGraph):
 
     def __init__(self, device_udid: str, app_package: str = 'com.whatsapp'):
         StateGraph.__init__(self, device_udid, app_package)
+        self.add_popup_handler(simple_popup_handler(CHAT_SETTINGS_DISAPPEARING_MESSAGES_POPUP_OK))
 
     def _ensure_message_sent(self, message_text: str):
         message_status_el = self.driver.get_element(
@@ -135,20 +137,20 @@ class WhatsApp(StateGraph):
         self.driver.click(SEND_CONTENT)
 
     @action(profile_state)
-    def change_profile_picture(self, photo_dir_name: str, index: int = 1):
+    def change_profile_picture(self, index: int, directory_name: str = None):
         self.driver.click(PROFILE_INFO_EDIT_BUTTON)
         self.driver.click(PROFILE_GALLERY)
-        self._pick_media_from_gallery(index, photo_dir_name)
+        self._pick_media_from_gallery(index=index, directory_name=directory_name)
         self.driver.click(OK_BUTTON)
 
-    def _pick_media_from_gallery(self, index: int, photo_dir_name: str = None):
-        if photo_dir_name:
+    def _pick_media_from_gallery(self, index: int, directory_name: str = None):
+        if directory_name:
             self.driver.click(MEDIA_PICKER_SPINNER)
-            self.driver.click(MEDIA_PICKER_FOLDER.format(photo_dir_name))
+            self.driver.click(MEDIA_PICKER_FOLDER.format(directory_name))
         try:
-            self.driver.click(MEDIA_PICKER_THUMBNAIL.format(index))
+            self.driver.click(MEDIA_PICKER_THUMBNAIL.format(index), width_ratio=0.25, height_ratio=0.25)
         except PumaClickException as e:
-            raise PumaClickException(f'Could not select media {index} in folder {photo_dir_name}. '
+            raise PumaClickException(f'Could not select media {index} in folder {directory_name}. '
                                      f'Are there enough pictures in this folder?', e)
 
     @action(updates_state)
@@ -309,7 +311,7 @@ class WhatsApp(StateGraph):
         """
         message_xpath = f'//android.widget.TextView[@resource-id="{WHATSAPP_PACKAGE}:id/message_text" and contains(@text, "{message_to_reply_to}")]'
         self.driver.swipe_to_find_element(message_xpath, swipe_down=False)
-        self.driver.long_click_element(message_xpath)
+        self.driver.long_click_element(message_xpath, width_ratio=0.9)
         self.driver.click(CHAT_REPLY)
         self.driver.send_keys(TEXT_ENTRY, reply_text)
         self.driver.click(SEND)
@@ -513,7 +515,7 @@ class WhatsApp(StateGraph):
         # Go to gallery
         self.driver.click(CHAT_ATTACH_BUTTON)
         self.driver.click(CHAT_ATTACH_GALLERY_BUTTON)
-        self._pick_media_from_gallery(index, directory_name)
+        self._pick_media_from_gallery(index=index, directory_name=directory_name)
 
         if caption:
             sleep(0.5)

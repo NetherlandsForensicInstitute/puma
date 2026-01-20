@@ -109,6 +109,7 @@ CHAT_SETTINGS_REMOVE_MEMBER = "//*[starts-with(@text, 'Remove')]"
 CHAT_SETTINGS_EXIT_GROUP_BUTTON = build_text_xpath_widget('Button', 'Exit group')
 CHAT_SETTINGS_EXIT_GROUP_LIST_ITEM = build_wa_resource_id_text_xpath('list_item_title', 'Exit group')
 CHAT_SETTINGS_DISAPPEARING_MESSAGES = f'//*[@resource-id="{WHATSAPP_PACKAGE}:id/list_item_title" and @text="Disappearing messages"]'
+CHAT_SETTINGS_DISAPPEARING_MESSAGES_POPUP_OK = '//android.view.ViewGroup[@resource-id="com.whatsapp:id/ephemeral_nux_button_group"]/android.widget.Button[@resource-id="com.whatsapp:id/ephemeral_nux_ok"]'
 CHAT_SETTINGS_OK_BUTTON = build_text_xpath_widget('Button', 'OK')
 CHAT_SETTINGS_CONTAINS_DELETE_GROUP = '//*[contains(@text,"Delete group")]'
 
