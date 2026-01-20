@@ -50,7 +50,7 @@ def go_to_video_call(driver: PumaDriver, contact: str):
     driver.click(VIDEO_CALL_START_BUTTON)
 
 
-@supported_version("2.26.1.76")
+@supported_version("2.26.2.70")
 class WhatsApp(StateGraph):
     """
     A class representing a state graph for managing UI states and transitions in the WhatsApp application.
