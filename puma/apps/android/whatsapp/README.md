@@ -35,7 +35,7 @@ Some account properties can be set:
 
 ```python
 # this method takes the first picture in the provided folder name
-phone.change_profile_picture(1, 'Downloads')
+phone.change_profile_picture(index=1, directory_name='Downloads')
 # add a WhatsApp status
 phone.add_status("This is my new status!")
 # set the about text on your WhatsApp profile
@@ -90,13 +90,13 @@ which folder your desired picture or video is in. Puma will pick the first file 
 
 ```python
 # sends the first picture or video in the folder "Bird"
-phone.send_media(1, conversation="Bob", directory_name="Bird")
+phone.send_media(index=1, conversation="Bob", directory_name="Bird")
 # sends the first picture or video in the folder "Horse"
-phone.send_media(1, conversation="Charlie", directory_name="Horse")
+phone.send_media(index=1, conversation="Charlie", directory_name="Horse")
 # send media from folder "Fish" at index 2, with a caption
 phone.send_media(index=2, conversation="Bob", directory_name="Fish", caption="look at this cool fish!")
 # activate the 'view once' option. The conversation does not have to be specified if the previous message was also sent to Bob.
-phone.send_media(1, directory_name="Turtle", view_once=True)
+phone.send_media(index=1, directory_name="Turtle", view_once=True)
 ```
 
 ### Other chat functions
