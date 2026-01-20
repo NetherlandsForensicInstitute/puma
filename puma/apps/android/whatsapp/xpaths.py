@@ -44,7 +44,7 @@ PROFILE_FOLDERS = build_content_desc_xpath_widget('ImageButton', 'Folders')
 PROFILE_SAVE_BUTTON = build_wa_resource_id_xpath('done_btn')
 PROFILE_INFO_STATUS_CARD = build_wa_resource_id_xpath('profile_info_status_card')
 
-NEW_CHAT_HEADER = build_text_xpath_widget('TextView', 'New chat')
+NEW_CHAT_HEADER = '//android.widget.TextView[@text="Select contact" or @text="New chat"]'
 NEW_CHAT_NEW_GROUP = build_wa_resource_id_text_xpath_widget('TextView', 'contactpicker_row_name', 'New group')
 NEW_CHAT_NEW_CONTACT = build_wa_resource_id_text_xpath_widget('TextView', 'contactpicker_row_name', 'New contact')
 NEW_CHAT_NEW_COMMUNITY = build_wa_resource_id_text_xpath_widget('TextView', 'contactpicker_row_name', 'New community')
@@ -109,6 +109,7 @@ CHAT_SETTINGS_REMOVE_MEMBER = "//*[starts-with(@text, 'Remove')]"
 CHAT_SETTINGS_EXIT_GROUP_BUTTON = build_text_xpath_widget('Button', 'Exit group')
 CHAT_SETTINGS_EXIT_GROUP_LIST_ITEM = build_wa_resource_id_text_xpath('list_item_title', 'Exit group')
 CHAT_SETTINGS_DISAPPEARING_MESSAGES = f'//*[@resource-id="{WHATSAPP_PACKAGE}:id/list_item_title" and @text="Disappearing messages"]'
+CHAT_SETTINGS_DISAPPEARING_MESSAGES_POPUP_OK = '//android.view.ViewGroup[@resource-id="com.whatsapp:id/ephemeral_nux_button_group"]/android.widget.Button[@resource-id="com.whatsapp:id/ephemeral_nux_ok"]'
 CHAT_SETTINGS_OK_BUTTON = build_text_xpath_widget('Button', 'OK')
 CHAT_SETTINGS_CONTAINS_DELETE_GROUP = '//*[contains(@text,"Delete group")]'
 
@@ -140,8 +141,9 @@ CALL_END_CALL_BUTTON = ('//*[@content-desc="Leave call" or '
 VOICE_CALL_START_BUTTON = build_wa_resource_id_xpath('voice_call')
 VIDEO_CALL_START_BUTTON = build_wa_resource_id_xpath('video_call')
 VOICE_CALL_CAMERA_BUTTON = f'//android.widget.Button[@content-desc="Turn camera on" and @resource-id="{WHATSAPP_PACKAGE}:id/camera_button"]'
-VIDEO_CALL_CAMERA_BUTTON = f'//android.widget.Button[@content-desc="Turn camera off" and @resource-id="{WHATSAPP_PACKAGE}:id/camera_button"]'
-VIDEO_CALL_SWITCH_CAMERA = build_wa_resource_id_xpath_widget('Button', 'calling_camera_switch_wds_button')
+VIDEO_CALL_GRID = '//android.widget.FrameLayout[@resource-id="com.whatsapp:id/call_grid"]'
+VIDEO_CALL_VIDEO_CONTAINER = '//android.view.ViewGroup[@resource-id="com.whatsapp:id/video_container"]'
+
 
 RECEIVE_CALL_ANSWER_BUTTON = "//android.widget.Button[@content-desc='Answer' or @content-desc='Video']"
 RECEIVE_CALL_DECLINE_BUTTON = build_content_desc_xpath_widget('Button', 'Decline')
@@ -158,7 +160,7 @@ CONVERSATIONS_CHAT_TAB = "//android.widget.FrameLayout[starts-with(@content-desc
 UPDATES_TAB = build_wa_resource_id_text_xpath_widget('TextView', 'navigation_bar_item_small_label_view', 'Updates')
 CALLS_TAB = build_wa_resource_id_text_xpath_widget('TextView', 'navigation_bar_item_small_label_view', 'Calls')
 
-SEND = build_wa_resource_id_xpath('send')
+SEND = '//*[@resource-id="com.whatsapp:id/send" or @resource-id="com.whatsapp:id/send_media_btn"]'
 SEND_CONTENT = build_content_desc_xpath_widget('ImageButton', 'Send')
 SEND_RESOURCE = build_wa_resource_id_xpath_widget('ImageButton', 'send')
 STOP_BUTTON = build_content_desc_xpath_widget('Button', 'Stop')
@@ -166,3 +168,7 @@ NEXT_BUTTON = build_wa_resource_id_xpath('next_btn')
 EDIT_TEXT = build_wa_resource_id_xpath('edit_text')
 EDIT_TEXT2 = "//android.widget.EditText"
 OK_BUTTON = build_wa_resource_id_xpath('ok_btn')
+
+MEDIA_PICKER_SPINNER = '//android.widget.Spinner[@resource-id="com.whatsapp:id/gallery_spinner"]'
+MEDIA_PICKER_FOLDER = '//android.widget.TextView[@resource-id="com.whatsapp:id/title" and @text="{}"]'
+MEDIA_PICKER_THUMBNAIL = '//androidx.recyclerview.widget.RecyclerView[@resource-id="com.whatsapp:id/grid"]/android.widget.ImageView[{}]'

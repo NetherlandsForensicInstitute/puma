@@ -126,10 +126,7 @@ class WhatsAppVideoCallState(SimpleState, ContextualState):
 
         :param parent_state: The parent state of this call state.
         """
-        super().__init__(xpaths=[CALL_END_CALL_BUTTON,
-                                 CALL_SCREEN_BACKGROUND,
-                                 VIDEO_CALL_CAMERA_BUTTON,
-                                 VIDEO_CALL_SWITCH_CAMERA],
+        super().__init__(xpaths=[VIDEO_CALL_GRID, VIDEO_CALL_VIDEO_CONTAINER],
                          parent_state=parent_state)
 
     def validate_context(self, driver: PumaDriver, conversation: str = None) -> bool:

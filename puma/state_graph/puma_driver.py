@@ -194,16 +194,16 @@ class PumaDriver:
                 return
         raise PumaClickException(f'Could not click on non present element with xpath {xpath}')
 
-    def tap(self, coords: tuple[int, int]):
+    def tap(self, coords: tuple[int, int], duration: int = None):
         """
         Taps on the screen at the specified coordinates.
 
         :param coords: A tuple (x, y) representing the coordinates to tap.
         """
         self.gtl_logger.info(f'Tapping on coordinates {coords}')
-        self.driver.tap([coords])
+        self.driver.tap([coords], duration=duration)
 
-    def long_click_element(self, xpath: str, duration: int = 1):
+    def long_click_element(self, xpath: str, duration: int = 2, width_ratio:float=0.5, height_ratio:float=0.5):
         """
         Clicks on a certain element, and hold for a given duration (in seconds)
 
@@ -212,8 +212,15 @@ class PumaDriver:
         :raises PumaClickException: If the element cannot be found after multiple attempts.
         """
         element = self.get_element(xpath)
-        actions = ActionChains(self.driver)
-        actions.move_to_element(element).click_and_hold().pause(duration).release().perform()
+        if (width_ratio, height_ratio) == (0.5, 0.5):
+            actions = ActionChains(self.driver)
+            actions.move_to_element(element).click_and_hold().pause(duration).release().perform()
+        else:
+            element = self.get_element(xpath)
+            top_left = element.location['x'], element.location['y']
+            size = element.size['height'], element.size['width']
+            location = int(top_left[0] + width_ratio * size[1]), int(top_left[1] + height_ratio * size[0])
+            self.tap(location, duration=duration)
 
     def get_element(self, xpath: str):
         """
@@ -324,8 +331,7 @@ class PumaDriver:
         :param max_swipes: The maximum number of swipe attempts to find the element.
         :raises PumaClickException: If the element cannot be found after the maximum number of swipes.
         """
-        self.swipe_to_find_element(xpath, max_swipes)
-        self.click(xpath)
+        self.swipe_to_find_element(xpath, max_swipes).click()
 
     def send_keys(self, xpath: str, text: str):
         """

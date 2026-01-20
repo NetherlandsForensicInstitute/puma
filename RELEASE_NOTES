@@ -1,5 +1,6 @@
 Version 5.0.0
 -------------
+189. WhatsApp: Fix bugs + update support to 2.26.2.70
 184. Update dependencies to newest version
 177. Fixed generic exception logging in action decorator
 183. Fix bugs found during creation of WhatsApp test data

@@ -1,15 +1,9 @@
 from time import sleep
-from typing import Dict
 
-from appium.webdriver.common.appiumby import AppiumBy
-from typing_extensions import deprecated
-
-from puma.apps.android import log_action
-from puma.apps.android.appium_actions import AndroidAppiumActions, supported_version
-from puma.apps.android.open_camera import logger
+from puma.apps.android.appium_actions import supported_version
 from puma.state_graph.action import action
 from puma.state_graph.popup_handler import PopUpHandler
-from puma.state_graph.state import State, SimpleState, compose_clicks
+from puma.state_graph.state import SimpleState, compose_clicks
 from puma.state_graph.state_graph import StateGraph
 
 # Take photo/video screen

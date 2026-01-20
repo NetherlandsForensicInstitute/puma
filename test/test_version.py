@@ -1,12 +1,13 @@
-import os
 import re
+import os
+import random
+import re
+import sqlite3
 import unittest
+
 from puma.utils import PROJECT_ROOT
 from puma.version import version as setup_version
 
-import sqlite3
-import os
-import random
 
 def read_release_notes(file_path: str) -> [str]:
     """
