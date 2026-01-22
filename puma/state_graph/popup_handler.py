@@ -48,8 +48,13 @@ def simple_popup_handler(xpath: str):
     return PopUpHandler([xpath], [xpath])
 
 
+_app_stopped_responding_popup_handler = PopUpHandler(['//android.widget.TextView[@resource-id="android:id/alertTitle"]',
+                        '//android.widget.Button[@resource-id="android:id/aerr_close"]'],
+                       ['//android.widget.Button[@resource-id="android:id/aerr_close"]'])
+
 known_popups = [simple_popup_handler('//android.widget.ImageView[@content-desc="Dismiss update dialog"]'),
                 simple_popup_handler(
                     '//android.widget.Button[@resource-id="com.android.permissioncontroller:id/permission_allow_foreground_only_button"]'),
                 simple_popup_handler(
-                    '//android.widget.Button[@resource-id="com.android.permissioncontroller:id/permission_allow_button"]')]
+                    '//android.widget.Button[@resource-id="com.android.permissioncontroller:id/permission_allow_button"]'),
+                _app_stopped_responding_popup_handler]

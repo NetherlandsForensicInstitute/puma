@@ -5,7 +5,7 @@ from puma.apps.android.whatsapp import logger
 from puma.apps.android.whatsapp.states import *
 from puma.apps.android.whatsapp.xpaths import *
 from puma.state_graph.action import action
-from puma.state_graph.popup_handler import simple_popup_handler
+from puma.state_graph.popup_handler import simple_popup_handler, PopUpHandler
 from puma.state_graph.puma_driver import PumaDriver, PumaClickException, supported_version
 from puma.state_graph.state import SimpleState, compose_clicks
 from puma.state_graph.state_graph import StateGraph
@@ -110,6 +110,8 @@ class WhatsApp(StateGraph):
     def __init__(self, device_udid: str, app_package: str = 'com.whatsapp'):
         StateGraph.__init__(self, device_udid, app_package)
         self.add_popup_handler(simple_popup_handler(CHAT_SETTINGS_DISAPPEARING_MESSAGES_POPUP_OK))
+        self.add_popup_handler(PopUpHandler([GOOGLE_BACKUP_POPUP_HEADER, GOOGLE_BACKUP_POPUP_NOT_NOW],
+                                            [GOOGLE_BACKUP_POPUP_NOT_NOW]))
 
     def _ensure_message_sent(self, message_text: str):
         message_status_el = self.driver.get_element(

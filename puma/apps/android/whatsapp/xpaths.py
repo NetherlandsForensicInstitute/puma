@@ -172,3 +172,6 @@ OK_BUTTON = build_wa_resource_id_xpath('ok_btn')
 MEDIA_PICKER_SPINNER = '//android.widget.Spinner[@resource-id="com.whatsapp:id/gallery_spinner"]'
 MEDIA_PICKER_FOLDER = '//android.widget.TextView[@resource-id="com.whatsapp:id/title" and @text="{}"]'
 MEDIA_PICKER_THUMBNAIL = '//androidx.recyclerview.widget.RecyclerView[@resource-id="com.whatsapp:id/grid"]/android.widget.ImageView[{}]'
+
+GOOGLE_BACKUP_POPUP_HEADER='//android.widget.TextView[@text="Google storage backup"]'
+GOOGLE_BACKUP_POPUP_NOT_NOW='//android.widget.Button[@resource-id="com.whatsapp:id/gdrive_new_user_setup_not_now_btn"]'
