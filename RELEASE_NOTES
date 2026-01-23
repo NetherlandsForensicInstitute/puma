@@ -1,5 +1,6 @@
 Version 5.0.1
 -------------
+194. Popup handling: Handle "<app> stopped responding" popup, and WhatsApp Google Cloud backup popup
 192. Google Maps: support newest version 26.02.16
 
 Version 5.0.0
