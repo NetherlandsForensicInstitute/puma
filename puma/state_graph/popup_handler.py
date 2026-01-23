@@ -53,4 +53,4 @@ def simple_popup_handler(xpath: str):
 known_popups = [simple_popup_handler(APP_UPDATE_POPUP_DISMISS_BUTTON),
                 simple_popup_handler(PERMISSIONS_POPUP_ALLOW_FOREGROUND_BUTTON),
                 simple_popup_handler(PERMISSIONS_POPUP_ALLOW_BUTTON),
-                PopUpHandler([APP_STOPPED_POPUP_TITLE, APP_STOPPED_POPUP_CLOSE_BUTTON],[APP_STOPPED_POPUP_CLOSE_BUTTON])]
+                PopUpHandler([APP_STOPPED_POPUP_TITLE, APP_STOPPED_POPUP_CLOSE_BUTTON], [APP_STOPPED_POPUP_CLOSE_BUTTON])]
