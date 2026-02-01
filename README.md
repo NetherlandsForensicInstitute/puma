@@ -6,6 +6,7 @@ code to "tap on Bob's conversation on Alice's phone, enter the message, and pres
 Telegram message to Bob from Alice's phone".
 
 ![](images/puma_demo.gif)
+
 To execute actions on the mobile device, Puma uses [Appium](https://appium.io/), and open-source project for UI
 automation.
 
