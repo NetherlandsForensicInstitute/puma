@@ -7,6 +7,8 @@ Telegram message to Bob from Alice's phone".
 
 ![](images/puma_demo.gif)
 
+See the full demo video [here](https://archive.org/details/puma-demo-2025)
+
 To execute actions on the mobile device, Puma uses [Appium](https://appium.io/), and open-source project for UI
 automation.
 
