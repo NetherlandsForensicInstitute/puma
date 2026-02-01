@@ -102,7 +102,7 @@ class GoogleChrome(StateGraph):
         """
         self._open_settings_pane()
         if self.driver.is_present(EDIT_BOOKMARK_BUTTON):
-            logger.info("This page was already bookmarked, skipping...")
+            self.gtl_logger.info("This page was already bookmarked, skipping...")
             return False
         else:
             self.driver.click(BOOKMARK_THIS_PAGE_BUTTON)
@@ -125,7 +125,7 @@ class GoogleChrome(StateGraph):
         """
         self._open_settings_pane()
         if self.driver.is_present(BOOKMARK_THIS_PAGE_BUTTON):
-            logger.info("This page was not bookmarked, skipping...")
+            self.gtl_logger.info("This page was not bookmarked, skipping...")
             return False
         else:
             self.driver.click(EDIT_BOOKMARK_BUTTON)

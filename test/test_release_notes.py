@@ -7,13 +7,17 @@ from puma import version
 from puma.utils import PROJECT_ROOT
 
 
-def get_current_branch_name() -> str:
+def get_current_branch_name() -> str | None:
     """
     Get the name of the current Git branch.
+    If the repo is in a detached state it is not in a branch and this method returns None.
     :return: The name of the current branch.
     """
-    repo = git.Repo(search_parent_directories=True)
-    return repo.active_branch.name
+    try:
+        repo = git.Repo(search_parent_directories=True)
+        return repo.active_branch.name
+    except TypeError:
+        return None
 
 def extract_issue_number(branch_name) -> str:
     """
@@ -47,6 +51,9 @@ class TestReleaseNotes(unittest.TestCase):
         # If running on the main branch, skip these tests because branch naming conventions do not apply.
         if self.branch_name == "main":
             self.skipTest("Skipping release-notes tests on the main branch")
+        # Also skip if in a detached state
+        if self.branch_name is None:
+            self.skipTest("Skipping release-notes tests when not on a branch")
 
         self.issue_number = extract_issue_number(self.branch_name)
         self.release_notes_path = f"{PROJECT_ROOT}/RELEASE_NOTES"

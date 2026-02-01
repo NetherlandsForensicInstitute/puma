@@ -1,15 +1,9 @@
 from time import sleep
-from typing import Dict
 
-from appium.webdriver.common.appiumby import AppiumBy
-from typing_extensions import deprecated
-
-from puma.apps.android import log_action
-from puma.apps.android.appium_actions import AndroidAppiumActions, supported_version
-from puma.apps.android.open_camera import logger
+from puma.apps.android.appium_actions import supported_version
 from puma.state_graph.action import action
 from puma.state_graph.popup_handler import PopUpHandler
-from puma.state_graph.state import State, SimpleState, compose_clicks
+from puma.state_graph.state import SimpleState, compose_clicks
 from puma.state_graph.state_graph import StateGraph
 
 # Take photo/video screen
@@ -101,7 +95,6 @@ class OpenCamera(StateGraph):
         """
         switch_camera_button = self.driver.get_element(SWITCH_CAMERA_XPATH)
         currently_in_front = 'back' in switch_camera_button.get_attribute("content-desc")
-        logger.info(f"Currently in front camera view: {currently_in_front}")
         if currently_in_front != front_camera:
             switch_camera_button.click()
             self.gtl_logger.info("Switched camera view")

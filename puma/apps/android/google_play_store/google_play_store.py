@@ -39,6 +39,7 @@ APP_PAGE_CANCEL_INSTALL_BUTTON = '//android.view.View[@content-desc="Cancel"]'
 APP_PAGE_THREE_DOTS = '//android.view.View[@content-desc="More options"]'
 APP_PAGE_NAVIGATE_UP = '//android.view.View[@content-desc="Navigate up"]'
 
+PROFILE_GOOGLE = '//android.widget.Button[@resource-id="com.android.vending:id/0_resource_name_obfuscated" and @text="Google Account"]'
 UPDATE_ALL_BUTTON = '//android.view.View[@content-desc="Update all"]'
 MANAGE_APP_STATE = '//android.widget.TextView[@text="Manage apps and device"]'
 MANAGE_APP_STATE_SYNC = '//android.widget.TextView[@text="Sync apps to devices"]'
@@ -104,7 +105,7 @@ class AppPage(SimpleState, ContextualState):
         """
         if not is_valid_package_name(package_name):
             raise ValueError(f'Invalid package name: {package_name}')
-        driver.open_url(f'https://play.google.com/store/apps/details?id={package_name}', APPLICATION_PACKAGE)
+        driver.open_url(f'https://play.google.com/store/apps/details?id={package_name}')
         self.last_opened[driver.udid] = package_name
 
 
@@ -118,7 +119,7 @@ class GooglePlayStore(StateGraph):
     and handle unexpected states or errors.
     """
     apps_tab_state = SimpleState([ACCOUNT_ICON, HOME_SCREEN_TABS, APPS_TAB_SELECTED], initial_state=True)
-    profile_state = SimpleState([], parent_state=apps_tab_state)
+    profile_state = SimpleState([MANAGE_APPS_AND_DEVICES, PROFILE_GOOGLE], parent_state=apps_tab_state)
     manage_apps_state = SimpleState([MANAGE_APP_STATE, MANAGE_APP_STATE_SYNC], parent_state=apps_tab_state)
     app_page_state = AppPage(parent_state=apps_tab_state)
 
@@ -175,7 +176,7 @@ class GooglePlayStore(StateGraph):
         :param package_name: The exact package name of the application.
         """
         if self._get_app_state_internal() != AppState.NOT_INSTALLED:
-            logger.warn(f'Tried to install app {package_name}, but it was already installed')
+            self.gtl_logger.warn(f'Tried to install app {package_name}, but it was already installed')
             return
         self.driver.click(APP_PAGE_INSTALL_BUTTON)
 
@@ -187,7 +188,7 @@ class GooglePlayStore(StateGraph):
         :param package_name: The exact package name of the application.
         """
         if self._get_app_state_internal() not in [AppState.INSTALLED, AppState.UPDATE_AVAILABLE]:
-            logger.warn(f'Tried to uninstall app {package_name}, but it was not installed')
+            self.gtl_logger.warn(f'Tried to uninstall app {package_name}, but it was not installed')
             return
         self.driver.click(APP_PAGE_UNINSTALL_BUTTON)
         self.driver.click(APP_PAGE_UNINSTALL_SURE_BUTTON)
@@ -199,7 +200,7 @@ class GooglePlayStore(StateGraph):
         :param package_name: The exact package name of the application.
         """
         if self._get_app_state_internal() != AppState.UPDATE_AVAILABLE:
-            logger.warn(f'Tried to update app {package_name}, but there is no update available')
+            self.gtl_logger.warn(f'Tried to update app {package_name}, but there is no update available')
             return
         self.driver.click(APP_PAGE_UPDATE_BUTTON)
 
@@ -209,6 +210,6 @@ class GooglePlayStore(StateGraph):
         Updates all applications. If no updates are available this method will log a warning and do nothing.
         """
         if not self.driver.is_present(UPDATE_ALL_BUTTON):
-            logger.warn('Tried to update all apps, but update button not visible. All apps are probably up-to-date.')
+            self.gtl_logger.warn('Tried to update all apps, but update button not visible. All apps are probably up-to-date.')
             return
         self.driver.click(UPDATE_ALL_BUTTON)

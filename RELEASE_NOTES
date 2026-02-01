@@ -1,5 +1,36 @@
+Version 5.0.1
+-------------
+194. Popup handling: Handle "<app> stopped responding" popup, and WhatsApp Google Cloud backup popup
+192. Google Maps: support newest version 26.02.16
+
+Version 5.0.0
+-------------
+189. WhatsApp: Fix bugs + update support to 2.26.2.70
+184. Update dependencies to newest version
+177. Fixed generic exception logging in action decorator
+183. Fix bugs found during creation of WhatsApp test data
+
+Version 4.0.1
+-------------
+175. Move post verification tests to test directory and fixed bad import
+173. Fix string literals for Python 3.10 and 3.11
+
+Version 4.0.0
+-------------
+164. Add verification methods for WhatsApp
+123. SnapChat: Rewrite to Puma State Machine
+129. Add post action verification
+168. Fix Google Camera and TeleGuard tests and examples in README.md
+159. Improve GTL logging
+
 Version 3.0.0
 -------------
+155. Skip release notes test when not on a branch
+162. Google Play Store: Add xpaths to profile state
+124. WhatsApp: Rewrite to Puma State Machine
+151. Add demo script to tutorial folder
+151. Make StateGraph objects and legacy AppiumAction objects compatible
+151. Location spoofing: fixed a bug that broke route simulation
 134. Telegram: Rewrite to Puma State Machine
 148. Skip release notes test for main branch
 136. Rewrite Google Chrome to use the StateGraph

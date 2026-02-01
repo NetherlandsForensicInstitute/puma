@@ -1,5 +1,7 @@
 from typing import List
 
+from puma.state_graph.generic_xpaths import APP_STOPPED_POPUP_CLOSE_BUTTON, APP_STOPPED_POPUP_TITLE, \
+    APP_UPDATE_POPUP_DISMISS_BUTTON, PERMISSIONS_POPUP_ALLOW_FOREGROUND_BUTTON, PERMISSIONS_POPUP_ALLOW_BUTTON
 from puma.state_graph.puma_driver import PumaDriver
 from puma.state_graph.state import compose_clicks
 
@@ -48,8 +50,7 @@ def simple_popup_handler(xpath: str):
     return PopUpHandler([xpath], [xpath])
 
 
-known_popups = [simple_popup_handler('//android.widget.ImageView[@content-desc="Dismiss update dialog"]'),
-                simple_popup_handler(
-                    '//android.widget.Button[@resource-id="com.android.permissioncontroller:id/permission_allow_foreground_only_button"]'),
-                simple_popup_handler(
-                    '//android.widget.Button[@resource-id="com.android.permissioncontroller:id/permission_allow_button"]')]
+known_popups = [simple_popup_handler(APP_UPDATE_POPUP_DISMISS_BUTTON),
+                simple_popup_handler(PERMISSIONS_POPUP_ALLOW_FOREGROUND_BUTTON),
+                simple_popup_handler(PERMISSIONS_POPUP_ALLOW_BUTTON),
+                PopUpHandler([APP_STOPPED_POPUP_TITLE, APP_STOPPED_POPUP_CLOSE_BUTTON], [APP_STOPPED_POPUP_CLOSE_BUTTON])]

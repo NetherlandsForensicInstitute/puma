@@ -2,11 +2,10 @@ from time import sleep
 from typing import Dict
 
 from appium.webdriver.common.appiumby import AppiumBy
-from selenium.common import NoSuchElementException
 from typing_extensions import deprecated
 
 from puma.apps.android.appium_actions import supported_version, AndroidAppiumActions
-from puma.apps.android.whatsapp.whatsapp_common import WhatsAppCommon
+from puma.apps.android.whatsapp_business.whatsapp_common import WhatsAppCommon
 
 
 @deprecated('This class does not use the Puma state machine, and will therefore not be maintained. ' +

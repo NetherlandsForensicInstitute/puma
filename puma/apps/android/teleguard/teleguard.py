@@ -1,10 +1,9 @@
 from appium.webdriver.common.appiumby import AppiumBy
 
-from puma.apps.android.teleguard import logger
-from puma.state_graph.puma_driver import PumaDriver, supported_version
 from puma.state_graph.action import action
-from puma.state_graph.state_graph import StateGraph
+from puma.state_graph.puma_driver import PumaDriver, supported_version
 from puma.state_graph.state import ContextualState, SimpleState, compose_clicks
+from puma.state_graph.state_graph import StateGraph
 
 APPLICATION_PACKAGE = 'ch.swisscows.messenger.teleguardapp'
 
@@ -13,12 +12,22 @@ CONVERSATION_STATE_HAMBURGER_MENU = '//android.widget.FrameLayout[@resource-id="
 CONVERSATION_STATE_SETTINGS_BUTTON = '//android.widget.ImageView[@content-desc="Settings"]'
 CONVERSATION_STATE_ABOUT_BUTTON = '//android.widget.ImageView[@content-desc="About"]'
 CONVERSATION_STATE_TELEGUARD_STATUS = '//android.view.View[@content-desc="Online"]|//android.view.View[contains(@content-desc, "Connection to server")]'
+CONVERSATION_STATE_ADD_CONTACT = '//android.widget.ImageView[@content-desc="Add contact"]'
+CONVERSATION_STATE_EDIT_TEXT = '//android.widget.EditText'
+CONVERSATION_STATE_INVITE = '//android.widget.Button[@content-desc="INVITE"]'
+CONVERSATION_STATE_YOU_HAVE_BEEN_INVITED = '//android.view.View[contains(@content-desc, "You have been invited")]'
+CONVERSATION_STATE_ACCEPT_INVITE = '//android.widget.Button[@content-desc="ACCEPT INVITE"]'
 
 CHAT_STATE_CONVERSATION_NAME = ('//android.widget.FrameLayout[@resource-id="android:id/content"]/android.widget.FrameLayout/android.widget.FrameLayout/android.view.View/android.view.View/android.view.View/android.view.View/android.view.View[1]/android.view.View[2]/android.widget.ImageView[2][@content-desc]|'
                                 '//android.widget.FrameLayout[@resource-id="android:id/content"]/android.widget.FrameLayout/android.widget.FrameLayout/android.view.View/android.view.View/android.view.View/android.view.View/android.view.View[1]/android.view.View[2]/android.view.View[1][@content-desc]')
 CHAT_STATE_TEXT_FIELD = '//android.widget.EditText'
 CHAT_STATE_MICROPHONE_BUTTON = '//android.widget.FrameLayout[@resource-id="android:id/content"]/android.widget.FrameLayout/android.widget.FrameLayout/android.view.View/android.view.View/android.view.View/android.view.View/android.widget.ImageView[4]'
 CHAT_STATE_SEND_BUTTON = '//android.widget.FrameLayout[@resource-id="android:id/content"]/android.widget.FrameLayout/android.widget.FrameLayout/android.view.View/android.view.View/android.view.View/android.view.View/android.widget.ImageView[3]'
+
+SETTINGS_STATE_CHANGE_TELE_GUARD_ID = '//android.view.View[@content-desc="Change TeleGuard ID"]'
+
+ABOUT_STATE_ABOUT = '//android.view.View[@content-desc="About"]'
+ABOUT_STATE_TERMS_OF_USE = '//android.view.View[@content-desc=" Terms of use"]'
 
 def go_to_chat(driver: PumaDriver, conversation: str):
     """
@@ -31,7 +40,6 @@ def go_to_chat(driver: PumaDriver, conversation: str):
     :param driver: The PumaDriver instance used to interact with the application.
     :param conversation: The name of the conversation to navigate to.
     """
-    logger.info(f'Clicking on conversation {conversation} with driver {driver}')
     xpath = f'//android.widget.ImageView[contains(lower-case(@content-desc), "{conversation.lower()}")] | ' \
             f'//android.view.View[contains(lower-case(@content-desc), "{conversation.lower()}")]'
     driver.driver.find_elements(by=AppiumBy.XPATH, value=xpath)[-1].click()
@@ -81,8 +89,8 @@ class TeleGuard(StateGraph):
 
     conversations_state = SimpleState( [CONVERSATION_STATE_TELEGUARD_HEADER, CONVERSATION_STATE_HAMBURGER_MENU, CONVERSATION_STATE_TELEGUARD_STATUS], initial_state=True)
     chat_state = TeleGuardChatState(parent_state=conversations_state)
-    settings_state = SimpleState(['//android.view.View[@content-desc="Change TeleGuard ID"]'], parent_state=conversations_state)
-    about_screen_state = SimpleState( ['//android.view.View[@content-desc="About"]', '//android.view.View[@content-desc=" Terms of use"]'], parent_state=conversations_state)
+    settings_state = SimpleState([SETTINGS_STATE_CHANGE_TELE_GUARD_ID], parent_state=conversations_state)
+    about_screen_state = SimpleState([ABOUT_STATE_ABOUT, ABOUT_STATE_TERMS_OF_USE], parent_state=conversations_state)
 
     conversations_state.to(chat_state, go_to_chat)
     conversations_state.to(settings_state, compose_clicks([CONVERSATION_STATE_HAMBURGER_MENU, CONVERSATION_STATE_SETTINGS_BUTTON], name='go_to_settings'))
@@ -92,7 +100,7 @@ class TeleGuard(StateGraph):
         """
         Initializes the TestFsm with a device UDID.
 
-        This class provides an API for interacting with the TeleGuard application using Appium.
+        This class provides an API for interacting with the TeleGuard application.
         It can be used with an emulator or a real device attached to the computer.
 
         :param device_udid: The unique device identifier for the Android device.
@@ -119,9 +127,9 @@ class TeleGuard(StateGraph):
         :param teleguard_id: The TeleGuard ID of the contact to add.
         """
         self.driver.click(CONVERSATION_STATE_HAMBURGER_MENU)
-        self.driver.click('//android.widget.ImageView[@content-desc="Add contact"]')
-        self.driver.send_keys('//android.widget.EditText', teleguard_id)
-        self.driver.click('//android.widget.Button[@content-desc="INVITE"]')
+        self.driver.click(CONVERSATION_STATE_ADD_CONTACT)
+        self.driver.send_keys(CONVERSATION_STATE_EDIT_TEXT, teleguard_id)
+        self.driver.click(CONVERSATION_STATE_INVITE)
 
     @action(conversations_state)
     def accept_invite(self):
@@ -130,5 +138,5 @@ class TeleGuard(StateGraph):
 
         If there are multiple invites, only the topmost invite in the UI will be accepted.
         """
-        self.driver.swipe_to_click_element('//android.view.View[contains(@content-desc, "You have been invited")]')
-        self.driver.click('//android.widget.Button[@content-desc="ACCEPT INVITE"]')
+        self.driver.swipe_to_click_element(CONVERSATION_STATE_YOU_HAVE_BEEN_INVITED)
+        self.driver.click(CONVERSATION_STATE_ACCEPT_INVITE)

@@ -31,7 +31,7 @@ phone = WhatsappBusinessActions("emulator-5444")
 Some account properties can be set:
 
 ```python
-phone.change_profile_picture("folder_name", index)
+phone.change_profile_picture(index, "folder_name")
 # Set your whatsapp status
 phone.set_status("This is my new status!")
 # set the about text on your WhatsApp profile
