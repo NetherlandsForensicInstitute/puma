@@ -19,7 +19,7 @@ class TransportType(Enum):
 
 @deprecated('This class does not use the Puma state machine, and will therefore not be maintained. ' +
             'If you want to add functionality, please rewrite this class using StateGraph as the abstract base class.')
-@supported_version("11.119.0101")
+@supported_version("26.02.16")
 class GoogleMapsActions(AndroidAppiumActions):
     def __init__(self,
                  device_udid,
@@ -68,7 +68,7 @@ class GoogleMapsActions(AndroidAppiumActions):
             self.driver.find_element(by=AppiumBy.XPATH, value=first_option).click()
         mode_xpath = f'//android.widget.LinearLayout[starts-with(@content-desc, "{mode}")]'
         self.driver.find_element(by=AppiumBy.XPATH, value=mode_xpath).click()
-        start_xpath = '//android.widget.Button[@content-desc="Start driving navigation"]'
+        start_xpath = '//android.widget.Button[starts-with(@content-desc, "Start")]'
         for i in range(time_to_wait):
             if self.is_present(start_xpath):
                 self.driver.find_element(by=AppiumBy.XPATH, value=start_xpath).click()

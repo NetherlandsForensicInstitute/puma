@@ -189,7 +189,7 @@ class Telegram(StateGraph):
                     self.driver.click(SEND_FROM_GALLERY_MEDIA_SWITCH.format(index=i))
                 self.gtl_logger.info(f'Selected gallery item with index {i}')
                 clicked += 1
-            except PumaClickException as e:
+            except PumaClickException:
                 logger.warning(f'Could not select media with index {i}. Are enough media files present?')
         if clicked == 0:
             raise PumaClickException(

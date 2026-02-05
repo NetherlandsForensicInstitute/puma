@@ -1,3 +1,15 @@
+Version 5.0.1
+-------------
+194. Popup handling: Handle "<app> stopped responding" popup, and WhatsApp Google Cloud backup popup
+192. Google Maps: support newest version 26.02.16
+
+Version 5.0.0
+-------------
+189. WhatsApp: Fix bugs + update support to 2.26.2.70
+184. Update dependencies to newest version
+177. Fixed generic exception logging in action decorator
+183. Fix bugs found during creation of WhatsApp test data
+
 Version 4.0.1
 -------------
 175. Move post verification tests to test directory and fixed bad import

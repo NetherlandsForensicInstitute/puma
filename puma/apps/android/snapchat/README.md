@@ -37,8 +37,6 @@ We can send a snap to specific people, or post it to My Story:
 
 ```python
 phone.toggle_camera() # changes the direction of the camera
-phone.take_photo(caption="Hi Charlie!") # takes a photo and puts a caption on it
-phone.send_snap_to(recipients=["Charlie"]) # sends the previously taken photo with caption to a recipient
-phone.take_photo() # takes a photo
-phone.send_snap_to(recipients=["Charlie", "Alice iPhone"]) # sends the previously taken photo to multiple recipients
+phone.send_snap_to(caption="Hi Charlie!", recipients=["Charlie"]) # takes a photo, adds a caption, and sends it to a recipient
+phone.send_snap_to(recipients=["Charlie", "Alice iPhone"]) # takes a photo and sends it to multiple recipients
 ```

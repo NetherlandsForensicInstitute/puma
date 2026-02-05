@@ -118,10 +118,10 @@ class TestStateGraphMeta(unittest.TestCase):
 class TestStateGraph(unittest.TestCase):
     def test_invalid_package_name(self):
         with self.assertRaises(ValueError) as error:
-            graph = StateGraph(device_udid='emulator123', app_package='this is invalid')
+            StateGraph(device_udid='emulator123', app_package='this is invalid')
         self.assertEquals('The provided package name is invalid: this is invalid', str(error.exception))
         with self.assertRaises(ValueError) as error:
-            graph = StateGraph(device_udid='emulator123', app_package='')  # also invalid
+            StateGraph(device_udid='emulator123', app_package='')  # also invalid
         self.assertEquals('The provided package name is invalid: ', str(error.exception))
 
 

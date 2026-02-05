@@ -1,9 +1,9 @@
-import json
+import random
 import random
 import threading
 import time
 from time import sleep
-from typing import Optional, Callable, Tuple, List
+from typing import Optional, Callable, List
 
 import geopy.distance
 import gpxpy
