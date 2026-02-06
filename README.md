@@ -79,7 +79,7 @@ from puma.utils import configure_default_logging
 
 configure_default_logging() # Use Puma's logging configuration. You can also implement your own
 
-alice = WhatsApp("<INSERT UDID HERE>")  # Initialize a connection with device
+alice = WhatsApp("<INSERT UDID HERE>", "com.whatsapp")  # Initialize a connection with device
 alice.create_new_chat(conversation="<Insert the contact name>",
                       first_message="Hello world!")  # Send a message to contact in your contact list
 alice.send_message("Sorry for the spam :)")  # we can send a second message in the open conversation
@@ -92,7 +92,9 @@ commonly used verifications for users to use.
 For example, verifying a Whatsapp message has been sent:
 
 ```python
-app = WhatsApp('<INSERT UDID HERE>')
+from puma.apps.android.whatsapp.whatsapp import WhatsApp
+
+app = WhatsApp('<INSERT UDID HERE>', 'com.whatsapp')
 app.send_message(conversation='Bob', message_text='Sorry for the spam :)', verify_with=app.is_message_marked_sent)
 ```
 

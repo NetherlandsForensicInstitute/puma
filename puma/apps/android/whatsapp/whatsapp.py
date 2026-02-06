@@ -145,6 +145,10 @@ class WhatsApp(StateGraph):
         self._pick_media_from_gallery(index=index, directory_name=directory_name)
         self.driver.click(OK_BUTTON)
 
+    @action(chat_settings_state)
+    def view_contact_profile_picture(self, conversation: str):
+        self.driver.click(CHAT_SETTINGS_CONTACT_PROFILE_PICTURE)
+
     def _pick_media_from_gallery(self, index: int, directory_name: str = None):
         if directory_name:
             self.driver.click(MEDIA_PICKER_SPINNER)
