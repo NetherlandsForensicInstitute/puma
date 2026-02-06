@@ -1,3 +1,6 @@
+Version 5.1.0
+199. WhatsApp: Add view contact profile picture functionality.
+
 Version 5.0.1
 -------------
 194. Popup handling: Handle "<app> stopped responding" popup, and WhatsApp Google Cloud backup popup
