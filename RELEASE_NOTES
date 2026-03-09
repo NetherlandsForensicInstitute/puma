@@ -1,3 +1,7 @@
+Version 5.1.0
+-------------
+[Dependabot] Bump Pillow version to 12.1.1
+
 Version 5.0.1
 -------------
 194. Popup handling: Handle "<app> stopped responding" popup, and WhatsApp Google Cloud backup popup
