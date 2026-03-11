@@ -19,7 +19,7 @@ class TransportType(Enum):
 
 @deprecated('This class does not use the Puma state machine, and will therefore not be maintained. ' +
             'If you want to add functionality, please rewrite this class using StateGraph as the abstract base class.')
-@supported_version("26.02.16")
+@supported_version("26.10.01")
 class GoogleMapsActions(AndroidAppiumActions):
     def __init__(self,
                  device_udid,

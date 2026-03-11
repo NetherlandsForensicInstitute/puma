@@ -18,7 +18,7 @@ setup(
     install_requires=[
         "urllib3~=2.6.3",
         "appium-python-client~=5.2.4",
-        "Pillow==12.1.0",
+        "Pillow==12.1.1",
         "pytesseract==0.3.13",
         "geopy~=2.4.1",
         "setuptools~=80.9.0",

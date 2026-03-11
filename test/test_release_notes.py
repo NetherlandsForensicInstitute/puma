@@ -49,7 +49,7 @@ class TestReleaseNotes(unittest.TestCase):
         self.branch_name = get_current_branch_name()
 
         # If running on the main branch, skip these tests because branch naming conventions do not apply.
-        if self.branch_name == "main":
+        if self.branch_name == "main" or self.branch_name.startswith("dependabot"):
             self.skipTest("Skipping release-notes tests on the main branch")
         # Also skip if in a detached state
         if self.branch_name is None:
