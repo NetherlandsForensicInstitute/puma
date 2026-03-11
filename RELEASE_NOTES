@@ -1,5 +1,6 @@
 Version 5.1.0
 -------------
+210. Allow uppercase letters in package name check
 206. Google Maps: support newest version 26.10.01
 [Dependabot] Bump Pillow version to 12.1.1
 
