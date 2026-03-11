@@ -3,4 +3,4 @@ This tutorial consists of the following exercises:
 2. Use Google Maps to navigate and adjust the speed
 3. Use Google Chrome to search for a page 
 4. Build a scenario with multiple apps 
-(free, with example how to instantiate multiple)
+5. Bonus for devs: Add functionality to Puma
