@@ -12,6 +12,11 @@ teleguard_ids = {
     "Bob": ""
 }
 
+teleguard_names = {
+    "Alice": "AliceTest",
+    "Bob": "BobTest"
+}
+
 class TestTeleGuard(unittest.TestCase):
     """
     With this test, you can check whether all Appium functionality works for the current version of TeleGuard.
@@ -39,12 +44,22 @@ class TestTeleGuard(unittest.TestCase):
         self.alice = TeleGuard(device_udids["Alice"])
         self.bob = TeleGuard(device_udids["Bob"])
 
-        self.contact_alice = "Alice"
-        self.contact_bob = "Bob"
+        self.contact_alice = teleguard_names["Alice"]
+        self.contact_bob = teleguard_names["Bob"]
 
         self.alice.add_contact(teleguard_ids["Bob"])
         self.bob.accept_invite()
 
-    def test_select_chat_send_message(self):
-        self.alice.send_message("Test message from Alice to Bob", conversation="Bob")
+    def test_send_message(self):
+        self.alice.send_message("Test message from Alice to Bob", conversation=self.contact_bob)
 
+    def test_send_message_and_clear_history(self):
+        self.alice.send_message("history should now be deleted", conversation=self.contact_bob)
+        self.alice.clear_history()
+
+    def test_send_picture(self):
+        self.alice.send_picture(picture_id=1, conversation=self.contact_bob)
+        self.alice.send_picture(picture_id=2, caption="this is a test", conversation=self.contact_bob)
+        self.alice.send_picture(conversation=self.contact_bob)
+        self.alice.send_picture(caption="this is a test", conversation=self.contact_bob)
+        self.alice.clear_history()

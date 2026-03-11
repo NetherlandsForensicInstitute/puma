@@ -64,3 +64,35 @@ phone.send_message("Hi Charlie", conversation="Charlie")
 # A second message can be sent without supplying the conversation again:
 phone.send_message("Hi Charlie, please reply!")
 ```
+### Sending a picture
+
+You can also send pictures, either from the device or by taking a new picture with the camera. 
+
+```python
+from puma.apps.android.teleguard.teleguard import TeleGuard
+phone = TeleGuard("emulator-5444")
+
+# Send Bob a picture, picture_id=1 will send the first picture that pops up the media picker, so this will be the latest picture on device. 
+phone.send_picture(picture_id=1, caption="Hey bob, look at this cool picture!", conversation="Bob")
+# caption is optional, and the conversation argument is not needed when already in a conversation 
+phone.send_picture(picture_id=2)
+# if we do not provide a picture_id, a  picture will be taken using the camera
+phone.send_picture(caption="You want me to buy this?")
+# so when in a conversation, you can leave out all arguments and a picture will be taken and sent without caption
+phone.send_picture()
+```
+
+### clearing history
+
+The conversation history can be cleared. In Teleguard, this only affects one user: the other user still has the entire
+chat history.
+
+```python
+from puma.apps.android.teleguard.teleguard import TeleGuard
+
+phone_alice = TeleGuard("emulator-5444")
+phone_bob = TeleGuard("emulator-5446")
+
+phone_alice.clear_history(conversation="Bob")
+phone_bob.clear_history(conversation="Alice")
+```
