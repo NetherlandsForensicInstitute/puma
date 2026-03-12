@@ -112,6 +112,7 @@ CHAT_SETTINGS_DISAPPEARING_MESSAGES = f'//*[@resource-id="{WHATSAPP_PACKAGE}:id/
 CHAT_SETTINGS_DISAPPEARING_MESSAGES_POPUP_OK = '//android.view.ViewGroup[@resource-id="com.whatsapp:id/ephemeral_nux_button_group"]/android.widget.Button[@resource-id="com.whatsapp:id/ephemeral_nux_ok"]'
 CHAT_SETTINGS_OK_BUTTON = build_text_xpath_widget('Button', 'OK')
 CHAT_SETTINGS_CONTAINS_DELETE_GROUP = '//*[contains(@text,"Delete group")]'
+CHAT_SETTINGS_CONTACT_PROFILE_PICTURE = '//android.widget.ImageView[@resource-id="com.whatsapp:id/wds_profile_picture"]'
 
 RADIO_BUTTON_24_HOURS = build_text_xpath_widget('RadioButton', '24 hours')
 RADIO_BUTTON_OFF = build_text_xpath_widget('RadioButton', 'Off')

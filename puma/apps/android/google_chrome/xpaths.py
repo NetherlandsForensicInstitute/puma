@@ -8,8 +8,8 @@ STANDARD_TAB_OVERVIEW_BUTTON = '//android.widget.LinearLayout[contains(@content-
 NEW_TAB_XPATH_TAB_OVERVIEW = '//android.widget.Button[@content-desc="New tab"]'
 TAB_LIST = '//*[@resource-id="com.android.chrome:id/tab_list_recycler_view"]'
 # Tab
-SEARCH_BOX = '//android.widget.EditText[@resource-id="com.android.chrome:id/search_box_text"]'
-SEARCH_BOX_ENGINE_ICON = '//android.widget.ImageView[@resource-id="com.android.chrome:id/search_box_engine_icon"]'
+SEARCH_BOX = '//android.widget.EditText[@resource-id="com.android.chrome:id/search_box_text" or @resource-id="com.android.chrome:id/url_bar"]'
+SEARCH_BOX_ENGINE_ICON = '//*[@resource-id="com.android.chrome:id/search_box_engine_icon" or @resource-id="com.android.chrome:id/search_provider_logo"]'
 URL_BAR = '//android.widget.EditText[@resource-id="com.android.chrome:id/url_bar"]'
 NEW_TAB_FROM_CURRENT_TAB = '//android.widget.ImageButton[@content-desc="New tab"]'
 # Menu
