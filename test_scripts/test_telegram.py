@@ -8,9 +8,14 @@ device_udids = {
     "Alice": "",
     "Bob": ""
 }
-# In case different names than Alice and Bob are used on the phone, change them here:
-ALICE_NAME = "TwoCharlie"
-BOB_NAME = "Bob"
+
+# In case the contacts are not named alice and bob on the used phones, you can alter the names here.
+contact_names = {
+    "Alice": "Alice",
+    "Bob": "Bob",
+    "Charlie": "Charlie"
+}
+
 # a directory containing pictures of videos that can be sent for this test
 GALLERY_FOLDER_NAME = "Screenshots"
 
@@ -53,23 +58,23 @@ class TestTelegram(unittest.TestCase):
             self.bob.go_to_state(Telegram.conversations_state)
 
     def test_send_message(self):
-        self.alice.send_message("Hello Bob!", conversation=BOB_NAME)
+        self.alice.send_message("Hello Bob!", conversation=contact_names["Bob"])
         self.alice.send_message("Hello again")
 
     def test_send_voice_and_video_message(self):
-        self.alice.send_voice_message(duration=2, conversation=BOB_NAME)
+        self.alice.send_voice_message(duration=2, conversation=contact_names["Bob"])
         self.alice.send_voice_message(duration=1)
         self.alice.send_video_message(duration=3)
-        self.alice.send_video_message(duration=1, conversation=BOB_NAME)
+        self.alice.send_video_message(duration=1, conversation=contact_names["Bob"])
 
     def test_send_from_gallery(self):
-        self.alice.send_media_from_gallery(conversation=BOB_NAME, media_index=1)
+        self.alice.send_media_from_gallery(conversation=contact_names["Bob"], media_index=1)
         self.alice.send_media_from_gallery(media_index=[2,4])
-        self.alice.send_media_from_gallery(conversation=BOB_NAME, media_index=3, caption="This is a caption")
-        self.alice.send_media_from_gallery(conversation=BOB_NAME, media_index=1, folder=GALLERY_FOLDER_NAME)
+        self.alice.send_media_from_gallery(conversation=contact_names["Bob"], media_index=3, caption="This is a caption")
+        self.alice.send_media_from_gallery(conversation=contact_names["Bob"], media_index=1, folder=GALLERY_FOLDER_NAME)
 
     def test_calls(self):
-        self.alice.start_call(conversation=BOB_NAME)
+        self.alice.start_call(conversation=contact_names["Bob"])
         self.bob.answer_call()
         time.sleep(2)
         self.bob.mute_mic()
@@ -79,7 +84,7 @@ class TestTelegram(unittest.TestCase):
         self.alice.end_call()
 
     def test_send_location(self):
-        self.alice.send_current_location(conversation=BOB_NAME)
+        self.alice.send_current_location(conversation=contact_names["Bob"])
         self.alice.send_current_location()
         self.alice.send_live_location()
         time.sleep(3)
@@ -94,10 +99,10 @@ class TestTelegram(unittest.TestCase):
     def test_group_management(self):
         group_name = 'Puma test group'
         new_group_name = 'New puma test group'
-        self.alice.create_group(group_name=group_name, members=[BOB_NAME])
+        self.alice.create_group(group_name=group_name, members=[contact_names["Bob"]])
         self.bob.send_message(conversation=group_name, message='Hi there Alice!')
-        self.alice.remove_member(conversation=group_name, member=BOB_NAME)
-        self.alice.add_members(conversation=group_name, new_members=[BOB_NAME])
+        self.alice.remove_member(conversation=group_name, member=contact_names["Bob"])
+        self.alice.add_members(conversation=group_name, new_members=[contact_names["Bob"]])
         self.bob.edit_group_name(conversation=group_name, new_group_name=new_group_name)
         self.bob.delete_and_leave_group(conversation=new_group_name)
         self.alice.delete_and_leave_group(conversation=new_group_name)

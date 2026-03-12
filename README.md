@@ -5,6 +5,10 @@ call. The goal is that you can focus on *what* should happen rather than *how* t
 code to "tap on Bob's conversation on Alice's phone, enter the message, and press send", you can simply write "send a
 Telegram message to Bob from Alice's phone".
 
+![](images/puma_demo.gif)
+
+See the full demo video [here](https://archive.org/details/puma-demo-2025).
+
 To execute actions on the mobile device, Puma uses [Appium](https://appium.io/), and open-source project for UI
 automation.
 

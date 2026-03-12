@@ -12,7 +12,7 @@ from puma.state_graph.state_graph import StateGraph
 GOOGLE_CHROME_PACKAGE = 'com.android.chrome'
 
 
-@supported_version("141.0.7390.111")
+@supported_version("145.0.7632.159")
 class GoogleChrome(StateGraph):
     """
     A class representing the Google Chrome application on Android devices.
