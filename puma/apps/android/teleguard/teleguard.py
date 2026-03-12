@@ -155,7 +155,7 @@ class TeleGuard(StateGraph):
             self.driver.click(SEND_MEDIA_STATE_PICTURE_INDEX.format(index=picture_id + 1))
             self.driver.click(SEND_MEDIA_STATE_SELECT_BUTTON)
         else:
-            # take pciture
+            # take picture
             self.driver.click(SEND_MEDIA_STATE_PICTURE_INDEX.format(index=1))
             self.driver.click(SEND_MEDIA_STATE_CAMERA_SHUTTER_BUTTON)
             self.driver.click(SEND_MEDIA_STATE_CAMERA_CONFIRM_BUTTON)

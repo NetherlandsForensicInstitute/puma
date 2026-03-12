@@ -82,7 +82,7 @@ phone.send_picture(caption="You want me to buy this?")
 phone.send_picture()
 ```
 
-### clearing history
+### Clearing history
 
 The conversation history can be cleared. In Teleguard, this only affects one user: the other user still has the entire
 chat history.

@@ -31,7 +31,7 @@ SEND_MEDIA_STATE_CAMERA_SHUTTER_BUTTON = '//*[contains(lower-case(@resource-id),
 SEND_MEDIA_STATE_CAMERA_CONFIRM_BUTTON = '//*[contains(lower-case(@resource-id), "shutter")] | //*[contains(lower-case(@content-desc), "done")]'
 SEND_MEDIA_STATE_CAMERA_CONFIRM_EDIT_BUTTON = '//android.widget.FrameLayout[@resource-id="android:id/content"]/android.widget.FrameLayout/android.widget.FrameLayout/android.view.View/android.view.View/android.view.View/android.view.View/android.widget.ImageView[4]'
 
-SETTINGS_STATE_CHANGE_TELE_GUARD_ID = '//android.view.View[@content-desc="Change TeleGuard ID"]'
+SETTINGS_STATE_CHANGE_TELEGUARD_ID = '//android.view.View[@content-desc="Change TeleGuard ID"]'
 
 ABOUT_STATE_ABOUT = '//android.view.View[@content-desc="About"]'
 ABOUT_STATE_TERMS_OF_USE = '//android.view.View[@content-desc=" Terms of use"]'
