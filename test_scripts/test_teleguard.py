@@ -33,6 +33,7 @@ class TestTeleGuard(unittest.TestCase):
     - Alice and Bob should not already have a conversation or be in each other's contacts TODO note how
     - Appium running
     """
+
     @classmethod
     def setUpClass(self):
         for udid_key in ("Alice", "Bob"):
@@ -64,3 +65,7 @@ class TestTeleGuard(unittest.TestCase):
         self.alice.send_picture(picture_id=2, caption="this is a test", conversation=contact_names["Bob"])
         self.alice.send_picture(conversation=contact_names["Bob"])
         self.alice.send_picture(caption="this is a test", conversation=contact_names["Bob"])
+
+
+if __name__ == '__main__':
+    unittest.main()
