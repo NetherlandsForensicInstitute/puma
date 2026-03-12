@@ -1,5 +1,6 @@
 Version 5.1.0
 -------------
+208. Teleguard: support newest version 4.0.9, add send_picture and clear_history
 202. Google Chrome: Updater support to 145.0.7632.159
 206. Google Maps: support newest version 26.10.01
 [Dependabot] Bump Pillow version to 12.1.1
