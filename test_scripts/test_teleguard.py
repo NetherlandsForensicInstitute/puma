@@ -3,14 +3,23 @@ import unittest
 
 from puma.apps.android.teleguard.teleguard import TeleGuard
 
+# Fill in the udids below. Run ADB devices to see the udids.
 device_udids = {
     "Alice": "",
     "Bob": ""
 }
 
+# In case the contacts are not named alice and bob on the used phones, you can alter the names here.
+contact_names = {
+    "Alice": "Alice",
+    "Bob": "Bob"
+}
+
+# Alice adds bob as a user and therefore we need Bob's Teleguard ID
 teleguard_ids = {
     "Bob": ""
 }
+
 
 class TestTeleGuard(unittest.TestCase):
     """
@@ -39,12 +48,19 @@ class TestTeleGuard(unittest.TestCase):
         self.alice = TeleGuard(device_udids["Alice"])
         self.bob = TeleGuard(device_udids["Bob"])
 
-        self.contact_alice = "Alice"
-        self.contact_bob = "Bob"
-
+        # Alice adds bob to contacts, bob accepts invite. Comment this out if this is not needed.
         self.alice.add_contact(teleguard_ids["Bob"])
         self.bob.accept_invite()
 
-    def test_select_chat_send_message(self):
-        self.alice.send_message("Test message from Alice to Bob", conversation="Bob")
+    def test_send_message(self):
+        self.alice.send_message("Test message from Alice to Bob", conversation=contact_names["Bob"])
 
+    def test_send_message_and_clear_history(self):
+        self.alice.send_message("history should now be deleted", conversation=contact_names["Bob"])
+        self.alice.clear_history()
+
+    def test_send_picture(self):
+        self.alice.send_picture(picture_id=1, conversation=contact_names["Bob"])
+        self.alice.send_picture(picture_id=2, caption="this is a test", conversation=contact_names["Bob"])
+        self.alice.send_picture(conversation=contact_names["Bob"])
+        self.alice.send_picture(caption="this is a test", conversation=contact_names["Bob"])

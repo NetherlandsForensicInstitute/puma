@@ -1,0 +1,37 @@
+CONVERSATION_STATE_TELEGUARD_HEADER = '//android.view.View[@content-desc="TeleGuard"]'
+CONVERSATION_STATE_HAMBURGER_MENU = '//android.widget.FrameLayout[@resource-id="android:id/content"]/android.widget.FrameLayout/android.widget.FrameLayout/android.view.View/android.view.View/android.view.View/android.view.View/android.view.View[1]/android.view.View[2]/android.view.View[3]'
+CONVERSATION_STATE_SETTINGS_BUTTON = '//android.widget.ImageView[@content-desc="Settings"]'
+CONVERSATION_STATE_ABOUT_BUTTON = '//android.widget.ImageView[@content-desc="About"]'
+CONVERSATION_STATE_TELEGUARD_STATUS = '//android.view.View[@content-desc="Online"]|//android.view.View[contains(@content-desc, "Connection to server")]'
+CONVERSATION_STATE_ADD_CONTACT = '//android.widget.ImageView[@content-desc="Add contact"]'
+CONVERSATION_STATE_EDIT_TEXT = '//android.widget.EditText'
+CONVERSATION_STATE_INVITE = '//android.widget.Button[@content-desc="INVITE"]'
+CONVERSATION_STATE_YOU_HAVE_BEEN_INVITED = '//android.view.View[contains(@content-desc, "You have been invited")]'
+CONVERSATION_STATE_ACCEPT_INVITE = '//android.widget.Button[@content-desc="ACCEPT INVITE"]'
+
+CHAT_STATE_CONVERSATION_NAME = ('//android.widget.FrameLayout[@resource-id="android:id/content"]/android.widget.FrameLayout/android.widget.FrameLayout/android.view.View/android.view.View/android.view.View/android.view.View/android.view.View[1]/android.view.View[2]/android.widget.ImageView[2][@content-desc]|'
+                                '//android.widget.FrameLayout[@resource-id="android:id/content"]/android.widget.FrameLayout/android.widget.FrameLayout/android.view.View/android.view.View/android.view.View/android.view.View/android.view.View[1]/android.view.View[2]/android.view.View[1][@content-desc]')
+CHAT_STATE_TEXT_FIELD = '//android.widget.EditText[@hint="Send a message"]'
+CHAT_STATE_SEND_MEDIA_BUTTON = '//android.widget.FrameLayout[@resource-id="android:id/content"]/android.widget.FrameLayout/android.widget.FrameLayout/android.view.View/android.view.View/android.view.View/android.view.View/android.widget.ImageView[2]'
+CHAT_STATE_SEND_BUTTON = '//android.widget.FrameLayout[@resource-id="android:id/content"]/android.widget.FrameLayout/android.widget.FrameLayout/android.view.View/android.view.View/android.view.View/android.view.View/android.widget.ImageView[3]'
+CHAT_STATE_MICROPHONE_BUTTON = '//android.widget.FrameLayout[@resource-id="android:id/content"]/android.widget.FrameLayout/android.widget.FrameLayout/android.view.View/android.view.View/android.view.View/android.view.View/android.widget.ImageView[4]'
+CHAT_STATE_THREE_DOTS = '//android.widget.FrameLayout[@resource-id="android:id/content"]/android.widget.FrameLayout/android.widget.FrameLayout/android.view.View/android.view.View/android.view.View/android.view.View/android.view.View[1]/android.view.View[2]/android.widget.ImageView[last()]'
+
+CHAT_OPTIONS_STATE_TURN_OFF_NOTIFICATIONS = '//android.widget.ImageView[@content-desc="Turn off notifications"]'
+CHAT_OPTIONS_STATE_CLEAR_HISTORY = '//android.widget.ImageView[@content-desc="Clear history"]'
+CHAT_OPTIONS_STATE_CLEAR_HISTORY_CONFIRM_BUTTON = '//android.widget.Button[@content-desc="CLEAR"]'
+CHAT_OPTIONS_STATE_BLOCK_USER = '//android.widget.ImageView[@content-desc="Block user"]'
+
+SEND_MEDIA_STATE_TITLE = '//android.view.View[@content-desc="Gallery"]'
+SEND_MEDIA_STATE_UPLOAD_PHOTO_BUTTON = '//android.view.View[@content-desc="Upload photo"]'
+SEND_MEDIA_STATE_UPLOAD_CANCEL_BUTTON = '//android.view.View[@content-desc="Cancel"]'
+SEND_MEDIA_STATE_PICTURE_INDEX = '//android.view.View[@content-desc="Gallery"]/android.view.View[1]/android.view.View/android.view.View/*[{index}]'
+SEND_MEDIA_STATE_SELECT_BUTTON = '//android.view.View[starts-with(lower-case(@content-desc), "select")]'
+SEND_MEDIA_STATE_CAMERA_SHUTTER_BUTTON = '//*[contains(lower-case(@resource-id), "shutter")]'
+SEND_MEDIA_STATE_CAMERA_CONFIRM_BUTTON = '//*[contains(lower-case(@resource-id), "shutter")] | //*[contains(lower-case(@content-desc), "done")]'
+SEND_MEDIA_STATE_CAMERA_CONFIRM_EDIT_BUTTON = '//android.widget.FrameLayout[@resource-id="android:id/content"]/android.widget.FrameLayout/android.widget.FrameLayout/android.view.View/android.view.View/android.view.View/android.view.View/android.widget.ImageView[4]'
+
+SETTINGS_STATE_CHANGE_TELEGUARD_ID = '//android.view.View[@content-desc="Change TeleGuard ID"]'
+
+ABOUT_STATE_ABOUT = '//android.view.View[@content-desc="About"]'
+ABOUT_STATE_TERMS_OF_USE = '//android.view.View[@content-desc=" Terms of use"]'
