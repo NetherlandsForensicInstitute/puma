@@ -60,6 +60,9 @@ class TestWhatsapp(unittest.TestCase):
     def test_change_profile_picture(self):
         self.alice.change_profile_picture(1, self.photo_directory_name)
 
+    def test_view_contact_profile_picture(self):
+        self.alice.view_contact_profile_picture(contact_names["Bob"])
+
     def test_set_about(self):
         self.alice.set_about("about text")
 
