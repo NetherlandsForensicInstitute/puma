@@ -5,6 +5,10 @@ call. The goal is that you can focus on *what* should happen rather than *how* t
 code to "tap on Bob's conversation on Alice's phone, enter the message, and press send", you can simply write "send a
 Telegram message to Bob from Alice's phone".
 
+![](images/puma_demo.gif)
+
+See the full demo video [here](https://archive.org/details/puma-demo-2025).
+
 To execute actions on the mobile device, Puma uses [Appium](https://appium.io/), and open-source project for UI
 automation.
 
@@ -367,3 +371,26 @@ Some applications have pop-ups which appear the first time that the application 
 Puma does not handle these pop-ups, these should be manually clicked once to remove them.
 The same holds for pop-ups that request permissions, these should be manually clicked.
 Note: If your app has other pop-ups that happen regularly, Puma should support these.
+
+## Citation
+[![DOI](https://img.shields.io/badge/DOI-10.1016%2Fj.fsidi.2025.301985-blue)](https://doi.org/10.1016/j.fsidi.2025.301985)
+
+If you use Puma in your research, please cite our paper:
+```bibtex
+@article{CLAIJSWART2025301985,
+  title = {Automatically generating digital forensic reference data triggered by mobile application updates},
+  journal = {Forensic Science International: Digital Investigation},
+  volume = {54},
+  pages = {301985},
+  year = {2025},
+  issn = {2666-2817},
+  doi = {https://doi.org/10.1016/j.fsidi.2025.301985},
+  url = {https://www.sciencedirect.com/science/article/pii/S2666281725001258},
+  author = {Angelina A. Claij-Swart and Erik Oudsen and Bouke Timbermont and Christopher Hargreaves and Lena L. Voigt},
+  keywords = {Digital forensics, Datasets, Reference data, Data synthesis, Tool validation, Tool testing, Mobile forensics},
+  abstract = {Mobile applications are subject to frequent updates, which poses a challenge for validating digital forensic tools. This paper presents an approach to automate the generation of reference data on an ongoing basis, and how this can be integrated into the overall validation process of a digital forensic analysis platform. Specifically, it describes the architecture of the mobile data synthesis framework Puma, shares its capabilities via an open-source project, and shows how it can be used in a tool testing workflow triggered by application updates. The value of this approach is demonstrated with three example use cases, documenting the use of the approach over six months and reporting insights and experiences gained from this integration. Finally, this work highlights additional contributions the proposed approach and tooling could make to the digital forensics community.}
+}
+```
+
+### Plain text
+Claij-Swart, A. A., Oudsen, E., Timbermont, B., Hargreaves, C., & Voigt, L. L. (2025). Automatically generating digital forensic reference data triggered by mobile application updates. Forensic Science International: Digital Investigation, 54(Supplement), 301985. https://doi.org/10.1016/j.fsidi.2025.301985
