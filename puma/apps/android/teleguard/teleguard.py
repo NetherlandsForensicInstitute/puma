@@ -77,7 +77,7 @@ class TeleGuard(StateGraph):
     send_media_state = SimpleState(
         [SEND_MEDIA_STATE_TITLE, SEND_MEDIA_STATE_UPLOAD_PHOTO_BUTTON, SEND_MEDIA_STATE_UPLOAD_CANCEL_BUTTON],
         parent_state=chat_state)
-    settings_state = SimpleState([SETTINGS_STATE_CHANGE_TELE_GUARD_ID], parent_state=conversations_state)
+    settings_state = SimpleState([SETTINGS_STATE_CHANGE_TELEGUARD_ID], parent_state=conversations_state)
     about_screen_state = SimpleState([ABOUT_STATE_ABOUT, ABOUT_STATE_TERMS_OF_USE], parent_state=conversations_state)
 
     conversations_state.to(chat_state, go_to_chat)
