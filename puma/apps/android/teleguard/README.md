@@ -60,7 +60,7 @@ phone = TeleGuard("emulator-5444")
 # Send Bob a message
 phone.send_message("Hi Bob!", "Bob")
 # Alternatively, use:
-phone.send_message("Hi Charlie", conversation="Charlie")
+phone.send_message(message="Hi Charlie", conversation="Charlie")
 # A second message can be sent without supplying the conversation again:
 phone.send_message("Hi Charlie, please reply!")
 ```

@@ -121,15 +121,15 @@ class TeleGuard(StateGraph):
         self.driver.click(CONVERSATION_STATE_ACCEPT_INVITE)
 
     @action(chat_state)
-    def send_message(self, msg: str, conversation: str = None):
+    def send_message(self, message: str, conversation: str = None):
         """
         Sends a message in the current chat conversation.
 
-        :param msg: The message to send.
+        :param message: The message to send.
         :param conversation: The name of the conversation to send the message in.
         """
         self.driver.click(CHAT_STATE_TEXT_FIELD)
-        self.driver.send_keys(CHAT_STATE_TEXT_FIELD, msg)
+        self.driver.send_keys(CHAT_STATE_TEXT_FIELD, message)
         self.driver.click(CHAT_STATE_SEND_BUTTON)
 
     @action(chat_options_state, end_state=chat_state)
