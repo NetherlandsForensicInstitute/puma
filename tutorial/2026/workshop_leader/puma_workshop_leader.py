@@ -3,10 +3,10 @@ from time import sleep
 
 from puma.apps.android.teleguard.teleguard import TeleGuard
 
-BLACK_PIXEL = ''
+PHONE_UDID = '<tbd>'
 
 if __name__ == '__main__':
-    teleguard = TeleGuard(BLACK_PIXEL)
+    teleguard = TeleGuard(PHONE_UDID)
 
     with open('hello_messages.txt', 'r') as f:
         hello_messages = f.read().splitlines()
