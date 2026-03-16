@@ -1,8 +1,11 @@
+from typing import List
+
+from appium.webdriver import WebElement
 from appium.webdriver.common.appiumby import AppiumBy
 
 from puma.apps.android.teleguard.xpaths import *
 from puma.state_graph.action import action
-from puma.state_graph.puma_driver import PumaDriver, supported_version
+from puma.state_graph.puma_driver import PumaDriver, supported_version, PumaClickException
 from puma.state_graph.state import ContextualState, SimpleState, compose_clicks
 from puma.state_graph.state_graph import StateGraph
 
@@ -111,14 +114,61 @@ class TeleGuard(StateGraph):
         self.driver.click(CONVERSATION_STATE_INVITE)
 
     @action(conversations_state)
-    def accept_invite(self):
+    def invite_received(self, scroll: bool = False, max_swipes: int = 10) -> bool:
         """
-        Accepts an invite from another user.
+        Checks whether an invite has been received. By default this method does not scroll to look for an invite.
+        """
+        if scroll:
+            try:
+                self.driver.swipe_to_find_element(CONVERSATION_STATE_YOU_HAVE_BEEN_INVITED, max_swipes=max_swipes)
+                return True
+            except PumaClickException:
+                return False
+        return self.driver.is_present(CONVERSATION_STATE_YOU_HAVE_BEEN_INVITED)
+
+    @action(conversations_state)
+    def accept_invite(self) -> str:
+        """
+        Accepts an invite from another user and returns the name of the accepted invite.
 
         If there are multiple invites, only the topmost invite in the UI will be accepted.
+
+        This method returns the name of the user that sent an invite. If no invite was sent, an exception is raised.
         """
         self.driver.swipe_to_click_element(CONVERSATION_STATE_YOU_HAVE_BEEN_INVITED)
-        self.driver.click(CONVERSATION_STATE_ACCEPT_INVITE)
+        name = self.driver.get_element(CONVERSATION_STATE_INVITATION_NAME).get_attribute('content-desc')
+        self.driver.click(CONVERSATION_STATE_INVITATION_ACCEPT)
+        return name
+
+    def _extract_name(self, conversation_row: WebElement) -> str:
+        """
+        Given a conversation row, extracts the name of the conversation.
+        For users with an avatar, the first line of the content description is the conversation name.
+        For users without an avatar, there is an extra first line with just the first letter of the name.
+        We try to detect this pattern and return the first or second line based on this.
+        """
+        content_description = conversation_row.get_attribute('content-desc')
+        lines = content_description.split('\n')[:2]
+        if len(lines[0])>1:
+            return lines[0]
+        elif lines[1][0] == lines[0]:
+            return lines[1]
+        else:
+            return lines[0]
+
+    @action(conversations_state)
+    def conversations_with_unread_messages(self) -> List[str]:
+        """
+        Returns a list of names of conversations that have unread messages.
+        """
+        try:
+            elements = self.driver.get_elements(CONVERSATION_STATE_UNREAD_MESSAGES)
+            names = [self._extract_name(e) for e in elements]
+            return names
+        except PumaClickException:
+            return []
+
+
 
     @action(chat_state)
     def send_message(self, message: str, conversation: str = None):
