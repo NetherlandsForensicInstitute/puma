@@ -1,5 +1,5 @@
 CONVERSATION_STATE_TELEGUARD_HEADER = '//android.view.View[@content-desc="TeleGuard"]'
-CONVERSATION_STATE_HAMBURGER_MENU = '//android.widget.FrameLayout[@resource-id="android:id/content"]/android.widget.FrameLayout/android.widget.FrameLayout/android.view.View/android.view.View/android.view.View/android.view.View/android.view.View[1]/android.view.View[2]/android.view.View[3]'
+CONVERSATION_STATE_HAMBURGER_MENU = '//android.view.View[@content-desc="TeleGuard"]/following-sibling::*[last()]'
 CONVERSATION_STATE_SETTINGS_BUTTON = '//android.widget.ImageView[@content-desc="Settings"]'
 CONVERSATION_STATE_ABOUT_BUTTON = '//android.widget.ImageView[@content-desc="About"]'
 CONVERSATION_STATE_TELEGUARD_STATUS = '//android.view.View[@content-desc="Online"]|//android.view.View[contains(@content-desc, "Connection to server")]'
