@@ -1,5 +1,5 @@
 CONVERSATION_STATE_TELEGUARD_HEADER = '//android.view.View[@content-desc="TeleGuard"]'
-CONVERSATION_STATE_HAMBURGER_MENU = '//android.widget.FrameLayout[@resource-id="android:id/content"]/android.widget.FrameLayout/android.widget.FrameLayout/android.view.View/android.view.View/android.view.View/android.view.View/android.view.View[1]/android.view.View[2]/android.view.View[3]'
+CONVERSATION_STATE_HAMBURGER_MENU = '//android.view.View[@content-desc="TeleGuard"]/following-sibling::*[last()]'
 CONVERSATION_STATE_SETTINGS_BUTTON = '//android.widget.ImageView[@content-desc="Settings"]'
 CONVERSATION_STATE_ABOUT_BUTTON = '//android.widget.ImageView[@content-desc="About"]'
 CONVERSATION_STATE_TELEGUARD_STATUS = '//android.view.View[@content-desc="Online"]|//android.view.View[contains(@content-desc, "Connection to server")]'
@@ -7,13 +7,16 @@ CONVERSATION_STATE_ADD_CONTACT = '//android.widget.ImageView[@content-desc="Add 
 CONVERSATION_STATE_EDIT_TEXT = '//android.widget.EditText'
 CONVERSATION_STATE_INVITE = '//android.widget.Button[@content-desc="INVITE"]'
 CONVERSATION_STATE_YOU_HAVE_BEEN_INVITED = '//android.view.View[contains(@content-desc, "You have been invited")]'
-CONVERSATION_STATE_ACCEPT_INVITE = '//android.widget.Button[@content-desc="ACCEPT INVITE"]'
+CONVERSATION_STATE_INVITATION_ID = '//android.view.View[starts-with(lower-case(@content-desc), "teleguard id:")]'
+CONVERSATION_STATE_INVITATION_NAME = '//android.view.View[starts-with(lower-case(@content-desc), "teleguard id:")]/preceding-sibling::*[last()]'
+CONVERSATION_STATE_INVITATION_ACCEPT = '//android.widget.Button[@content-desc="ACCEPT INVITE"]'
+CONVERSATION_STATE_UNREAD_MESSAGES = '//*[@content-desc and matches(@content-desc, "\\n\\d$")]'
 
 CHAT_STATE_CONVERSATION_NAME = ('//android.widget.FrameLayout[@resource-id="android:id/content"]/android.widget.FrameLayout/android.widget.FrameLayout/android.view.View/android.view.View/android.view.View/android.view.View/android.view.View[1]/android.view.View[2]/android.widget.ImageView[2][@content-desc]|'
                                 '//android.widget.FrameLayout[@resource-id="android:id/content"]/android.widget.FrameLayout/android.widget.FrameLayout/android.view.View/android.view.View/android.view.View/android.view.View/android.view.View[1]/android.view.View[2]/android.view.View[1][@content-desc]')
 CHAT_STATE_TEXT_FIELD = '//android.widget.EditText[@hint="Send a message"]'
 CHAT_STATE_SEND_MEDIA_BUTTON = '//android.widget.FrameLayout[@resource-id="android:id/content"]/android.widget.FrameLayout/android.widget.FrameLayout/android.view.View/android.view.View/android.view.View/android.view.View/android.widget.ImageView[2]'
-CHAT_STATE_SEND_BUTTON = '//android.widget.FrameLayout[@resource-id="android:id/content"]/android.widget.FrameLayout/android.widget.FrameLayout/android.view.View/android.view.View/android.view.View/android.view.View/android.widget.ImageView[3]'
+CHAT_STATE_SEND_BUTTON = '//android.widget.FrameLayout[@resource-id="android:id/content"]/android.widget.FrameLayout/android.widget.FrameLayout/android.view.View/android.view.View/android.view.View/android.view.View/android.widget.ImageView[last()]'
 CHAT_STATE_MICROPHONE_BUTTON = '//android.widget.FrameLayout[@resource-id="android:id/content"]/android.widget.FrameLayout/android.widget.FrameLayout/android.view.View/android.view.View/android.view.View/android.view.View/android.widget.ImageView[4]'
 CHAT_STATE_THREE_DOTS = '//android.widget.FrameLayout[@resource-id="android:id/content"]/android.widget.FrameLayout/android.widget.FrameLayout/android.view.View/android.view.View/android.view.View/android.view.View/android.view.View[1]/android.view.View[2]/android.widget.ImageView[last()]'
 
