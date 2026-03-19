@@ -16,9 +16,8 @@ class TransportType(Enum):
     CAR = "car"
     BIKE = "bike"
 
-# TODO temporarily disabled for the tutorial, enable again
-# @deprecated('This class does not use the Puma state machine, and will therefore not be maintained. ' +
-#             'If you want to add functionality, please rewrite this class using StateGraph as the abstract base class.')
+@deprecated('This class does not use the Puma state machine, and will therefore not be maintained. ' +
+            'If you want to add functionality, please rewrite this class using StateGraph as the abstract base class.')
 @supported_version("26.10.01")
 class GoogleMapsActions(AndroidAppiumActions):
     def __init__(self,
