@@ -133,7 +133,7 @@ class TeleGuard(StateGraph):
 
         If there are multiple invites, only the topmost invite in the UI will be accepted.
 
-        This method returns the name of the user that sent an invite. If no invite was sent, an exception is raised.
+        If no invite was sent, an exception is raised.
         """
         self.driver.swipe_to_click_element(CONVERSATION_STATE_YOU_HAVE_BEEN_INVITED)
         name = self.driver.get_element(CONVERSATION_STATE_INVITATION_NAME).get_attribute('content-desc')
@@ -146,6 +146,8 @@ class TeleGuard(StateGraph):
         For users with an avatar, the first line of the content description is the conversation name.
         For users without an avatar, there is an extra first line with just the first letter of the name.
         We try to detect this pattern and return the first or second line based on this.
+
+        :param conversation_row: The conversation row to extract a name from.
         """
         content_description = conversation_row.get_attribute('content-desc')
         lines = content_description.split('\n')[:2]
@@ -167,8 +169,6 @@ class TeleGuard(StateGraph):
             return names
         except PumaClickException:
             return []
-
-
 
     @action(chat_state)
     def send_message(self, message: str, conversation: str = None):
