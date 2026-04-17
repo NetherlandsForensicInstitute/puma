@@ -62,7 +62,7 @@ class GoogleChrome(StateGraph):
                                 )
 
     @action(current_tab_state)
-    def visit_url(self, url_string: str, tab_index: int):
+    def visit_url(self, url_string: str, tab_index: int=None):
         """
         Visits a url in an existing tab.
         Note that if you supply a tab index that is a new tab, the action will fail. Use go_to_new_tab instead.
@@ -94,7 +94,7 @@ class GoogleChrome(StateGraph):
         self._enter_url(url_string, URL_BAR)
 
     @action(current_tab_state)
-    def bookmark_page(self, tab_index: int):
+    def bookmark_page(self, tab_index: int=None):
         """
         Bookmarks the current page.
         :param tab_index: Index of the tab to bookmark.
@@ -117,7 +117,7 @@ class GoogleChrome(StateGraph):
         self.driver.click(FIRST_BOOKMARK)
 
     @action(current_tab_state)
-    def delete_bookmark(self, tab_index: int):
+    def delete_bookmark(self, tab_index: int=None):
         """
         Delete the current bookmark.
         :param tab_index: Index of the tab to delete the bookmark from.

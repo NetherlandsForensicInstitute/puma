@@ -43,6 +43,9 @@ class GoogleMapsActions(AndroidAppiumActions):
             if not self.app_open():
                 self.activate_app()
 
+    def get_route_simulator(self) -> RouteSimulator:
+        return self.route_simulator
+
     @log_action
     def search_place(self, search_string: str):
         self._ensure_at_start()
