@@ -123,6 +123,12 @@ class RouteSimulator:
         start_location = geocoder.geocode(start_loc)
         destination_location = geocoder.geocode(destination)
 
+        if not start_location:
+            raise ValueError(f'Could not geocode start location: {start_location}')
+
+        if not destination_location:
+            raise ValueError(f'Could not geocode destination location: {destination_location}')
+
         start_lat = start_location.latitude
         start_lon = start_location.longitude
         end_lat = destination_location.latitude
