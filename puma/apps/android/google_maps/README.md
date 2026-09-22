@@ -22,7 +22,7 @@ as the abstract base class. Also see the [CONTRIBUTING.md](../../../../CONTRIBUT
 Initialization is standard:
 
 ```python
-from puma.apps.android.google_maps import GoogleMapsActions
+from puma.apps.android.google_maps.google_maps import GoogleMapsActions
 
 phone = GoogleMapsActions("emulator-5444")
 ```

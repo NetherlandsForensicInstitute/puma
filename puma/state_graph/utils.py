@@ -36,5 +36,5 @@ def filter_arguments(func, **kwargs) -> inspect.BoundArguments:
     return bound_args
 
 def is_valid_package_name(package_name: str) -> bool:
-    pattern = r'^[a-z_][a-z0-9_]+(\.[a-z_][a-z0-9_]*)*$'
+    pattern = r'^[A-Za-z_][A-Za-z0-9_]+(\.[A-Za-z_][A-Za-z0-9_]*)*$' #Upper case is against Google's conventions, but Google breaks their own convention with GoogleCamera
     return bool(re.fullmatch(pattern, package_name)) and len(package_name) <= 100

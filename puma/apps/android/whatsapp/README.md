@@ -122,6 +122,7 @@ phone.delete_message_for_everyone(message_text="Curpuceeno", conversation="Bob")
 # activate or deactivate automatically disappearing messages in a conversation
 phone.activate_disappearing_messages(conversation="Bob")
 phone.deactivate_disappearing_messages(conversation="Bob")
+phone.view_contact_profile_picture(conversation="Bob")
 ```
 
 ### Calls

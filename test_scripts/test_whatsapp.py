@@ -10,6 +10,13 @@ device_udids = {
     'Bob': ''
 }
 
+# In case the contacts are not named alice and bob on the used phones, you can alter the names here.
+contact_names = {
+    "Alice": "Alice",
+    "Bob": "Bob",
+    "Charlie": "Charlie"
+}
+
 
 class TestWhatsapp(unittest.TestCase):
     """
@@ -41,9 +48,6 @@ class TestWhatsapp(unittest.TestCase):
         else:
             print("WARNING: No udid configured for Bob. Some tests will fail as a result")
 
-        self.contact_alice = "Alice"
-        self.contact_bob = "Bob"
-        self.contact_charlie = "Charlie"
         self.photo_directory_name = "Screenshots"
 
     def test_1_create_new_chat(self):
@@ -51,10 +55,13 @@ class TestWhatsapp(unittest.TestCase):
         Name changes because we want to ensure this test runs first.
         After this test we are sure there is a conversation with Bob.
         """
-        self.alice.create_new_chat(self.contact_bob, "create new chat, first message")
+        self.alice.create_new_chat(contact_names["Bob"], "create new chat, first message")
 
     def test_change_profile_picture(self):
         self.alice.change_profile_picture(1, self.photo_directory_name)
+
+    def test_view_contact_profile_picture(self):
+        self.alice.view_contact_profile_picture(contact_names["Bob"])
 
     def test_set_about(self):
         self.alice.set_about("about text")
@@ -63,75 +70,75 @@ class TestWhatsapp(unittest.TestCase):
         self.alice.add_status("caption")
 
     def test_activate_and_deactivate_disappearing_messages(self):
-        self.alice.activate_disappearing_messages(self.contact_bob)
-        self.alice.deactivate_disappearing_messages(self.contact_bob)
+        self.alice.activate_disappearing_messages(contact_names["Bob"])
+        self.alice.deactivate_disappearing_messages(contact_names["Bob"])
 
     def test_send_and_delete_message_for_everyone(self):
-        self.alice.send_message("message to delete", conversation=self.contact_bob)
-        self.alice.delete_message_for_everyone("message to delete", conversation=self.contact_bob)
+        self.alice.send_message("message to delete", conversation=contact_names["Bob"])
+        self.alice.delete_message_for_everyone("message to delete", conversation=contact_names["Bob"])
 
     def test_forward_message(self):
         message_to_forward = "message to forward"
-        self.alice.send_message(message_to_forward, conversation=self.contact_bob)
-        self.alice.forward_message(self.contact_bob, message_to_forward, self.contact_bob)
+        self.alice.send_message(message_to_forward, conversation=contact_names["Bob"])
+        self.alice.forward_message(contact_names["Bob"], message_to_forward, contact_names["Bob"])
 
     def test_reply_to_message(self):
         message = "message to reply to"
-        self.alice.send_message(message, conversation=self.contact_bob)
+        self.alice.send_message(message, conversation=contact_names["Bob"])
         self.alice.reply_to_message(message, "reply")
 
     def test_send_media(self):
-        self.alice.send_media(1, conversation=self.contact_bob, directory_name=self.photo_directory_name,
+        self.alice.send_media(1, conversation=contact_names["Bob"], directory_name=self.photo_directory_name,
                               caption='caption', view_once=False)
 
     def test_send_media_view_once(self):
-        self.alice.send_media(1, conversation=self.contact_bob, directory_name=self.photo_directory_name,
+        self.alice.send_media(1, conversation=contact_names["Bob"], directory_name=self.photo_directory_name,
                               caption='caption', view_once=True)
 
     def test_send_sticker(self):
-        self.alice.send_sticker(self.contact_bob)
+        self.alice.send_sticker(contact_names["Bob"])
 
     def test_send_emoji(self):
-        self.alice.send_emoji(self.contact_bob)
+        self.alice.send_emoji(contact_names["Bob"])
 
     def test_send_contact(self):
-        self.alice.send_contact(self.contact_bob, conversation=self.contact_bob)
+        self.alice.send_contact(contact_names["Bob"], conversation=contact_names["Bob"])
 
     def test_send_current_location(self):
-        self.alice.send_current_location(self.contact_bob)
+        self.alice.send_current_location(contact_names["Bob"])
 
     def test_send_and_stop_live_location(self):
-        self.alice.send_live_location(conversation=self.contact_bob, caption="caption")
-        self.alice.stop_live_location(self.contact_bob)
+        self.alice.send_live_location(conversation=contact_names["Bob"], caption="caption")
+        self.alice.stop_live_location(contact_names["Bob"])
 
     def test_send_voice_recording(self):
-        self.alice.send_voice_message(conversation=self.contact_bob)
+        self.alice.send_voice_message(conversation=contact_names["Bob"])
 
     # Group related tests
     def test_set_group_description(self):
         description_group = "description group"
-        self.alice.create_group(description_group, self.contact_bob)
+        self.alice.create_group(description_group, contact_names["Bob"])
         self.alice.set_group_description(description_group, "group description")
 
     def test_archive_group(self):
         archive_group = "archive group"
-        self.alice.create_group(archive_group, self.contact_bob)
+        self.alice.create_group(archive_group, contact_names["Bob"])
         self.alice.archive_conversation(archive_group)
 
     def test_leave_group(self):
         leave_group = "leave group"
-        self.alice.create_group(leave_group, self.contact_bob)
+        self.alice.create_group(leave_group, contact_names["Bob"])
         self.alice.leave_group(leave_group)
 
     def test_delete_group(self):
         delete_group = "delete group"
-        self.alice.create_group(delete_group, self.contact_bob)
+        self.alice.create_group(delete_group, contact_names["Bob"])
         self.alice.delete_group(delete_group)
 
     def test_remove_participant_from_group(self):
         group = "remove bob group"
-        self.alice.create_group(group, self.contact_bob)
-        self.alice.remove_member_from_group(group, self.contact_bob)
+        self.alice.create_group(group, contact_names["Bob"])
+        self.alice.remove_member_from_group(group, contact_names["Bob"])
 
     # Call related tests. Note that you need two phones for these tests, otherwise these tests will fail
     def assert_bob_configured(self):
@@ -141,39 +148,39 @@ class TestWhatsapp(unittest.TestCase):
 
     def test_answer_end_voice_call(self):
         self.assert_bob_configured()
-        self.alice.start_voice_call(self.contact_bob)
+        self.alice.start_voice_call(contact_names["Bob"])
         self.bob.answer_call()
         sleep(2)
-        self.alice.end_voice_call(self.contact_bob)
+        self.alice.end_voice_call(contact_names["Bob"])
 
     def test_answer_end_video_call(self):
         self.assert_bob_configured()
-        self.alice.start_video_call(self.contact_bob)
+        self.alice.start_video_call(contact_names["Bob"])
         self.bob.answer_call()
         sleep(2)
-        self.alice.end_video_call(self.contact_bob)
+        self.alice.end_video_call(contact_names["Bob"])
 
     def test_decline_voice_call(self):
         self.assert_bob_configured()
-        self.alice.start_voice_call(self.contact_bob)
+        self.alice.start_voice_call(contact_names["Bob"])
         self.bob.decline_call()
 
     def test_decline_video_call(self):
         self.assert_bob_configured()
-        self.alice.start_video_call(self.contact_bob)
+        self.alice.start_video_call(contact_names["Bob"])
         self.bob.decline_call()
 
     def test_open_view_once_photo(self):
         self.assert_bob_configured()
-        self.alice.send_media(1, conversation=self.contact_bob, directory_name=self.photo_directory_name,
+        self.alice.send_media(1, conversation=contact_names["Bob"], directory_name=self.photo_directory_name,
                               view_once=True)
         sleep(1)
-        self.bob.open_view_once_photo(self.contact_alice)
+        self.bob.open_view_once_photo(contact_names["Alice"])
 
     # For this test, both Bob and Charlie need to be in Alice's contacts
     def test_send_broadcast(self):
         message = "broadcast message"
-        self.alice.send_broadcast([self.contact_bob, self.contact_charlie], message)
+        self.alice.send_broadcast([contact_names["Bob"], contact_names["Charlie"]], message)
 
     def test_transitions(self):
         for to_state in self.alice.states:
