@@ -103,8 +103,19 @@ class SimpleState(State):
         :param driver: The PumaDriver instance to use.
         :return: True if all XPaths are present, otherwise False.
         """
-        return (all(driver.is_present(xpath) for xpath in self.present_xpaths)
-                and all((not driver.is_present(xpath)) for xpath in self.invalid_xpaths))
+        for xpath in self.present_xpaths:
+            if not driver.is_present(xpath):
+                logger.debug(
+                    f"State '{self.id}' validation failed: required xpath not found: {xpath}"
+                )
+                return False
+        for xpath in self.invalid_xpaths:
+            if driver.is_present(xpath):
+                logger.debug(
+                    f"State '{self.id}' validation failed: invalid xpath is present: {xpath}"
+                )
+                return False
+        return True
 
 
 def back(driver: PumaDriver):
