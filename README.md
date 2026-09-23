@@ -87,7 +87,9 @@ example implementations. Each version of Puma supports one version of each app, 
 | [TeleGuard](puma/apps/android/teleguard/README.md)              | Android  | 4.0.9                 |
 | [WhatsApp](puma/apps/android/whatsapp/README.md)                | Android  | 2.26.2.70             |
 | [WhatsApp for Business](puma/apps/android/whatsapp_business/README.md) | Android  | 2.25.24.78            |
+| [Contacts](puma/apps/ios/contacts/README.md)                    | iOS      | iOS 26.2              |
 | [Messages](puma/apps/ios/messages/README.md)                    | iOS      | iOS 26.6              |
+| [Safari](puma/apps/ios/safari/README.md)                        | iOS      | iOS 26.2              |
 | [Settings](puma/apps/ios/settings/README.md) (real devices only) | iOS      | iOS 26.6              |
 
 ## Documentation

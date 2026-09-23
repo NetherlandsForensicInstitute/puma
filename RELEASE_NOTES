@@ -1,6 +1,6 @@
 Version 6.0.0
 -------------
-24. iOS: Add iOS support, with Settings and Messages
+24. iOS: Add iOS support, with Safari, Contacts, Settings and Messages
 24. StateGraph: applications must set their platform (Platform.ANDROID or Platform.IOS), there is no default
 24. Messages: search conversations, and read the sender, time and service (iMessage or SMS) of messages
 24. Messages: reply and react to messages, and check whether messages are delivered or read
