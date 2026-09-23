@@ -15,9 +15,10 @@ These scripts will:
 
 1. Install ADB and setup the required environmental values
 2. Install NodeJS and Appium
-3. Install Python 3.12
-4. Install Appium Inspector
-5. Install all requirements in your python virtual environment
+3. On macOS: install the Appium XCUITest driver and ffmpeg, for iOS support
+4. Install Python 3.12
+5. Install Appium Inspector
+6. Install all requirements in your python virtual environment
 
 When software is installed (ADB, Node, Appium, Python, Appium Inspector), the scripts will only install the missing
 components. Python 3.12 will not be installed if you already have python 3.10, 3.11 or 3.12 installed.
@@ -34,6 +35,13 @@ extract them to your home folder (`~/Android/Sdk/platform-tools/adb`) .
 
 Puma needs Appium, which is a Node.JS application.
 The script will install Node.JS (through NVM on Linux and MacOS) and then use NPM to install Appium globally.
+
+## iOS (macOS only)
+
+Automating iOS devices is only possible on macOS, and requires Xcode. Xcode cannot be installed by the script: install it
+from the App Store. The script installs the Appium XCUITest driver, and ffmpeg (through Homebrew), which is needed for
+screen recordings on iOS. See [this section in the README](../README.md#ios-devices-or-simulators) for how to prepare
+iOS devices.
 
 ## Python
 
