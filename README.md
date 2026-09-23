@@ -20,445 +20,86 @@ doing so.
 Puma is an open-source non-commercial project, and community contributions to add support for apps, or improve support
 of existing apps are welcome! If you want to contribute, please read [CONTRIBUTING.md](CONTRIBUTING.md).
 
-> :iphone: Puma supports Android and iOS apps. iOS support requires a Mac with Xcode, see
-> [iOS devices or simulators](#ios-devices-or-simulators).
+## Supported platforms
+
+| Platform | Devices                    | Runs on               | Setup                                   |
+|----------|----------------------------|-----------------------|-----------------------------------------|
+| Android  | Physical devices, emulators | Linux, macOS, Windows | [Setting up Android](docs/setup-android.md) |
+| iOS      | Physical devices, simulators | macOS (with Xcode)    | [Setting up iOS](docs/setup-ios.md)         |
 
 ## Getting started
 
-1. Install all required software (see the [requirements](#requirements) section).
-2. Connect your Android device (or start an emulator), make sure it is connected properly over ADB (See the section on
-   [troubleshooting](#Troubleshooting) if you encounter problems). For iOS, see
-   [Getting started on iOS](#getting-started-on-ios).
-    - :warn: Make sure the phone is set to English, and [all other requirements](#android-devices-or-emulators) are met!
-3. Get the UDID of your device by running `adb devices` (in the example below `954724ertyui74125` is the UDID of the
-   device):
-
-```shell
-$ adb devices
-> List of devices attached
-954724ertyui74125  device
-```
-
-4. Install Puma. We recommend installing packages within [a Python venv](https://docs.python.org/3/library/venv.html).
+1. Install the required software with the installation script for your operating system, see
+   [installation](docs/installation.md).
+2. Connect your device (or start an emulator or simulator), and get its UDID. See
+   [setting up Android](docs/setup-android.md) or [setting up iOS](docs/setup-ios.md).
+    - :warning: Make sure the device is set to English!
+3. Install Puma. We recommend installing packages within [a Python venv](https://docs.python.org/3/library/venv.html).
 
 ```shell
 pip install pumapy
 ```
 
-5. Run Appium. This starts the Appium server, a process that needs to run while you use Puma.
+4. Run Appium. This starts the Appium server, a process that needs to run while you use Puma.
 
 ```shell
 appium
 ```
 
-### Getting started on iOS
-
-1. Install all required software on a Mac, including Xcode (see the [requirements](#ios-devices-or-simulators)).
-2. Start a simulator (`xcrun simctl boot "iPhone 17"` or via Xcode), or connect a real device that is
-   [prepared for automation](#ios-devices-or-simulators).
-3. Get the UDID of your device:
-
-```shell
-$ xcrun simctl list devices booted   # simulators
-$ xcrun devicectl list devices        # real devices
-```
-
-4. Install Puma and run Appium, as described above. The first time Puma connects to an iOS device, Appium builds and
-   installs WebDriverAgent on the device, which can take a few minutes.
+5. Use Puma! The API is the same on both platforms:
 
 ```python
+from puma.utils import configure_default_logging
+configure_default_logging()  # Use Puma's logging configuration. You can also implement your own
+
+# Android
+from puma.apps.android.google_chrome.google_chrome import GoogleChrome
+android_phone = GoogleChrome("emulator-5554")
+android_phone.visit_url_new_tab("example.com")
+
+# iOS
 from puma.apps.ios.safari.safari import Safari
-from puma.utils import configure_default_logging
-
-configure_default_logging()
-phone = Safari("C14C2402-9144-4BC2-9866-A1DB5AFAD376")
-phone.visit_url_new_tab("example.com")
+iphone = Safari("C14C2402-9144-4BC2-9866-A1DB5AFAD376")
+iphone.visit_url_new_tab("example.com")
 ```
 
-For a demo of Puma on iOS in Safari, Contacts and Apple Maps, run `python -m demo.ios_demo --help` from the root of the
-repository.
-
-### Examples
-
-If everything is setup correctly, you can now use Puma! Below are a few small examples to get started. If you want a
-more extensive step-by-step guide on how to use (and develop) Puma, please refer to the
-[Puma Tutorial](tutorial/exercises).
-
-The code below shows a small example on how to search for the Eiffel Tower in Google Maps.
-
-```python
-from puma.apps.android.google_maps.google_maps import GoogleMapsActions
-from puma.utils import configure_default_logging
-
-configure_default_logging()# Use Puma's logging configuration. You can also implement your own
-
-phone = GoogleMapsActions("emulator-5444")
-phone.search_place('eiffel tower')
-```
-
-This is a rather simple application, in the sense that it can be used without any form of registration. Other
-applications
-need some additional preparation, such as WhatsApp. For this application, you first need to register with a phone
-number.
-These kind of prerequisites are also described in the application README. The first time you use an application, there
-might be pop-ups explaining the app that Puma does not take into account, as these need to be confirmed only once. You
-need
-to do this manually the first time while running Puma. After registering, you can send a WhatsApp message to a contact
-with the code below:
-
-```python
-from puma.apps.android.whatsapp.whatsapp import WhatsApp
-from puma.utils import configure_default_logging
-
-configure_default_logging() # Use Puma's logging configuration. You can also implement your own
-
-alice = WhatsApp("<INSERT UDID HERE>", "com.whatsapp")  # Initialize a connection with device
-alice.create_new_chat(conversation="<Insert the contact name>",
-                      first_message="Hello world!")  # Send a message to contact in your contact list
-alice.send_message("Sorry for the spam :)")  # we can send a second message in the open conversation
-```
-
-An action might not always execute properly. If you want to verify that the action succeeded, you can add a special
-named argument to the action, which points to the function you want to verify the action with. We supply some
-commonly used verifications for users to use.
-
-For example, verifying a Whatsapp message has been sent:
-
-```python
-from puma.apps.android.whatsapp.whatsapp import WhatsApp
-
-app = WhatsApp('<INSERT UDID HERE>', 'com.whatsapp')
-app.send_message(conversation='Bob', message_text='Sorry for the spam :)', verify_with=app.is_message_marked_sent)
-```
-
-This will verify if the expected message has indeed been sent. If not, it will log this using the Ground Truth logger.
-It will not stop the execution of the following steps. For more information, see the [action](puma/state_graph/action.py) documentation.
-
-Congratulations, you just did a search query in Google Maps and/or sent a WhatsApp message without touching your phone!
-You can now explore what other functions are possible with Puma in [WhatsApp](puma/apps/android/whatsapp/README.md), or
-try a
-[different application](#supported-apps). You could even start working
-on [adding support for a new app](CONTRIBUTING.md).
+See [using Puma](docs/usage.md) for more examples, and how navigation, contexts and verification of actions work. For a
+demo of Puma on iOS in Safari, Contacts and Apple Maps, run `python -m demo.ios_demo --help` from the root of the
+repository. For an extensive step-by-step guide on how to use (and develop) Puma, see the
+[Puma Tutorial](tutorial/2026/exercises.md).
 
 ## Supported apps
 
 The following apps are supported by Puma. Each app has its own documentation page detailing the supported actions with
-example implementations:
-
-### Android
-
-* [Google Camera](puma/apps/android/google_camera/google_camera.py)
-* [Google Chrome](puma/apps/android/google_chrome/README.md)
-* [Google Maps](puma/apps/android/google_maps/README.md)
-* [Google Play Store](puma/apps/android/google_play_store/README.md)
-* [Open Camera](puma/apps/android/open_camera/README.md)
-* [Snapchat](puma/apps/android/snapchat/README.md)
-* [Telegram](puma/apps/android/telegram/README.md)
-* [TeleGuard](puma/apps/android/teleguard/README.md)
-* [WhatsApp](puma/apps/android/whatsapp/README.md)
-* [WhatsApp for Business](puma/apps/android/whatsapp_business/README.md)
-
-### iOS
-
-* [Apple Maps](puma/apps/ios/apple_maps/README.md)
-* [Contacts](puma/apps/ios/contacts/README.md)
-* [Safari](puma/apps/ios/safari/README.md)
-
-To get a full overview of all functionality and pydoc of a specific app, run
-
-```bash
-# Example for WhatsApp
-python -m pydoc puma/apps/android/whatsapp/whatsapp.py
-```
-
-### Supported versions
-
-The currently supported version of each app is mentioned in the documentation above (and in the source code). When Puma
-code breaks due to UI changes (for example when app Xyz updates from v2 to v3), Puma will be updated to support Xyz v3.
-This new version of Puma does will **only** be tested against Xyz v3: if you still want to use Xyz v2, you simply have
-to use an older release of Puma.
-
-To make it easy for users to lookup older versions, git tags will be used to tag app versions. So in the above example
-you'd simply have to look up the tag `Xyz_v2`.
-
-If you are running your script on a newer app version than the tag, it is advised to first run the test script of your
-app (can be found in the [test scripts directory](test_scripts)). This test script includes each action that can be
-performed on the phone, and running these first will inform you if all actions are still supported, without messing up
-your experiment.
-
-#### Navigation
-
-You need to be careful about navigation. For example, some methods require you to already be in a conversation. However,
-most methods give you the option to navigate to a specific conversation. 2 examples:
-
-##### Example 1
-
-```python
-from puma.apps.android.whatsapp.whatsapp import WhatsApp
-from puma.utils import configure_default_logging
-
-configure_default_logging() # Use Puma's logging configuration. You can also implement your own
-alice = WhatsApp("emulator-5554")  # initialize a connection with device emulator-5554
-alice.go_to_state(WhatsApp.chat_state, conversation="Bob")
-alice.send_message("message_text")
-```
-
-In this example, the message is sent to the conversation with "Bob", by selecting the conversation manually. The second
-example below automates this step.
-
-##### Example 2
-
-```python
-from puma.apps.android.whatsapp.whatsapp import WhatsApp
-from puma.utils import configure_default_logging
-
-configure_default_logging() # Use Puma's logging configuration. You can also implement your own
-alice = WhatsApp("emulator-5554")  # initialize a connection with device emulator-5554
-alice.send_message("message_text", conversation="Bob")
-alice.send_message("message_text2")
-```
-
-In the second example, the chat conversation to send the message in is supplied as a parameter. Before the message is
-sent, there will be navigated to the home screen first, and then the chat "Bob" will be selected.
-
-Note that the second message is sent to the current chat conversation. Puma will detect that a conversation was
-already opened, so it will not navigate back to the main screen and reopen the same conversation.
-
-## Requirements
-
-## Install dependencies
-
-First off, run the installation scripts in the `install` folder.
-See [the installation manual](install/README_INSTALLATION.md) for more details.
-
-### Android Device(s) or Emulators
-
-You can either use a physical Android device or an Android emulator.
-See [Optional: Android Studio](#optional--android-studio--for-running-an-emulator-) for instructions on installing
-Android Studio and running an emulator
-
-- Have the Android device(s) or emulator(s) connected to the system where Puma runs, configured as follows:
-    - Connected to the Internet
-    - Language set to English
-    - File transfer enabled
-    - (Root access is not needed)
-
-You can check if the device is connected:
-
-  ```shell
-  adb devices
-    > List of devices attached
-  894759843jjg99993  device
-  ```
-
-If the status says `device`, the device is connected and available.
-
-### iOS Device(s) or Simulators
-
-Automating iOS requires a Mac with [Xcode](https://developer.apple.com/xcode/) installed, and the Appium XCUITest driver
-(`appium driver install xcuitest`, the macOS installation script does this for you). You can use an iOS simulator or a
-physical device. The device should be connected to the Internet and have its language set to English.
-
-**Simulators** work out of the box. List the available simulators with `xcrun simctl list devices`, and start one with
-`xcrun simctl boot <udid>` or from Xcode. Note that the App Store is not available on simulators, so only apps that are
-preinstalled or that you build yourself can be automated.
-
-**Physical devices** need some preparation:
-
-- Enable [Developer Mode](https://developer.apple.com/documentation/xcode/enabling-developer-mode-on-a-device)
-  (Settings > Privacy & Security > Developer Mode).
-- Enable UI Automation (Settings > Developer > Enable UI Automation).
-- Appium installs WebDriverAgent on the device, which needs to be signed with your Apple developer account. Pass your
-  team id and signing identity as desired capabilities, see
-  [the Appium documentation on real device configuration](https://appium.github.io/appium-xcuitest-driver/latest/preparation/real-device-config/):
-
-```python
-from puma.apps.ios.safari.safari import Safari
-
-phone = Safari("00008110-000A1B2C3D4E5F6G", desired_capabilities={
-    "appium:xcodeOrgId": "<your team id>",
-    "appium:xcodeSigningId": "Apple Development",
-})
-```
-
-Puma gives each iOS device its own WebDriverAgent ports (derived from its UDID), so multiple devices and simulators can
-safely share one Appium server. You can override these with the `appium:wdaLocalPort` and `appium:mjpegServerPort`
-capabilities.
-
-Some iOS specifics to be aware of:
-
-- iOS has no back button. Puma navigates back using the back button in the navigation bar, or by swiping from the left
-  edge of the screen.
-- System pop-ups such as permission requests are handled automatically, by granting the permission.
-- Screen recording (`start_recording()`) requires [ffmpeg](#optional-ffmpeg) on the Mac running Appium.
-
-### Optional: Android Studio (for running an emulator)
-
-For more information about Android Emulators, refer
-to [the Android developer website](https://developer.android.com/studio/run/managing-avds#about)
-Follow these steps to create and start an Android emulator:
-
-1. [Install Android Studio](https://developer.android.com/studio/run/managing-avds#createavd).
-2. [Create an Android Virtual Device (avd)](https://developer.android.com/studio/run/managing-avds) We recommend a Pixel
-   with the Playstore enabled, and a recent Android version. For running 1 or a few apps, the default configuration can
-   be used.
-3. [Start the emulator](https://developer.android.com/studio/run/managing-avds#emulator).
-
-If you want to run the emulator from the commandline, refer
-to [Start the emulator from the command line](https://developer.android.com/studio/run/emulator-commandline).
-
-### Optional: OCR module
-
-Puma has an OCR module which is required for some apps. See the documentation of the apps you want ot use whether you
-need OCR.
-
-Top use the OCR module you need to install Tesseract:
-
-```shell
-sudo apt install tesseract-ocr
-# or on macOS
-brew install tesseract
-```
-
-Or use the Windows installer.
-
-### Optional: FFMPEG
-
-To use `video_utils.py`, or to record the screen of an iOS device, you need to install ffmpeg:
-
-```shell
-sudo apt install ffmpeg
-# or on macOS
-brew install ffmpeg
-```
-
-This utils code offers a way to process screen recordings (namely concatenating videos and stitching them together
-horizontally).
-
-## Logging in Puma
-
-Puma uses Python’s standard `logging` library.
-
-### Default Behavior
-
-- **As a CLI or main module:** Puma configures default logging so INFO and higher messages are visible.
-- **In Jupyter notebooks:** Puma enables default logging so logs are visible in notebook cells.
-- **As a module in another project:** Puma does not configure logging; messages are only shown if your application configures logging.
-
-### Ground Truth Logging
-
-Puma contains a separate 'Ground Truth' logger (GTL), which logs all actions and navigation steps that are performed on a
-device during a Puma run. These logs are stored in separate log files with the `_gtl` suffix. The log lines produced by
-this logger are also present in the regular log files, but the GTL logs only contain information about actions on a device.
-
-### How to See Puma’s Logs
-
-To see Puma logs in your own script, opt-in to Puma's default log format and level by calling:
-
-```python
-from puma.utils import configure_default_logging
-configure_default_logging()
-```
-
-This is also shown in the examples above.
-If you want to use your own logging format, you can configure Python logging (e.g., with `logging.basicConfig(level=logging.INFO)`).
-
-## Troubleshooting
-
-### ADB shows status unauthorized
-
-This happens when you did not allow data transfer via usb. Tap on the charging popup or go to
-`settings > USB preferences` and select `File Transfer`.
-
-### Adb device cannot connect
-
-If the status of your device is `unauthorized`, make sure USB debugging is enabled in developer options:
-
-- [Enable developer options](https://developer.android.com/studio/debug/dev-options)
-- [Enable USB debugging](https://developer.android.com/studio/debug/dev-options#Enable-debugging)
-- Connect your device to your computer, open a terminal and run `adb devices`
-- Your device should now show a popup to allow USB debugging. Press always allow.
-
-If you do not get the pop-up, reset USB debugging authorisation in `Settings > Developer options > Revoke USB debugging
-authorisations` and reconnect the device and run `adb devices` again.
-
-### Android Emulator won't start in Android Studio
-
-We have encountered this in MacOS, but it could also occor on other platforms.
-If you encounter an issue where the Android Emulator won't start, it might be due to the location where Android Studio
-installs system images. By default, Android Studio installs system images in the `$HOME/Library/Android/Sdk` directory.
-However, our configuration may expect the SDK to be located in a different directory, such as
-`$HOME/Android/Sdk`.
-
-A workaround is to create a symbolic link:
-
-```bash
-ln -s $HOME/Library/Android/Sdk/system-images $HOME/Android/Sdk/system-images
-```
-
-### Installing Appium with npm fails
-
-If you are behind a proxy and the appium install hangs, make sure to configure your `~/.npmrc` with the following
-settings.
-Fill in the values, restart terminal and try again:
-
-```text
-registry=<your organization registry>
-proxy=<organization proxy>
-https-proxy=<organization proxy>
-http-proxy=<organization proxy>
-strict-ssl=false
-```
-
-Alternatively, you can also
-download [Appium Desktop](https://github.com/appium/appium-desktop/releases/), make the binary executable and start it
-manually before running Puma.
-
-```bash
-sudo chmod +x Appium-Server-GUI-*.AppImage
-./Appium-Server-GUI-*.AppImage
-```
-
-- Do not change the default settings
-- Click the startServer button
-- Now you can run Puma
-
-### iOS: WebDriverAgent fails to start
-
-The first connection to an iOS device builds WebDriverAgent with Xcode. If this fails:
-
-- Check that Xcode and its command line tools are installed and selected: `xcode-select -p` should point to
-  `/Applications/Xcode.app/Contents/Developer`.
-- On real devices, check the signing capabilities (see [iOS devices or simulators](#ios-devices-or-simulators)), and
-  that UI Automation is enabled in the developer settings on the device.
-- Check the Appium server output for the `xcodebuild` error.
-
-### ConnectionRefusedError: [Errno 111] Connection refused
-
-This error is probably caused by Appium not running. Start Appium first and try again.
-
-### Appium Action fails due to popup
-
-When first using the app, sometimes you get popups the first time you do a specific action, for instance when sending
-a view-once photo.
-Because this only occurs the first time, it is not handled by the code. The advice is when running into this problem,
-manually click `Ok` on the pop-up and try again. To ensure this does not happen in the middle of your test data script,
-first do a test run by executing the test script for your application.
-
-### My application is not present on the device
-
-Install the APK on the device you want to use.
-When using an emulator, this can be done by dragging the APK file onto the emulator, this automatically installs the APK
-on the device.
-For physical devices as well as emulators, you could use `adb install`. See
-the [developer docs](https://developer.android.com/tools/adb#move)
-
-### Pop-ups break my code!
-
-Some applications have pop-ups which appear the first time that the application is opened.
-Puma does not handle these pop-ups, these should be manually clicked once to remove them.
-The same holds for pop-ups that request permissions, these should be manually clicked.
-Note: If your app has other pop-ups that happen regularly, Puma should support these.
+example implementations. Each version of Puma supports one version of each app, see
+[supported versions](docs/usage.md#supported-versions).
+
+| App                                                             | Platform | Supported version     |
+|-----------------------------------------------------------------|----------|-----------------------|
+| [Google Camera](puma/apps/android/google_camera/google_camera.py) | Android  | 8.8.225.510547499.09  |
+| [Google Chrome](puma/apps/android/google_chrome/README.md)      | Android  | 145.0.7632.159        |
+| [Google Maps](puma/apps/android/google_maps/README.md)          | Android  | 26.10.01              |
+| [Google Play Store](puma/apps/android/google_play_store/README.md) | Android  | 48.3.25-31            |
+| [Open Camera](puma/apps/android/open_camera/README.md)          | Android  | 1.55                  |
+| [Snapchat](puma/apps/android/snapchat/README.md)                | Android  | 12.89.0.40            |
+| [Telegram](puma/apps/android/telegram/README.md)                | Android  | 12.0.1                |
+| [TeleGuard](puma/apps/android/teleguard/README.md)              | Android  | 4.0.9                 |
+| [WhatsApp](puma/apps/android/whatsapp/README.md)                | Android  | 2.26.2.70             |
+| [WhatsApp for Business](puma/apps/android/whatsapp_business/README.md) | Android  | 2.25.24.78            |
+| [Apple Maps](puma/apps/ios/apple_maps/README.md)                | iOS      | iOS 26.2              |
+| [Contacts](puma/apps/ios/contacts/README.md)                    | iOS      | iOS 26.2              |
+| [Safari](puma/apps/ios/safari/README.md)                        | iOS      | iOS 26.2              |
+
+## Documentation
+
+* [Installation](docs/installation.md)
+* [Setting up Android devices](docs/setup-android.md)
+* [Setting up iOS devices](docs/setup-ios.md)
+* [Using Puma](docs/usage.md): examples, navigation, verifying actions and supported versions
+* [Logging](docs/logging.md): Puma's logging and the ground truth logger
+* [Troubleshooting](docs/troubleshooting.md)
+* [Writing Puma apps](docs/writing-apps.md): how Puma apps work, and how to add a new app
+* [Test data guidelines](docs/TESTDATA_GUIDELINES.md) and [why make your own test data](docs/TESTDATA_WHY.md)
 
 ## Citation
 [![DOI](https://img.shields.io/badge/DOI-10.1016%2Fj.fsidi.2025.301985-blue)](https://doi.org/10.1016/j.fsidi.2025.301985)
