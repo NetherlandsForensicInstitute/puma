@@ -13,6 +13,9 @@ from puma.apps.android.telegram.telegram import Telegram
 from puma.apps.android.teleguard.teleguard import TeleGuard
 from puma.apps.android.whatsapp.whatsapp import WhatsApp
 from puma.apps.android.whatsapp_business.whatsapp_business import WhatsappBusinessActions
+from puma.apps.ios.apple_maps.apple_maps import AppleMaps
+from puma.apps.ios.contacts.contacts import Contacts
+from puma.apps.ios.safari.safari import Safari
 
 all_app_actions = [
     GoogleCamera,
@@ -24,7 +27,10 @@ all_app_actions = [
     Telegram,
     TeleGuard,
     WhatsApp,
-    WhatsappBusinessActions
+    WhatsappBusinessActions,
+    AppleMaps,
+    Contacts,
+    Safari
 ]
 APP_MODULE = 'puma.apps'
 
@@ -33,6 +39,7 @@ def get_app_name_and_platform(app_action_class: Callable) -> Tuple:
     """
     Extract the app name and platform from the module of the app action class. The module structure is as follows:
         puma.apps.android.whatsapp.whatsapp
+        puma.apps.ios.safari.safari
     Note that this may not work anymore when the module structure is altered.
     :param app_action_class: App action class
     :return: app name, platform

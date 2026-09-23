@@ -1,17 +1,16 @@
 import os
 import time
+from abc import abstractmethod
 from datetime import datetime
+from enum import Enum
 from pathlib import Path
 from typing import Dict
 from uuid import uuid4
 
-from adb_pywrapper.adb_device import AdbDevice
-from adb_pywrapper.adb_screen_recorder import AdbScreenRecorder
-from appium.options.android import UiAutomator2Options
-from appium.webdriver import WebElement
-from appium.webdriver.common.appiumby import AppiumBy
+from PIL import Image
 from appium import webdriver
-from appium.webdriver.extensions.android.nativekey import AndroidKey
+from appium.options.common import AppiumOptions
+from appium.webdriver import WebElement
 from appium.webdriver.webdriver import WebDriver
 from selenium.webdriver import ActionChains
 from urllib3.exceptions import MaxRetryError
@@ -19,34 +18,29 @@ from urllib3.exceptions import MaxRetryError
 from puma.computer_vision import ocr
 from puma.computer_vision.ocr import RecognizedText
 from puma.state_graph import logger
+from puma.state_graph.locators import to_by_value
 from puma.utils import CACHE_FOLDER
 from puma.utils.gtl_logging import create_gtl_logger
 
-# Keycode constants, found at
+# Android keycode constants, found at https://developer.android.com/reference/android/view/KeyEvent
 KEYCODE_LEFT_ARROW = 21
 KEYCODE_ENTER = 66
 KEYCODE_BACKSPACE = 67
+
+
+class Platform(Enum):
+    """
+    The mobile platforms supported by Puma.
+    """
+    ANDROID = 'Android'
+    IOS = 'iOS'
+
 
 class PumaClickException(Exception):
     """
     Custom exception for handling errors related to clicking actions in the PumaDriver.
     """
     pass
-
-def _get_android_default_options() -> UiAutomator2Options:
-    """
-    Creates and configures default options for an Android UiAutomator2 driver.
-
-    This function sets up the default options required for initializing an Android
-    UiAutomator2 driver, including platform name and command timeout settings.
-
-    :return: Configured UiAutomator2Options instance.
-    """
-    options = UiAutomator2Options()
-    options.no_reset = True
-    options.platform_name = 'Android'
-    options.new_command_timeout = 1200
-    return options
 
 
 __drivers: dict[str, WebDriver] = {}
@@ -78,25 +72,45 @@ def supported_version(version: str):
 
 class PumaDriver:
     """
-    A driver class for interacting with Android applications using Appium.
+    A driver class for interacting with mobile applications using Appium.
 
-    This class provides methods to interact with an Android app, such as activating,
-    terminating, and interacting with UI elements. It uses Appium's WebDriver for
-    remote control of the application.
+    This class provides methods to interact with an app, such as activating, terminating, and interacting with UI
+    elements. It uses Appium's WebDriver for remote control of the application.
+
+    PumaDriver is the platform-independent base class. Creating a PumaDriver returns the driver for the requested
+    platform: an AndroidPumaDriver by default, or an IOSPumaDriver when passing `platform=Platform.IOS`.
+
+    All methods that take an XPath also accept a Locator (see puma.state_graph.locators), which allows using other
+    locator strategies such as iOS predicate strings.
     """
+    platform: Platform = None
 
-    def __init__(self, udid: str, app_package: str, implicit_wait: int = 1, appium_server: str = 'http://localhost:4723', desired_capabilities: Dict[str, str] = None):
+    def __new__(cls, *args, platform: Platform = Platform.ANDROID, **kwargs):
+        if cls is PumaDriver:
+            if platform == Platform.IOS:
+                from puma.state_graph.ios_driver import IOSPumaDriver
+                cls = IOSPumaDriver
+            else:
+                from puma.state_graph.android_driver import AndroidPumaDriver
+                cls = AndroidPumaDriver
+        return super().__new__(cls)
+
+    def __init__(self, udid: str, app_package: str, implicit_wait: int = 1, appium_server: str = 'http://localhost:4723', desired_capabilities: Dict[str, str] = None, platform: Platform = None):
         """
         Initializes the PumaDriver with device and application details.
 
-        :param udid: The unique device identifier for the Android device.
-        :param app_package: The package name of the application to interact with.
+        :param udid: The unique device identifier of the device.
+        :param app_package: The identifier of the application to interact with: the package name on Android, the bundle
+        id on iOS.
         :param implicit_wait: The implicit wait time for element searches, defaults to 1 second.
         :param appium_server: The address of the Appium server, defaults to 'http://localhost:4723'.
         :param desired_capabilities: The desired capabilities as passed to the Appium webdriver.
+        :param platform: The platform of the device. Only used when instantiating PumaDriver directly, to choose the
+        platform specific driver. Defaults to Android.
         """
-        self.options = _get_android_default_options()
+        self.options = self._default_options()
         self.options.udid = udid
+        self._set_device_options(udid)
         self.app_package = app_package
         if desired_capabilities:
             self.options.load_capabilities(desired_capabilities)
@@ -105,21 +119,43 @@ class PumaDriver:
         self.implicit_wait = implicit_wait
         self.driver.implicitly_wait(implicit_wait)
         self.udid = self.driver.capabilities.get("udid")
-        self.adb = AdbDevice(self.udid)
-        self._screen_recorder = None
         self._screen_recorder_output_directory = None
         self.gtl_logger = create_gtl_logger(udid)
+
+    @property
+    def app_id(self) -> str:
+        """
+        The identifier of the application: the package name on Android, the bundle id on iOS.
+        """
+        return self.app_package
+
+    @staticmethod
+    @abstractmethod
+    def _default_options() -> AppiumOptions:
+        """
+        :return: The default Appium options for this platform.
+        """
+        pass
+
+    def _set_device_options(self, udid: str):
+        """
+        Sets Appium options that depend on the device. Desired capabilities passed by the user take precedence.
+
+        :param udid: The unique device identifier of the device.
+        """
+        pass
 
     def is_present(self, xpath: str, implicit_wait: float = 0) -> bool:
         """
         Checks if an element is present on the screen.
 
-        :param xpath: The XPath of the element to check.
+        :param xpath: The XPath (or Locator) of the element to check.
         :param implicit_wait: The time to wait for the element to be present.
         :return: True if the element is present, False otherwise.
         """
         self.driver.implicitly_wait(implicit_wait)
-        found = self.driver.find_elements(by=AppiumBy.XPATH, value=xpath)
+        by, value = to_by_value(xpath)
+        found = self.driver.find_elements(by=by, value=value)
         self.driver.implicitly_wait(self.implicit_wait)
         return len(found) > 0
 
@@ -144,27 +180,29 @@ class PumaDriver:
         self.terminate_app()
         self.activate_app()
 
+    @abstractmethod
     def app_open(self) -> bool:
         """
         Checks if the application is currently open.
 
         :return: True if the application is open, False otherwise.
         """
-        return str(self.driver.current_package) == self.app_package
+        pass
 
+    @abstractmethod
     def back(self):
         """
-        Simulates pressing the back button on the device.
+        Navigates back. On Android this presses the back button, on iOS (which has no back button) this uses the back
+        button in the navigation bar, or a swipe from the left edge of the screen.
         """
-        self.gtl_logger.info(f'Pressing back button')
-        self.driver.press_keycode(AndroidKey.BACK)
+        pass
 
+    @abstractmethod
     def home(self):
         """
         Simulates pressing the home button on the device.
         """
-        self.gtl_logger.info(f'Pressing home button')
-        self.driver.press_keycode(AndroidKey.HOME)
+        pass
 
     def click(self, xpath: str, width_ratio:float=0.5, height_ratio:float=0.5):
         """
@@ -176,7 +214,7 @@ class PumaDriver:
         corresponds to the top-left and (1,1) corresponds to the bottom right.
         The width_ratio determines the x coordinate, the height_ratio the y coordinate.
 
-        :param xpath: The XPath of the element to click.
+        :param xpath: The XPath (or Locator) of the element to click.
         :param width_ratio: Optional. Determines the x coordinate, relative within the element, from 0 to 1 (left to right).
         :param height_ratio: Optional. Determines the y coordinate, relative within the element, from 0 to 1 (top to bottom).
         :raises PumaClickException: If the element cannot be clicked after multiple attempts.
@@ -184,7 +222,8 @@ class PumaDriver:
         for attempt in range(3):
             if self.is_present(xpath, self.implicit_wait):
                 if (width_ratio, height_ratio) == (0.5, 0.5):
-                    self.driver.find_element(by=AppiumBy.XPATH, value=xpath).click()
+                    by, value = to_by_value(xpath)
+                    self.driver.find_element(by=by, value=value).click()
                 else:
                     element = self.get_element(xpath)
                     top_left = element.location['x'], element.location['y']
@@ -207,7 +246,7 @@ class PumaDriver:
         """
         Clicks on a certain element, and hold for a given duration (in seconds)
 
-        :param xpath: The XPath of the element to click.
+        :param xpath: The XPath (or Locator) of the element to click.
         :param duration: how many seconds to hold the element before releasing
         :raises PumaClickException: If the element cannot be found after multiple attempts.
         """
@@ -226,26 +265,28 @@ class PumaDriver:
         """
         Retrieves an element specified by its XPath.
 
-        :param xpath: The XPath of the element to retrieve.
+        :param xpath: The XPath (or Locator) of the element to retrieve.
         :return: The WebElement corresponding to the XPath.
         :raises PumaClickException: If the element cannot be found after multiple attempts.
         """
         for attempt in range(3):
             if self.is_present(xpath, self.implicit_wait):
-                return self.driver.find_element(by=AppiumBy.XPATH, value=xpath)
+                by, value = to_by_value(xpath)
+                return self.driver.find_element(by=by, value=value)
         raise PumaClickException(f'Could not find element with xpath {xpath}')
 
     def get_elements(self, xpath: str) -> list[WebElement]:
         """
         Retrieves all elements matching the specified XPath.
 
-        :param xpath: The XPath of the elements to retrieve.
+        :param xpath: The XPath (or Locator) of the elements to retrieve.
         :return: A list of WebElements corresponding to the XPath.
         :raises PumaClickException: If no elements can be found after multiple attempts.
         """
         for attempt in range(3):
             if self.is_present(xpath, self.implicit_wait):
-                return self.driver.find_elements(by=AppiumBy.XPATH, value=xpath)
+                by, value = to_by_value(xpath)
+                return self.driver.find_elements(by=by, value=value)
         raise PumaClickException(f'Could not find elements with xpath {xpath}')
 
     def _scroll_down(self):
@@ -275,7 +316,7 @@ class PumaDriver:
         Swipes up or down to find an element specified by its XPath. This is necessary when the element you want to click on
         is out of view.
 
-        :param xpath: The XPath of the element to find.
+        :param xpath: The XPath (or Locator) of the element to find.
         :param max_swipes: The maximum number of swipe attempts to find the element.
         :param swipe_down: If the element can be found below, True, otherwise False.
         :raises PumaClickException: If the element cannot be found after the maximum number of swipes.
@@ -296,7 +337,7 @@ class PumaDriver:
         Collects all elements matching given XPath. Next, swipes down a number of times and collects
         all new elements matching given XPath in each resulting view.
 
-        :param xpath: the xpath of the elements to find
+        :param xpath: the xpath (or Locator) of the elements to find
         :param num_swipes: the number of swipes to execute
         :raises PumaClickException: if no matching element can be found after given number of swipes
         """
@@ -327,7 +368,7 @@ class PumaDriver:
         Swipes down to find and click an element specified by its XPath. This is necessary when the element you want to
         click on is out of view.
 
-        :param xpath: The XPath of the element to find and click.
+        :param xpath: The XPath (or Locator) of the element to find and click.
         :param max_swipes: The maximum number of swipe attempts to find the element.
         :raises PumaClickException: If the element cannot be found after the maximum number of swipes.
         """
@@ -337,7 +378,7 @@ class PumaDriver:
         """
         Sends keys to an element specified by its XPath.
 
-        :param xpath: The XPath of the element to send keys to.
+        :param xpath: The XPath (or Locator) of the element to send keys to.
         :param text: The text to send to the element.
         """
         self.gtl_logger.info(f'Entering text "{text}" in text box')
@@ -349,73 +390,84 @@ class PumaDriver:
         element.clear()
         element.send_keys(text)
 
+    @abstractmethod
     def press_enter(self):
         """
         Presses the ENTER key.
         """
-        self.driver.press_keycode(KEYCODE_ENTER)
+        pass
 
+    @abstractmethod
     def press_backspace(self):
         """
         Presses the BACKSPACE key.
         """
-        self.driver.press_keycode(KEYCODE_BACKSPACE)
+        pass
 
+    @abstractmethod
     def press_left_arrow(self):
         """
         Presses the LEFT ARROW key.
         """
-        self.driver.press_keycode(KEYCODE_LEFT_ARROW)
+        pass
 
+    @abstractmethod
     def open_url(self, url: str):
         """
         Opens a given URL. The URl will open in the default app configured for that URL.
         """
-        self.adb.open_intent(url)
+        pass
 
+    @abstractmethod
     def open_notifications(self):
         """
-        Opens the Android notifications panel.
+        Opens the notifications panel.
         """
-        self.gtl_logger.info('Opening notifications panel')
-        self.driver.open_notifications()
+        pass
 
+    @abstractmethod
     def start_recording(self, output_directory: str):
         """
         Starts a screen recording.
 
         :param output_directory: The directory the screen recording should be stored in.
         """
-        if self._screen_recorder is None:
-            self._screen_recorder_output_directory = output_directory
-            self._screen_recorder = AdbScreenRecorder(self.adb)
-            self.gtl_logger.info('Starting screen recording')
-            self._screen_recorder.start_recording()
+        pass
 
+    @abstractmethod
     def stop_recording_and_save_video(self) -> list[str] | None:
-        if self._screen_recorder is None:
-            return None
-        self.gtl_logger.info('Ending screen recording')
-        video_files = self._screen_recorder.stop_recording(self._screen_recorder_output_directory)
-        self._screen_recorder.__exit__(None, None, None)
-        self._screen_recorder = None
-        return video_files
+        """
+        Stops the screen recording, and saves the video to the output directory passed to start_recording.
+
+        :return: The paths of the stored video files, or None if no recording was active.
+        """
+        pass
 
     def _new_screenshot_name(self):
         now = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
         device_name = self.options.device_name
         return Path(CACHE_FOLDER) / f'{now}-{device_name}-{uuid4()}.png'
 
-    def _find_text_ocr(self, text_to_find: str) -> list[RecognizedText]:
+    def _find_text_ocr(self, text_to_find: str) -> tuple[list[RecognizedText], float]:
+        """
+        Takes a screenshot and uses OCR to find the given text.
+
+        :param text_to_find: The text to find.
+        :return: The found text, and the ratio between screenshot pixels and screen coordinates. On iOS, screenshots are
+        taken in pixels while the screen coordinates are in points, so the ratio is 2 or 3 depending on the device.
+        """
         path = self._new_screenshot_name()
         screenshot_taken = False
         try:
             screenshot_taken = self.driver.get_screenshot_as_file(path)
             if not screenshot_taken:
                 raise Exception(f'Screenshot could not be stored to {path}')
+            with Image.open(path) as screenshot:
+                screenshot_width = screenshot.size[0]
+            scale = screenshot_width / self.driver.get_window_size()['width']
             self.gtl_logger.info(f'Using OCR to find text "{text_to_find}"')
             found_text = ocr.find_text(str(path), text_to_find)
-            return found_text
+            return found_text, scale
         finally:
             if screenshot_taken:
                 os.remove(path)
@@ -429,7 +481,7 @@ class PumaDriver:
         If False, raises an PumaClickException if multiple occurrences are found. Defaults to False.
         """
         self.gtl_logger.info(f'Using OCR to click on text "{text_to_click}"')
-        found_text = self._find_text_ocr(text_to_click)
+        found_text, scale = self._find_text_ocr(text_to_click)
         if len(found_text) == 0:
             msg = f'Could not find text "{text_to_click}" on screen so could not click it'
             raise PumaClickException(msg)
@@ -439,25 +491,34 @@ class PumaDriver:
                 raise PumaClickException(msg)
             else:
                 self.gtl_logger.warning(f'Found multiple occurrences of text "{text_to_click}" on screen, clicking first one')
-        x = found_text[0].bounding_box.middle[0]
-        y = found_text[0].bounding_box.middle[1]
+        x = round(found_text[0].bounding_box.middle[0] / scale)
+        y = round(found_text[0].bounding_box.middle[1] / scale)
         self.gtl_logger.info(f'Clicking found text "{found_text}" at coordinates {(x,y)}')
-        self.driver.execute_script('mobile: clickGesture', {'x': x, 'y': y})
+        self._click_coordinates(x, y)
+
+    @abstractmethod
+    def _click_coordinates(self, x: int, y: int):
+        """
+        Clicks on the given screen coordinates using the platform specific gesture.
+        """
+        pass
 
     def set_idle_timeout(self, timeout: int):
         """
         Sets a maximum time to wait while idle.
+        Note that the unit differs per platform: milliseconds on Android (UiAutomator2), seconds on iOS (XCUITest).
 
         :param timeout: The maximum time to wait.
         """
         # https://github.com/appium/appium-uiautomator2-driver#poor-elements-interaction-performance
         # https://github.com/appium/appium-uiautomator2-driver#settings-api
+        # https://appium.github.io/appium-xcuitest-driver/latest/reference/settings/
         settings = self.driver.get_settings()
         settings.update({"waitForIdleTimeout": timeout})
         self.driver.update_settings(settings)
 
-    def execute_script(self, script: str):
-        self.driver.execute_script(script)
+    def execute_script(self, script: str, *args):
+        return self.driver.execute_script(script, *args)
 
     def __repr__(self):
         """
@@ -465,12 +526,15 @@ class PumaDriver:
 
         :return: A string describing the PumaDriver instance.
         """
-        return f"Puma Driver {self.options.udid} for app package {self.app_package}"
+        return f"Puma {self.platform.value if self.platform else ''} Driver {self.options.udid} for app {self.app_package}"
 
     def __enter__(self):
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):
-        if self._screen_recorder is not None:
+        if self._is_recording():
             self.stop_recording_and_save_video()
         self.driver.__exit__(exc_type, exc_val, exc_tb)
+
+    def _is_recording(self) -> bool:
+        return self._screen_recorder_output_directory is not None

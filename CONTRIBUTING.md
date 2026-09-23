@@ -21,6 +21,7 @@ Thank you for considering contributing to our project! By following these guidel
       * [Actions](#actions)
     * [Ground Truth Logging](#ground-truth-logging)
   * [How to add a new application](#how-to-add-a-new-application)
+    * [iOS applications](#ios-applications)
   * [Legacy and deprecation](#legacy-and-deprecation)
   * [How to write Appium actions](#how-to-write-appium-actions)
     * [Example: writing new Appium actions](#example-writing-new-appium-actions)
@@ -274,7 +275,8 @@ def take_picture(self, conversation: str, caption: str=None, selfie: bool=False)
 ```
 
 ## How to add a new application
-When adding support for a new application, make sure to add a new class to the correct location (eg `apps/android`). All
+When adding support for a new application, make sure to add a new class to the correct location (`apps/android` or
+`apps/ios`). All
 components mentioned in the [Stategraph section](#stategraph) come together in the following class template:
 ```python
 from puma.state_graph.state_graph import StateGraph
@@ -322,6 +324,54 @@ The following steps should be taken to implement support for a new application:
 - Add a test script in the [test scripts directory](test_scripts), in which each function is tested.
 - Add your class to the list of apps in [publish_app_tags](.github/scripts/publish_app_tags.py)
 - Add the app name to the list of supported apps in the [README](README.md#supported-apps)
+
+### iOS applications
+iOS applications use the same `StateGraph` framework, and live in `apps/ios`. The differences with Android are:
+
+- Set the class attribute `platform = Platform.IOS`. Puma will then create an iOS driver, and validate the application
+  identifier as a bundle id instead of a package name.
+- Pass the bundle id of the app (e.g. `com.apple.mobilesafari`) where Android apps pass the package name.
+- XPath lookups are slow on iOS, as the complete UI hierarchy needs to be serialized for each lookup. Wherever an XPath
+  is accepted, you can also pass a `Locator` from `puma.state_graph.locators`: `accessibility_id()`,
+  `ios_predicate()` or `ios_class_chain()`. Prefer these for elements that are used to validate states.
+- iOS has no back button. The default transition back to a parent state uses the back button in the navigation bar if
+  present, and otherwise swipes from the left edge of the screen. For screens that cannot be left this way, such as
+  modal sheets, define a `parent_state_transition`.
+- System alerts, such as permission requests, are handled by button label instead of by XPath. Use `IOSAlertHandler` to
+  handle system alerts specific to your app.
+- XCUITest waits (by default up to 10 seconds) for the app to become idle before each interaction. Screens with
+  continuous animations can make every click slow; use `self.driver.set_idle_timeout(seconds)` to lower this
+  temporarily.
+
+```python
+from puma.state_graph.action import action
+from puma.state_graph.locators import accessibility_id, ios_predicate
+from puma.state_graph.puma_driver import Platform
+from puma.state_graph.state import SimpleState, compose_clicks
+from puma.state_graph.state_graph import StateGraph
+
+
+class ExampleIOSApp(StateGraph):
+    platform = Platform.IOS
+
+    home_state = SimpleState(xpaths=[ios_predicate('type == "XCUIElementTypeNavigationBar" AND name == "Home"')],
+                             initial_state=True)
+    # no parent_state_transition: the default back action is used
+    settings_state = SimpleState(xpaths=[accessibility_id('SettingsTable')], parent_state=home_state)
+
+    home_state.to(settings_state, compose_clicks([accessibility_id('SettingsButton')], 'open_settings'))
+
+    def __init__(self, device_udid):
+        StateGraph.__init__(self, device_udid, 'com.example.app')
+
+    @action(settings_state)
+    def update_settings(self):
+        self.driver.click(accessibility_id('Update Settings'))
+```
+
+Use Appium Inspector with the capabilities `platformName: iOS`, `appium:automationName: XCUITest` and `appium:udid` to
+inspect the UI hierarchy. See the [iOS apps](puma/apps/ios) for complete examples, such as
+[Safari](puma/apps/ios/safari/safari.py).
 
 ## Legacy and deprecation
 In Puma 3.0.0, the `StateGraph` was introduced. Before that, a number of applications were already supported, using the

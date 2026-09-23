@@ -20,13 +20,15 @@ doing so.
 Puma is an open-source non-commercial project, and community contributions to add support for apps, or improve support
 of existing apps are welcome! If you want to contribute, please read [CONTRIBUTING.md](CONTRIBUTING.md).
 
-> :no_mobile_phones: Puma currently only supports Android apps. iOS apps are on our to-do list!
+> :iphone: Puma supports Android and iOS apps. iOS support requires a Mac with Xcode, see
+> [iOS devices or simulators](#ios-devices-or-simulators).
 
 ## Getting started
 
 1. Install all required software (see the [requirements](#requirements) section).
 2. Connect your Android device (or start an emulator), make sure it is connected properly over ADB (See the section on
-   [troubleshooting](#Troubleshooting) if you encounter problems).
+   [troubleshooting](#Troubleshooting) if you encounter problems). For iOS, see
+   [Getting started on iOS](#getting-started-on-ios).
     - :warn: Make sure the phone is set to English, and [all other requirements](#android-devices-or-emulators) are met!
 3. Get the UDID of your device by running `adb devices` (in the example below `954724ertyui74125` is the UDID of the
    device):
@@ -48,6 +50,33 @@ pip install pumapy
 ```shell
 appium
 ```
+
+### Getting started on iOS
+
+1. Install all required software on a Mac, including Xcode (see the [requirements](#ios-devices-or-simulators)).
+2. Start a simulator (`xcrun simctl boot "iPhone 17"` or via Xcode), or connect a real device that is
+   [prepared for automation](#ios-devices-or-simulators).
+3. Get the UDID of your device:
+
+```shell
+$ xcrun simctl list devices booted   # simulators
+$ xcrun devicectl list devices        # real devices
+```
+
+4. Install Puma and run Appium, as described above. The first time Puma connects to an iOS device, Appium builds and
+   installs WebDriverAgent on the device, which can take a few minutes.
+
+```python
+from puma.apps.ios.safari.safari import Safari
+from puma.utils import configure_default_logging
+
+configure_default_logging()
+phone = Safari("C14C2402-9144-4BC2-9866-A1DB5AFAD376")
+phone.visit_url_new_tab("example.com")
+```
+
+For a demo of Puma on iOS in Safari, Contacts and Apple Maps, run `python -m demo.ios_demo --help` from the root of the
+repository.
 
 ### Examples
 
@@ -116,6 +145,8 @@ on [adding support for a new app](CONTRIBUTING.md).
 The following apps are supported by Puma. Each app has its own documentation page detailing the supported actions with
 example implementations:
 
+### Android
+
 * [Google Camera](puma/apps/android/google_camera/google_camera.py)
 * [Google Chrome](puma/apps/android/google_chrome/README.md)
 * [Google Maps](puma/apps/android/google_maps/README.md)
@@ -127,7 +158,11 @@ example implementations:
 * [WhatsApp](puma/apps/android/whatsapp/README.md)
 * [WhatsApp for Business](puma/apps/android/whatsapp_business/README.md)
 
-Right now only Android is supported.
+### iOS
+
+* [Apple Maps](puma/apps/ios/apple_maps/README.md)
+* [Contacts](puma/apps/ios/contacts/README.md)
+* [Safari](puma/apps/ios/safari/README.md)
 
 To get a full overview of all functionality and pydoc of a specific app, run
 
@@ -218,6 +253,45 @@ You can check if the device is connected:
 
 If the status says `device`, the device is connected and available.
 
+### iOS Device(s) or Simulators
+
+Automating iOS requires a Mac with [Xcode](https://developer.apple.com/xcode/) installed, and the Appium XCUITest driver
+(`appium driver install xcuitest`, the macOS installation script does this for you). You can use an iOS simulator or a
+physical device. The device should be connected to the Internet and have its language set to English.
+
+**Simulators** work out of the box. List the available simulators with `xcrun simctl list devices`, and start one with
+`xcrun simctl boot <udid>` or from Xcode. Note that the App Store is not available on simulators, so only apps that are
+preinstalled or that you build yourself can be automated.
+
+**Physical devices** need some preparation:
+
+- Enable [Developer Mode](https://developer.apple.com/documentation/xcode/enabling-developer-mode-on-a-device)
+  (Settings > Privacy & Security > Developer Mode).
+- Enable UI Automation (Settings > Developer > Enable UI Automation).
+- Appium installs WebDriverAgent on the device, which needs to be signed with your Apple developer account. Pass your
+  team id and signing identity as desired capabilities, see
+  [the Appium documentation on real device configuration](https://appium.github.io/appium-xcuitest-driver/latest/preparation/real-device-config/):
+
+```python
+from puma.apps.ios.safari.safari import Safari
+
+phone = Safari("00008110-000A1B2C3D4E5F6G", desired_capabilities={
+    "appium:xcodeOrgId": "<your team id>",
+    "appium:xcodeSigningId": "Apple Development",
+})
+```
+
+Puma gives each iOS device its own WebDriverAgent ports (derived from its UDID), so multiple devices and simulators can
+safely share one Appium server. You can override these with the `appium:wdaLocalPort` and `appium:mjpegServerPort`
+capabilities.
+
+Some iOS specifics to be aware of:
+
+- iOS has no back button. Puma navigates back using the back button in the navigation bar, or by swiping from the left
+  edge of the screen.
+- System pop-ups such as permission requests are handled automatically, by granting the permission.
+- Screen recording (`start_recording()`) requires [ffmpeg](#optional-ffmpeg) on the Mac running Appium.
+
 ### Optional: Android Studio (for running an emulator)
 
 For more information about Android Emulators, refer
@@ -242,16 +316,20 @@ Top use the OCR module you need to install Tesseract:
 
 ```shell
 sudo apt install tesseract-ocr
+# or on macOS
+brew install tesseract
 ```
 
 Or use the Windows installer.
 
 ### Optional: FFMPEG
 
-To use `video_utils.py` you need to install ffmpeg:
+To use `video_utils.py`, or to record the screen of an iOS device, you need to install ffmpeg:
 
 ```shell
 sudo apt install ffmpeg
+# or on macOS
+brew install ffmpeg
 ```
 
 This utils code offers a way to process screen recordings (namely concatenating videos and stitching them together
@@ -344,6 +422,16 @@ sudo chmod +x Appium-Server-GUI-*.AppImage
 - Do not change the default settings
 - Click the startServer button
 - Now you can run Puma
+
+### iOS: WebDriverAgent fails to start
+
+The first connection to an iOS device builds WebDriverAgent with Xcode. If this fails:
+
+- Check that Xcode and its command line tools are installed and selected: `xcode-select -p` should point to
+  `/Applications/Xcode.app/Contents/Developer`.
+- On real devices, check the signing capabilities (see [iOS devices or simulators](#ios-devices-or-simulators)), and
+  that UI Automation is enabled in the developer settings on the device.
+- Check the Appium server output for the `xcodebuild` error.
 
 ### ConnectionRefusedError: [Errno 111] Connection refused
 
