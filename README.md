@@ -87,7 +87,9 @@ example implementations. Each version of Puma supports one version of each app, 
 | [WhatsApp](puma/apps/android/whatsapp/README.md)                | Android  | 2.26.2.70             |
 | [WhatsApp for Business](puma/apps/android/whatsapp_business/README.md) | Android  | 2.25.24.78            |
 | [Apple Maps](puma/apps/ios/apple_maps/README.md)                | iOS      | iOS 26.2              |
+| [Calendar](puma/apps/ios/calendar/README.md)                    | iOS      | iOS 26.2              |
 | [Contacts](puma/apps/ios/contacts/README.md)                    | iOS      | iOS 26.2              |
+| [Reminders](puma/apps/ios/reminders/README.md)                  | iOS      | iOS 26.2              |
 | [Safari](puma/apps/ios/safari/README.md)                        | iOS      | iOS 26.2              |
 
 ## Documentation
