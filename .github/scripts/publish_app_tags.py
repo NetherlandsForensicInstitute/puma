@@ -14,8 +14,10 @@ from puma.apps.android.teleguard.teleguard import TeleGuard
 from puma.apps.android.whatsapp.whatsapp import WhatsApp
 from puma.apps.android.whatsapp_business.whatsapp_business import WhatsappBusinessActions
 from puma.apps.ios.contacts.contacts import Contacts
+from puma.apps.ios.calendar.calendar import Calendar
 from puma.apps.ios.messages.messages import Messages
 from puma.apps.ios.safari.safari import Safari
+from puma.apps.ios.reminders.reminders import Reminders
 from puma.apps.ios.settings.settings import Settings
 
 all_app_actions = [
@@ -30,8 +32,10 @@ all_app_actions = [
     WhatsApp,
     WhatsappBusinessActions,
     Contacts,
+    Calendar,
     Messages,
     Safari,
+    Reminders,
     Settings
 ]
 APP_MODULE = 'puma.apps'
