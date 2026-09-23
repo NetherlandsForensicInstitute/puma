@@ -1,13 +1,18 @@
 from puma.state_graph.action import action
+from puma.state_graph.puma_driver import Platform
 from puma.state_graph.state import SimpleState, compose_clicks
 from puma.state_graph.state_graph import StateGraph
 
+# The package name (Android) or bundle id (iOS) of the application
 APPLICATION_PACKAGE = "INSERT YOUR PACKAGE HERE"
 
 
 # Define custom methods to navigate to a certain state here
 
 class TemplateApp(StateGraph):
+    # The platform of the application: Platform.ANDROID or Platform.IOS
+    platform = Platform.ANDROID
+
     # Define states
     state1 = SimpleState(xpaths=["xpath1", "xpath2"],
                          initial_state=True)
