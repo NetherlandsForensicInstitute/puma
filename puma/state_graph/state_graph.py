@@ -245,10 +245,9 @@ class StateGraph(metaclass=StateGraphMeta):
         if not self.driver.app_open():
             self.driver.activate_app()
 
-        if self.current_state.validate(self.driver):
-            return
-
-        # pop-ups
+        # Handle overlays before validating the state. Android permission dialogs can
+        # leave the underlying state elements visible, so validation alone cannot tell
+        # us that a known popup is blocking the next action.
         self._handle_popups()
 
         if self.current_state.validate(self.driver):
@@ -258,13 +257,20 @@ class StateGraph(metaclass=StateGraphMeta):
         self._search_state(expected_state)
 
     def _handle_popups(self):
-        clicked = True
-        while clicked:
-            clicked = False
-            for popup_handler in known_popups + self.app_popups:
-                if popup_handler.is_popup_window(self.driver):
-                    popup_handler.dismiss_popup(self.driver)
-                    clicked = True
+        popup_handlers = known_popups + getattr(self, 'app_popups', [])
+        previous_active_handlers = set()
+        while True:
+            active_handlers = [handler for handler in popup_handlers
+                               if handler.is_popup_window(self.driver)]
+            active_handler_ids = {id(handler) for handler in active_handlers}
+            if not active_handlers:
+                return
+            if active_handler_ids == previous_active_handlers:
+                self.gtl_logger.warning('Popup handlers made no progress; stopping popup recovery')
+                return
+            previous_active_handlers = active_handler_ids
+            for popup_handler in active_handlers:
+                popup_handler.dismiss_popup(self.driver)
 
     def _search_state(self, expected_state: State):
         current_states = [s for s in self.states if s.validate(self.driver)]
