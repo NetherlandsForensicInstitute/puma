@@ -1,5 +1,5 @@
 """
-Demo of Puma on iOS: a few actions in Safari, Contacts and Apple Maps.
+Demo of Puma on iOS: a few actions in Safari, Contacts, Apple Maps, Calendar and Reminders.
 
 Run from the root of the repository, with an Appium server running:
 
@@ -7,17 +7,22 @@ Run from the root of the repository, with an Appium server running:
     python -m demo.ios_demo --udid <simulator udid>
     # on a real device (see the README for preparing the device)
     python -m demo.ios_demo --udid <device udid> --team-id <team id> --wda-bundle-id com.<you>.WebDriverAgentRunner
+    # only some of the apps
+    python -m demo.ios_demo --udid <udid> --apps calendar reminders
 
-Everything the demo creates is cleaned up afterwards: the bookmark and the contact are deleted, and the simulated
-location is reset. A new tab with example.com stays open in Safari.
+Everything the demo creates is cleaned up afterwards: the bookmark, contact, event, reminders and list are deleted, and
+the simulated location is reset. A new tab with example.com stays open in Safari.
 """
 import argparse
 import time
+from datetime import datetime, timedelta
 
 from geopy import Point
 
 from puma.apps.ios.apple_maps.apple_maps import AppleMaps, TransportType
+from puma.apps.ios.calendar.calendar import Calendar
 from puma.apps.ios.contacts.contacts import Contacts
+from puma.apps.ios.reminders.reminders import Reminders
 from puma.apps.ios.safari.safari import Safari, PrivateBrowsingLockedError
 
 
@@ -91,17 +96,58 @@ def maps_demo(udid: str, capabilities: dict):
             print(f"Could not reset the location: {e}")
 
 
+def calendar_demo(udid: str, capabilities: dict):
+    calendar = Calendar(udid, desired_capabilities=capabilities)
+    tomorrow = (datetime.now() + timedelta(days=1)).replace(hour=14, minute=30, second=0, microsecond=0)
+    say("Calendar: plan a meeting tomorrow at 14:30")
+    calendar.add_event("Puma demo meeting", tomorrow, tomorrow + timedelta(hours=1), location="NFI The Hague")
+    say(f"Calendar: details read back from the screen: {calendar.get_event_details('Puma demo meeting')}")
+    time.sleep(2)
+    say("Calendar: delete the meeting")
+    calendar.delete_event("Puma demo meeting")
+
+
+def reminders_demo(udid: str, capabilities: dict):
+    reminders = Reminders(udid, desired_capabilities=capabilities)
+    due = (datetime.now() + timedelta(days=2)).replace(hour=9, minute=0)
+    say("Reminders: add a reminder, and one with notes and a due date")
+    reminders.add_reminder("Puma demo: buy milk")
+    reminders.add_reminder("Puma demo: dentist", notes="Bring insurance card", due=due, due_time=True)
+    say(f"Reminders: reminders read back from the screen: {reminders.get_reminders()}")
+    say("Reminders: complete one, delete the other")
+    reminders.complete_reminder("Puma demo: buy milk")
+    reminders.delete_reminder("Puma demo: dentist")
+    say("Reminders: make a shopping list")
+    reminders.add_list("Puma demo groceries")
+    reminders.add_reminder("Apples", list_name="Puma demo groceries")
+    reminders.add_reminder("Bread", list_name="Puma demo groceries")
+    say(f"Reminders: the list: {reminders.get_reminders(list_name='Puma demo groceries')}")
+    time.sleep(2)
+    say("Reminders: clean up the list")
+    reminders.delete_list("Puma demo groceries")
+
+
+DEMOS = {
+    "safari": safari_demo,
+    "contacts": contacts_demo,
+    "maps": maps_demo,
+    "calendar": calendar_demo,
+    "reminders": reminders_demo,
+}
+
+
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Demo of Puma on iOS (Safari, Contacts and Apple Maps)")
+    parser = argparse.ArgumentParser(description="Demo of Puma on iOS (Safari, Contacts, Apple Maps, Calendar and Reminders)")
     parser.add_argument("--udid", required=True,
                         help="udid of the device, see `xcrun simctl list devices booted` or `xcrun xctrace list devices`")
     parser.add_argument("--team-id", help="real devices only: your Apple developer team id, used to sign WebDriverAgent")
     parser.add_argument("--wda-bundle-id", help="real devices only: a bundle id of your own for WebDriverAgent, "
                                                 "needed with a free Apple developer account")
+    parser.add_argument("--apps", nargs="+", choices=DEMOS.keys(), default=list(DEMOS.keys()),
+                        help="the apps to demo, all apps by default")
     args = parser.parse_args()
 
     capabilities = get_capabilities(args)
-    safari_demo(args.udid, capabilities)
-    contacts_demo(args.udid, capabilities)
-    maps_demo(args.udid, capabilities)
+    for app in args.apps:
+        DEMOS[app](args.udid, capabilities)
     say("Done!")
