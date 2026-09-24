@@ -270,7 +270,8 @@ class StateGraph(metaclass=StateGraphMeta):
                 return
             previous_active_handlers = active_handler_ids
             for popup_handler in active_handlers:
-                popup_handler.dismiss_popup(self.driver)
+                if popup_handler.is_popup_window(self.driver):
+                    popup_handler.dismiss_popup(self.driver)
 
     def _search_state(self, expected_state: State):
         current_states = [s for s in self.states if s.validate(self.driver)]

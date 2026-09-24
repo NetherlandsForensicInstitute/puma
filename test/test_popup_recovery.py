@@ -2,6 +2,7 @@ import unittest
 from unittest.mock import Mock
 
 from puma.state_graph.generic_xpaths import PERMISSIONS_POPUP_ALLOW_FOREGROUND_BUTTON
+from puma.state_graph.popup_handler import simple_popup_handler
 from puma.state_graph.state import SimpleState
 from puma.state_graph.state_graph import StateGraph
 
@@ -36,6 +37,22 @@ class PersistentPopupDriver(PopupDriver):
         self.clicks.append(xpath)
 
 
+class CascadingPopupDriver(PopupDriver):
+    def __init__(self):
+        super().__init__()
+        self.permission_visible = False
+        self.visible_popups = {'//first-popup', '//second-popup'}
+
+    def is_present(self, xpath):
+        return xpath in self.visible_popups or super().is_present(xpath)
+
+    def click(self, xpath):
+        if xpath not in self.visible_popups:
+            raise AssertionError(f'Cannot click a popup that has disappeared: {xpath}')
+        self.clicks.append(xpath)
+        self.visible_popups.clear()
+
+
 class PopupRecoveryApplication(StateGraph):
     main_state = SimpleState(['//state'], initial_state=True)
 
@@ -66,6 +83,19 @@ class TestPopupRecovery(unittest.TestCase):
         application.gtl_logger.warning.assert_called_once_with(
             'Popup handlers made no progress; stopping popup recovery'
         )
+
+    def test_recovery_rechecks_popups_after_each_dismissal(self):
+        driver = CascadingPopupDriver()
+        application = PopupRecoveryApplication(driver)
+        application.add_popup_handlers(
+            simple_popup_handler('//first-popup'),
+            simple_popup_handler('//second-popup'),
+        )
+
+        application.recover_state(application.main_state)
+
+        self.assertEqual(driver.clicks, ['//first-popup'])
+        self.assertFalse(driver.visible_popups)
 
 
 if __name__ == '__main__':
