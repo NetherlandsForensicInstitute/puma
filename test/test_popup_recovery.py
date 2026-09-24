@@ -37,6 +37,18 @@ class PersistentPopupDriver(PopupDriver):
         self.clicks.append(xpath)
 
 
+class SequentialPermissionDriver(PopupDriver):
+    def __init__(self):
+        super().__init__()
+        self.permission_clicks = 0
+
+    def click(self, xpath):
+        self.clicks.append(xpath)
+        if xpath == PERMISSIONS_POPUP_ALLOW_FOREGROUND_BUTTON:
+            self.permission_clicks += 1
+            self.permission_visible = self.permission_clicks < 2
+
+
 class CascadingPopupDriver(PopupDriver):
     def __init__(self):
         super().__init__()
@@ -79,10 +91,19 @@ class TestPopupRecovery(unittest.TestCase):
 
         application.recover_state(application.main_state)
 
-        self.assertEqual(driver.clicks, [PERMISSIONS_POPUP_ALLOW_FOREGROUND_BUTTON])
+        self.assertEqual(driver.clicks, [PERMISSIONS_POPUP_ALLOW_FOREGROUND_BUTTON] * 5)
         application.gtl_logger.warning.assert_called_once_with(
-            'Popup handlers made no progress; stopping popup recovery'
+            'Popup recovery reached its retry limit'
         )
+
+    def test_recovery_handles_sequential_permissions_with_one_handler(self):
+        driver = SequentialPermissionDriver()
+        application = PopupRecoveryApplication(driver)
+
+        application.recover_state(application.main_state)
+
+        self.assertEqual(driver.clicks, [PERMISSIONS_POPUP_ALLOW_FOREGROUND_BUTTON] * 2)
+        self.assertFalse(driver.permission_visible)
 
     def test_recovery_rechecks_popups_after_each_dismissal(self):
         driver = CascadingPopupDriver()

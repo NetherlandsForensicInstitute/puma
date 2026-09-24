@@ -258,20 +258,21 @@ class StateGraph(metaclass=StateGraphMeta):
 
     def _handle_popups(self):
         popup_handlers = known_popups + getattr(self, 'app_popups', [])
-        previous_active_handlers = set()
-        while True:
+        max_popup_passes = len(popup_handlers) + 1
+        for _ in range(max_popup_passes):
             active_handlers = [handler for handler in popup_handlers
                                if handler.is_popup_window(self.driver)]
-            active_handler_ids = {id(handler) for handler in active_handlers}
             if not active_handlers:
                 return
-            if active_handler_ids == previous_active_handlers:
-                self.gtl_logger.warning('Popup handlers made no progress; stopping popup recovery')
-                return
-            previous_active_handlers = active_handler_ids
+            dismissed = False
             for popup_handler in active_handlers:
                 if popup_handler.is_popup_window(self.driver):
                     popup_handler.dismiss_popup(self.driver)
+                    dismissed = True
+            if not dismissed:
+                return
+        if any(handler.is_popup_window(self.driver) for handler in popup_handlers):
+            self.gtl_logger.warning('Popup recovery reached its retry limit')
 
     def _search_state(self, expected_state: State):
         current_states = [s for s in self.states if s.validate(self.driver)]
