@@ -12,9 +12,13 @@ Run from the root of the repository, with an Appium server running:
 
 Everything the demo creates is cleaned up afterwards: the bookmark, contact, event, reminders and list are deleted, and
 the simulated location is reset. A new tab with example.com stays open in Safari.
+
+On a real device, the screen would lock during the demo, and iOS does not start apps on a locked device. Therefore
+Auto-Lock is set to Never during the demo, and restored to its original value afterwards.
 """
 import argparse
 import time
+from contextlib import contextmanager
 from datetime import datetime, timedelta
 
 from geopy import Point
@@ -24,6 +28,7 @@ from puma.apps.ios.calendar.calendar import Calendar
 from puma.apps.ios.contacts.contacts import Contacts
 from puma.apps.ios.reminders.reminders import Reminders
 from puma.apps.ios.safari.safari import Safari, PrivateBrowsingLockedError
+from puma.apps.ios.settings.settings import Settings
 
 
 def say(text):
@@ -45,6 +50,30 @@ def get_capabilities(args) -> dict:
     if args.wda_bundle_id:
         capabilities["appium:updatedWDABundleId"] = args.wda_bundle_id
     return capabilities
+
+
+def describe_auto_lock(seconds) -> str:
+    return 'Never' if seconds is None else f'{seconds} seconds'
+
+
+@contextmanager
+def screen_stays_on(udid: str, capabilities: dict):
+    """
+    Keeps the screen of a real device on during the demo, by setting Auto-Lock to Never. Afterwards, Auto-Lock is
+    restored to its original value, also when the demo fails. Simulators do not lock, so nothing changes on a simulator.
+    """
+    settings = Settings(udid, desired_capabilities=capabilities)
+    if settings.driver.is_simulator():
+        yield
+        return
+    original = settings.get_auto_lock()
+    say(f"Settings: Auto-Lock is {describe_auto_lock(original)}, setting it to Never during the demo")
+    settings.set_auto_lock(None)
+    try:
+        yield
+    finally:
+        say(f"Settings: restoring Auto-Lock to {describe_auto_lock(original)}")
+        settings.set_auto_lock(original)
 
 
 def safari_demo(udid: str, capabilities: dict):
@@ -148,6 +177,7 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     capabilities = get_capabilities(args)
-    for app in args.apps:
-        DEMOS[app](args.udid, capabilities)
+    with screen_stays_on(args.udid, capabilities):
+        for app in args.apps:
+            DEMOS[app](args.udid, capabilities)
     say("Done!")

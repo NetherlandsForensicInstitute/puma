@@ -18,6 +18,7 @@ from puma.apps.ios.calendar.calendar import Calendar
 from puma.apps.ios.contacts.contacts import Contacts
 from puma.apps.ios.reminders.reminders import Reminders
 from puma.apps.ios.safari.safari import Safari
+from puma.apps.ios.settings.settings import Settings
 
 all_app_actions = [
     GoogleCamera,
@@ -34,7 +35,8 @@ all_app_actions = [
     Calendar,
     Contacts,
     Reminders,
-    Safari
+    Safari,
+    Settings
 ]
 APP_MODULE = 'puma.apps'
 

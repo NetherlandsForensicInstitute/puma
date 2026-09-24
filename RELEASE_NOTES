@@ -1,6 +1,6 @@
 Version 5.1.0
 -------------
-24. iOS: Add iOS support, and support for Safari, Apple Maps, Contacts, Calendar and Reminders on iOS
+24. iOS: Add iOS support, and support for Safari, Apple Maps, Contacts, Calendar, Reminders and Settings on iOS
 204. Tutorial: Create new tutorial files
 213. Teleguard: Fix typo in variable name
 199. WhatsApp: Add view contact profile picture functionality

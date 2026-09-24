@@ -87,6 +87,12 @@ class IOSPumaDriver(PumaDriver):
     def bundle_id(self) -> str:
         return self.app_package
 
+    def is_simulator(self) -> bool:
+        """
+        :return: True if the device is a simulator, False if it is a real device.
+        """
+        return bool(self.execute_script('mobile: deviceInfo').get('isSimulator'))
+
     @staticmethod
     def _default_options() -> XCUITestOptions:
         return get_ios_default_options()
