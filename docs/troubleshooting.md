@@ -137,7 +137,8 @@ can allow this.
 ### iOS: "Unable to launch ... because the device was not, or could not be, unlocked"
 
 iOS does not start apps on a locked device. Unlock the device, and consider setting Auto-Lock to Never (Settings >
-Display & Brightness) while running Puma.
+Display & Brightness) while running Puma. This can also be done with Puma, see
+[Settings](../puma/apps/ios/settings/README.md).
 
 ### iOS: Developer Mode is not shown in the settings
 

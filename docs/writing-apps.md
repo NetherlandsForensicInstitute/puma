@@ -302,7 +302,8 @@ class ExampleIOSApp(StateGraph):
 ```
 
 Use Appium Inspector with the capabilities `platformName: iOS`, `appium:automationName: XCUITest` and `appium:udid` to
-inspect the UI hierarchy. See the [iOS apps](../puma/apps/ios) for complete examples.
+inspect the UI hierarchy. See the [iOS apps](../puma/apps/ios) for complete examples, such as
+[Settings](../puma/apps/ios/settings/settings.py).
 
 ## How to write Appium actions
 Appium is a framework for testing applications, based on Selenium. In this project, we use Appium to execute actions on the device.

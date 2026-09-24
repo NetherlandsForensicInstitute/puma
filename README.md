@@ -56,6 +56,11 @@ configure_default_logging()  # Use Puma's logging configuration. You can also im
 from puma.apps.android.google_chrome.google_chrome import GoogleChrome
 android_phone = GoogleChrome("emulator-5554")
 android_phone.visit_url_new_tab("example.com")
+
+# iOS
+from puma.apps.ios.settings.settings import Settings
+iphone = Settings("A1B2C3D4-E5F6-4A7B-8C9D-0E1F2A3B4C5D")
+iphone.get_auto_lock()
 ```
 
 See [using Puma](docs/usage.md) for more examples, and how navigation, contexts and verification of actions work. For an
@@ -79,6 +84,7 @@ example implementations. Each version of Puma supports one version of each app, 
 | [TeleGuard](puma/apps/android/teleguard/README.md)              | Android  | 4.0.9                 |
 | [WhatsApp](puma/apps/android/whatsapp/README.md)                | Android  | 2.26.2.70             |
 | [WhatsApp for Business](puma/apps/android/whatsapp_business/README.md) | Android  | 2.25.24.78            |
+| [Settings](puma/apps/ios/settings/README.md) (real devices only) | iOS      | iOS 26.6              |
 
 ## Documentation
 

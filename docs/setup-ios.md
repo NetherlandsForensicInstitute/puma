@@ -41,7 +41,17 @@ xcrun simctl list devices booted
 7. Appium installs WebDriverAgent on the device, which needs to be signed with your Apple developer account. Pass your
    team id and signing identity as desired capabilities, see
    [the Appium documentation on real device configuration](https://appium.github.io/appium-xcuitest-driver/latest/preparation/real-device-config/).
-   With a free Apple ID, WebDriverAgent also needs a bundle id of your own.
+   With a free Apple ID, WebDriverAgent also needs a bundle id of your own:
+
+   ```python
+   from puma.apps.ios.settings.settings import Settings
+
+   phone = Settings("00008110-000A1B2C3D4E5F6G", desired_capabilities={
+       "appium:xcodeOrgId": "<your team id>",
+       "appium:xcodeSigningId": "Apple Development",
+       "appium:updatedWDABundleId": "com.<your name>.WebDriverAgentRunner",  # free Apple ID only
+   })
+   ```
 
    Your team id is the `OU` of your certificate, shown in Xcode (Settings > Accounts), or with
    `security find-certificate -c "Apple Development" -p | openssl x509 -noout -subject`.
@@ -69,4 +79,4 @@ Some iOS specifics to be aware of:
   edge of the screen.
 - System pop-ups such as permission requests are handled automatically, by granting the permission.
 - Screen recording (`start_recording()`) requires [ffmpeg](installation.md#optional-ffmpeg) on the Mac running Appium.
-- Apps built into iOS change with iOS updates, so their supported version is the iOS version.
+- Apps built into iOS (Settings) change with iOS updates, so their supported version is the iOS version.
