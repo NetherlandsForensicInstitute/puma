@@ -58,13 +58,16 @@ android_phone = GoogleChrome("emulator-5554")
 android_phone.visit_url_new_tab("example.com")
 
 # iOS
-from puma.apps.ios.settings.settings import Settings
-iphone = Settings("A1B2C3D4-E5F6-4A7B-8C9D-0E1F2A3B4C5D")
-iphone.get_auto_lock()
+from puma.apps.ios.messages.messages import Messages
+iphone = Messages("A1B2C3D4-E5F6-4A7B-8C9D-0E1F2A3B4C5D")
+iphone.send_message("Hello from Puma!", conversation="Bob")
 ```
 
-See [using Puma](docs/usage.md) for more examples, and how navigation, contexts and verification of actions work. For an
-extensive step-by-step guide on how to use (and develop) Puma, see the [Puma Tutorial](tutorial/2026/exercises.md).
+See [using Puma](docs/usage.md) for more examples, and how navigation, contexts and verification of actions work. For a
+demo of Puma on iOS, run `python -m demo.ios_demo --help` from the root of the repository. The demo sends and reads
+messages in Messages. On real devices, it turns off Auto-Lock in Settings during the demo, and restores it afterwards.
+For an extensive step-by-step guide on how to use (and develop) Puma, see the
+[Puma Tutorial](tutorial/2026/exercises.md).
 
 ## Supported apps
 
@@ -84,6 +87,7 @@ example implementations. Each version of Puma supports one version of each app, 
 | [TeleGuard](puma/apps/android/teleguard/README.md)              | Android  | 4.0.9                 |
 | [WhatsApp](puma/apps/android/whatsapp/README.md)                | Android  | 2.26.2.70             |
 | [WhatsApp for Business](puma/apps/android/whatsapp_business/README.md) | Android  | 2.25.24.78            |
+| [Messages](puma/apps/ios/messages/README.md)                    | iOS      | iOS 26.6              |
 | [Settings](puma/apps/ios/settings/README.md) (real devices only) | iOS      | iOS 26.6              |
 
 ## Documentation

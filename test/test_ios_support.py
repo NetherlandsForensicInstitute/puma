@@ -6,6 +6,7 @@ from unittest.mock import Mock, patch
 
 from appium.webdriver.common.appiumby import AppiumBy
 from appium.webdriver.webdriver import WebDriver
+from geopy import Point
 from selenium.common import WebDriverException
 
 from puma.state_graph.locators import Locator, accessibility_id, ios_predicate, ios_class_chain, to_by_value
