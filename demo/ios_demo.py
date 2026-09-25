@@ -21,8 +21,6 @@ import time
 from contextlib import contextmanager
 from datetime import datetime, timedelta
 
-from geopy import Point
-
 from puma.apps.ios.apple_maps.apple_maps import AppleMaps, TransportType
 from puma.apps.ios.calendar.calendar import Calendar
 from puma.apps.ios.contacts.contacts import Contacts
@@ -105,22 +103,23 @@ def contacts_demo(udid: str, capabilities: dict):
 def maps_demo(udid: str, capabilities: dict):
     maps = AppleMaps(udid, desired_capabilities=capabilities)
     try:
-        say("Maps: move the device to the Louvre with the route simulator")
-        route = maps.get_route_simulator()
-        route.update_speed(0)
-        route.execute_route_with_points([Point(48.8606, 2.3376)])
-        time.sleep(2)
-        route.stop_route()
         say("Maps: search for the Eiffel Tower")
         maps.search_place("Eiffel Tower")
         time.sleep(2)
-        say("Maps: cycling directions to the Eiffel Tower")
-        maps.get_directions("Eiffel Tower", TransportType.BIKE)
+        say("Maps: cycle from the Louvre to the Eiffel Tower (4 km), at 100 km/h to keep the demo short")
+        maps.start_route("Louvre, Paris", "Eiffel Tower, Paris", 100, TransportType.BIKE)
+        route = maps.get_route_simulator()
+        time.sleep(15)
+        say("Maps: speeding up to 250 km/h")
+        route.update_speed(250)
+        arrived = route.wait_until_route_finished(timeout=90)
+        say("Maps: arrived at the Eiffel Tower" if arrived else "Maps: not there yet, stopping the route")
+        time.sleep(3)
     finally:
         # on a real device, the simulated location stays active until it is reset
-        say("Maps: resetting the device location")
+        say("Maps: stopping the route and resetting the device location")
         try:
-            maps.driver.execute_script("mobile: resetSimulatedLocation")
+            maps.stop_route()
         except Exception as e:
             print(f"Could not reset the location: {e}")
 

@@ -1,6 +1,7 @@
 Version 5.1.0
 -------------
 24. iOS: Add iOS support, and support for Safari, Apple Maps, Contacts, Calendar, Reminders and Settings on iOS
+24. Route simulator: plan routes by bike and on foot as well, instead of always by car
 204. Tutorial: Create new tutorial files
 213. Teleguard: Fix typo in variable name
 199. WhatsApp: Add view contact profile picture functionality

@@ -11,6 +11,10 @@ from appium.webdriver.webdriver import WebDriver
 from geopy import Point
 from gpxpy.gpx import GPXTrackPoint
 
+# The OSRM servers of OpenStreetMap Germany (FOSSGIS), which have a routing profile per transport mode
+OSRM_URL = "https://routing.openstreetmap.de/routed-{transport_mode}/route/v1/driving/{start};{end}"
+TRANSPORT_MODES = ('car', 'bike', 'foot')
+
 
 class RouteSimulator:
     """
@@ -114,6 +118,8 @@ class RouteSimulator:
         :param start_visual_function: an optional method that will be called after the route is calculated, but before the route points are being updated,
         this can be used to start the directions in a navigation based application after the start location has been set.
         """
+        if transport_mode not in TRANSPORT_MODES:
+            raise ValueError(f"Unsupported transport mode '{transport_mode}', use one of {TRANSPORT_MODES}")
         config = dict(user_agent="Maps")
         cls = geopy.get_geocoder_for_service("nominatim")
         geocoder = cls(**config)
@@ -127,7 +133,7 @@ class RouteSimulator:
         end_lon = destination_location.longitude
         self.driver.set_location(start_lat, start_lon)
 
-        point_list = self._get_osm_route(start_lat, start_lon, end_lat, end_lon)
+        point_list = self._get_osm_route(start_lat, start_lon, end_lat, end_lon, transport_mode)
 
         if start_visual_function is not None:
             start_visual_function(destination, transport_mode)
@@ -145,9 +151,10 @@ class RouteSimulator:
         consumer_thread.start()
 
     @staticmethod
-    def _get_osm_route(start_lat, start_lon, end_lat, end_lon) -> List[Point]:
+    def _get_osm_route(start_lat, start_lon, end_lat, end_lon, transport_mode: str = 'car') -> List[Point]:
         # OSRM wants lon,lat (instead of lat,lon)
-        url = f"https://router.project-osrm.org/route/v1/driving/{start_lon},{start_lat};{end_lon},{end_lat}"
+        url = OSRM_URL.format(transport_mode=transport_mode, start=f"{start_lon},{start_lat}",
+                              end=f"{end_lon},{end_lat}")
         # params suggested by chatGPT, otherwise we don't get the full route
         params = {
             "overview": "full",  # full geometry of the route
@@ -164,6 +171,26 @@ class RouteSimulator:
         route = data["routes"][0]["geometry"]["coordinates"]
         # Convert from (lon, lat) to Points containing (lat, lon)
         return [Point(lat, lon) for lon, lat in route]
+
+    def is_route_finished(self) -> bool:
+        """
+        :return: True if no route is being traveled: the end of the route has been reached, the route was stopped, or
+        no route was started. After reaching the end, the device stays at the last location until stop_route() is called.
+        """
+        return not self._next_locations
+
+    def wait_until_route_finished(self, timeout: float = None) -> bool:
+        """
+        Waits until the end of the route has been reached.
+        :param timeout: (optional) the maximum number of seconds to wait. By default, waits until the route is finished.
+        :return: True if the route is finished, False if the timeout expired first.
+        """
+        start = time.time()
+        while not self.is_route_finished():
+            if timeout is not None and time.time() - start > timeout:
+                return False
+            sleep(1)
+        return True
 
     def stop_route(self):
         """

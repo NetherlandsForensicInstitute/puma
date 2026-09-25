@@ -42,6 +42,16 @@ class TestAppleMaps(unittest.TestCase):
         selected = self.alice.driver.get_element(transport_type_button(TransportType.BIKE.value)).get_attribute('value')
         self.assertEqual('1', selected)
 
+    def test_start_route(self):
+        route = self.alice.get_route_simulator()
+        try:
+            self.alice.start_route("Louvre, Paris", "Eiffel Tower, Paris", 300, TransportType.BIKE)
+            self.assertFalse(route.is_route_finished())
+            # the route is about 4 km, which takes less than a minute at 300 km/h
+            self.assertTrue(route.wait_until_route_finished(timeout=90))
+        finally:
+            self.alice.stop_route()
+
 
 if __name__ == '__main__':
     unittest.main()

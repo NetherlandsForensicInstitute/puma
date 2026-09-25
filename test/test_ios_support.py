@@ -6,6 +6,7 @@ from unittest.mock import Mock, patch
 
 from appium.webdriver.common.appiumby import AppiumBy
 from appium.webdriver.webdriver import WebDriver
+from geopy import Point
 from selenium.common import WebDriverException
 
 from puma.state_graph.locators import Locator, accessibility_id, ios_predicate, ios_class_chain, to_by_value
@@ -115,7 +116,7 @@ class TestPumaDriverPlatforms(unittest.TestCase):
 
 
 class TestWdaPorts(unittest.TestCase):
-    SIMULATOR = 'C14C2402-9144-4BC2-9866-A1DB5AFAD376'
+    SIMULATOR = 'A1B2C3D4-E5F6-4A7B-8C9D-0E1F2A3B4C5D'
     DEVICE = '00008130-001A2B3C4D5E6F70'
 
     def test_ports_are_stable_and_in_range(self):
@@ -270,6 +271,34 @@ class TestRouteSimulator(unittest.TestCase):
         self.assertIs(appium_driver, RouteSimulator(appium_driver, 0).driver)
         self.assertIs(appium_driver, RouteSimulator(puma_driver, 0).driver)
         self.assertIs(appium_driver, RouteSimulator(app, 0).driver)
+
+    @patch('puma.utils.route_simulator.requests.get')
+    def test_osm_route_uses_transport_mode(self, get):
+        get.return_value.json.return_value = {'routes': [{'geometry': {'coordinates': [[2.3, 48.8], [2.4, 48.9]]}}]}
+        points = RouteSimulator._get_osm_route(48.8, 2.3, 48.9, 2.4, 'bike')
+        self.assertIn('/routed-bike/', get.call_args[0][0])
+        self.assertIn('2.3,48.8;2.4,48.9', get.call_args[0][0])
+        self.assertEqual([(48.8, 2.3), (48.9, 2.4)], [(p.latitude, p.longitude) for p in points])
+
+    def test_unsupported_transport_mode(self):
+        with self.assertRaises(ValueError):
+            RouteSimulator(Mock(spec=WebDriver), 0).execute_route_with_queries('a', 'b', 'boat')
+
+    def test_route_finished(self):
+        simulator = RouteSimulator(Mock(spec=WebDriver), 0)
+        self.assertTrue(simulator.is_route_finished())
+        simulator._next_locations = [Point(48.8, 2.3)]
+        self.assertFalse(simulator.is_route_finished())
+        self.assertFalse(simulator.wait_until_route_finished(timeout=0))
+        simulator.stop_route()
+        self.assertTrue(simulator.wait_until_route_finished(timeout=0))
+
+    def test_apple_maps_route_rejects_transit(self):
+        from puma.apps.ios.apple_maps.apple_maps import AppleMaps, TransportType
+        maps = Mock()
+        with self.assertRaises(ValueError):
+            AppleMaps.start_route(maps, 'a', 'b', 50, TransportType.TRANSIT)
+        maps.route_simulator.execute_route_with_queries.assert_not_called()
 
 
 if __name__ == '__main__':

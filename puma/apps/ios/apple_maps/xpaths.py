@@ -15,6 +15,9 @@ TRANSPORT_TYPE_PICKER = accessibility_id('TransportTypePickerSegementedControl')
 WAYPOINT_LIST = accessibility_id('RoutePlanningWaypointListViewTableView')
 ROUTE = accessibility_id('RoutePlanningCell')
 GO_BUTTON = ios_predicate('type == "XCUIElementTypeButton" AND (label ==[c] "Go" OR name CONTAINS[c] "GoButton")')
+# Navigation, only available on real devices
+NAVIGATION_TRAY = accessibility_id('NavTray')
+END_ROUTE_BUTTON = ios_predicate('type == "XCUIElementTypeButton" AND label == "End Route"')
 # Popups
 GETTING_THERE_SAFELY_ALERT = '//XCUIElementTypeAlert[@name="Getting There Safely"]'
 GETTING_THERE_SAFELY_OK = '//XCUIElementTypeAlert[@name="Getting There Safely"]//XCUIElementTypeButton[@name="OK"]'
