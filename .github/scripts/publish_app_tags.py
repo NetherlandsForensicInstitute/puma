@@ -16,6 +16,7 @@ from puma.apps.android.whatsapp_business.whatsapp_business import WhatsappBusine
 from puma.apps.ios.apple_maps.apple_maps import AppleMaps
 from puma.apps.ios.calendar.calendar import Calendar
 from puma.apps.ios.contacts.contacts import Contacts
+from puma.apps.ios.messages.messages import Messages
 from puma.apps.ios.reminders.reminders import Reminders
 from puma.apps.ios.safari.safari import Safari
 from puma.apps.ios.settings.settings import Settings
@@ -34,6 +35,7 @@ all_app_actions = [
     AppleMaps,
     Calendar,
     Contacts,
+    Messages,
     Reminders,
     Safari,
     Settings

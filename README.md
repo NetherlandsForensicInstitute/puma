@@ -89,6 +89,7 @@ example implementations. Each version of Puma supports one version of each app, 
 | [Apple Maps](puma/apps/ios/apple_maps/README.md)                | iOS      | iOS 26.2              |
 | [Calendar](puma/apps/ios/calendar/README.md)                    | iOS      | iOS 26.2              |
 | [Contacts](puma/apps/ios/contacts/README.md)                    | iOS      | iOS 26.2              |
+| [Messages](puma/apps/ios/messages/README.md)                    | iOS      | iOS 26.6              |
 | [Reminders](puma/apps/ios/reminders/README.md)                  | iOS      | iOS 26.2              |
 | [Safari](puma/apps/ios/safari/README.md)                        | iOS      | iOS 26.2              |
 | [Settings](puma/apps/ios/settings/README.md) (real devices only) | iOS      | iOS 26.6              |
