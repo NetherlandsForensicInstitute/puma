@@ -46,9 +46,9 @@ xcrun simctl list devices booted
    With a free Apple ID, WebDriverAgent also needs a bundle id of your own:
 
    ```python
-   from puma.apps.ios.messages.messages import Messages
+   from puma.apps.ios.safari.safari import Safari
 
-   phone = Messages("00008110-000A1B2C3D4E5F6G", desired_capabilities={
+   phone = Safari("00008110-000A1B2C3D4E5F6G", desired_capabilities={
        "appium:xcodeOrgId": "<your team id>",
        "appium:xcodeSigningId": "Apple Development",
        "appium:updatedWDABundleId": "com.<your name>.WebDriverAgentRunner",  # free Apple ID only
@@ -83,4 +83,5 @@ Some iOS specifics to be aware of:
   edge of the screen.
 - System pop-ups such as permission requests are handled automatically, by granting the permission.
 - Screen recording (`start_recording()`) requires [ffmpeg](installation.md#optional-ffmpeg) on the Mac running Appium.
-- Apps built into iOS (Settings, Messages) change with iOS updates, so their supported version is the iOS version.
+- Apps built into iOS (Safari, Contacts, Apple Maps) change with iOS updates, so their supported version is the iOS
+  version.
