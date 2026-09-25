@@ -14,7 +14,7 @@ the address bar at the bottom of the screen.
 
 ```python
 from puma.apps.ios.safari.safari import Safari
-phone = Safari("C14C2402-9144-4BC2-9866-A1DB5AFAD376")
+phone = Safari("A1B2C3D4-E5F6-4A7B-8C9D-0E1F2A3B4C5D")
 ```
 
 ### Navigating the UI

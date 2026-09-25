@@ -10,7 +10,7 @@ Calendar is part of iOS, so its version is the iOS version.
 
 ```python
 from puma.apps.ios.calendar.calendar import Calendar
-phone = Calendar("C14C2402-9144-4BC2-9866-A1DB5AFAD376")
+phone = Calendar("A1B2C3D4-E5F6-4A7B-8C9D-0E1F2A3B4C5D")
 ```
 
 ### Navigating the UI

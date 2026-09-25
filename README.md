@@ -59,7 +59,7 @@ android_phone.visit_url_new_tab("example.com")
 
 # iOS
 from puma.apps.ios.safari.safari import Safari
-iphone = Safari("C14C2402-9144-4BC2-9866-A1DB5AFAD376")
+iphone = Safari("A1B2C3D4-E5F6-4A7B-8C9D-0E1F2A3B4C5D")
 iphone.visit_url_new_tab("example.com")
 ```
 
