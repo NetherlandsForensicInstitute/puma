@@ -808,7 +808,7 @@ class Messages(StateGraph):
         """
         Shares the location of the device in a conversation, for a while. The other people in the conversation can
         follow the location while it is shared. To share a location other than the real location of the device, set
-        the location first, e.g. with set_location() of the Appium driver. Only available on real devices.
+        the location first, e.g. with the route simulator of AppleMaps. Only available on real devices.
 
         :param duration: How long the location is shared.
         :param conversation: Optional. The name of the conversation. Defaults to the conversation that is open.

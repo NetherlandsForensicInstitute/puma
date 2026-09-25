@@ -122,7 +122,7 @@ Photos, audio messages and locations are included in `get_messages`, with an emp
   photos with `xcrun simctl addmedia <udid> <photo>`.
 - On a simulator, audio messages are recorded without sound.
 - Sharing the location is only available on real devices. To share another location than the real location of the
-  device, set the location first, e.g. with `set_location()` of the Appium driver. Sending a
+  device, set the location first, e.g. with the route simulator of [Apple Maps](../apple_maps/README.md). Sending a
   fixed location (instead of sharing it for a while) is not available in Messages on iOS 26.
 
 ## Delivery status
