@@ -1,6 +1,6 @@
 from puma.apps.android.slack.xpaths import HOME_HISTORY_BUTTON, HOME_WORKSPACE_SELECTOR, HOME_CHANNEL_BUTTON, \
     CHAT_TITLE, \
-    CHAT_BACK_BUTTON, CHAT_TEXT_INPUT
+    CHAT_BACK_BUTTON, CHAT_TEXT_INPUT, HOME_DIRECT_MESSAGE_BUTTON
 from puma.state_graph.action import action
 from puma.state_graph.puma_driver import PumaDriver
 from puma.state_graph.state import SimpleState, ContextualState, State
@@ -16,10 +16,10 @@ class SlackChatState(SimpleState, ContextualState):
         super().__init__([CHAT_BACK_BUTTON, CHAT_TEXT_INPUT],
                          parent_state=parent_state)
 
-    def validate_context(self, driver: PumaDriver, channel: str = None) -> bool:
-        if not channel:
-            return True
-        return driver.is_present(CHAT_TITLE.format(chat_title=channel))
+    def validate_context(self, driver: PumaDriver, channel: str = None, direct_message: str = None) -> bool:
+        if channel or direct_message:
+            return driver.is_present(CHAT_TITLE.format(chat_title=(channel or direct_message)))
+        return True
 
     @staticmethod
     def go_to_chat(driver: PumaDriver, channel: str = None, direct_message: str = None):
@@ -28,7 +28,7 @@ class SlackChatState(SimpleState, ContextualState):
         if channel:
             driver.click(HOME_CHANNEL_BUTTON.format(channel_name=channel))
         elif direct_message:
-            driver.click(HOME_HISTORY_BUTTON.format(direct_message=direct_message))
+            driver.click(HOME_DIRECT_MESSAGE_BUTTON.format(direct_message=direct_message))
 
 
 class Slack(StateGraph):
@@ -51,6 +51,6 @@ class Slack(StateGraph):
     home_state.to(channel_state, SlackChatState.go_to_chat)
 
     @action(channel_state)
-    def send_message(self, message: str, channel: str = None):
+    def send_message(self, message: str, channel: str = None, direct_message: str = None):
         self.driver.send_keys(CHAT_TEXT_INPUT, message)
         self.driver.press_enter()
