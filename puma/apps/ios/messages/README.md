@@ -137,8 +137,9 @@ iOS only shows the status of the last message sent from the device. For other me
 
 ## Groups
 
-> **TODO:** the group actions have not been verified on a device yet, as that needs a group of people with iMessage
-> that can receive test messages. They are built on the standard texts of iOS 26 (e.g. "Change Name and Photo" and
+> **TODO:** most group actions have not been verified on a device yet, as that needs a group of people with iMessage
+> that can receive test messages. Verified on a device: selecting multiple recipients for a new group (without sending),
+> and reading the messages of a group conversation, with the sender of each message. They are built on the standard texts of iOS 26 (e.g. "Change Name and Photo" and
 > "Leave this Conversation"), and raise a `MessagesError` when an element is not found. Run `test_groups` in
 > `test_scripts/test_messages.py` with three test contacts to verify them, and adjust the locators marked with TODO in
 > `xpaths.py` where needed.

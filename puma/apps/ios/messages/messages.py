@@ -217,10 +217,13 @@ def _close_new_message(driver: PumaDriver):
 
 def _enter_recipient(driver: PumaDriver, recipient: str):
     """
-    Enters the recipient of a new message: a contact, selected from the suggestions, or a phone number or email address.
+    Enters a recipient of a new message: a contact, selected from the suggestions, or a phone number or email address.
+    The recipients already entered are kept, so this can be called for each recipient of a group conversation.
     """
     driver.gtl_logger.info(f'Entering recipient "{recipient}"')
-    driver.send_keys(NEW_MESSAGE_RECIPIENT_FIELD, recipient)
+    # the field is not cleared, as that would remove the recipients already entered
+    driver.click(NEW_MESSAGE_RECIPIENT_FIELD)
+    driver.driver.switch_to.active_element.send_keys(recipient)
     sleep(2)
     if driver.is_present(recipient_suggestion(recipient)):
         driver.gtl_logger.info(f'Selecting contact "{recipient}" from the suggestions')
