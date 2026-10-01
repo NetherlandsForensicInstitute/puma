@@ -1,6 +1,6 @@
 import unittest
 
-from puma.apps.ios.messages.messages import Messages, MessagesError, Service
+from puma.apps.ios.messages.messages import Messages, MessagesError, Reaction, Service
 from puma.apps.ios.messages.xpaths import conversation_row
 
 # Fill in the udid below. Run `xcrun simctl list devices booted` (simulators) or `xcrun xctrace list devices`
@@ -15,6 +15,9 @@ CONVERSATION_B = "+1 (555) 564-8583"
 # Real devices only: the name of a conversation on the device that is not shown in the overview without scrolling, to
 # test searching. The simulator does not index messages, so searching finds nothing there.
 SEARCH_CONVERSATION = ""
+# Real devices only: an iMessage conversation with someone who shares read receipts, to test replying and read
+# receipts. Replying is not available on the simulator. The other person has to read the message during the test.
+REPLY_CONVERSATION = ""
 
 
 class TestMessages(unittest.TestCase):
@@ -71,6 +74,33 @@ class TestMessages(unittest.TestCase):
         # conversations that are not shown in the overview are opened by searching for them
         self.alice.get_messages(SEARCH_CONVERSATION)
         self.assertTrue(self.alice.go_to_state(self.alice.conversations_state))
+
+
+    def test_reactions(self):
+        self.alice.send_message("Puma test, react to me", conversation=CONVERSATION_A)
+        self.alice.react_to_message("Puma test, react to me", Reaction.HEART)
+        self.assertEqual([(None, Reaction.HEART)], self.alice.get_messages()[-1].reactions)
+        # a new reaction replaces the previous one
+        self.alice.react_to_message("Puma test, react to me", Reaction.THUMBS_UP)
+        self.assertEqual([(None, Reaction.THUMBS_UP)], self.alice.get_messages()[-1].reactions)
+
+    def test_delivered(self):
+        self.alice.send_message("Puma test, delivered?", conversation=CONVERSATION_A)
+        self.assertTrue(self.alice.is_message_marked_delivered("Puma test, delivered?"))
+        self.assertFalse(self.alice.is_message_marked_not_delivered("Puma test, delivered?"))
+        self.alice.send_message("Puma test, newer message")
+        # the status is only shown for the last message sent from this device
+        self.assertIsNone(self.alice.is_message_marked_delivered("Puma test, delivered?", implicit_wait=0))
+
+    def test_reply_and_read(self):
+        if self.alice.driver.is_simulator() or not REPLY_CONVERSATION:
+            self.skipTest('Replying needs a real device, and REPLY_CONVERSATION configured at the top of the script')
+        self.alice.send_message("Puma test, please read this", conversation=REPLY_CONVERSATION)
+        self.assertTrue(self.alice.is_message_marked_read("Puma test, please read this", implicit_wait=60))
+        self.alice.reply_to_message("Puma test, please read this", "Puma test, a reply")
+        reply = self.alice.get_messages()[-1]
+        self.assertEqual(("Puma test, a reply", True, "Puma test, please read this"),
+                         (reply.text, reply.is_reply, reply.reply_to))
 
 
 if __name__ == '__main__':

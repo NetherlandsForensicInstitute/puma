@@ -69,6 +69,37 @@ Each message has the service it was sent with: iMessage or SMS. For messages sen
 of the message. For received messages, the service is shown in the conversation only when it changes. When that is no
 longer on the screen, the service of the conversation (see `get_service`) is used. RCS messages are not recognized yet.
 
+## Replying and reacting
+
+```python
+from puma.apps.ios.messages.messages import Reaction
+
+phone.reply_to_message("Any plans this weekend?", "Perhaps a movie?", conversation="Bob Jansen")
+phone.react_to_message("Perhaps a movie?", Reaction.HEART)   # HEART, THUMBS_UP, THUMBS_DOWN, HAHA, EMPHASIZE, QUESTION
+```
+
+Messages are identified by their text. When multiple messages contain the text, the last one is used. Older messages are
+scrolled to. Replies and reactions are included in the messages returned by `get_messages`:
+
+```python
+reply = phone.get_messages()[-1]
+reply.is_reply, reply.reply_to     # True, 'Any plans this weekend?'
+reply.reactions                    # [(None, Reaction.HEART)]: reactions from this device have None as who
+```
+
+A person can give one reaction to a message: a new reaction replaces the previous one. Replying is only available for
+iMessage, and not on a simulator.
+
+## Delivery status
+
+```python
+phone.is_message_marked_delivered("Perhaps a movie?")       # True when delivered or read
+phone.is_message_marked_read("Perhaps a movie?")            # only when the recipient shares read receipts
+phone.is_message_marked_not_delivered("Perhaps a movie?")   # e.g. an SMS that could not be delivered
+```
+
+iOS only shows the status of the last message sent from the device. For other messages, these methods return `None`.
+
 ## Deleting conversations
 
 ```python
