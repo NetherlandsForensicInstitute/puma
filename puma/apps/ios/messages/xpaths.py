@@ -16,6 +16,12 @@ CONVERSATION_SEND_BUTTON = accessibility_id('sendButton')
 # Each message is a cell containing a message balloon. The label of the cell is '<sender>, <text>, <time>'.
 CONVERSATION_MESSAGE_CELLS = ios_class_chain('**/XCUIElementTypeCell[$name == "CKBalloonTextView"$]')
 CONVERSATION_MESSAGE_BALLOON = 'CKBalloonTextView'
+# Every message, also a photo or other attachment, contains an element with this name. For attachments, the label
+# describes the attachment instead of the text, e.g. '<sender>, Includes picture, <time>'.
+CONVERSATION_MESSAGE_CONTENT = 'Sticker'
+# The attachment of a message with a shared location, which shows a map, or this icon when sharing has stopped
+CONVERSATION_LOCATION_ATTACHMENT = 'Location'
+CONVERSATION_LOCATION_ICON = 'location-bubble-icon'
 # The sender of messages sent from this device, as shown in the label of a message, for iMessage and SMS. This depends
 # on the language of the device.
 CONVERSATION_SENT_BY_ME_IMESSAGE = 'Your iMessage'
@@ -45,6 +51,27 @@ CONVERSATION_MENU_REPLY = ios_predicate('type == "XCUIElementTypeButton" AND nam
 CONVERSATION_MENU_EDIT = ios_predicate('type == "XCUIElementTypeButton" AND name == "Edit"')
 CONVERSATION_MENU_UNDO_SEND = ios_predicate('type == "XCUIElementTypeButton" AND name == "Undo Send"')
 CONVERSATION_MENU_MORE = ios_predicate('type == "XCUIElementTypeButton" AND name == "More…"')
+
+# The menu of the + button next to the message field, with the apps that can send content, e.g. Photos and Audio. The
+# items are named after the bundle id of the app, e.g. 'com.apple...:com.apple.mobileslideshow.PhotosMessagesApp'.
+CONVERSATION_ADD_BUTTON = accessibility_id('add')
+CONVERSATION_ADD_MENU_ITEMS = ios_predicate(
+    'type == "XCUIElementTypeCell" AND name BEGINSWITH "com.apple.messages.MSMessageExtensionBalloonPlugin"')
+CONVERSATION_ADD_MENU_CLOSE = accessibility_id('PopoverDismissRegion')
+ADD_MENU_PHOTOS = 'com.apple.mobileslideshow.PhotosMessagesApp'
+ADD_MENU_AUDIO = 'com.apple.siri.AudioMessagesApp.AudioMessagesExtension'
+ADD_MENU_LOCATION = 'com.apple.findmy.FindMyMessagesApp'
+# Recording an audio message, which starts as soon as Audio is chosen in the + menu
+AUDIO_STOP_BUTTON = ios_predicate('type == "XCUIElementTypeButton" AND name == "Stop"')
+AUDIO_CANCEL_BUTTON = accessibility_id('Cancel audio recording')
+
+# Sharing the location of the device, in the app Location of the + menu
+LOCATION_SHARE_BUTTON = ios_predicate('type == "XCUIElementTypeButton" AND name == "Share"')
+# the durations are named after their icon: 'clock' (For One Hour), 'calendar' (Until End of Day), 'infinity'
+# (Indefinitely)
+
+# The photos and videos in the picker of Photos, newest first. Their label is e.g. 'Photo, October 01, 21:07'.
+PHOTOS_PICKER_ITEMS = ios_predicate('type == "XCUIElementTypeImage" AND name == "PXGGridLayout-Info"')
 
 # Editing a message. The message itself becomes editable.
 EDIT_SEND_BUTTON = accessibility_id('Send edit')
@@ -78,6 +105,13 @@ SEARCH_RESULTS_NO_RESULTS = ios_predicate('type == "XCUIElementTypeStaticText" A
 SEARCH_RESULTS_CONVERSATIONS = ios_class_chain(
     '**/XCUIElementTypeCollectionView[`name BEGINSWITH "Search results for:"`]'
     '/XCUIElementTypeCell[$type == "XCUIElementTypeButton" AND name == "Contact photo"$]')
+
+# Details of a conversation, opened by tapping the title. The conversation stays in the element tree.
+DETAILS_NAVIGATION_BAR = ios_predicate(
+    'type == "XCUIElementTypeNavigationBar" AND name == "CommunicationDetails.DetailsView"')
+DETAILS_TITLE = accessibility_id('DetailsHeaderTitle')
+DETAILS_STOP_SHARING_LOCATION = ios_predicate(
+    'type == "XCUIElementTypeButton" AND name == "Stop Sharing My Location"')
 
 # Popups
 POPUP_APPLE_INTELLIGENCE_WELCOME_TEXT = ios_predicate(
@@ -146,3 +180,17 @@ def editable_message(text: str) -> str:
     The message being edited, containing a text.
     """
     return ios_class_chain(f'**/XCUIElementTypeTextView[`name == "CKBalloonTextView" AND value CONTAINS "{text}"`][-1]')
+
+
+def add_menu_item(app: str) -> str:
+    """
+    An item in the menu of the + button, identified by the end of its name, e.g. ADD_MENU_PHOTOS.
+    """
+    return ios_predicate(f'type == "XCUIElementTypeCell" AND name ENDSWITH "{app}"')
+
+
+def location_duration(icon: str) -> str:
+    """
+    A duration for sharing the location, e.g. 'clock' for one hour.
+    """
+    return ios_predicate(f'type == "XCUIElementTypeButton" AND name == "{icon}"')

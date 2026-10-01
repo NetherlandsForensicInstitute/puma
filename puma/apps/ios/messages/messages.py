@@ -57,6 +57,15 @@ _REACTION = re.compile(r', (?P<who>[^,]+?) (?P<verb>' + '|'.join(_REACTION_VERBS
 _REACTION_BY_ME = 'You'
 
 
+class LiveLocationDuration(Enum):
+    """
+    How long the location of the device is shared.
+    """
+    ONE_HOUR = 'clock'
+    END_OF_DAY = 'calendar'
+    INDEFINITELY = 'infinity'
+
+
 @dataclass
 class Message:
     """
@@ -72,6 +81,8 @@ class Message:
     :param reply_to: The text of the message replied to, if it is shown in the conversation. For replies in a thread,
     this is the message that started the thread.
     :param edited: Whether the message has been edited.
+    :param attachment: For photos, videos and other attachments: the description shown by iOS, e.g. 'Includes
+    picture'. The text of these messages is empty.
     """
     sender: Optional[str]
     text: str
@@ -81,6 +92,7 @@ class Message:
     is_reply: bool = False
     reply_to: Optional[str] = None
     edited: bool = False
+    attachment: Optional[str] = None
 
     @property
     def sent_by_me(self) -> bool:
@@ -110,7 +122,8 @@ def _parse_message(label: str, service: Optional[Service] = None) -> Message:
     :param service: The service of the message, as shown in the separator above it.
     """
     sender, rest = label.split(', ', 1)
-    text, message_time = rest.rsplit(', ', 1)
+    # messages without a text, such as a shared location, only show the sender and the time
+    text, message_time = rest.rsplit(', ', 1) if ', ' in rest else ('', rest)
     is_reply = text.startswith(f'{CONVERSATION_REPLY}, ')
     if is_reply:
         text = text[len(CONVERSATION_REPLY) + 2:]
@@ -148,9 +161,21 @@ def _parse_messages(page_source: str, default_service: Optional[Service] = None)
         elif element_type == 'XCUIElementTypeStaticText' and name.endswith(CONVERSATION_EDITED) and messages:
             # shown below an edited message, e.g. 'Edited' or 'Delivered • Edited'
             messages[-1].edited = True
-        elif element_type == 'XCUIElementTypeCell' and any(
-                child.get('name') == CONVERSATION_MESSAGE_BALLOON for child in element.iter()):
+        elif element_type == 'XCUIElementTypeCell' and element.get('label') and any(
+                child.get('name') in (CONVERSATION_MESSAGE_BALLOON, CONVERSATION_MESSAGE_CONTENT)
+                or child.get('type') == 'XCUIElementTypeMap' for child in element.iter()):
             label = element.get('label')
+            if not any(child.get('name') == CONVERSATION_MESSAGE_BALLOON for child in element.iter()):
+                # an attachment, such as a photo: the label describes it instead of showing a text. A shared location
+                # shows a map, and its label has no description.
+                message = _parse_message(label, service)
+                is_location = any(child.get('type') == 'XCUIElementTypeMap'
+                                  or child.get('name') == CONVERSATION_LOCATION_ICON for child in element.iter())
+                message.attachment = CONVERSATION_LOCATION_ATTACHMENT if is_location else message.text
+                message.text = ''
+                reply_preview = None
+                messages.append(message)
+                continue
             if _is_reply_preview(label):
                 # the preview of the message replied to is shown above the reply, it is not a message of its own
                 sender, rest = label.split(', ', 1)
@@ -338,6 +363,44 @@ class MessageMenuHandler(PopUpHandler):
         _close_message_menu(driver)
 
 
+def _open_add_menu_item(driver: PumaDriver, app: str, name: str):
+    """
+    Opens an app in the menu of the + button next to the message field, e.g. Photos. The menu remembers where it was
+    scrolled to, so the item is scrolled to: first down, then up. Swiping down too far closes the menu, in which case it
+    is opened again.
+    """
+    for attempt in range(10):
+        if not driver.is_present(CONVERSATION_ADD_MENU_ITEMS):
+            driver.gtl_logger.info('Pressing the + button')
+            driver.click(CONVERSATION_ADD_BUTTON)
+            if not _wait_for(driver, CONVERSATION_ADD_MENU_ITEMS, timeout=4):
+                raise MessagesError('The menu of the + button did not open')
+        if driver.is_present(add_menu_item(app)):
+            driver.gtl_logger.info(f'Choosing {name}')
+            driver.click(add_menu_item(app))
+            sleep(2)
+            return
+        items = driver.get_elements(CONVERSATION_ADD_MENU_ITEMS)
+        rect = items[len(items) // 2].rect
+        x = rect['x'] + rect['width'] / 2
+        y = rect['y'] + rect['height'] / 2
+        distance = -200 if attempt < 5 else 200
+        driver.execute_script('mobile: dragFromToForDuration',
+                              {'fromX': x, 'fromY': y, 'toX': x, 'toY': y + distance, 'duration': 0.3})
+        sleep(1)
+    if driver.is_present(CONVERSATION_ADD_MENU_CLOSE):
+        driver.click(CONVERSATION_ADD_MENU_CLOSE)
+    raise MessagesError(f'{name} is not available in the menu of the + button')
+
+
+def _tap(driver: PumaDriver, xpath: str):
+    """
+    Taps the center of an element. While recording audio, clicks on elements are ignored, but taps are not.
+    """
+    rect = driver.get_element(xpath).rect
+    driver.execute_script('mobile: tap', {'x': rect['x'] + rect['width'] / 2, 'y': rect['y'] + rect['height'] / 2})
+
+
 def _close_conversation(driver: PumaDriver):
     """
     Goes back from a conversation to the overview. When the conversation was opened from the search results, going back
@@ -358,7 +421,7 @@ class ConversationState(SimpleState, ContextualState):
     def __init__(self, parent_state):
         super().__init__(xpaths=[CONVERSATION_TITLE, CONVERSATION_MESSAGE_BODY_FIELD],
                          invalid_xpaths=[NEW_MESSAGE_RECIPIENT_FIELD, CONVERSATION_MESSAGE_MENU, REPLY_CLOSE_BUTTON,
-                                         SELECTION_FORWARD_BUTTON, EDIT_SEND_BUTTON],
+                                         SELECTION_FORWARD_BUTTON, EDIT_SEND_BUTTON, DETAILS_NAVIGATION_BAR],
                          parent_state=parent_state,
                          parent_state_transition=_close_conversation)
 
@@ -387,6 +450,21 @@ class ConversationState(SimpleState, ContextualState):
         sleep(1)
 
 
+class ConversationDetailsState(SimpleState, ContextualState):
+    """
+    A state representing the details of a conversation, with its participants and settings.
+    """
+
+    def __init__(self, parent_state):
+        # the parent transition is the default back action, which uses the back button in the navigation bar
+        super().__init__(xpaths=[DETAILS_NAVIGATION_BAR], parent_state=parent_state)
+
+    def validate_context(self, driver: PumaDriver, conversation: str = None) -> bool:
+        if not conversation:
+            return True
+        return _title_matches(driver.get_element(DETAILS_TITLE).get_attribute('label'), conversation)
+
+
 @supported_version("26.6")
 class Messages(StateGraph):
     """
@@ -404,8 +482,9 @@ class Messages(StateGraph):
     # The welcome screen, the new message screen and the search results are shown on top of the overview, while the
     # overview stays in the element tree. Therefore these are marked as invalid.
     conversations_state = SimpleState(xpaths=[CONVERSATIONS_LIST, CONVERSATIONS_COMPOSE_BUTTON],
-                                      invalid_xpaths=[POPUP_APPLE_INTELLIGENCE_WELCOME_TEXT, POPUP_RECENTLY_DELETED_TEXT,
-                                                      NEW_MESSAGE_RECIPIENT_FIELD, SEARCH_RESULTS_CLOSE_BUTTON],
+                                      invalid_xpaths=[POPUP_APPLE_INTELLIGENCE_WELCOME_TEXT,
+                                                      POPUP_RECENTLY_DELETED_TEXT, NEW_MESSAGE_RECIPIENT_FIELD,
+                                                      SEARCH_RESULTS_CLOSE_BUTTON],
                                       initial_state=True)
     # A conversation opened from the search results is shown on top of the search results. After going back from it,
     # searching is still active, but the list of results is not always shown. Therefore searching is recognized by the
@@ -418,11 +497,13 @@ class Messages(StateGraph):
                                     parent_state=conversations_state,
                                     parent_state_transition=_close_new_message)
     conversation_state = ConversationState(parent_state=conversations_state)
+    conversation_details_state = ConversationDetailsState(parent_state=conversation_state)
 
     # Transitions
     conversations_state.to(new_message_state, compose_clicks([CONVERSATIONS_COMPOSE_BUTTON], 'open_new_message'))
     conversations_state.to(conversation_state, conversation_state.open_conversation)
     conversations_state.to(search_results_state, _search)
+    conversation_state.to(conversation_details_state, compose_clicks([CONVERSATION_TITLE], 'open_details'))
 
     def __init__(self, device_udid: str, **kwargs):
         """
@@ -626,6 +707,110 @@ class Messages(StateGraph):
             sleep(2)
         _enter_recipient(self.driver, to_chat)
         _send_new_message(self.driver, to_chat)
+
+    @action(conversation_state)
+    def send_media(self, index: int = 1, conversation: str = None, caption: str = None):
+        """
+        Sends a photo or video from the photo library of the device.
+
+        :param index: The position of the photo or video in the photo picker, starting at 1. The picker shows the
+        newest first, so 1 is the most recent photo or video.
+        :param conversation: Optional. The name of the conversation. Defaults to the conversation that is open.
+        :param caption: Optional. A text to send with the photo or video.
+        """
+        _open_add_menu_item(self.driver, ADD_MENU_PHOTOS, 'Photos')
+        if not _wait_for(self.driver, PHOTOS_PICKER_ITEMS, timeout=6):
+            raise MessagesError('The photo library is empty, or access to it was not granted')
+        items = self.driver.get_elements(PHOTOS_PICKER_ITEMS)
+        if index > len(items):
+            raise MessagesError(f'There is no photo or video at position {index}, the picker shows {len(items)}')
+        item = items[index - 1]
+        self.gtl_logger.info(f'Selecting {item.get_attribute("label")}')
+        # a click is ignored by the picker, a tap on the photo selects it
+        rect = item.rect
+        self.driver.execute_script('mobile: tap',
+                                   {'x': rect['x'] + rect['width'] / 2, 'y': rect['y'] + rect['height'] / 2})
+        if not _wait_for(self.driver, CONVERSATION_SEND_BUTTON, timeout=4):
+            raise MessagesError(f'Could not select the photo or video at position {index}')
+        if caption:
+            self.gtl_logger.info(f'Entering caption "{caption}"')
+            self.driver.click(CONVERSATION_MESSAGE_BODY_FIELD)
+            self.driver.driver.switch_to.active_element.send_keys(caption)
+        self.gtl_logger.info('Pressing send button')
+        self.driver.click(CONVERSATION_SEND_BUTTON)
+        sleep(3)
+
+    @action(conversation_state)
+    def send_voice_message(self, duration: int = 2, conversation: str = None):
+        """
+        Records an audio message with the microphone of the device, and sends it. Only available on real devices.
+
+        :param duration: The number of seconds to record.
+        :param conversation: Optional. The name of the conversation. Defaults to the conversation that is open.
+        """
+        _open_add_menu_item(self.driver, ADD_MENU_AUDIO, 'Audio')
+        if not _wait_for(self.driver, AUDIO_STOP_BUTTON, timeout=4):
+            raise MessagesError('Recording an audio message is not available, e.g. on a simulator')
+        self.gtl_logger.info(f'Recording an audio message of {duration} seconds')
+        try:
+            sleep(duration)
+            self.gtl_logger.info('Pressing stop')
+            _tap(self.driver, AUDIO_STOP_BUTTON)
+            if not _wait_for(self.driver, CONVERSATION_SEND_BUTTON, timeout=4):
+                raise MessagesError('Could not stop recording the audio message')
+            self.gtl_logger.info('Pressing send button')
+            _tap(self.driver, CONVERSATION_SEND_BUTTON)
+            sleep(2)
+        except Exception:
+            # never leave a recording running or waiting to be sent
+            if self.driver.is_present(AUDIO_STOP_BUTTON):
+                _tap(self.driver, AUDIO_STOP_BUTTON)
+                sleep(1)
+            if self.driver.is_present(AUDIO_CANCEL_BUTTON):
+                self.gtl_logger.warning('Discarding the audio message')
+                _tap(self.driver, AUDIO_CANCEL_BUTTON)
+            raise
+
+    @action(conversation_state)
+    def send_live_location(self, duration: LiveLocationDuration = LiveLocationDuration.ONE_HOUR,
+                           conversation: str = None):
+        """
+        Shares the location of the device in a conversation, for a while. The other people in the conversation can
+        follow the location while it is shared. To share a location other than the real location of the device, set
+        the location first, e.g. with the route simulator of AppleMaps. Only available on real devices.
+
+        :param duration: How long the location is shared.
+        :param conversation: Optional. The name of the conversation. Defaults to the conversation that is open.
+        """
+        _open_add_menu_item(self.driver, ADD_MENU_LOCATION, 'Location')
+        if not _wait_for(self.driver, LOCATION_SHARE_BUTTON, timeout=6):
+            raise MessagesError('Sharing the location is not available')
+        self.gtl_logger.info('Pressing share')
+        self.driver.click(LOCATION_SHARE_BUTTON)
+        sleep(1)
+        self.gtl_logger.info(f'Sharing the location {duration.name.lower().replace("_", " ")}')
+        self.driver.click(location_duration(duration.value))
+        if not _wait_for(self.driver, CONVERSATION_SEND_BUTTON, timeout=6):
+            raise MessagesError('Could not share the location')
+        self.gtl_logger.info('Pressing send button')
+        self.driver.click(CONVERSATION_SEND_BUTTON)
+        sleep(3)
+
+    @action(conversation_details_state)
+    def stop_live_location(self, conversation: str = None) -> bool:
+        """
+        Stops sharing the location of the device in a conversation.
+
+        :param conversation: Optional. The name of the conversation. Defaults to the conversation that is open.
+        :return: True if the location was shared and sharing has been stopped, False if the location was not shared.
+        """
+        if not self.driver.is_present(DETAILS_STOP_SHARING_LOCATION):
+            self.gtl_logger.warning('Tried to stop sharing the location, but the location is not shared')
+            return False
+        self.gtl_logger.info('Pressing stop sharing my location')
+        self.driver.click(DETAILS_STOP_SHARING_LOCATION)
+        sleep(2)
+        return True
 
     @action(conversation_state)
     def react_to_message(self, message_text: str, reaction: Reaction, conversation: str = None):

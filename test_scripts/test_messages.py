@@ -1,6 +1,6 @@
 import unittest
 
-from puma.apps.ios.messages.messages import Messages, MessagesError, Reaction, Service
+from puma.apps.ios.messages.messages import LiveLocationDuration, Messages, MessagesError, Reaction, Service
 from puma.apps.ios.messages.xpaths import conversation_row
 
 # Fill in the udid below. Run `xcrun simctl list devices booted` (simulators) or `xcrun xctrace list devices`
@@ -30,6 +30,7 @@ class TestMessages(unittest.TestCase):
     - All prerequisites mentioned in the README.
     - An iOS simulator running iOS 26, with the two conversations a simulator starts with. On a real device, replace
       these by two conversations of your own.
+    - At least one photo in the photo library, e.g. added with `xcrun simctl addmedia <udid> <photo>` on a simulator.
     """
 
     @classmethod
@@ -127,6 +128,24 @@ class TestMessages(unittest.TestCase):
         self.alice.forward_message(REPLY_CONVERSATION, "Puma test, edited", REPLY_CONVERSATION)
         forwarded = self.alice.get_messages()[-1]
         self.assertEqual(("Puma test, edited", False), (forwarded.text, forwarded.edited))
+
+
+    def test_send_media_and_voice_message(self):
+        self.alice.send_media(1, conversation=CONVERSATION_A, caption="Puma test, a photo")
+        photo, caption = self.alice.get_messages()[-2:]
+        self.assertEqual(("", "Puma test, a photo"), (photo.text, caption.text))
+        self.assertIsNotNone(photo.attachment)
+        self.alice.send_voice_message(2)
+        self.assertIn("Audio", self.alice.get_messages()[-1].attachment)
+
+    def test_live_location(self):
+        if self.alice.driver.is_simulator() or not REPLY_CONVERSATION:
+            self.skipTest('Sharing the location needs a real device, and REPLY_CONVERSATION configured at the top of '
+                          'the script')
+        self.alice.send_live_location(LiveLocationDuration.ONE_HOUR, conversation=REPLY_CONVERSATION)
+        self.assertEqual("Location", self.alice.get_messages()[-1].attachment)
+        self.assertTrue(self.alice.stop_live_location())
+        self.assertFalse(self.alice.stop_live_location())
 
 
 if __name__ == '__main__':

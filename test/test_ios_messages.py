@@ -10,6 +10,11 @@ def _cell(label: str) -> str:
             f'</XCUIElementTypeCell>')
 
 
+def _attachment(label: str) -> str:
+    return (f'<XCUIElementTypeCell type="XCUIElementTypeCell" name="{label}" label="{label}">'
+            f'<XCUIElementTypeButton type="XCUIElementTypeButton" name="Sticker"/></XCUIElementTypeCell>')
+
+
 def _text(name: str) -> str:
     return f'<XCUIElementTypeStaticText type="XCUIElementTypeStaticText" name="{name}" label="{name}"/>'
 
@@ -53,6 +58,27 @@ class TestMessagesParsing(unittest.TestCase):
                        + _cell('Your iMessage, Other text, 20:53') + _cell('Your iMessage, Last text, 20:54')
                        + _text('Delivered • Edited') + '</AppiumAUT>')
         self.assertEqual([True, False, True], [message.edited for message in _parse_messages(page_source)])
+
+    def test_parse_attachments(self):
+        page_source = ('<AppiumAUT>' + _text('iMessage') + _attachment('Your iMessage, Includes picture, 21:13')
+                       + _cell('Your iMessage, A caption, 21:13') + _attachment('Bob, Includes picture, 21:14')
+                       + '<XCUIElementTypeCell type="XCUIElementTypeCell"/></AppiumAUT>')
+        messages = _parse_messages(page_source)
+        self.assertEqual([('', 'Includes picture', None), ('A caption', None, None), ('', 'Includes picture', 'Bob')],
+                         [(m.text, m.attachment, m.sender) for m in messages])
+        self.assertEqual(Service.IMESSAGE, messages[2].service)
+
+    def test_parse_location(self):
+        page_source = ('<AppiumAUT><XCUIElementTypeCell type="XCUIElementTypeCell" label="Your iMessage, 21:21">'
+                       '<XCUIElementTypeMap type="XCUIElementTypeMap"/></XCUIElementTypeCell></AppiumAUT>')
+        self.assertEqual([Message(None, '', '21:21', Service.IMESSAGE, attachment='Location')],
+                         _parse_messages(page_source))
+        # after sharing has stopped, the map is replaced by an icon
+        page_source = ('<AppiumAUT><XCUIElementTypeCell type="XCUIElementTypeCell" label="Your iMessage, 21:21">'
+                       '<XCUIElementTypeImage type="XCUIElementTypeImage" name="location-bubble-icon"/>'
+                       '<XCUIElementTypeOther type="XCUIElementTypeOther" name="Sticker"/>'
+                       '</XCUIElementTypeCell></AppiumAUT>')
+        self.assertEqual('Location', _parse_messages(page_source)[0].attachment)
 
     def test_service_from_text(self):
         self.assertEqual(Service.IMESSAGE, _service_from_text('iMessage'))
