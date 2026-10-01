@@ -38,10 +38,14 @@ class TestMessagesParsing(unittest.TestCase):
     def test_parse_replies(self):
         page_source = ('<AppiumAUT>' + _text('iMessage  Encrypted') + _cell('Your iMessage, Test 2, 17:17')
                        + _text('\u200e1 Reply') + _cell('Your iMessage, Reply Preview, Test 2, 17:17')
-                       + _cell('Your iMessage, Reply, Puma reply, with comma, 20:38') + '</AppiumAUT>')
+                       + _cell('Your iMessage, Reply, Puma reply, with comma, 20:38') + _text('\u200eRead 20:45')
+                       + _cell('Kevin, Reply, Another reply, 20:45') + _cell('Kevin, Not a reply, 20:46')
+                       + _cell('Kevin, Reply, Unknown thread, 20:47') + '</AppiumAUT>')
         messages = _parse_messages(page_source)
-        self.assertEqual(['Test 2', 'Puma reply, with comma'], [message.text for message in messages])
-        self.assertEqual([(False, None), (True, 'Test 2')], [(m.is_reply, m.reply_to) for m in messages])
+        self.assertEqual(['Test 2', 'Puma reply, with comma', 'Another reply', 'Not a reply', 'Unknown thread'],
+                         [message.text for message in messages])
+        self.assertEqual([(False, None), (True, 'Test 2'), (True, 'Test 2'), (False, None), (True, None)],
+                         [(m.is_reply, m.reply_to) for m in messages])
         self.assertEqual(Service.IMESSAGE, messages[1].service)
 
     def test_service_from_text(self):
