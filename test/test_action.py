@@ -2,12 +2,15 @@ import unittest
 from unittest.mock import Mock
 
 from puma.state_graph.action import action
+from puma.state_graph.puma_driver import Platform
 from puma.state_graph.state import SimpleState
 from puma.state_graph.state_graph import StateGraph
 from puma.utils import gtl_logging
 
 
 class MockApplication(StateGraph):
+    platform = Platform.ANDROID
+
     main_state = SimpleState(['xpath'], initial_state=True)
 
     # don't call super.__init__ so we do not try to connect to a real device

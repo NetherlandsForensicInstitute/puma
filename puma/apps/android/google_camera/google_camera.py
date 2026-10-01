@@ -2,7 +2,7 @@ from time import sleep
 
 from puma.state_graph.action import action
 from puma.state_graph.popup_handler import PopUpHandler
-from puma.state_graph.puma_driver import supported_version
+from puma.state_graph.puma_driver import supported_version, Platform
 from puma.state_graph.state_graph import StateGraph
 from puma.state_graph.state import SimpleState, compose_clicks
 
@@ -42,6 +42,7 @@ class GoogleCamera(StateGraph):
     of the Google Camera user interface. It provides methods to navigate between states,
     take pictures, and record videos.
     """
+    platform = Platform.ANDROID
 
     # Define states
     photo = SimpleState(xpaths=[PHOTO_STATE_TAKE_PHOTO,

@@ -1,7 +1,7 @@
 from puma.apps.android.snapchat.xpaths import *
 from puma.state_graph.action import action
 from puma.state_graph.popup_handler import PopUpHandler
-from puma.state_graph.puma_driver import PumaDriver, supported_version
+from puma.state_graph.puma_driver import PumaDriver, supported_version, Platform
 from puma.state_graph.state import SimpleState, ContextualState, compose_clicks
 from puma.state_graph.state_graph import StateGraph
 
@@ -79,6 +79,8 @@ class Snapchat(StateGraph):
     of the Snapchat user interface. It provides methods to navigate between states, validate states,
     and handle unexpected states or errors.
     """
+    platform = Platform.ANDROID
+
     camera_state = SimpleState([CAMERA_PAGE], initial_state=True)
     conversation_state = SimpleState([FEED_NEW_CHAT], parent_state=camera_state)
     chat_state = SnapchatChatState(parent_state=conversation_state)

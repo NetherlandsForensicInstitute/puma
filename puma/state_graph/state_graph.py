@@ -36,6 +36,11 @@ class StateGraphMeta(type):
         if name == 'StateGraph':
             return new_class
 
+        # every application defines the platform it runs on, there is no default
+        if not isinstance(getattr(new_class, 'platform', None), Platform):
+            raise TypeError(f'{name} does not define the platform it runs on. Set the class attribute '
+                            f'`platform = Platform.ANDROID` or `platform = Platform.IOS`.')
+
         # collect states and transitions
         states: list[State] = []
         transitions = []
@@ -144,10 +149,10 @@ class StateGraph(metaclass=StateGraphMeta):
     of a user interface. It initializes with a device and application package, and provides
     methods to navigate between states, validate states, and handle unexpected states or errors.
 
-    The platform the application runs on is defined by the class attribute `platform`, which defaults to Android.
-    Applications for iOS set `platform = Platform.IOS`.
+    The platform the application runs on is defined by the class attribute `platform`, which every application must
+    set: `platform = Platform.ANDROID` or `platform = Platform.IOS`.
     """
-    platform: Platform = Platform.ANDROID
+    platform: Platform
 
     def __init__(self, device_udid: str, app_package: str, appium_server: str = 'http://localhost:4723', desired_capabilities: Dict[str, str] = None):
         """

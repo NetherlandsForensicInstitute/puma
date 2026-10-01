@@ -79,6 +79,7 @@ class IOSPumaDriver(PumaDriver):
         own WebDriverAgent ports (see wda_ports), which can be overridden with wdaLocalPort and mjpegServerPort.
         """
         super().__init__(udid, app_package, implicit_wait=implicit_wait, appium_server=appium_server, desired_capabilities=desired_capabilities)
+        self._back_buttons = []
 
     def _set_device_options(self, udid: str):
         self.options.wda_local_port, self.options.mjpeg_server_port = wda_ports(udid)
@@ -100,20 +101,31 @@ class IOSPumaDriver(PumaDriver):
     def app_open(self) -> bool:
         return self.driver.query_app_state(self.app_package) == ApplicationState.RUNNING_IN_FOREGROUND
 
+    def add_back_button(self, back_button: str):
+        """
+        Registers the back button of an application, for applications that do not use the standard back button of iOS.
+        back() uses the registered back buttons before the standard one.
+
+        :param back_button: The XPath (or Locator) of the back button.
+        """
+        self._back_buttons.append(back_button)
+
     def back(self):
         """
         Navigates back. iOS has no back button, so this clicks the back button in the navigation bar if present, and
         otherwise performs a swipe from the left edge of the screen, which is the standard back gesture on iOS.
+        Back buttons registered by the application (see add_back_button) are tried before the standard back button.
         """
-        if self.is_present(NAVIGATION_BAR_BACK_BUTTON):
-            self.gtl_logger.info('Pressing back button in navigation bar')
-            self.driver.find_element(*to_by_value(NAVIGATION_BAR_BACK_BUTTON)).click()
-        else:
-            self.gtl_logger.info('Swiping from left edge to go back')
-            window_size = self.driver.get_window_size()
-            y = window_size['height'] / 2
-            self.driver.execute_script('mobile: dragFromToForDuration', {
-                'fromX': 1, 'fromY': y, 'toX': window_size['width'] * 0.8, 'toY': y, 'duration': 0.3})
+        for back_button in self._back_buttons + [NAVIGATION_BAR_BACK_BUTTON]:
+            if self.is_present(back_button):
+                self.gtl_logger.info('Pressing back button in navigation bar')
+                self.driver.find_element(*to_by_value(back_button)).click()
+                return
+        self.gtl_logger.info('Swiping from left edge to go back')
+        window_size = self.driver.get_window_size()
+        y = window_size['height'] / 2
+        self.driver.execute_script('mobile: dragFromToForDuration', {
+            'fromX': 1, 'fromY': y, 'toX': window_size['width'] * 0.8, 'toY': y, 'duration': 0.3})
 
     def home(self):
         """

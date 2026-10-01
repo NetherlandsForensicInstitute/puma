@@ -36,13 +36,13 @@ class Settings(StateGraph):
     platform = Platform.IOS
 
     # States. The parent transitions are the default back action, which uses the back button in the navigation bar
-    settings_state = SimpleState(xpaths=[SETTINGS_NAVIGATION_BAR, GENERAL_CELL], initial_state=True)
+    settings_state = SimpleState(xpaths=[SETTINGS_NAVIGATION_BAR, SETTINGS_GENERAL_CELL], initial_state=True)
     display_state = SimpleState(xpaths=[DISPLAY_NAVIGATION_BAR], parent_state=settings_state)
     auto_lock_state = SimpleState(xpaths=[AUTO_LOCK_NAVIGATION_BAR], parent_state=display_state)
 
     # Transitions
-    settings_state.to(display_state, _open(DISPLAY_CELL, 'open_display_and_brightness'))
-    display_state.to(auto_lock_state, _open(AUTO_LOCK_CELL, 'open_auto_lock'))
+    settings_state.to(display_state, _open(SETTINGS_DISPLAY_CELL, 'open_display_and_brightness'))
+    display_state.to(auto_lock_state, _open(DISPLAY_AUTO_LOCK_CELL, 'open_auto_lock'))
 
     def __init__(self, device_udid: str, **kwargs):
         """
@@ -60,7 +60,7 @@ class Settings(StateGraph):
 
         :return: The number of seconds, or None if the screen never locks.
         """
-        seconds = int(self.driver.get_element(SELECTED_AUTO_LOCK_OPTION).get_attribute('name'))
+        seconds = int(self.driver.get_element(AUTO_LOCK_SELECTED_OPTION).get_attribute('name'))
         return None if seconds == _NEVER else seconds
 
     @action(auto_lock_state)
@@ -72,6 +72,7 @@ class Settings(StateGraph):
         """
         if seconds not in AUTO_LOCK_OPTIONS:
             raise ValueError(f'Auto-Lock cannot be set to {seconds}, the options are {AUTO_LOCK_OPTIONS}')
+        self.gtl_logger.info(f'Setting Auto-Lock to {"Never" if seconds is None else f"{seconds} seconds"}')
         self.driver.click(auto_lock_option(_NEVER if seconds is None else seconds))
         sleep(1)
         logger.info(f'Set Auto-Lock to {"Never" if seconds is None else f"{seconds} seconds"}')

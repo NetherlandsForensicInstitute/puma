@@ -5,7 +5,7 @@ from appium.webdriver.common.appiumby import AppiumBy
 
 from puma.apps.android.teleguard.xpaths import *
 from puma.state_graph.action import action
-from puma.state_graph.puma_driver import PumaDriver, supported_version, PumaClickException
+from puma.state_graph.puma_driver import PumaDriver, supported_version, PumaClickException, Platform
 from puma.state_graph.state import ContextualState, SimpleState, compose_clicks
 from puma.state_graph.state_graph import StateGraph
 
@@ -71,6 +71,7 @@ class TeleGuard(StateGraph):
     of the TeleGuard user interface. It provides methods to navigate between states, validate states,
     and handle unexpected states or errors.
     """
+    platform = Platform.ANDROID
 
     conversations_state = SimpleState( [CONVERSATION_STATE_TELEGUARD_HEADER, CONVERSATION_STATE_HAMBURGER_MENU, CONVERSATION_STATE_TELEGUARD_STATUS], initial_state=True)
     chat_state = TeleGuardChatState(parent_state=conversations_state)

@@ -214,6 +214,7 @@ components mentioned in the [Stategraph section](#stategraph) come together in t
 from puma.state_graph.state_graph import StateGraph
 from puma.state_graph.state import SimpleState, compose_clicks
 from puma.state_graph.action import action
+from puma.state_graph.puma_driver import Platform
 
 APPLICATION_PACKAGE = 'com.example.app'
 
@@ -221,6 +222,8 @@ class ExampleApp(StateGraph):
     """
     A class representing a state graph for managing UI states and transitions in an example application.
     """
+    # Every application defines the platform it runs on: Platform.ANDROID or Platform.IOS
+    platform = Platform.ANDROID
 
     # Define states
     home_state = SimpleState(xpaths=['//android.widget.TextView[@content-desc="Home"]'],
@@ -250,6 +253,14 @@ class ExampleApp(StateGraph):
 Note that this is a simple example. For a more advanced example using `ContextualState`s, see the [Teleguard
 implementation](../puma/apps/android/teleguard/teleguard.py).
 
+Every application sets the class attribute `platform`. There is no default: a class without it raises a `TypeError`
+when it is defined.
+
+Locators are defined in an `xpaths.py` file next to the application class. Their names start with the screen (state)
+they belong to, e.g. `CONVERSATIONS_COMPOSE_BUTTON` for the compose button on the conversations screen, and pop-ups
+start with `POPUP_`. Locators that depend on a value, such as the name of a conversation, are format strings (Android)
+or small functions (iOS) in the same file.
+
 The following steps should be taken to implement support for a new application:
 - Add the desired functionality (see [the next section](#how-to-write-appium-actions))
 - Add a README for this app and add a link to the project README
@@ -262,13 +273,20 @@ iOS applications use the same `StateGraph` framework, and live in `apps/ios`. Th
 
 - Set the class attribute `platform = Platform.IOS`. Puma will then create an iOS driver, and validate the application
   identifier as a bundle id instead of a package name.
-- Pass the bundle id of the app (e.g. `com.apple.mobilesafari`) where Android apps pass the package name.
+- Pass the bundle id of the app (e.g. `com.apple.mobilesafari`) where Android apps pass the package name. The bundle id
+  is the iOS equivalent of the package name, and is defined as a constant named `<APP>_BUNDLE_ID`, where Android apps
+  use `<APP>_PACKAGE`.
+- Let `__init__` accept `**kwargs` and pass them to `StateGraph.__init__`. Real iOS devices only work when WebDriverAgent
+  is signed with your Apple developer account, which is configured through `desired_capabilities` (see
+  [Setting up iOS](setup-ios.md)). Without `**kwargs`, your application can only be used on a simulator.
 - XPath lookups are slow on iOS, as the complete UI hierarchy needs to be serialized for each lookup. Wherever an XPath
   is accepted, you can also pass a `Locator` from `puma.state_graph.locators`: `accessibility_id()`,
   `ios_predicate()` or `ios_class_chain()`. Prefer these for elements that are used to validate states.
 - iOS has no back button. The default transition back to a parent state uses the back button in the navigation bar if
-  present, and otherwise swipes from the left edge of the screen. For screens that cannot be left this way, such as
-  modal sheets, define a `parent_state_transition`.
+  present, and otherwise swipes from the left edge of the screen. Some applications use their own back button, which
+  the default transition does not recognize. Register it once in `__init__` with
+  `self.driver.add_back_button(<locator>)`, so the default transition uses it for every state. For screens that cannot
+  be left with a back button, such as modal sheets, define a `parent_state_transition`.
 - System alerts, such as permission requests, are handled by button label instead of by XPath. Use `IOSAlertHandler` to
   handle system alerts specific to your app.
 - XCUITest waits (by default up to 10 seconds) for the app to become idle before each interaction. Screens with
@@ -282,6 +300,8 @@ from puma.state_graph.puma_driver import Platform
 from puma.state_graph.state import SimpleState, compose_clicks
 from puma.state_graph.state_graph import StateGraph
 
+EXAMPLE_BUNDLE_ID = 'com.example.app'
+
 
 class ExampleIOSApp(StateGraph):
     platform = Platform.IOS
@@ -293,8 +313,8 @@ class ExampleIOSApp(StateGraph):
 
     home_state.to(settings_state, compose_clicks([accessibility_id('SettingsButton')], 'open_settings'))
 
-    def __init__(self, device_udid):
-        StateGraph.__init__(self, device_udid, 'com.example.app')
+    def __init__(self, device_udid: str, **kwargs):
+        StateGraph.__init__(self, device_udid, EXAMPLE_BUNDLE_ID, **kwargs)
 
     @action(settings_state)
     def update_settings(self):
