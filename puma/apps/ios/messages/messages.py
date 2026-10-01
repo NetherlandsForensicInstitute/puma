@@ -1,5 +1,7 @@
+import re
 import xml.etree.ElementTree as ElementTree
-from dataclasses import dataclass
+from contextlib import contextmanager
+from dataclasses import dataclass, field
 from enum import Enum
 from time import sleep, time
 from typing import Optional
@@ -30,6 +32,31 @@ class Service(Enum):
     SMS = 'SMS'
 
 
+class Reaction(Enum):
+    """
+    The reactions (tapbacks) that can be given to a message.
+    """
+    HEART = 'heart'
+    THUMBS_UP = 'thumbsUp'
+    THUMBS_DOWN = 'thumbsDown'
+    HAHA = 'ha'
+    EMPHASIZE = 'exclamation'
+    QUESTION = 'questionMark'
+
+
+# Reactions are shown in the label of a message, e.g. 'Bob loved this'. This depends on the language of the device.
+_REACTION_VERBS = {
+    'loved': Reaction.HEART,
+    'liked': Reaction.THUMBS_UP,
+    'disliked': Reaction.THUMBS_DOWN,
+    'laughed at': Reaction.HAHA,
+    'emphasized': Reaction.EMPHASIZE,
+    'questioned': Reaction.QUESTION,
+}
+_REACTION = re.compile(r', (?P<who>[^,]+?) (?P<verb>' + '|'.join(_REACTION_VERBS) + r') this$')
+_REACTION_BY_ME = 'You'
+
+
 @dataclass
 class Message:
     """
@@ -39,11 +66,18 @@ class Message:
     :param text: The text of the message.
     :param time: The time of the message, as shown on the screen (e.g. '14:45').
     :param service: The service of the message, or None if it is not known.
+    :param reactions: The reactions (tapbacks) to the message, as (who, reaction). Reactions from this device have None
+    as who.
+    :param is_reply: Whether the message is a reply to another message.
+    :param reply_to: The text of the message replied to, if it is shown in the conversation.
     """
     sender: Optional[str]
     text: str
     time: str
     service: Optional[Service]
+    reactions: list[tuple[Optional[str], Reaction]] = field(default_factory=list)
+    is_reply: bool = False
+    reply_to: Optional[str] = None
 
     @property
     def sent_by_me(self) -> bool:
@@ -55,7 +89,8 @@ def _service_from_text(text: str) -> Optional[Service]:
     The service shown in a text, such as the separator above messages or the placeholder of the message field, e.g.
     'iMessage' or 'Text Message • SMS'.
     """
-    if text == CONVERSATION_SERVICE_IMESSAGE:
+    # on real devices, the separator can also show that iMessage is encrypted, e.g. 'iMessage  Encrypted'
+    if text.startswith(CONVERSATION_SERVICE_IMESSAGE):
         return Service.IMESSAGE
     if text.startswith(CONVERSATION_SERVICE_SMS):
         return Service.SMS
@@ -73,11 +108,24 @@ def _parse_message(label: str, service: Optional[Service] = None) -> Message:
     """
     sender, rest = label.split(', ', 1)
     text, message_time = rest.rsplit(', ', 1)
+    is_reply = text.startswith(f'{CONVERSATION_REPLY}, ')
+    if is_reply:
+        text = text[len(CONVERSATION_REPLY) + 2:]
+    # reactions are added to the end of the text, e.g. 'Hi!, You loved this, Bob liked this'
+    reactions = []
+    while match := _REACTION.search(text):
+        who = None if match.group('who') == _REACTION_BY_ME else match.group('who')
+        reactions.insert(0, (who, _REACTION_VERBS[match.group('verb')]))
+        text = text[:match.start()]
     if sender == CONVERSATION_SENT_BY_ME_IMESSAGE:
-        return Message(None, text, message_time, Service.IMESSAGE)
+        return Message(None, text, message_time, Service.IMESSAGE, reactions, is_reply)
     if sender == CONVERSATION_SENT_BY_ME_SMS:
-        return Message(None, text, message_time, Service.SMS)
-    return Message(sender, text, message_time, service)
+        return Message(None, text, message_time, Service.SMS, reactions, is_reply)
+    return Message(sender, text, message_time, service, reactions, is_reply)
+
+
+def _is_reply_preview(label: str) -> bool:
+    return label.split(', ', 2)[1:2] == [CONVERSATION_REPLY_PREVIEW]
 
 
 def _parse_messages(page_source: str, default_service: Optional[Service] = None) -> list[Message]:
@@ -88,6 +136,7 @@ def _parse_messages(page_source: str, default_service: Optional[Service] = None)
     """
     messages = []
     service = default_service
+    reply_preview = None
     for element in ElementTree.fromstring(page_source).iter():
         element_type = element.get('type')
         name = element.get('name') or ''
@@ -95,7 +144,17 @@ def _parse_messages(page_source: str, default_service: Optional[Service] = None)
             service = _service_from_text(name)
         elif element_type == 'XCUIElementTypeCell' and any(
                 child.get('name') == CONVERSATION_MESSAGE_BALLOON for child in element.iter()):
-            messages.append(_parse_message(element.get('label'), service))
+            label = element.get('label')
+            if _is_reply_preview(label):
+                # the preview of the message replied to is shown above the reply, it is not a message of its own
+                sender, rest = label.split(', ', 1)
+                reply_preview = _parse_message(f'{sender}, {rest.split(", ", 1)[1]}').text
+                continue
+            message = _parse_message(label, service)
+            if message.is_reply:
+                message.reply_to = reply_preview
+            reply_preview = None
+            messages.append(message)
     return messages
 
 
@@ -124,12 +183,16 @@ def _close_new_message(driver: PumaDriver):
 
 
 def _wait_for(driver: PumaDriver, *xpaths: str, timeout: float = 6) -> bool:
+    """
+    Waits until any of the elements is present. The elements are checked at least once, also with a timeout of 0.
+    """
     end = time() + timeout
-    while time() < end:
+    while True:
         if any(driver.is_present(xpath) for xpath in xpaths):
             return True
+        if time() >= end:
+            return False
         sleep(0.5)
-    return False
 
 
 def _search(driver: PumaDriver, query: str = ''):
@@ -148,6 +211,92 @@ def _search(driver: PumaDriver, query: str = ''):
 def _close_search(driver: PumaDriver):
     driver.click(SEARCH_RESULTS_CLOSE_BUTTON)
     sleep(1)
+
+
+@contextmanager
+def _short_idle_timeout(driver: PumaDriver):
+    """
+    The menu of a message keeps animating, so XCUITest waits up to 10 seconds for the app to become idle before every
+    interaction with it. The timeout is lowered while the menu is used.
+    """
+    timeout = driver.driver.get_settings().get('waitForIdleTimeout', 10)
+    driver.set_idle_timeout(1)
+    try:
+        yield
+    finally:
+        driver.set_idle_timeout(timeout)
+
+
+def _scroll_to_message(driver: PumaDriver, message_text: str, max_swipes: int = 10) -> int:
+    """
+    Scrolls up to the last message containing a text. Only the messages near the screen are in the element tree, so
+    older messages have to be scrolled to.
+
+    :return: The number of times scrolled up.
+    """
+    for swipes in range(max_swipes + 1):
+        if driver.is_present(message_cell(message_text)):
+            return swipes
+        if swipes < max_swipes:
+            driver.gtl_logger.info('Scrolling up to older messages')
+            driver._scroll_up()
+    raise MessagesError(f'Could not find message "{message_text}"')
+
+
+def _scroll_to_latest(driver: PumaDriver, swipes: int):
+    """
+    Scrolls back down to the latest messages, after scrolling up to an older message.
+    """
+    for _ in range(swipes):
+        driver.gtl_logger.info('Scrolling down to the latest messages')
+        driver._scroll_down()
+
+
+@contextmanager
+def _message_menu(driver: PumaDriver, message_text: str):
+    """
+    Opens the menu of the last message containing a text, by long pressing it. Afterwards, the conversation is scrolled
+    back down to the latest messages.
+    """
+    swipes = _scroll_to_message(driver, message_text)
+    try:
+        with _short_idle_timeout(driver):
+            _open_message_menu(driver, message_text)
+            yield
+    finally:
+        _scroll_to_latest(driver, swipes)
+
+
+def _open_message_menu(driver: PumaDriver, message_text: str):
+    """
+    Opens the menu of a message that is in the element tree, by long pressing it.
+    """
+    driver.gtl_logger.info(f'Long pressing message "{message_text}" to open its menu')
+    driver.long_click_element(message_cell(message_text), duration=1)
+    if not _wait_for(driver, CONVERSATION_MESSAGE_MENU, timeout=4):
+        raise MessagesError(f'Could not open the menu of message "{message_text}"')
+
+
+def _close_message_menu(driver: PumaDriver):
+    """
+    Closes the menu of a message, by tapping next to it. The menu has no button to close it.
+    """
+    size = driver.driver.get_window_size()
+    driver.execute_script('mobile: tap', {'x': size['width'] * 0.08, 'y': size['height'] * 0.75})
+    sleep(1)
+
+
+class MessageMenuHandler(PopUpHandler):
+    """
+    Closes the menu of a message when it is left open, e.g. after an interrupted action.
+    """
+
+    def __init__(self):
+        super().__init__([CONVERSATION_MESSAGE_MENU], [])
+
+    def dismiss_popup(self, driver: PumaDriver):
+        driver.gtl_logger.info('Closing the menu of a message')
+        _close_message_menu(driver)
 
 
 def _close_conversation(driver: PumaDriver):
@@ -169,7 +318,7 @@ class ConversationState(SimpleState, ContextualState):
 
     def __init__(self, parent_state):
         super().__init__(xpaths=[CONVERSATION_TITLE, CONVERSATION_MESSAGE_BODY_FIELD],
-                         invalid_xpaths=[NEW_MESSAGE_NAVIGATION_BAR],
+                         invalid_xpaths=[NEW_MESSAGE_NAVIGATION_BAR, CONVERSATION_MESSAGE_MENU, REPLY_CLOSE_BUTTON],
                          parent_state=parent_state,
                          parent_state_transition=_close_conversation)
 
@@ -244,7 +393,9 @@ class Messages(StateGraph):
         """
         StateGraph.__init__(self, device_udid, MESSAGES_BUNDLE_ID, **kwargs)
         self.add_popup_handlers(PopUpHandler([POPUP_APPLE_INTELLIGENCE_WELCOME_TEXT], [POPUP_CONTINUE_BUTTON]),
-                                PopUpHandler([POPUP_RECENTLY_DELETED_TEXT], [POPUP_OK_BUTTON]))
+                                PopUpHandler([POPUP_RECENTLY_DELETED_TEXT], [POPUP_OK_BUTTON]),
+                                MessageMenuHandler(),
+                                PopUpHandler([REPLY_CLOSE_BUTTON, CONVERSATION_TITLE], [REPLY_CLOSE_BUTTON]))
 
     @action(new_message_state, end_state=conversation_state)
     def start_conversation(self, recipient: str, message: str):
@@ -319,6 +470,110 @@ class Messages(StateGraph):
         """
         return _service_from_text(
             self.driver.get_element(CONVERSATION_MESSAGE_BODY_FIELD).get_attribute('placeholderValue') or '')
+
+    @action(conversation_state)
+    def reply_to_message(self, message_to_reply_to: str, reply_text: str, conversation: str = None):
+        """
+        Replies to a message. The reply is shown below the message it replies to. Only available for iMessage.
+
+        :param message_to_reply_to: The text of the message to reply to. When multiple messages contain this text, the
+        last one is used.
+        :param reply_text: The text of the reply.
+        :param conversation: Optional. The name of the conversation. Defaults to the conversation that is open.
+        """
+        swipes = _scroll_to_message(self.driver, message_to_reply_to)
+        with _short_idle_timeout(self.driver):
+            _open_message_menu(self.driver, message_to_reply_to)
+            if not self.driver.is_present(CONVERSATION_MENU_REPLY):
+                _close_message_menu(self.driver)
+                _scroll_to_latest(self.driver, swipes)
+                raise MessagesError(f'Cannot reply to message "{message_to_reply_to}". Replying is only available for '
+                                    f'iMessage, and not on a simulator.')
+            self.gtl_logger.info('Pressing reply')
+            self.driver.click(CONVERSATION_MENU_REPLY)
+            sleep(1)
+        self.driver.send_keys(CONVERSATION_MESSAGE_BODY_FIELD, reply_text)
+        self.gtl_logger.info('Pressing send button')
+        self.driver.click(CONVERSATION_SEND_BUTTON)
+        sleep(1)
+        self.gtl_logger.info('Closing the reply')
+        self.driver.click(REPLY_CLOSE_BUTTON)
+        sleep(1)
+        _scroll_to_latest(self.driver, swipes)
+
+    @action(conversation_state)
+    def react_to_message(self, message_text: str, reaction: Reaction, conversation: str = None):
+        """
+        Reacts to a message with a tapback, e.g. a heart or a thumbs up.
+
+        :param message_text: The text of the message to react to. When multiple messages contain this text, the last
+        one is used.
+        :param reaction: The reaction.
+        :param conversation: Optional. The name of the conversation. Defaults to the conversation that is open.
+        """
+        with _message_menu(self.driver, message_text):
+            self.gtl_logger.info(f'Selecting reaction {reaction.name}')
+            self.driver.click(tapback(reaction.value))
+            sleep(1)
+
+    def _last_sent_message_text(self) -> Optional[str]:
+        sent = [message for message in _parse_messages(self.driver.driver.page_source) if message.sent_by_me]
+        return sent[-1].text if sent else None
+
+    def _has_status(self, message_text: str, statuses: list[str], implicit_wait: float) -> Optional[bool]:
+        """
+        Whether the last message sent from this device has one of the given statuses. The status is only shown below the
+        last message sent from this device, so for other messages the status is unknown.
+        """
+        if self._last_sent_message_text() != message_text:
+            self.gtl_logger.warning(f'Message "{message_text}" is not the last message sent from this device, its '
+                                    f'status is not shown')
+            return None
+        return _wait_for(self.driver, *statuses, timeout=implicit_wait)
+
+    @action(conversation_state)
+    def is_message_marked_delivered(self, message_text: str, conversation: str = None,
+                                    implicit_wait: float = 5) -> Optional[bool]:
+        """
+        Checks whether a message sent from this device has been delivered (or read).
+
+        :param message_text: The text of the message. This has to be the last message sent from this device, as iOS
+        only shows the status of that message.
+        :param conversation: Optional. The name of the conversation. Defaults to the conversation that is open.
+        :param implicit_wait: The number of seconds to wait for the message to be delivered.
+        :return: Whether the message has been delivered, or None if the message is not the last message sent from this
+        device.
+        """
+        return self._has_status(message_text, [CONVERSATION_STATUS_DELIVERED, CONVERSATION_STATUS_READ], implicit_wait)
+
+    @action(conversation_state)
+    def is_message_marked_read(self, message_text: str, conversation: str = None,
+                               implicit_wait: float = 10) -> Optional[bool]:
+        """
+        Checks whether a message sent from this device has been read. This is only shown when the recipient shares read
+        receipts.
+
+        :param message_text: The text of the message. This has to be the last message sent from this device, as iOS
+        only shows the status of that message.
+        :param conversation: Optional. The name of the conversation. Defaults to the conversation that is open.
+        :param implicit_wait: The number of seconds to wait for the message to be read.
+        :return: Whether the message has been read, or None if the message is not the last message sent from this
+        device.
+        """
+        return self._has_status(message_text, [CONVERSATION_STATUS_READ], implicit_wait)
+
+    @action(conversation_state)
+    def is_message_marked_not_delivered(self, message_text: str, conversation: str = None) -> Optional[bool]:
+        """
+        Checks whether sending a message from this device failed, e.g. an SMS that could not be delivered.
+
+        :param message_text: The text of the message. This has to be the last message sent from this device, as iOS
+        only shows the status of that message.
+        :param conversation: Optional. The name of the conversation. Defaults to the conversation that is open.
+        :return: Whether the message could not be delivered, or None if the message is not the last message sent from
+        this device.
+        """
+        return self._has_status(message_text, [CONVERSATION_STATUS_NOT_DELIVERED], implicit_wait=0)
 
     @action(conversations_state, end_state=search_results_state)
     def search_conversations(self, query: str) -> list[str]:

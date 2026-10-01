@@ -1,7 +1,7 @@
 import unittest
 
-from puma.apps.ios.messages.messages import Message, Service, _parse_message, _parse_messages, _service_from_text, \
-    _title_matches
+from puma.apps.ios.messages.messages import Message, Reaction, Service, _parse_message, _parse_messages, \
+    _service_from_text, _title_matches
 
 
 def _cell(label: str) -> str:
@@ -27,8 +27,26 @@ class TestMessagesParsing(unittest.TestCase):
         self.assertEqual(Message('Bob Jansen', 'Fine, thanks!', '14:46', Service.SMS), message)
         self.assertFalse(message.sent_by_me)
 
+    def test_parse_reactions(self):
+        message = _parse_message('Your iMessage, Hi, all!, You loved this, Bob liked this, 20:31')
+        self.assertEqual('Hi, all!', message.text)
+        self.assertEqual([(None, Reaction.HEART), ('Bob', Reaction.THUMBS_UP)], message.reactions)
+        received = _parse_message('+1 (555) 564-8583, Test, +1 (555) 564-8583 laughed at this, 20:32', Service.IMESSAGE)
+        self.assertEqual(('Test', [('+1 (555) 564-8583', Reaction.HAHA)]), (received.text, received.reactions))
+        self.assertEqual([], _parse_message('Bob, I liked this movie, 20:33').reactions)
+
+    def test_parse_replies(self):
+        page_source = ('<AppiumAUT>' + _text('iMessage  Encrypted') + _cell('Your iMessage, Test 2, 17:17')
+                       + _text('\u200e1 Reply') + _cell('Your iMessage, Reply Preview, Test 2, 17:17')
+                       + _cell('Your iMessage, Reply, Puma reply, with comma, 20:38') + '</AppiumAUT>')
+        messages = _parse_messages(page_source)
+        self.assertEqual(['Test 2', 'Puma reply, with comma'], [message.text for message in messages])
+        self.assertEqual([(False, None), (True, 'Test 2')], [(m.is_reply, m.reply_to) for m in messages])
+        self.assertEqual(Service.IMESSAGE, messages[1].service)
+
     def test_service_from_text(self):
         self.assertEqual(Service.IMESSAGE, _service_from_text('iMessage'))
+        self.assertEqual(Service.IMESSAGE, _service_from_text('iMessage  Encrypted'))
         self.assertEqual(Service.SMS, _service_from_text('Text Message • SMS'))
         self.assertIsNone(_service_from_text('Yesterday 21:44'))
 

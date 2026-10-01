@@ -24,6 +24,24 @@ CONVERSATION_SENT_BY_ME_SMS = 'Your Text Message'
 # of the message field shows the service of the next message in the same way.
 CONVERSATION_SERVICE_IMESSAGE = 'iMessage'
 CONVERSATION_SERVICE_SMS = 'Text Message'
+# A reply is shown below a preview of the message it replies to. Their labels are '<sender>, Reply, <text>, <time>'
+# and '<sender>, Reply Preview, <text>, <time>'.
+CONVERSATION_REPLY = 'Reply'
+CONVERSATION_REPLY_PREVIEW = 'Reply Preview'
+# The status of the last message sent from this device, shown below it. On real devices, the status can start with an
+# invisible left-to-right mark (U+200E), e.g. '\u200eRead Monday'.
+CONVERSATION_STATUS_DELIVERED = ios_predicate(
+    'type == "XCUIElementTypeStaticText" AND (name == "Delivered" OR name == "\u200eDelivered")')
+CONVERSATION_STATUS_READ = ios_predicate(
+    'type == "XCUIElementTypeStaticText" AND (name BEGINSWITH "Read" OR name BEGINSWITH "\u200eRead")')
+CONVERSATION_STATUS_NOT_DELIVERED = ios_predicate(
+    'type == "XCUIElementTypeStaticText" AND (name == "Not Delivered" OR name == "\u200eNot Delivered")')
+# The menu shown when long pressing a message, with the tapbacks (reactions) above it
+CONVERSATION_MESSAGE_MENU = accessibility_id('TapbackPickerCollectionView')
+CONVERSATION_MENU_REPLY = ios_predicate('type == "XCUIElementTypeButton" AND name == "Reply"')
+
+# Replying to a message. The message is shown on top of the conversation, with a message field for the reply.
+REPLY_CLOSE_BUTTON = accessibility_id('close')
 
 # New message. This screen is shown on top of the overview, and also contains a conversation title and message field.
 NEW_MESSAGE_NAVIGATION_BAR = ios_predicate('type == "XCUIElementTypeNavigationBar" AND name == "CKComposeChat"')
@@ -85,3 +103,19 @@ def search_result_conversation(name: str) -> str:
     """
     return ios_class_chain(f'**/XCUIElementTypeCollectionView[`name BEGINSWITH "Search results for:"`]'
                            f'/XCUIElementTypeCell[`name == "{name}"`]')
+
+
+def message_cell(text: str) -> str:
+    """
+    The last message in a conversation containing a text.
+    """
+    return ios_class_chain(f'**/XCUIElementTypeCell[$name == "CKBalloonTextView"$]'
+                           f'[`label CONTAINS "{text}" AND NOT label CONTAINS ", Reply Preview, "`][-1]')
+
+
+def tapback(reaction: str) -> str:
+    """
+    A tapback (reaction) in the menu of a message, e.g. 'heart' or 'thumbsUp'.
+    """
+    return ios_class_chain(f'**/XCUIElementTypeCollectionView[`name == "TapbackPickerCollectionView"`]'
+                           f'/XCUIElementTypeCell[`name == "{reaction}"`]')
