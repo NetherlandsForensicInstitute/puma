@@ -90,6 +90,20 @@ reply.reactions                    # [(None, Reaction.HEART)]: reactions from th
 A person can give one reaction to a message: a new reaction replaces the previous one. Replying is only available for
 iMessage, and not on a simulator.
 
+## Editing, unsending, deleting and forwarding
+
+```python
+phone.edit_message("Perhaps a movie?", "Perhaps a movie tonight?")
+phone.get_messages()[-1].edited                              # True
+phone.delete_message_for_everyone("Perhaps a movie tonight?")  # Undo Send: removes it for everyone
+phone.delete_message("Any plans this weekend?")              # deletes the message from this device only
+phone.forward_message("Bob Jansen", "Any plans", "Alice")    # forwards the last message containing 'Any plans'
+```
+
+Only messages sent from the device with iMessage can be edited (up to 15 minutes after sending) and unsent (up to 2
+minutes after sending). These are not available on a simulator, where a `MessagesError` is raised. Deleted messages are
+moved to Recently Deleted.
+
 ## Delivery status
 
 ```python

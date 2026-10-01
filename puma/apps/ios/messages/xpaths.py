@@ -30,20 +30,40 @@ CONVERSATION_REPLY = 'Reply'
 CONVERSATION_REPLY_PREVIEW = 'Reply Preview'
 # The status of the last message sent from this device, shown below it. On real devices, the status can start with an
 # invisible left-to-right mark (U+200E), e.g. '\u200eRead Monday'.
+# The status of an edited message ends with 'Edited', e.g. 'Delivered • Edited'.
 CONVERSATION_STATUS_DELIVERED = ios_predicate(
-    'type == "XCUIElementTypeStaticText" AND (name == "Delivered" OR name == "\u200eDelivered")')
+    'type == "XCUIElementTypeStaticText" AND (name BEGINSWITH "Delivered" OR name BEGINSWITH "\u200eDelivered")')
 CONVERSATION_STATUS_READ = ios_predicate(
     'type == "XCUIElementTypeStaticText" AND (name BEGINSWITH "Read" OR name BEGINSWITH "\u200eRead")')
 CONVERSATION_STATUS_NOT_DELIVERED = ios_predicate(
     'type == "XCUIElementTypeStaticText" AND (name == "Not Delivered" OR name == "\u200eNot Delivered")')
+# Edited messages are marked below them, with 'Edited' or a status ending with 'Edited'
+CONVERSATION_EDITED = 'Edited'
 # The menu shown when long pressing a message, with the tapbacks (reactions) above it
 CONVERSATION_MESSAGE_MENU = accessibility_id('TapbackPickerCollectionView')
 CONVERSATION_MENU_REPLY = ios_predicate('type == "XCUIElementTypeButton" AND name == "Reply"')
+CONVERSATION_MENU_EDIT = ios_predicate('type == "XCUIElementTypeButton" AND name == "Edit"')
+CONVERSATION_MENU_UNDO_SEND = ios_predicate('type == "XCUIElementTypeButton" AND name == "Undo Send"')
+CONVERSATION_MENU_MORE = ios_predicate('type == "XCUIElementTypeButton" AND name == "More…"')
+
+# Editing a message. The message itself becomes editable.
+EDIT_SEND_BUTTON = accessibility_id('Send edit')
+EDIT_CANCEL_BUTTON = accessibility_id('Cancel edit')
+
+# Selecting messages, after choosing More… in the menu of a message
+SELECTION_DELETE_BUTTON = ios_predicate('type == "XCUIElementTypeButton" AND name == "Delete"')
+SELECTION_FORWARD_BUTTON = ios_predicate('type == "XCUIElementTypeButton" AND name == "Forward"')
+SELECTION_CANCEL_BUTTON = ios_predicate('type == "XCUIElementTypeButton" AND name == "Cancel"')
+# The confirmation of deleting messages starts with a left-to-right mark (U+200E)
+SELECTION_CONFIRM_DELETE_BUTTON = ios_predicate(
+    'type == "XCUIElementTypeButton" AND (name ENDSWITH "Delete Message" OR name ENDSWITH "Delete Messages")')
 
 # Replying to a message. The message is shown on top of the conversation, with a message field for the reply.
 REPLY_CLOSE_BUTTON = accessibility_id('close')
 
 # New message. This screen is shown on top of the overview, and also contains a conversation title and message field.
+# When forwarding a message, a variant without this navigation bar is shown, so the screen is recognized by the
+# recipient field.
 NEW_MESSAGE_NAVIGATION_BAR = ios_predicate('type == "XCUIElementTypeNavigationBar" AND name == "CKComposeChat"')
 NEW_MESSAGE_RECIPIENT_FIELD = ios_predicate('type == "XCUIElementTypeTextField" AND name != "messageBodyField"')
 NEW_MESSAGE_CANCEL_BUTTON = ios_predicate('type == "XCUIElementTypeButton" AND name == "Cancel"')
@@ -119,3 +139,10 @@ def tapback(reaction: str) -> str:
     """
     return ios_class_chain(f'**/XCUIElementTypeCollectionView[`name == "TapbackPickerCollectionView"`]'
                            f'/XCUIElementTypeCell[`name == "{reaction}"`]')
+
+
+def editable_message(text: str) -> str:
+    """
+    The message being edited, containing a text.
+    """
+    return ios_class_chain(f'**/XCUIElementTypeTextView[`name == "CKBalloonTextView" AND value CONTAINS "{text}"`][-1]')
