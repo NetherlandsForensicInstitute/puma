@@ -48,6 +48,12 @@ class TestMessagesParsing(unittest.TestCase):
                          [(m.is_reply, m.reply_to) for m in messages])
         self.assertEqual(Service.IMESSAGE, messages[1].service)
 
+    def test_parse_edited(self):
+        page_source = ('<AppiumAUT>' + _cell('Your iMessage, Edited text, 20:52') + _text('Edited')
+                       + _cell('Your iMessage, Other text, 20:53') + _cell('Your iMessage, Last text, 20:54')
+                       + _text('Delivered • Edited') + '</AppiumAUT>')
+        self.assertEqual([True, False, True], [message.edited for message in _parse_messages(page_source)])
+
     def test_service_from_text(self):
         self.assertEqual(Service.IMESSAGE, _service_from_text('iMessage'))
         self.assertEqual(Service.IMESSAGE, _service_from_text('iMessage  Encrypted'))

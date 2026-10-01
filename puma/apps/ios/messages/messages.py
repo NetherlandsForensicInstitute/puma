@@ -9,7 +9,7 @@ from typing import Optional
 from puma.apps.ios.messages import logger
 from puma.apps.ios.messages.xpaths import *
 from puma.state_graph.action import action
-from puma.state_graph.popup_handler import PopUpHandler
+from puma.state_graph.popup_handler import PopUpHandler, simple_popup_handler
 from puma.state_graph.puma_driver import PumaDriver, Platform, supported_version
 from puma.state_graph.state import SimpleState, ContextualState, compose_clicks
 from puma.state_graph.state_graph import StateGraph
@@ -71,6 +71,7 @@ class Message:
     :param is_reply: Whether the message is a reply to another message.
     :param reply_to: The text of the message replied to, if it is shown in the conversation. For replies in a thread,
     this is the message that started the thread.
+    :param edited: Whether the message has been edited.
     """
     sender: Optional[str]
     text: str
@@ -79,6 +80,7 @@ class Message:
     reactions: list[tuple[Optional[str], Reaction]] = field(default_factory=list)
     is_reply: bool = False
     reply_to: Optional[str] = None
+    edited: bool = False
 
     @property
     def sent_by_me(self) -> bool:
@@ -143,6 +145,9 @@ def _parse_messages(page_source: str, default_service: Optional[Service] = None)
         name = element.get('name') or ''
         if element_type == 'XCUIElementTypeStaticText' and _service_from_text(name):
             service = _service_from_text(name)
+        elif element_type == 'XCUIElementTypeStaticText' and name.endswith(CONVERSATION_EDITED) and messages:
+            # shown below an edited message, e.g. 'Edited' or 'Delivered • Edited'
+            messages[-1].edited = True
         elif element_type == 'XCUIElementTypeCell' and any(
                 child.get('name') == CONVERSATION_MESSAGE_BALLOON for child in element.iter()):
             label = element.get('label')
@@ -183,6 +188,37 @@ def _swipe_left(driver: PumaDriver, element: str):
 def _close_new_message(driver: PumaDriver):
     driver.click(NEW_MESSAGE_CANCEL_BUTTON)
     sleep(1)
+
+
+def _enter_recipient(driver: PumaDriver, recipient: str):
+    """
+    Enters the recipient of a new message: a contact, selected from the suggestions, or a phone number or email address.
+    """
+    driver.gtl_logger.info(f'Entering recipient "{recipient}"')
+    driver.send_keys(NEW_MESSAGE_RECIPIENT_FIELD, recipient)
+    sleep(2)
+    if driver.is_present(recipient_suggestion(recipient)):
+        driver.gtl_logger.info(f'Selecting contact "{recipient}" from the suggestions')
+        driver.click(recipient_suggestion(recipient))
+    else:
+        # not a contact: confirm the phone number or email address as recipient
+        driver.gtl_logger.info(f'Confirming "{recipient}" as recipient')
+        driver.press_enter()
+    sleep(1)
+
+
+def _send_new_message(driver: PumaDriver, recipient: str):
+    """
+    Sends a new message. When it is sent, the new message screen turns into the conversation.
+    """
+    driver.gtl_logger.info('Pressing send button')
+    driver.click(CONVERSATION_SEND_BUTTON)
+    sleep(2)
+    if driver.is_present(NEW_MESSAGE_RECIPIENT_FIELD):
+        driver.gtl_logger.warning(f'Could not send a message to "{recipient}", closing the new message screen')
+        _close_new_message(driver)
+        raise MessagesError(f'Cannot send a message to "{recipient}". Note that messages cannot be sent to new '
+                            f'recipients on a simulator.')
 
 
 def _wait_for(driver: PumaDriver, *xpaths: str, timeout: float = 6) -> bool:
@@ -321,7 +357,8 @@ class ConversationState(SimpleState, ContextualState):
 
     def __init__(self, parent_state):
         super().__init__(xpaths=[CONVERSATION_TITLE, CONVERSATION_MESSAGE_BODY_FIELD],
-                         invalid_xpaths=[NEW_MESSAGE_NAVIGATION_BAR, CONVERSATION_MESSAGE_MENU, REPLY_CLOSE_BUTTON],
+                         invalid_xpaths=[NEW_MESSAGE_RECIPIENT_FIELD, CONVERSATION_MESSAGE_MENU, REPLY_CLOSE_BUTTON,
+                                         SELECTION_FORWARD_BUTTON, EDIT_SEND_BUTTON],
                          parent_state=parent_state,
                          parent_state_transition=_close_conversation)
 
@@ -367,8 +404,8 @@ class Messages(StateGraph):
     # The welcome screen, the new message screen and the search results are shown on top of the overview, while the
     # overview stays in the element tree. Therefore these are marked as invalid.
     conversations_state = SimpleState(xpaths=[CONVERSATIONS_LIST, CONVERSATIONS_COMPOSE_BUTTON],
-                                      invalid_xpaths=[POPUP_APPLE_INTELLIGENCE_WELCOME_TEXT, NEW_MESSAGE_NAVIGATION_BAR,
-                                                      POPUP_RECENTLY_DELETED_TEXT, SEARCH_RESULTS_CLOSE_BUTTON],
+                                      invalid_xpaths=[POPUP_APPLE_INTELLIGENCE_WELCOME_TEXT, POPUP_RECENTLY_DELETED_TEXT,
+                                                      NEW_MESSAGE_RECIPIENT_FIELD, SEARCH_RESULTS_CLOSE_BUTTON],
                                       initial_state=True)
     # A conversation opened from the search results is shown on top of the search results. After going back from it,
     # searching is still active, but the list of results is not always shown. Therefore searching is recognized by the
@@ -377,7 +414,7 @@ class Messages(StateGraph):
                                        invalid_xpaths=[CONVERSATION_TITLE],
                                        parent_state=conversations_state,
                                        parent_state_transition=_close_search)
-    new_message_state = SimpleState(xpaths=[NEW_MESSAGE_NAVIGATION_BAR, NEW_MESSAGE_RECIPIENT_FIELD],
+    new_message_state = SimpleState(xpaths=[NEW_MESSAGE_RECIPIENT_FIELD, NEW_MESSAGE_CANCEL_BUTTON],
                                     parent_state=conversations_state,
                                     parent_state_transition=_close_new_message)
     conversation_state = ConversationState(parent_state=conversations_state)
@@ -398,7 +435,10 @@ class Messages(StateGraph):
         self.add_popup_handlers(PopUpHandler([POPUP_APPLE_INTELLIGENCE_WELCOME_TEXT], [POPUP_CONTINUE_BUTTON]),
                                 PopUpHandler([POPUP_RECENTLY_DELETED_TEXT], [POPUP_OK_BUTTON]),
                                 MessageMenuHandler(),
-                                PopUpHandler([REPLY_CLOSE_BUTTON, CONVERSATION_TITLE], [REPLY_CLOSE_BUTTON]))
+                                PopUpHandler([REPLY_CLOSE_BUTTON, CONVERSATION_TITLE], [REPLY_CLOSE_BUTTON]),
+                                PopUpHandler([SELECTION_FORWARD_BUTTON, SELECTION_CANCEL_BUTTON],
+                                             [SELECTION_CANCEL_BUTTON]),
+                                simple_popup_handler(EDIT_CANCEL_BUTTON))
 
     @action(new_message_state, end_state=conversation_state)
     def start_conversation(self, recipient: str, message: str):
@@ -409,30 +449,12 @@ class Messages(StateGraph):
         :param recipient: The name of a contact, or a phone number or email address.
         :param message: The message to send.
         """
-        self.gtl_logger.info(f'Entering recipient "{recipient}"')
-        self.driver.send_keys(NEW_MESSAGE_RECIPIENT_FIELD, recipient)
-        sleep(2)
-        if self.driver.is_present(recipient_suggestion(recipient)):
-            self.gtl_logger.info(f'Selecting contact "{recipient}" from the suggestions')
-            self.driver.click(recipient_suggestion(recipient))
-        else:
-            # not a contact: confirm the phone number or email address as recipient
-            self.gtl_logger.info(f'Confirming "{recipient}" as recipient')
-            self.driver.press_enter()
-        sleep(1)
+        _enter_recipient(self.driver, recipient)
         self.gtl_logger.info('Entering message text')
         self.driver.click(CONVERSATION_MESSAGE_BODY_FIELD)
         self.driver.driver.switch_to.active_element.send_keys(message)
         sleep(1)
-        self.gtl_logger.info('Pressing send button')
-        self.driver.click(CONVERSATION_SEND_BUTTON)
-        sleep(2)
-        # when the message is sent, the new message screen turns into the conversation
-        if self.driver.is_present(NEW_MESSAGE_NAVIGATION_BAR):
-            self.gtl_logger.warning(f'Could not send a message to "{recipient}", closing the new message screen')
-            _close_new_message(self.driver)
-            raise MessagesError(f'Cannot send a message to "{recipient}". Note that messages cannot be sent to new '
-                                f'recipients on a simulator.')
+        _send_new_message(self.driver, recipient)
         logger.info(f'Started conversation with {recipient}')
 
     @action(conversation_state)
@@ -503,6 +525,107 @@ class Messages(StateGraph):
         self.driver.click(REPLY_CLOSE_BUTTON)
         sleep(1)
         _scroll_to_latest(self.driver, swipes)
+
+    def _choose_from_message_menu(self, message_text: str, menu_item: str, action_name: str, reason: str = ''):
+        """
+        Opens the menu of a message and chooses an item in it. When the item is not in the menu, a MessagesError is
+        raised with the given reason.
+        """
+        _open_message_menu(self.driver, message_text)
+        if not self.driver.is_present(menu_item):
+            _close_message_menu(self.driver)
+            raise MessagesError(f'Cannot {action_name} message "{message_text}". {reason}'.strip())
+        self.driver.click(menu_item)
+        sleep(1)
+
+    @action(conversation_state)
+    def edit_message(self, message_text: str, new_text: str, conversation: str = None):
+        """
+        Edits a message sent from this device. The message is marked as edited, also for the recipient. Only available
+        for iMessage, up to 15 minutes after sending, and not on a simulator.
+
+        :param message_text: The text of the message to edit. When multiple messages contain this text, the last one is
+        used.
+        :param new_text: The new text of the message.
+        :param conversation: Optional. The name of the conversation. Defaults to the conversation that is open.
+        """
+        swipes = _scroll_to_message(self.driver, message_text)
+        with _short_idle_timeout(self.driver):
+            self.gtl_logger.info('Choosing Edit')
+            self._choose_from_message_menu(message_text, CONVERSATION_MENU_EDIT, 'edit',
+                                           'Only messages sent from this device with iMessage can be edited, up to 15 '
+                                           'minutes after sending, and not on a simulator.')
+            self.gtl_logger.info(f'Changing the text to "{new_text}"')
+            field = self.driver.get_element(editable_message(message_text))
+            field.clear()
+            field.send_keys(new_text)
+            sleep(1)
+            self.gtl_logger.info('Pressing send edit')
+            self.driver.click(EDIT_SEND_BUTTON)
+            sleep(2)
+        _scroll_to_latest(self.driver, swipes)
+
+    @action(conversation_state)
+    def delete_message_for_everyone(self, message_text: str, conversation: str = None):
+        """
+        Unsends a message sent from this device (Undo Send), which removes it for everyone. The conversation shows that
+        a message was unsent. Only available for iMessage, up to 2 minutes after sending, and not on a simulator.
+
+        :param message_text: The text of the message. When multiple messages contain this text, the last one is used.
+        :param conversation: Optional. The name of the conversation. Defaults to the conversation that is open.
+        """
+        swipes = _scroll_to_message(self.driver, message_text)
+        with _short_idle_timeout(self.driver):
+            self.gtl_logger.info('Choosing Undo Send')
+            self._choose_from_message_menu(message_text, CONVERSATION_MENU_UNDO_SEND, 'unsend',
+                                           'Only messages sent from this device with iMessage can be unsent, up to 2 '
+                                           'minutes after sending, and not on a simulator.')
+            sleep(2)
+        _scroll_to_latest(self.driver, swipes)
+
+    @action(conversation_state)
+    def delete_message(self, message_text: str, conversation: str = None):
+        """
+        Deletes a message from this device only. Deleted messages are moved to Recently Deleted.
+
+        :param message_text: The text of the message. When multiple messages contain this text, the last one is used.
+        :param conversation: Optional. The name of the conversation. Defaults to the conversation that is open.
+        """
+        swipes = _scroll_to_message(self.driver, message_text)
+        with _short_idle_timeout(self.driver):
+            self.gtl_logger.info('Choosing More… to select the message')
+            self._choose_from_message_menu(message_text, CONVERSATION_MENU_MORE, 'select')
+            self.gtl_logger.info('Pressing delete button')
+            self.driver.click(SELECTION_DELETE_BUTTON)
+            if not _wait_for(self.driver, SELECTION_CONFIRM_DELETE_BUTTON, timeout=4):
+                raise MessagesError(f'Deleting message "{message_text}" was not asked to be confirmed')
+            # the confirmation ignores taps while it is appearing
+            sleep(1)
+            self.gtl_logger.info('Confirming deletion')
+            self.driver.click(SELECTION_CONFIRM_DELETE_BUTTON)
+            sleep(2)
+        _scroll_to_latest(self.driver, swipes)
+
+    @action(conversation_state, end_state=conversation_state)
+    def forward_message(self, conversation: str, message_contains: str, to_chat: str):
+        """
+        Forwards a message to another conversation. The conversation it is forwarded to is opened afterwards.
+
+        :param conversation: The name of the conversation with the message.
+        :param message_contains: The text of the message, or a part of it. When multiple messages contain this text,
+        the last one is used.
+        :param to_chat: The recipient to forward the message to: the name of a contact, or a phone number or email
+        address.
+        """
+        _scroll_to_message(self.driver, message_contains)
+        with _short_idle_timeout(self.driver):
+            self.gtl_logger.info('Choosing More… to select the message')
+            self._choose_from_message_menu(message_contains, CONVERSATION_MENU_MORE, 'select')
+            self.gtl_logger.info('Pressing forward button')
+            self.driver.click(SELECTION_FORWARD_BUTTON)
+            sleep(2)
+        _enter_recipient(self.driver, to_chat)
+        _send_new_message(self.driver, to_chat)
 
     @action(conversation_state)
     def react_to_message(self, message_text: str, reaction: Reaction, conversation: str = None):

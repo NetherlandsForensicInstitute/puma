@@ -15,8 +15,9 @@ CONVERSATION_B = "+1 (555) 564-8583"
 # Real devices only: the name of a conversation on the device that is not shown in the overview without scrolling, to
 # test searching. The simulator does not index messages, so searching finds nothing there.
 SEARCH_CONVERSATION = ""
-# Real devices only: an iMessage conversation with someone who shares read receipts, to test replying and read
-# receipts. Replying is not available on the simulator. The other person has to read the message during the test.
+# Real devices only: an iMessage conversation with someone who shares read receipts, to test replying, read receipts,
+# editing, unsending and forwarding. These are not available on the simulator. The other person has to read the message
+# during the test. Forwarding is tested by forwarding a message to this same conversation.
 REPLY_CONVERSATION = ""
 
 
@@ -101,6 +102,31 @@ class TestMessages(unittest.TestCase):
         reply = self.alice.get_messages()[-1]
         self.assertEqual(("Puma test, a reply", True, "Puma test, please read this"),
                          (reply.text, reply.is_reply, reply.reply_to))
+
+
+    def test_delete_message(self):
+        self.alice.send_message("Puma test, delete me", conversation=CONVERSATION_A)
+        self.alice.send_message("Puma test, keep me")
+        self.alice.delete_message("Puma test, delete me")
+        texts = [message.text for message in self.alice.get_messages()]
+        self.assertNotIn("Puma test, delete me", texts)
+        self.assertEqual("Puma test, keep me", texts[-1])
+
+    def test_edit_unsend_and_forward(self):
+        if self.alice.driver.is_simulator() or not REPLY_CONVERSATION:
+            self.skipTest('Editing, unsending and forwarding need a real device, and REPLY_CONVERSATION configured at '
+                          'the top of the script')
+        self.alice.send_message("Puma test, edit me", conversation=REPLY_CONVERSATION)
+        self.alice.edit_message("Puma test, edit me", "Puma test, edited")
+        edited = self.alice.get_messages()[-1]
+        self.assertEqual(("Puma test, edited", True), (edited.text, edited.edited))
+        self.alice.send_message("Puma test, unsend me")
+        self.alice.delete_message_for_everyone("Puma test, unsend me")
+        self.assertNotIn("Puma test, unsend me", [message.text for message in self.alice.get_messages()])
+        # forward to the same conversation, so no one else receives test messages
+        self.alice.forward_message(REPLY_CONVERSATION, "Puma test, edited", REPLY_CONVERSATION)
+        forwarded = self.alice.get_messages()[-1]
+        self.assertEqual(("Puma test, edited", False), (forwarded.text, forwarded.edited))
 
 
 if __name__ == '__main__':
