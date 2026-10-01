@@ -1,12 +1,12 @@
 Version 6.0.0
 -------------
 24. iOS: Add iOS support, with Settings and Messages
-24. StateGraph: applications must set their platform (platform = Platform.ANDROID or Platform.IOS); there is no default anymore
+24. StateGraph: applications must set their platform (Platform.ANDROID or Platform.IOS), there is no default
 24. Messages: search conversations, and read the sender, time and service (iMessage or SMS) of messages
 24. Messages: reply and react to messages, and check whether messages are delivered or read
 24. Messages: edit, unsend, delete and forward messages
 24. Messages: send photos, audio messages and the live location
-24. Messages: create, rename and leave group conversations, and add and remove members (not yet verified on a device)
+24. Messages: create, rename and leave groups, and add and remove members (not yet verified on a device)
 204. Tutorial: Create new tutorial files
 213. Teleguard: Fix typo in variable name
 199. WhatsApp: Add view contact profile picture functionality

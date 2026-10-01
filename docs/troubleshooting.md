@@ -108,10 +108,33 @@ The first connection to an iOS device builds WebDriverAgent with Xcode. If this 
   that UI Automation is enabled in the developer settings on the device.
 - Check the Appium server output for the `xcodebuild` error. The most common errors are described below.
 
+### iOS: "xcodebuild failed with code 65"
+
+Appium could not build or start WebDriverAgent. The Appium server output only shows this code: to see the actual error,
+pass the capability `"appium:showXcodeLog": True`, or run the `xcodebuild` command from the Appium output yourself. On
+real devices, the most common cause is a certificate that is not trusted, see below.
+
 ### iOS: "The application could not be launched because the Developer App Certificate is not trusted"
 
 WebDriverAgent was built and installed, but iOS does not trust the certificate it is signed with. On the device, go to
-Settings > General > VPN & Device Management, select your Apple ID under "Developer App", and tap Trust.
+Settings > General > VPN & Device Management, select your Apple ID under "Developer App", and tap Trust. If Trust has
+already been tapped, tap "Verify App" if shown (this needs an Internet connection), or remove the app
+WebDriverAgentRunner from the device: it is installed again on the next connection, after which it has to be trusted
+again.
+
+With a free Apple ID, this happens again every 7 days, as WebDriverAgent is then signed again.
+
+### iOS: "Not authorized for performing UI testing actions"
+
+WebDriverAgent can read the screen, but iOS refuses to let it perform actions, such as starting apps. The permission for
+UI automation has been withdrawn on the device. On the device, turn Settings > Developer > Enable UI Automation off and
+on again, and allow it when asked. Reconnecting the cable and restarting Appium can help as well.
+
+### iOS: "Unknown device or simulator UDID" for a device that is connected
+
+Appium only finds devices that are connected by USB. Xcode can show a device as connected over Wi-Fi, but Appium cannot
+use it: connect the device with a cable, unlock it, and trust the computer if asked. Check that the device is connected
+by USB with `system_profiler SPUSBDataType`.
 
 ### iOS: No valid signing identities, although a certificate is present in Xcode
 
