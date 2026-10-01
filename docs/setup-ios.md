@@ -23,7 +23,9 @@ xcrun simctl list devices booted
 
 **Physical devices** need some preparation:
 
-1. Connect the device to your Mac with a cable, unlock it and tap **Trust** when asked to trust the computer.
+1. Connect the device to your Mac with a cable, unlock it and tap **Trust** when asked to trust the computer. Keep the
+   device connected with the cable while using Puma: Appium only finds devices connected by USB, also when Xcode shows
+   the device as connected over Wi-Fi.
 2. Open Xcode (Window > Devices and Simulators) so the device is paired with Xcode. This makes the Developer Mode setting
    appear on the device.
 3. Enable [Developer Mode](https://developer.apple.com/documentation/xcode/enabling-developer-mode-on-a-device)
@@ -56,7 +58,9 @@ xcrun simctl list devices booted
    Your team id is the `OU` of your certificate, shown in Xcode (Settings > Accounts), or with
    `security find-certificate -c "Apple Development" -p | openssl x509 -noout -subject`.
 8. The first connection installs WebDriverAgent. With a free Apple ID, iOS then refuses to start it until you trust your
-   developer certificate on the device: Settings > General > VPN & Device Management > your Apple ID > Trust.
+   developer certificate on the device: Settings > General > VPN & Device Management > your Apple ID > Trust. With a
+   free Apple ID, WebDriverAgent can only be used for 7 days. After that, Xcode signs it again, and you have to trust
+   the certificate on the device again.
 9. Keep the device unlocked while Puma runs: iOS does not start apps on a locked device. Setting Auto-Lock to Never
    (Settings > Display & Brightness) helps.
 

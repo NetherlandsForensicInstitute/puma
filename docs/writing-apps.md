@@ -292,6 +292,19 @@ iOS applications use the same `StateGraph` framework, and live in `apps/ios`. Th
 - XCUITest waits (by default up to 10 seconds) for the app to become idle before each interaction. Screens with
   continuous animations can make every click slow; use `self.driver.set_idle_timeout(seconds)` to lower this
   temporarily.
+- Menus, pickers and other temporary UI (e.g. the menu shown when long pressing an element) close when a new Appium
+  session is started. Perform all steps in such UI within one action, and handle it with a pop-up handler when it is
+  left open. Pop-ups without a button to close them, such as menus that close by tapping next to them, can be handled
+  by a subclass of `PopUpHandler` that overrides `dismiss_popup` (see `MessageMenuHandler` in
+  [Messages](../puma/apps/ios/messages/messages.py)).
+- Only the elements on or near the screen are in the element tree. Elements further down a list, or older messages in
+  a conversation, have to be scrolled to before they can be found.
+- Some controls ignore clicks on elements, but do react to a tap on their position, e.g. photo pickers and controls
+  shown while recording audio. Use `self.driver.execute_script('mobile: tap', {'x': x, 'y': y})` with the center of the
+  element for these.
+- Names and labels can contain invisible characters, such as a left-to-right mark (`\u200e`) or a non-breaking space
+  (`\xa0`), e.g. `'\u200eRead Monday'`. Look at the element tree with Python (`repr()`) rather than in Appium Inspector
+  when a locator does not match, and use `BEGINSWITH`, `ENDSWITH` or `CONTAINS` in predicates where needed.
 
 ```python
 from puma.state_graph.action import action
@@ -393,6 +406,11 @@ casing, use case insensitivity as much as possible. To make an XPath expression 
 following:
   ```xpath
   //*[lower-case(@attribute) = 'value']
+  ```
+On iOS, predicates and class chains are case-sensitive as well. Add `[c]` to an operator to make it case-insensitive:
+  ```python
+  ios_predicate('type == "XCUIElementTypeButton" AND label ==[c] "go"')
+  ios_predicate('name BEGINSWITH[c] "delivered"')
   ```
 
 ### Elements that do not have identifying attributes

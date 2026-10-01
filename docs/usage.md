@@ -83,6 +83,10 @@ to use an older release of Puma.
 To make it easy for users to lookup older versions, git tags will be used to tag app versions. So in the above example
 you'd simply have to look up the tag `Xyz_v2`.
 
+Apps that are built into iOS, such as Safari and Messages, are updated together with iOS. For these apps, the supported
+version is the iOS version, e.g. `26.6`. Third-party iOS apps, installed from the App Store, use their own app version,
+like Android apps.
+
 If you are running your script on a newer app version than the tag, it is advised to first run the test script of your
 app (can be found in the [test scripts directory](../test_scripts)). This test script includes each action that can be
 performed on the phone, and running these first will inform you if all actions are still supported, without messing up
