@@ -135,6 +135,27 @@ phone.is_message_marked_not_delivered("Perhaps a movie?")   # e.g. an SMS that c
 
 iOS only shows the status of the last message sent from the device. For other messages, these methods return `None`.
 
+## Groups
+
+> **TODO:** the group actions have not been verified on a device yet, as that needs a group of people with iMessage
+> that can receive test messages. They are built on the standard texts of iOS 26 (e.g. "Change Name and Photo" and
+> "Leave this Conversation"), and raise a `MessagesError` when an element is not found. Run `test_groups` in
+> `test_scripts/test_messages.py` with three test contacts to verify them, and adjust the locators marked with TODO in
+> `xpaths.py` where needed.
+
+```python
+phone.create_group(["Bob Jansen", "Alice"], "Hi both!", group_name="Weekend")
+phone.add_members(["Charlie"], conversation="Weekend")
+phone.edit_group_name("Weekend", "Weekend trip")
+phone.remove_member("Charlie", conversation="Weekend trip")
+phone.group_exists("Weekend trip", ["Bob Jansen", "Alice"])   # True
+phone.leave_group("Weekend trip")
+```
+
+Only group conversations with iMessage users can be named and have people added or removed. Removing people and
+leaving a group is only possible in groups of at least four people, including yourself. `group_exists` searches for the
+conversation, which only works on real devices.
+
 ## Deleting conversations
 
 ```python

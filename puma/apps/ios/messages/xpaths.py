@@ -112,6 +112,14 @@ DETAILS_NAVIGATION_BAR = ios_predicate(
 DETAILS_TITLE = accessibility_id('DetailsHeaderTitle')
 DETAILS_STOP_SHARING_LOCATION = ios_predicate(
     'type == "XCUIElementTypeButton" AND name == "Stop Sharing My Location"')
+# Details of a group conversation. TODO: these have not been verified on a device yet, see the README.
+DETAILS_CHANGE_GROUP_NAME = ios_predicate('type == "XCUIElementTypeButton" AND name == "Change Name and Photo"')
+DETAILS_GROUP_NAME_FIELD = ios_predicate('type == "XCUIElementTypeTextField"')
+DETAILS_DONE_BUTTON = ios_predicate('type == "XCUIElementTypeButton" AND name == "Done"')
+DETAILS_ADD_MEMBER = ios_predicate('type == "XCUIElementTypeButton" AND name BEGINSWITH "Add Contact"')
+DETAILS_REMOVE_MEMBER = ios_predicate('type == "XCUIElementTypeButton" AND name == "Remove"')
+DETAILS_LEAVE_GROUP = ios_predicate('type == "XCUIElementTypeButton" AND name == "Leave this Conversation"')
+DETAILS_LEAVE_GROUP_LABEL = 'Leave this Conversation'
 
 # Popups
 POPUP_APPLE_INTELLIGENCE_WELCOME_TEXT = ios_predicate(
@@ -194,3 +202,10 @@ def location_duration(icon: str) -> str:
     A duration for sharing the location, e.g. 'clock' for one hour.
     """
     return ios_predicate(f'type == "XCUIElementTypeButton" AND name == "{icon}"')
+
+
+def details_member(name: str) -> str:
+    """
+    A participant in the details of a group conversation. TODO: not verified on a device yet, see the README.
+    """
+    return ios_predicate(f'type == "XCUIElementTypeCell" AND label BEGINSWITH "{name}"')

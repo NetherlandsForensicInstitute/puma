@@ -538,6 +538,34 @@ class Messages(StateGraph):
         _send_new_message(self.driver, recipient)
         logger.info(f'Started conversation with {recipient}')
 
+    @action(new_message_state, end_state=conversation_state)
+    def create_group(self, members: list[str], first_message: str, group_name: str = None):
+        """
+        Creates a group conversation by sending a message to multiple recipients. Group conversations with only iMessage
+        users can be given a name. TODO: not verified on a device yet, see the README.
+
+        :param members: The recipients: names of contacts, or phone numbers or email addresses.
+        :param first_message: The first message.
+        :param group_name: Optional. The name of the group.
+        """
+        if len(members) < 2:
+            raise ValueError('A group conversation needs at least two other members, use start_conversation instead')
+        for member in members:
+            _enter_recipient(self.driver, member)
+        self.gtl_logger.info('Entering message text')
+        self.driver.click(CONVERSATION_MESSAGE_BODY_FIELD)
+        self.driver.driver.switch_to.active_element.send_keys(first_message)
+        sleep(1)
+        _send_new_message(self.driver, ', '.join(members))
+        if group_name:
+            self.gtl_logger.info('Opening the details of the group')
+            self.driver.click(CONVERSATION_TITLE)
+            sleep(2)
+            self._set_group_name(group_name)
+            self.driver.back()
+            sleep(1)
+        logger.info(f'Created group with {members}')
+
     @action(conversation_state)
     def send_message(self, message: str, conversation: str = None):
         """
@@ -811,6 +839,107 @@ class Messages(StateGraph):
         self.driver.click(DETAILS_STOP_SHARING_LOCATION)
         sleep(2)
         return True
+
+    def _require(self, xpath: str, what: str):
+        if not self.driver.is_present(xpath):
+            raise MessagesError(f'{what} is not available. This is only possible in group conversations with only '
+                                f'iMessage users. Note that this has not been verified on a device yet.')
+
+    def _set_group_name(self, group_name: str):
+        self._require(DETAILS_CHANGE_GROUP_NAME, 'Changing the name of the group')
+        self.gtl_logger.info('Pressing change name and photo')
+        self.driver.click(DETAILS_CHANGE_GROUP_NAME)
+        sleep(1)
+        self.gtl_logger.info(f'Entering the group name "{group_name}"')
+        self.driver.send_keys(DETAILS_GROUP_NAME_FIELD, group_name)
+        self.gtl_logger.info('Pressing done')
+        self.driver.click(DETAILS_DONE_BUTTON)
+        sleep(1)
+
+    @action(conversation_details_state)
+    def edit_group_name(self, conversation: str, new_group_name: str):
+        """
+        Changes the name of a group conversation. TODO: not verified on a device yet, see the README.
+
+        :param conversation: The name of the group conversation.
+        :param new_group_name: The new name of the group.
+        """
+        self._set_group_name(new_group_name)
+
+    @action(conversation_details_state)
+    def add_members(self, new_members: list[str], conversation: str):
+        """
+        Adds people to a group conversation. TODO: not verified on a device yet, see the README.
+
+        :param new_members: The people to add: names of contacts, or phone numbers or email addresses.
+        :param conversation: The name of the group conversation.
+        """
+        for member in new_members:
+            self._require(DETAILS_ADD_MEMBER, 'Adding people to the conversation')
+            self.gtl_logger.info('Pressing add contact')
+            self.driver.click(DETAILS_ADD_MEMBER)
+            sleep(1)
+            _enter_recipient(self.driver, member)
+            self.gtl_logger.info('Pressing done')
+            self.driver.click(DETAILS_DONE_BUTTON)
+            sleep(1)
+
+    @action(conversation_details_state)
+    def remove_member(self, member: str, conversation: str):
+        """
+        Removes a person from a group conversation. iOS only allows this in groups with at least four people,
+        including yourself. TODO: not verified on a device yet, see the README.
+
+        :param member: The name of the person to remove.
+        :param conversation: The name of the group conversation.
+        """
+        self._require(details_member(member), f'Removing "{member}"')
+        self.gtl_logger.info(f'Swiping "{member}" to the left to reveal the remove button')
+        _swipe_left(self.driver, details_member(member))
+        self._require(DETAILS_REMOVE_MEMBER, f'Removing "{member}"')
+        self.gtl_logger.info('Pressing remove')
+        self.driver.click(DETAILS_REMOVE_MEMBER)
+        sleep(1)
+
+    @action(conversation_details_state, end_state=conversations_state)
+    def leave_group(self, conversation: str):
+        """
+        Leaves a group conversation. iOS only allows this in groups with at least four people, including yourself.
+        TODO: not verified on a device yet, see the README.
+
+        :param conversation: The name of the group conversation.
+        """
+        self.driver.swipe_to_find_element(DETAILS_LEAVE_GROUP, max_swipes=5)
+        self.gtl_logger.info('Pressing leave this conversation')
+        self.driver.click(DETAILS_LEAVE_GROUP)
+        sleep(1)
+        if DETAILS_LEAVE_GROUP_LABEL in self.driver.alert_buttons():
+            self.gtl_logger.info('Confirming leaving the conversation')
+            self.driver.click_alert_button(DETAILS_LEAVE_GROUP_LABEL)
+        sleep(2)
+        # after leaving, the conversation is still open: go back to the overview
+        if self.driver.is_present(CONVERSATION_TITLE):
+            _close_conversation(self.driver)
+
+    @action(conversations_state)
+    def group_exists(self, conversation: str, members: list[str] = None) -> bool:
+        """
+        Checks whether a conversation exists, and optionally whether it has the given members. Searching only works on
+        real devices. TODO: checking the members has not been verified on a device yet, see the README.
+
+        :param conversation: The name of the group conversation.
+        :param members: Optional. The names of the people that have to be in the conversation.
+        :return: Whether the conversation exists, with the given members.
+        """
+        if conversation not in self.search_conversations(conversation):
+            return False
+        if not members:
+            return True
+        self.go_to_state(self.conversation_details_state, conversation=conversation)
+        missing = [member for member in members if not self.driver.is_present(details_member(member))]
+        if missing:
+            self.gtl_logger.warning(f'Group "{conversation}" does not contain {missing}')
+        return not missing
 
     @action(conversation_state)
     def react_to_message(self, message_text: str, reaction: Reaction, conversation: str = None):

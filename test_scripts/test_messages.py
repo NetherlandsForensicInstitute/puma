@@ -19,6 +19,11 @@ SEARCH_CONVERSATION = ""
 # editing, unsending and forwarding. These are not available on the simulator. The other person has to read the message
 # during the test. Forwarding is tested by forwarding a message to this same conversation.
 REPLY_CONVERSATION = ""
+# Real devices only: at least three other people with iMessage, to test group conversations. Removing people and leaving
+# a group is only possible in groups of at least four people, including yourself. The name of the test group is
+# GROUP_NAME. Note that all members receive the test messages.
+GROUP_MEMBERS = []
+GROUP_NAME = "Puma test group"
 
 
 class TestMessages(unittest.TestCase):
@@ -146,6 +151,19 @@ class TestMessages(unittest.TestCase):
         self.assertEqual("Location", self.alice.get_messages()[-1].attachment)
         self.assertTrue(self.alice.stop_live_location())
         self.assertFalse(self.alice.stop_live_location())
+
+
+    def test_groups(self):
+        if self.alice.driver.is_simulator() or len(GROUP_MEMBERS) < 3:
+            self.skipTest('Groups need a real device, and three GROUP_MEMBERS configured at the top of the script')
+        self.alice.create_group(GROUP_MEMBERS[:2], "Puma test, a group", group_name=GROUP_NAME)
+        self.assertTrue(self.alice.group_exists(GROUP_NAME, GROUP_MEMBERS[:2]))
+        self.alice.add_members([GROUP_MEMBERS[2]], conversation=GROUP_NAME)
+        self.assertTrue(self.alice.group_exists(GROUP_NAME, GROUP_MEMBERS))
+        self.alice.edit_group_name(GROUP_NAME, f"{GROUP_NAME} renamed")
+        self.alice.remove_member(GROUP_MEMBERS[2], conversation=f"{GROUP_NAME} renamed")
+        self.assertFalse(self.alice.group_exists(f"{GROUP_NAME} renamed", GROUP_MEMBERS))
+        self.alice.leave_group(f"{GROUP_NAME} renamed")
 
 
 if __name__ == '__main__':
