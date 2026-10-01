@@ -10,7 +10,7 @@ DATE_PICKER_MONTH = ios_predicate('type == "XCUIElementTypeButton" AND name == "
 DATE_PICKER_PREVIOUS_MONTH = accessibility_id('DatePicker.PreviousMonth')
 DATE_PICKER_NEXT_MONTH = accessibility_id('DatePicker.NextMonth')
 # The iOS time picker, with wheels for the hours and minutes (and AM/PM on devices using a 12-hour clock)
-PICKER_WHEEL = '//XCUIElementTypePickerWheel'
+DATE_PICKER_WHEEL = '//XCUIElementTypePickerWheel'
 
 
 def date_picker_day(date: datetime) -> str:
@@ -58,7 +58,7 @@ def select_time(driver: PumaDriver, time: datetime):
     :param driver: The PumaDriver.
     :param time: The time to select. Only the hours and minutes are used.
     """
-    wheels = driver.get_elements(PICKER_WHEEL)
+    wheels = driver.get_elements(DATE_PICKER_WHEEL)
     if len(wheels) == 3:
         _set_wheel(wheels[0], time.hour % 12 or 12)
         wheels[2].send_keys(time.strftime('%p'))

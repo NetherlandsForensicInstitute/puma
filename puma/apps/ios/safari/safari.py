@@ -31,10 +31,12 @@ def open_menu_item(menu_item: str, name: str = 'open_menu_item') -> Callable[[Pu
     """
     def _open_menu_item(driver: PumaDriver):
         for _ in range(3):
-            driver.click(MORE_BUTTON)
+            driver.gtl_logger.info('Opening the More menu')
+            driver.click(TOOLBAR_MORE_BUTTON)
             if _wait_for(driver, menu_item):
                 driver.click(menu_item)
                 return
+            driver.gtl_logger.warning('The More menu did not open, trying again')
         raise PumaClickException(f'Could not open menu item {menu_item}')
     _open_menu_item.__name__ = name
     return _open_menu_item
@@ -52,9 +54,10 @@ def _open_private_tabs(driver: PumaDriver):
     Opens the private tabs in the tab overview. On real devices, private browsing can be locked with Face ID. Puma
     cannot unlock it, so the Face ID prompt is cancelled and an exception is raised.
     """
-    driver.click(PRIVATE_TAB_GROUP)
-    if _wait_for(driver, FACE_ID_PROMPT, timeout=2):
-        driver.click(FACE_ID_CANCEL)
+    driver.click(TAB_OVERVIEW_PRIVATE_TAB_GROUP)
+    if _wait_for(driver, POPUP_FACE_ID_PROMPT, timeout=2):
+        driver.gtl_logger.warning('Private browsing is locked with Face ID, cancelling the Face ID prompt')
+        driver.click(POPUP_FACE_ID_CANCEL)
         raise PrivateBrowsingLockedError(
             'Private browsing in Safari is locked with Face ID, which Puma cannot unlock. To use private tabs, turn off '
             '"Require Face ID to Unlock Private Browsing" in Settings > Apps > Safari.')
@@ -69,7 +72,7 @@ class CurrentTab(SimpleState, ContextualState):
     """
 
     def __init__(self, parent_state):
-        super().__init__(xpaths=[ADDRESS_BAR, RELOAD_BUTTON, MORE_BUTTON],
+        super().__init__(xpaths=[TOOLBAR_ADDRESS_BAR, TOOLBAR_RELOAD_BUTTON, TOOLBAR_MORE_BUTTON],
                          parent_state=parent_state,
                          parent_state_transition=open_menu_item(MENU_ALL_TABS, 'go_to_tab_overview'))
         self.last_opened = {}
@@ -105,16 +108,19 @@ class Safari(StateGraph):
     platform = Platform.IOS
 
     # States
-    tab_overview_state = SimpleState(xpaths=[TAB_OVERVIEW, TAB_OVERVIEW_NEW_TAB_BUTTON, STANDARD_TAB_GROUP_SELECTED])
-    private_tab_overview_state = SimpleState(xpaths=[TAB_OVERVIEW, TAB_OVERVIEW_NEW_TAB_BUTTON, PRIVATE_TAB_GROUP_SELECTED],
+    tab_overview_state = SimpleState(xpaths=[TAB_OVERVIEW, TAB_OVERVIEW_NEW_TAB_BUTTON,
+                                             TAB_OVERVIEW_STANDARD_TAB_GROUP_SELECTED])
+    private_tab_overview_state = SimpleState(xpaths=[TAB_OVERVIEW, TAB_OVERVIEW_NEW_TAB_BUTTON,
+                                                     TAB_OVERVIEW_PRIVATE_TAB_GROUP_SELECTED],
                                              parent_state=tab_overview_state,
-                                             parent_state_transition=compose_clicks([STANDARD_TAB_GROUP], 'go_to_tab_overview'))
-    new_tab_state = SimpleState(xpaths=[ADDRESS_BAR, VOICE_SEARCH_BUTTON, MORE_BUTTON],
-                                invalid_xpaths=[PRIVATE_BROWSING_START_PAGE],
+                                             parent_state_transition=compose_clicks([TAB_OVERVIEW_STANDARD_TAB_GROUP],
+                                                                                    'go_to_tab_overview'))
+    new_tab_state = SimpleState(xpaths=[TOOLBAR_ADDRESS_BAR, TOOLBAR_VOICE_SEARCH_BUTTON, TOOLBAR_MORE_BUTTON],
+                                invalid_xpaths=[NEW_PRIVATE_TAB_START_PAGE],
                                 initial_state=True,
                                 parent_state=tab_overview_state,
                                 parent_state_transition=open_menu_item(MENU_ALL_TABS, 'go_to_tab_overview'))
-    new_private_tab_state = SimpleState(xpaths=[ADDRESS_BAR, PRIVATE_BROWSING_START_PAGE],
+    new_private_tab_state = SimpleState(xpaths=[TOOLBAR_ADDRESS_BAR, NEW_PRIVATE_TAB_START_PAGE],
                                         parent_state=private_tab_overview_state,
                                         parent_state_transition=open_menu_item(MENU_ALL_TABS, 'go_to_private_tab_overview'))
     current_tab_state = CurrentTab(parent_state=tab_overview_state)
@@ -126,7 +132,8 @@ class Safari(StateGraph):
     tab_overview_state.to(new_tab_state, compose_clicks([TAB_OVERVIEW_NEW_TAB_BUTTON], 'open_new_tab'))
     tab_overview_state.to(current_tab_state, current_tab_state.switch_to_tab)
     tab_overview_state.to(private_tab_overview_state, _open_private_tabs)
-    private_tab_overview_state.to(new_private_tab_state, compose_clicks([TAB_OVERVIEW_NEW_TAB_BUTTON], 'open_new_private_tab'))
+    private_tab_overview_state.to(new_private_tab_state,
+                                  compose_clicks([TAB_OVERVIEW_NEW_TAB_BUTTON], 'open_new_private_tab'))
     current_tab_state.to(new_tab_state, open_menu_item(MENU_NEW_TAB, 'open_new_tab'))
     current_tab_state.to(bookmarks_state, open_menu_item(MENU_BOOKMARKS, 'open_bookmarks'))
 
@@ -138,9 +145,10 @@ class Safari(StateGraph):
         :param kwargs: Optional arguments passed to the StateGraph, such as appium_server or desired_capabilities.
         """
         StateGraph.__init__(self, device_udid, SAFARI_BUNDLE_ID, **kwargs)
-        self.add_popup_handlers(simple_popup_handler(TAB_OVERVIEW_TIP_CLOSE),
-                                PopUpHandler([SEARCH_FIRST_TIME_EXPERIENCE], [SEARCH_FIRST_TIME_CONTINUE]),
-                                simple_popup_handler(LOCKED_PRIVATE_BROWSING_NOT_NOW))
+        self.add_popup_handlers(simple_popup_handler(POPUP_TAB_OVERVIEW_TIP_CLOSE),
+                                PopUpHandler([POPUP_SEARCH_FIRST_TIME_EXPERIENCE], [POPUP_SEARCH_FIRST_TIME_CONTINUE]),
+                                simple_popup_handler(POPUP_LOCKED_PRIVATE_BROWSING_NOT_NOW),
+                                simple_popup_handler(POPUP_FORM_DONE_BUTTON))
 
     @action(current_tab_state)
     def visit_url(self, url_string: str, tab_index: int = None):
@@ -200,24 +208,30 @@ class Safari(StateGraph):
         :return: True if the bookmark has been deleted, False if there was no bookmark with this title.
         """
         if not self.driver.is_present(bookmark(title)):
-            logger.info(f'There is no bookmark with title "{title}", skipping...')
+            self.gtl_logger.info(f'There is no bookmark with title "{title}", skipping...')
             return False
+        self.gtl_logger.info(f'Long pressing bookmark "{title}" to open its context menu')
         self.driver.long_click_element(bookmark(title), duration=1.5)
         # The context menu keeps animating its preview, so XCUITest waits 10 seconds for the app to become idle before
         # every click. Temporarily lower that timeout.
         idle_timeout = self.driver.driver.get_settings().get('waitForIdleTimeout', 10)
         self.driver.set_idle_timeout(1)
         try:
-            self.driver.click(BOOKMARK_CONTEXT_MENU_DELETE)
+            self.gtl_logger.info('Pressing delete in the context menu')
+            self.driver.click(BOOKMARKS_CONTEXT_MENU_DELETE)
         finally:
             self.driver.set_idle_timeout(idle_timeout)
         return True
 
     def _enter_url(self, url_string: str):
-        self.driver.click(ADDRESS_BAR)
+        self.gtl_logger.info('Pressing the address bar')
+        self.driver.click(TOOLBAR_ADDRESS_BAR)
         # The first time the address bar is used, Safari explains its search suggestions
-        if _wait_for(self.driver, ADDRESS_BAR_EDIT, 2) and self.driver.is_present(SEARCH_FIRST_TIME_CONTINUE):
-            self.driver.click(SEARCH_FIRST_TIME_CONTINUE)
-        self.driver.send_keys(ADDRESS_BAR_EDIT, url_string)
+        if (_wait_for(self.driver, TOOLBAR_ADDRESS_BAR_EDIT, 2)
+                and self.driver.is_present(POPUP_SEARCH_FIRST_TIME_CONTINUE)):
+            self.gtl_logger.info('Dismissing explanation of search suggestions')
+            self.driver.click(POPUP_SEARCH_FIRST_TIME_CONTINUE)
+        self.driver.send_keys(TOOLBAR_ADDRESS_BAR_EDIT, url_string)
+        self.gtl_logger.info('Pressing enter to load the page')
         self.driver.press_enter()
         sleep(2)

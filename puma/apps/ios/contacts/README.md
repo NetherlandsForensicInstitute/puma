@@ -1,19 +1,30 @@
 # Contacts - iOS
 
-Contacts is the address book application built into iOS.
+Contacts is the address book application built into iOS, developed by Apple.
+Puma supports part of the features of Contacts.
+For detailed information on each method, see the method its PyDoc documentation.
+
 Contacts is part of iOS, so its version is the iOS version.
 
 ## Prerequisites
-- An iOS device or simulator running iOS 26
 
-### Initialization is standard:
+- An iOS device or simulator running iOS 26, set up as described in [Setting up iOS](../../../../docs/setup-ios.md)
+- Device language needs to be set to English
+
+## Initialization
+
+Initialization is standard:
 
 ```python
 from puma.apps.ios.contacts.contacts import Contacts
+
 phone = Contacts("A1B2C3D4-E5F6-4A7B-8C9D-0E1F2A3B4C5D")
 ```
 
-### Navigating the UI
+On a real device, also pass the signing settings for WebDriverAgent as `desired_capabilities`, see
+[Setting up iOS](../../../../docs/setup-ios.md).
+
+## Managing contacts
 
 You can add, view and delete contacts. Contacts are identified by their full name, as shown in the contact list:
 

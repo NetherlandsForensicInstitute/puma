@@ -75,8 +75,11 @@ class IOSTestApp(StateGraph):
 
 
 class TestStateGraphPlatform(unittest.TestCase):
-    def test_default_platform_is_android(self):
-        self.assertEqual(Platform.ANDROID, StateGraph.platform)
+    def test_platform_is_required(self):
+        with self.assertRaises(TypeError) as error:
+            class NoPlatformApp(StateGraph):
+                home_state = SimpleState(xpaths=['//home'], initial_state=True)
+        self.assertIn('NoPlatformApp does not define the platform', str(error.exception))
 
     def test_invalid_bundle_id(self):
         with self.assertRaises(ValueError) as error:
@@ -162,6 +165,17 @@ class TestIOSPumaDriver(unittest.TestCase):
         self.appium_driver.find_element.return_value = back_button
         self.driver.back()
         back_button.click.assert_called_once()
+        self.appium_driver.execute_script.assert_not_called()
+
+    def test_back_uses_registered_back_button_first(self):
+        app_back_button = Mock()
+        self.driver.add_back_button(accessibility_id('App.back'))
+        self.appium_driver.find_elements.side_effect = \
+            lambda by, value: [app_back_button] if value == 'App.back' else [Mock()]
+        self.appium_driver.find_element.side_effect = \
+            lambda by, value: app_back_button if value == 'App.back' else Mock()
+        self.driver.back()
+        app_back_button.click.assert_called_once()
         self.appium_driver.execute_script.assert_not_called()
 
     def test_back_swipes_from_left_edge_without_back_button(self):

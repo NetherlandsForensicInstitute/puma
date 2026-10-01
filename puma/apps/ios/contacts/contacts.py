@@ -29,10 +29,10 @@ def _close_new_contact(driver: PumaDriver):
     """
     Closes the new contact form, discarding any changes.
     """
-    driver.click(CLOSE_BUTTON)
+    driver.click(NEW_CONTACT_CLOSE_BUTTON)
     sleep(1)
-    if driver.is_present(DISCARD_CHANGES_BUTTON):
-        driver.click(DISCARD_CHANGES_BUTTON)
+    if driver.is_present(NEW_CONTACT_DISCARD_CHANGES_BUTTON):
+        driver.click(NEW_CONTACT_DISCARD_CHANGES_BUTTON)
 
 
 class ContactState(SimpleState, ContextualState):
@@ -41,7 +41,8 @@ class ContactState(SimpleState, ContextualState):
     """
 
     def __init__(self, parent_state):
-        super().__init__(xpaths=[CONTACT_NAVIGATION_BAR, CONTACT_NAME_HEADER, EDIT_BUTTON], parent_state=parent_state)
+        super().__init__(xpaths=[CONTACT_NAVIGATION_BAR, CONTACT_NAME_HEADER, CONTACT_EDIT_BUTTON],
+                         parent_state=parent_state)
 
     def validate_context(self, driver: PumaDriver, name: str = None) -> bool:
         if not name:
@@ -62,15 +63,16 @@ class Contacts(StateGraph):
     platform = Platform.IOS
 
     # States
-    contact_list_state = SimpleState(xpaths=[CONTACTS_NAVIGATION_BAR, ADD_CONTACT_BUTTON], initial_state=True)
-    new_contact_state = SimpleState(xpaths=[NEW_CONTACT_NAVIGATION_BAR, FIRST_NAME, DONE_BUTTON],
+    contact_list_state = SimpleState(xpaths=[CONTACT_LIST_NAVIGATION_BAR, CONTACT_LIST_ADD_BUTTON], initial_state=True)
+    new_contact_state = SimpleState(xpaths=[NEW_CONTACT_NAVIGATION_BAR, NEW_CONTACT_FIRST_NAME,
+                                            NEW_CONTACT_DONE_BUTTON],
                                     parent_state=contact_list_state,
                                     parent_state_transition=_close_new_contact)
     # the parent transition is the default back action, which uses the back button in the navigation bar
     contact_state = ContactState(parent_state=contact_list_state)
 
     # Transitions
-    contact_list_state.to(new_contact_state, compose_clicks([ADD_CONTACT_BUTTON], 'open_new_contact'))
+    contact_list_state.to(new_contact_state, compose_clicks([CONTACT_LIST_ADD_BUTTON], 'open_new_contact'))
     contact_list_state.to(contact_state, contact_state.open_contact)
 
     def __init__(self, device_udid: str, **kwargs):
@@ -94,18 +96,24 @@ class Contacts(StateGraph):
         :param email: Optional. The email address of the contact.
         :param company: Optional. The company of the contact.
         """
-        self.driver.get_element(FIRST_NAME).send_keys(first_name)
+        self.gtl_logger.info(f'Entering first name "{first_name}"')
+        self.driver.get_element(NEW_CONTACT_FIRST_NAME).send_keys(first_name)
         if last_name:
-            self.driver.get_element(LAST_NAME).send_keys(last_name)
+            self.gtl_logger.info(f'Entering last name "{last_name}"')
+            self.driver.get_element(NEW_CONTACT_LAST_NAME).send_keys(last_name)
         if company:
-            self.driver.get_element(COMPANY).send_keys(company)
+            self.gtl_logger.info(f'Entering company "{company}"')
+            self.driver.get_element(NEW_CONTACT_COMPANY).send_keys(company)
         if phone_number:
-            self.driver.click(ADD_PHONE)
-            self.driver.get_element(PHONE_FIELD).send_keys(phone_number)
+            self.gtl_logger.info(f'Adding phone number "{phone_number}"')
+            self.driver.click(NEW_CONTACT_ADD_PHONE)
+            self.driver.get_element(NEW_CONTACT_PHONE_FIELD).send_keys(phone_number)
         if email:
-            self.driver.click(ADD_EMAIL)
-            self.driver.get_element(EMAIL_FIELD).send_keys(email)
-        self.driver.click(DONE_BUTTON)
+            self.gtl_logger.info(f'Adding email address "{email}"')
+            self.driver.click(NEW_CONTACT_ADD_EMAIL)
+            self.driver.get_element(NEW_CONTACT_EMAIL_FIELD).send_keys(email)
+        self.gtl_logger.info('Pressing done button')
+        self.driver.click(NEW_CONTACT_DONE_BUTTON)
         sleep(1)
 
     @action(contact_state)
@@ -126,16 +134,20 @@ class Contacts(StateGraph):
 
         :param name: The full name of the contact.
         """
-        self.driver.click(EDIT_BUTTON)
+        self.gtl_logger.info('Pressing edit button')
+        self.driver.click(CONTACT_EDIT_BUTTON)
         sleep(1)
         # The delete button is at the bottom of the edit form. Make sure it is on screen before tapping it, otherwise
         # the tap can be lost on real devices.
         for _ in range(5):
-            if self.driver.get_element(DELETE_CONTACT).get_attribute('visible') == 'true':
+            if self.driver.get_element(CONTACT_DELETE_BUTTON).get_attribute('visible') == 'true':
                 break
+            self.gtl_logger.info('Scrolling down to the delete button')
             self.driver._scroll_down()
-        self.driver.click(DELETE_CONTACT)
+        self.gtl_logger.info('Pressing delete contact button')
+        self.driver.click(CONTACT_DELETE_BUTTON)
         sleep(1)
-        self.driver.click_alert_button(CONFIRM_DELETE_CONTACT_LABEL)
+        self.gtl_logger.info('Confirming deletion')
+        self.driver.click_alert_button(CONTACT_CONFIRM_DELETE_LABEL)
         sleep(1)
         logger.info(f'Deleted contact {name}')

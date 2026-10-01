@@ -1,7 +1,7 @@
 import unittest
 
 from puma.apps.ios.safari.safari import Safari
-from puma.apps.ios.safari.xpaths import ADDRESS_BAR, bookmark
+from puma.apps.ios.safari.xpaths import TOOLBAR_ADDRESS_BAR, bookmark
 
 # Fill in the udid below. Run `xcrun simctl list devices booted` (simulators) or `xcrun xctrace list devices`
 # (real devices) to see the udids.
@@ -28,7 +28,7 @@ class TestSafari(unittest.TestCase):
         self.alice = Safari(device_udids["Alice"])
 
     def _address(self) -> str:
-        return self.alice.driver.get_element(ADDRESS_BAR).get_attribute('value')
+        return self.alice.driver.get_element(TOOLBAR_ADDRESS_BAR).get_attribute('value')
 
     def test_visit_url_new_tab(self):
         self.alice.visit_url_new_tab("example.com")

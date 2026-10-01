@@ -1,7 +1,7 @@
 import unittest
 
 from puma.apps.ios.messages.messages import Messages, MessagesError
-from puma.apps.ios.messages.xpaths import SENT_BY_ME, conversation_row
+from puma.apps.ios.messages.xpaths import CONVERSATION_SENT_BY_ME, conversation_row
 
 # Fill in the udid below. Run `xcrun simctl list devices booted` (simulators) or `xcrun xctrace list devices`
 # (real devices) to see the udids.
@@ -34,7 +34,8 @@ class TestMessages(unittest.TestCase):
 
     def test_send_and_receive(self):
         self.alice.send_message("Puma test, with a comma", conversation=CONVERSATION_A)
-        self.assertEqual((SENT_BY_ME, "Puma test, with a comma"), self.alice.get_messages(CONVERSATION_A)[-1])
+        self.assertEqual((CONVERSATION_SENT_BY_ME, "Puma test, with a comma"),
+                         self.alice.get_messages(CONVERSATION_A)[-1])
         # on a simulator, the message is received in the other conversation
         self.assertEqual((CONVERSATION_B, "Puma test, with a comma"), self.alice.get_messages(CONVERSATION_B)[-1])
 

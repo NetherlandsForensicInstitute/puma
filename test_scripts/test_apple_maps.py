@@ -1,7 +1,8 @@
 import unittest
 
 from puma.apps.ios.apple_maps.apple_maps import AppleMaps, TransportType
-from puma.apps.ios.apple_maps.xpaths import DIRECTIONS_BUTTON, TRANSPORT_TYPE_PICKER, transport_type_button
+from puma.apps.ios.apple_maps.xpaths import PLACE_DIRECTIONS_BUTTON, DIRECTIONS_TRANSPORT_TYPE_PICKER, \
+    transport_type_button
 
 # Fill in the udid below. Run `xcrun simctl list devices booted` (simulators) or `xcrun xctrace list devices`
 # (real devices) to see the udids.
@@ -30,15 +31,15 @@ class TestAppleMaps(unittest.TestCase):
 
     def test_search_place(self):
         self.alice.search_place("Eiffel Tower")
-        self.assertTrue(self.alice.driver.is_present(DIRECTIONS_BUTTON))
+        self.assertTrue(self.alice.driver.is_present(PLACE_DIRECTIONS_BUTTON))
 
     def test_search_category(self):
         self.alice.search_place("coffee")
-        self.assertTrue(self.alice.driver.is_present(DIRECTIONS_BUTTON))
+        self.assertTrue(self.alice.driver.is_present(PLACE_DIRECTIONS_BUTTON))
 
     def test_get_directions(self):
         self.alice.get_directions("Eiffel Tower", TransportType.BIKE)
-        self.assertTrue(self.alice.driver.is_present(TRANSPORT_TYPE_PICKER))
+        self.assertTrue(self.alice.driver.is_present(DIRECTIONS_TRANSPORT_TYPE_PICKER))
         selected = self.alice.driver.get_element(transport_type_button(TransportType.BIKE.value)).get_attribute('value')
         self.assertEqual('1', selected)
 

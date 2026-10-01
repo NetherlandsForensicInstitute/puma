@@ -3,7 +3,7 @@ from enum import Enum
 from puma.apps.android.google_play_store import logger
 from puma.state_graph.action import action
 from puma.state_graph.popup_handler import PopUpHandler
-from puma.state_graph.puma_driver import supported_version, PumaDriver
+from puma.state_graph.puma_driver import supported_version, PumaDriver, Platform
 from puma.state_graph.state import SimpleState, compose_clicks, ContextualState
 from puma.state_graph.state_graph import StateGraph
 from puma.state_graph.utils import is_valid_package_name
@@ -118,6 +118,8 @@ class GooglePlayStore(StateGraph):
     of the Play store UI. It provides methods to navigate between states, validate states,
     and handle unexpected states or errors.
     """
+    platform = Platform.ANDROID
+
     apps_tab_state = SimpleState([ACCOUNT_ICON, HOME_SCREEN_TABS, APPS_TAB_SELECTED], initial_state=True)
     profile_state = SimpleState([MANAGE_APPS_AND_DEVICES, PROFILE_GOOGLE], parent_state=apps_tab_state)
     manage_apps_state = SimpleState([MANAGE_APP_STATE, MANAGE_APP_STATE_SYNC], parent_state=apps_tab_state)

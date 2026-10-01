@@ -1,7 +1,7 @@
 import unittest
 from unittest.mock import Mock
 
-from puma.state_graph.puma_driver import PumaClickException
+from puma.state_graph.puma_driver import PumaClickException, Platform
 from puma.state_graph.action import action
 from puma.state_graph.puma_driver import PumaDriver
 from puma.state_graph.state import SimpleState, ContextualState, State
@@ -19,6 +19,8 @@ class MockChatState(SimpleState, ContextualState):
 
 
 class MockApplication(StateGraph):
+    platform = Platform.ANDROID
+
     main_state = SimpleState(['xpath'], initial_state=True)
     settings_state = SimpleState(['xpath'], parent_state=main_state)
     chat_state = MockChatState(parent_state=main_state)

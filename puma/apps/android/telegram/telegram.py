@@ -3,7 +3,7 @@ import time
 from puma.apps.android.telegram import logger
 from puma.apps.android.telegram.xpaths import *
 from puma.state_graph.action import action
-from puma.state_graph.puma_driver import supported_version, PumaDriver, PumaClickException
+from puma.state_graph.puma_driver import supported_version, PumaDriver, PumaClickException, Platform
 from puma.state_graph.state import SimpleState, ContextualState, State, compose_clicks
 from puma.state_graph.state_graph import StateGraph
 
@@ -69,6 +69,8 @@ class Telegram(StateGraph):
     of the Telegram user interface. It provides methods to navigate between states, validate states,
     and handle unexpected states or errors.
     """
+    platform = Platform.ANDROID
+
     conversations_state = SimpleState(
         [CHAT_OVERVIEW_NEW_MESSAGE_BUTTON, CHAT_OVERVIEW_SEARCH_BUTTON, CHAT_OVERVIEW_NAV_MENU_BUTTON],
         initial_state=True)

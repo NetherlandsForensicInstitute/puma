@@ -25,8 +25,9 @@ def _handle_notifications_intro(driver: PumaDriver):
     The first time a due date is set, Reminders explains its notifications, followed by the system notification
     permission request.
     """
-    if driver.is_present(NOTIFICATIONS_INTRO_TEXT):
-        driver.click(CONTINUE_BUTTON)
+    if driver.is_present(POPUP_NOTIFICATIONS_INTRO_TEXT):
+        driver.gtl_logger.info('Dismissing explanation of notifications')
+        driver.click(POPUP_CONTINUE_BUTTON)
         sleep(2)
         for handler in known_ios_popups:
             if handler.is_popup_window(driver):
@@ -46,7 +47,7 @@ def _swipe_left(driver: PumaDriver, element: str):
 
 
 def _close_new_list(driver: PumaDriver):
-    driver.click(CANCEL_BUTTON)
+    driver.click(NEW_LIST_CANCEL_BUTTON)
     sleep(1)
 
 
@@ -57,7 +58,7 @@ class ListState(SimpleState, ContextualState):
 
     def __init__(self, parent_state):
         # the parent transition is the default back action, which uses the back button in the navigation bar
-        super().__init__(xpaths=[NEW_REMINDER_BUTTON, MORE_BUTTON], invalid_xpaths=[ADD_LIST_BUTTON],
+        super().__init__(xpaths=[LIST_NEW_REMINDER_BUTTON, LIST_MORE_BUTTON], invalid_xpaths=[LISTS_ADD_LIST_BUTTON],
                          parent_state=parent_state)
 
     def validate_context(self, driver: PumaDriver, list_name: str = None) -> bool:
@@ -82,14 +83,14 @@ class Reminders(StateGraph):
     platform = Platform.IOS
 
     # States
-    lists_state = SimpleState(xpaths=[LISTS_NAVIGATION_BAR, ADD_LIST_BUTTON], initial_state=True)
-    new_list_state = SimpleState(xpaths=[NEW_LIST_NAVIGATION_BAR, LIST_NAME_FIELD],
+    lists_state = SimpleState(xpaths=[LISTS_NAVIGATION_BAR, LISTS_ADD_LIST_BUTTON], initial_state=True)
+    new_list_state = SimpleState(xpaths=[NEW_LIST_NAVIGATION_BAR, NEW_LIST_NAME_FIELD],
                                  parent_state=lists_state,
                                  parent_state_transition=_close_new_list)
     list_state = ListState(parent_state=lists_state)
 
     # Transitions
-    lists_state.to(new_list_state, compose_clicks([ADD_LIST_BUTTON], 'open_new_list'))
+    lists_state.to(new_list_state, compose_clicks([LISTS_ADD_LIST_BUTTON], 'open_new_list'))
     lists_state.to(list_state, list_state.open_list)
 
     def __init__(self, device_udid: str, **kwargs):
@@ -100,9 +101,9 @@ class Reminders(StateGraph):
         :param kwargs: Optional arguments passed to the StateGraph, such as appium_server or desired_capabilities.
         """
         StateGraph.__init__(self, device_udid, REMINDERS_BUNDLE_ID, **kwargs)
-        self.add_popup_handlers(PopUpHandler([WELCOME_TEXT], [CONTINUE_BUTTON]),
-                                PopUpHandler([ICLOUD_SYNC_TEXT], [NOT_NOW_BUTTON]),
-                                PopUpHandler([NOTIFICATIONS_INTRO_TEXT], [CONTINUE_BUTTON]))
+        self.add_popup_handlers(PopUpHandler([POPUP_WELCOME_TEXT], [POPUP_CONTINUE_BUTTON]),
+                                PopUpHandler([POPUP_ICLOUD_SYNC_TEXT], [POPUP_NOT_NOW_BUTTON]),
+                                PopUpHandler([POPUP_NOTIFICATIONS_INTRO_TEXT], [POPUP_CONTINUE_BUTTON]))
 
     @action(new_list_state, end_state=list_state)
     def add_list(self, name: str):
@@ -111,8 +112,8 @@ class Reminders(StateGraph):
 
         :param name: The name of the list.
         """
-        self.driver.send_keys(LIST_NAME_FIELD, name)
-        self.driver.click(DONE_BUTTON)
+        self.driver.send_keys(NEW_LIST_NAME_FIELD, name)
+        self.driver.click(LIST_DONE_BUTTON)
         sleep(1)
 
     @action(lists_state)
@@ -122,13 +123,16 @@ class Reminders(StateGraph):
 
         :param name: The name of the list.
         """
+        self.gtl_logger.info(f'Swiping list "{name}" to the left to reveal the delete button')
         _swipe_left(self.driver, list_cell(name))
-        self.driver.click(SWIPE_DELETE_BUTTON)
+        self.gtl_logger.info('Pressing delete button')
+        self.driver.click(LIST_SWIPE_DELETE_BUTTON)
         sleep(1)
         # deleting a list has to be confirmed
         buttons = self.driver.alert_buttons()
-        if DELETE_LABEL in buttons:
-            self.driver.click_alert_button(DELETE_LABEL)
+        if LISTS_DELETE_LABEL in buttons:
+            self.gtl_logger.info('Confirming deletion')
+            self.driver.click_alert_button(LISTS_DELETE_LABEL)
             sleep(1)
         logger.info(f'Deleted list {name}')
 
@@ -144,26 +148,33 @@ class Reminders(StateGraph):
         :param due: Optional. The date the reminder is due.
         :param due_time: Whether the time of the due date is used. If False, the reminder is due on the date only.
         """
-        self.driver.click(NEW_REMINDER_BUTTON)
+        self.gtl_logger.info('Pressing new reminder button')
+        self.driver.click(LIST_NEW_REMINDER_BUTTON)
         sleep(1)
+        self.gtl_logger.info(f'Entering title "{title}"')
         self.driver.driver.switch_to.active_element.send_keys(title)
         if notes or due:
-            self.driver.click(EDIT_DETAILS_BUTTON)
+            self.gtl_logger.info('Opening the details of the reminder')
+            self.driver.click(LIST_EDIT_DETAILS_BUTTON)
             sleep(1.5)
             if notes:
                 self.driver.send_keys(DETAILS_NOTES_FIELD, notes)
             if due:
-                _set_switch(self.driver, DATE_SWITCH, True)
+                self.gtl_logger.info(f'Setting the due date to {due.date()}')
+                _set_switch(self.driver, DETAILS_DATE_SWITCH, True)
                 _handle_notifications_intro(self.driver)
                 select_date(self.driver, due)
                 if due_time:
-                    _set_switch(self.driver, TIME_SWITCH, True)
+                    self.gtl_logger.info(f'Setting the due time to {due.time()}')
+                    _set_switch(self.driver, DETAILS_TIME_SWITCH, True)
                     select_time(self.driver, due)
-            self.driver.click(DONE_BUTTON)
+            self.gtl_logger.info('Closing the details')
+            self.driver.click(LIST_DONE_BUTTON)
             sleep(1)
         # stop editing the new reminder
-        if self.driver.is_present(DONE_BUTTON):
-            self.driver.click(DONE_BUTTON)
+        if self.driver.is_present(LIST_DONE_BUTTON):
+            self.gtl_logger.info('Pressing done button')
+            self.driver.click(LIST_DONE_BUTTON)
             sleep(1)
 
     @action(list_state)
@@ -174,9 +185,9 @@ class Reminders(StateGraph):
         :param list_name: Optional. The list, the default list 'Reminders' if not given.
         :return: The titles of the reminders.
         """
-        if not self.driver.is_present(REMINDER_TITLES):
+        if not self.driver.is_present(LIST_REMINDER_TITLES):
             return []
-        return [element.get_attribute('value') for element in self.driver.get_elements(REMINDER_TITLES)]
+        return [element.get_attribute('value') for element in self.driver.get_elements(LIST_REMINDER_TITLES)]
 
     @action(list_state)
     def get_reminder_details(self, title: str, list_name: str = DEFAULT_LIST) -> str:
@@ -197,6 +208,7 @@ class Reminders(StateGraph):
         :param title: The title of the reminder.
         :param list_name: Optional. The list of the reminder, the default list 'Reminders' if not given.
         """
+        self.gtl_logger.info(f'Pressing the circle of reminder "{title}"')
         self.driver.click(reminder_circle(title))
         # completed reminders disappear from the list after a few seconds
         sleep(4)
@@ -209,7 +221,9 @@ class Reminders(StateGraph):
         :param title: The title of the reminder.
         :param list_name: Optional. The list of the reminder, the default list 'Reminders' if not given.
         """
+        self.gtl_logger.info(f'Swiping reminder "{title}" to the left to reveal the delete button')
         _swipe_left(self.driver, reminder_row(title))
-        self.driver.click(SWIPE_DELETE_BUTTON)
+        self.gtl_logger.info('Pressing delete button')
+        self.driver.click(LIST_SWIPE_DELETE_BUTTON)
         sleep(1)
         logger.info(f'Deleted reminder {title}')

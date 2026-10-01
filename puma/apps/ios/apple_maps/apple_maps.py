@@ -4,7 +4,7 @@ from time import sleep, time
 from puma.apps.ios.apple_maps import logger
 from puma.apps.ios.apple_maps.xpaths import *
 from puma.state_graph.action import action
-from puma.state_graph.popup_handler import PopUpHandler
+from puma.state_graph.popup_handler import simple_popup_handler
 from puma.state_graph.puma_driver import PumaDriver, Platform, supported_version
 from puma.state_graph.state import SimpleState, compose_clicks
 from puma.state_graph.state_graph import StateGraph
@@ -33,14 +33,16 @@ def _search(driver: PumaDriver, search_string: str):
     Searches for a place and opens it. Apple Maps decides which place matches the search best. When searching for a
     category of places (such as 'coffee'), the first search result is opened.
     """
-    driver.send_keys(SEARCH_FIELD, search_string)
+    driver.send_keys(HOME_SEARCH_FIELD, search_string)
     # wait for the suggestions to be loaded, otherwise Apple Maps sometimes opens an older suggestion
-    _wait_for(driver, SEARCH_SUGGESTION)
+    _wait_for(driver, HOME_SEARCH_SUGGESTION)
     sleep(1)
+    driver.gtl_logger.info('Pressing enter to search')
     driver.press_enter()
-    _wait_for(driver, DIRECTIONS_BUTTON, FIRST_SEARCH_RESULT, timeout=10)
-    if not driver.is_present(DIRECTIONS_BUTTON):
-        driver.click(FIRST_SEARCH_RESULT)
+    _wait_for(driver, PLACE_DIRECTIONS_BUTTON, HOME_FIRST_SEARCH_RESULT, timeout=10)
+    if not driver.is_present(PLACE_DIRECTIONS_BUTTON):
+        driver.gtl_logger.info('Opening the first search result')
+        driver.click(HOME_FIRST_SEARCH_RESULT)
         sleep(2)
 
 
@@ -49,11 +51,14 @@ def _open_directions(driver: PumaDriver, search_string: str, transport_type: 'Tr
     Searches for a place, and shows the directions from the current location of the device to that place.
     """
     _search(driver, search_string)
-    driver.click(DIRECTIONS_BUTTON)
+    driver.gtl_logger.info('Pressing directions button')
+    driver.click(PLACE_DIRECTIONS_BUTTON)
     sleep(2)
     # The first time directions are requested, Apple Maps shows a safety warning
-    if driver.is_present(GETTING_THERE_SAFELY_OK):
-        driver.click(GETTING_THERE_SAFELY_OK)
+    if driver.is_present(POPUP_GETTING_THERE_SAFELY_OK):
+        driver.gtl_logger.info('Dismissing safety warning')
+        driver.click(POPUP_GETTING_THERE_SAFELY_OK)
+    driver.gtl_logger.info(f'Selecting transport type {transport_type.value}')
     driver.click(transport_type_button(transport_type.value))
     sleep(2)
 
@@ -63,9 +68,11 @@ def _end_navigation(driver: PumaDriver):
     Ends turn-by-turn navigation, by expanding the tray at the bottom of the screen and tapping End Route. Apple Maps
     then shows the destination.
     """
+    driver.gtl_logger.info('Expanding the navigation tray')
     driver.click(NAVIGATION_TRAY)
     sleep(1)
-    driver.click(END_ROUTE_BUTTON)
+    driver.gtl_logger.info('Pressing end route button')
+    driver.click(NAVIGATION_END_ROUTE_BUTTON)
     sleep(2)
 
 
@@ -88,13 +95,14 @@ class AppleMaps(StateGraph):
     platform = Platform.IOS
 
     # States
-    home_state = SimpleState(xpaths=[SEARCH_FIELD, PROFILE_BUTTON], initial_state=True)
-    place_state = SimpleState(xpaths=[DIRECTIONS_BUTTON, CLOSE_CARD_BUTTON],
+    home_state = SimpleState(xpaths=[HOME_SEARCH_FIELD, HOME_PROFILE_BUTTON], initial_state=True)
+    place_state = SimpleState(xpaths=[PLACE_DIRECTIONS_BUTTON, CARD_CLOSE_BUTTON],
                               parent_state=home_state,
-                              parent_state_transition=compose_clicks([CLOSE_CARD_BUTTON], 'close_place'))
-    directions_state = SimpleState(xpaths=[TRANSPORT_TYPE_PICKER, WAYPOINT_LIST, CLOSE_CARD_BUTTON],
+                              parent_state_transition=compose_clicks([CARD_CLOSE_BUTTON], 'close_place'))
+    directions_state = SimpleState(xpaths=[DIRECTIONS_TRANSPORT_TYPE_PICKER, DIRECTIONS_WAYPOINT_LIST,
+                                           CARD_CLOSE_BUTTON],
                                    parent_state=place_state,
-                                   parent_state_transition=compose_clicks([CLOSE_CARD_BUTTON], 'close_directions'))
+                                   parent_state_transition=compose_clicks([CARD_CLOSE_BUTTON], 'close_directions'))
     # turn-by-turn navigation, which is only available on real devices. Ending the navigation shows the destination.
     navigation_state = SimpleState(xpaths=[NAVIGATION_TRAY],
                                    parent_state=place_state,
@@ -102,7 +110,7 @@ class AppleMaps(StateGraph):
 
     # Transitions
     home_state.to(place_state, _search)
-    place_state.to(directions_state, compose_clicks([DIRECTIONS_BUTTON], 'open_directions'))
+    place_state.to(directions_state, compose_clicks([PLACE_DIRECTIONS_BUTTON], 'open_directions'))
 
     def __init__(self, device_udid: str, **kwargs):
         """
@@ -112,7 +120,7 @@ class AppleMaps(StateGraph):
         :param kwargs: Optional arguments passed to the StateGraph, such as appium_server or desired_capabilities.
         """
         StateGraph.__init__(self, device_udid, APPLE_MAPS_BUNDLE_ID, **kwargs)
-        self.add_popup_handler(PopUpHandler([GETTING_THERE_SAFELY_ALERT], [GETTING_THERE_SAFELY_OK]))
+        self.add_popup_handler(simple_popup_handler(POPUP_GETTING_THERE_SAFELY_OK))
         self.route_simulator = RouteSimulator(self, 0)
 
     def get_route_simulator(self) -> RouteSimulator:
@@ -150,7 +158,8 @@ class AppleMaps(StateGraph):
         :param transport_type: The type of transport to use.
         """
         _open_directions(self.driver, search_string, transport_type)
-        self.driver.click(GO_BUTTON)
+        self.gtl_logger.info('Pressing go button to start navigation')
+        self.driver.click(DIRECTIONS_GO_BUTTON)
         sleep(2)
 
     @action(navigation_state, end_state=place_state)
@@ -160,7 +169,8 @@ class AppleMaps(StateGraph):
         """
         _end_navigation(self.driver)
 
-    def start_route(self, from_query: str, to_query: str, speed: int, transport_type: TransportType = TransportType.CAR):
+    def start_route(self, from_query: str, to_query: str, speed: int,
+                    transport_type: TransportType = TransportType.CAR):
         """
         Travels a route from one place to another, by spoofing the location of the device along the route, while Apple
         Maps shows the route. The route is planned with OpenStreetMap, so it can differ slightly from the route Apple
@@ -184,17 +194,20 @@ class AppleMaps(StateGraph):
                              f'{[t.name for t in ROUTE_TRANSPORT_MODES]}')
         logger.info(f'Starting route from {from_query} to {to_query} by {transport_type.name} at {speed} km/h')
         # stand still at the start of the route while Apple Maps plans it
+        self.gtl_logger.info(f'Spoofing the location of the device to the start of the route: {from_query}')
         self.route_simulator.update_speed(0)
         self.route_simulator.execute_route_with_queries(from_query, to_query, ROUTE_TRANSPORT_MODES[transport_type])
         sleep(2)
         self.get_directions(to_query, transport_type)
-        _wait_for(self.driver, GO_BUTTON)
-        if self.driver.is_present(GO_BUTTON):
-            self.driver.click(GO_BUTTON)
+        _wait_for(self.driver, DIRECTIONS_GO_BUTTON)
+        if self.driver.is_present(DIRECTIONS_GO_BUTTON):
+            self.gtl_logger.info('Pressing go button to start navigation')
+            self.driver.click(DIRECTIONS_GO_BUTTON)
             sleep(2)
             self.current_state = self.navigation_state
         else:
-            logger.info('Navigation is not available, only showing the directions')
+            self.gtl_logger.warning('Navigation is not available, only showing the directions')
+        self.gtl_logger.info(f'Spoofing the location of the device along the route to {to_query} at {speed} km/h')
         self.route_simulator.update_speed(speed)
 
     def stop_route(self):
@@ -202,8 +215,10 @@ class AppleMaps(StateGraph):
         Stops traveling the route started with start_route(), ends the navigation in Apple Maps if it is still active,
         and resets the location of the device to its real location.
         """
+        self.gtl_logger.info('Stopping the spoofed route')
         self.route_simulator.stop_route()
         if self.driver.is_present(NAVIGATION_TRAY):
             self.end_navigation()
+        self.gtl_logger.info('Resetting the location of the device to its real location')
         self.driver.execute_script('mobile: resetSimulatedLocation')
         logger.info('Stopped route')

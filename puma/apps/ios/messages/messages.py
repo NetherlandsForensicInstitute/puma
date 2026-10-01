@@ -48,7 +48,7 @@ def _swipe_left(driver: PumaDriver, element: str):
 
 
 def _close_new_message(driver: PumaDriver):
-    driver.click(CANCEL_BUTTON)
+    driver.click(NEW_MESSAGE_CANCEL_BUTTON)
     sleep(1)
 
 
@@ -59,7 +59,8 @@ class ConversationState(SimpleState, ContextualState):
 
     def __init__(self, parent_state):
         # the parent transition is the default back action, which uses the back button in the navigation bar
-        super().__init__(xpaths=[CONVERSATION_TITLE, MESSAGE_BODY_FIELD], invalid_xpaths=[NEW_MESSAGE_NAVIGATION_BAR],
+        super().__init__(xpaths=[CONVERSATION_TITLE, CONVERSATION_MESSAGE_BODY_FIELD],
+                         invalid_xpaths=[NEW_MESSAGE_NAVIGATION_BAR],
                          parent_state=parent_state)
 
     def validate_context(self, driver: PumaDriver, conversation: str = None) -> bool:
@@ -89,17 +90,17 @@ class Messages(StateGraph):
     # States
     # The welcome screen and the new message screen are shown on top of the overview, while the overview stays in the
     # element tree. Therefore these are marked as invalid.
-    conversations_state = SimpleState(xpaths=[CONVERSATION_LIST, COMPOSE_BUTTON],
-                                      invalid_xpaths=[APPLE_INTELLIGENCE_WELCOME_TEXT, NEW_MESSAGE_NAVIGATION_BAR,
-                                                      RECENTLY_DELETED_TEXT],
+    conversations_state = SimpleState(xpaths=[CONVERSATIONS_LIST, CONVERSATIONS_COMPOSE_BUTTON],
+                                      invalid_xpaths=[POPUP_APPLE_INTELLIGENCE_WELCOME_TEXT, NEW_MESSAGE_NAVIGATION_BAR,
+                                                      POPUP_RECENTLY_DELETED_TEXT],
                                       initial_state=True)
-    new_message_state = SimpleState(xpaths=[NEW_MESSAGE_NAVIGATION_BAR, RECIPIENT_FIELD],
+    new_message_state = SimpleState(xpaths=[NEW_MESSAGE_NAVIGATION_BAR, NEW_MESSAGE_RECIPIENT_FIELD],
                                     parent_state=conversations_state,
                                     parent_state_transition=_close_new_message)
     conversation_state = ConversationState(parent_state=conversations_state)
 
     # Transitions
-    conversations_state.to(new_message_state, compose_clicks([COMPOSE_BUTTON], 'open_new_message'))
+    conversations_state.to(new_message_state, compose_clicks([CONVERSATIONS_COMPOSE_BUTTON], 'open_new_message'))
     conversations_state.to(conversation_state, conversation_state.open_conversation)
 
     def __init__(self, device_udid: str, **kwargs):
@@ -110,8 +111,8 @@ class Messages(StateGraph):
         :param kwargs: Optional arguments passed to the StateGraph, such as appium_server or desired_capabilities.
         """
         StateGraph.__init__(self, device_udid, MESSAGES_BUNDLE_ID, **kwargs)
-        self.add_popup_handlers(PopUpHandler([APPLE_INTELLIGENCE_WELCOME_TEXT], [CONTINUE_BUTTON]),
-                                PopUpHandler([RECENTLY_DELETED_TEXT], [OK_BUTTON]))
+        self.add_popup_handlers(PopUpHandler([POPUP_APPLE_INTELLIGENCE_WELCOME_TEXT], [POPUP_CONTINUE_BUTTON]),
+                                PopUpHandler([POPUP_RECENTLY_DELETED_TEXT], [POPUP_OK_BUTTON]))
 
     @action(new_message_state, end_state=conversation_state)
     def start_conversation(self, recipient: str, message: str):
@@ -122,21 +123,27 @@ class Messages(StateGraph):
         :param recipient: The name of a contact, or a phone number or email address.
         :param message: The message to send.
         """
-        self.driver.send_keys(RECIPIENT_FIELD, recipient)
+        self.gtl_logger.info(f'Entering recipient "{recipient}"')
+        self.driver.send_keys(NEW_MESSAGE_RECIPIENT_FIELD, recipient)
         sleep(2)
         if self.driver.is_present(recipient_suggestion(recipient)):
+            self.gtl_logger.info(f'Selecting contact "{recipient}" from the suggestions')
             self.driver.click(recipient_suggestion(recipient))
         else:
             # not a contact: confirm the phone number or email address as recipient
+            self.gtl_logger.info(f'Confirming "{recipient}" as recipient')
             self.driver.press_enter()
         sleep(1)
-        self.driver.click(MESSAGE_BODY_FIELD)
+        self.gtl_logger.info('Entering message text')
+        self.driver.click(CONVERSATION_MESSAGE_BODY_FIELD)
         self.driver.driver.switch_to.active_element.send_keys(message)
         sleep(1)
-        self.driver.click(SEND_BUTTON)
+        self.gtl_logger.info('Pressing send button')
+        self.driver.click(CONVERSATION_SEND_BUTTON)
         sleep(2)
         # when the message is sent, the new message screen turns into the conversation
         if self.driver.is_present(NEW_MESSAGE_NAVIGATION_BAR):
+            self.gtl_logger.warning(f'Could not send a message to "{recipient}", closing the new message screen')
             _close_new_message(self.driver)
             raise MessagesError(f'Cannot send a message to "{recipient}". Note that messages cannot be sent to new '
                                 f'recipients on a simulator.')
@@ -150,8 +157,9 @@ class Messages(StateGraph):
         :param message: The message to send.
         :param conversation: The name of the conversation.
         """
-        self.driver.send_keys(MESSAGE_BODY_FIELD, message)
-        self.driver.click(SEND_BUTTON)
+        self.driver.send_keys(CONVERSATION_MESSAGE_BODY_FIELD, message)
+        self.gtl_logger.info('Pressing send button')
+        self.driver.click(CONVERSATION_SEND_BUTTON)
         logger.info(f'Sent message to {conversation}')
 
     @action(conversation_state)
@@ -162,11 +170,12 @@ class Messages(StateGraph):
 
         :param conversation: The name of the conversation.
         :return: The messages as (sender, text), e.g. [('Your iMessage', 'Hi!'), ('Bob Jansen', 'Hello')]. Messages sent
-        from this device have SENT_BY_ME as sender.
+        from this device have CONVERSATION_SENT_BY_ME as sender.
         """
-        if not self.driver.is_present(MESSAGE_CELLS):
+        if not self.driver.is_present(CONVERSATION_MESSAGE_CELLS):
             return []
-        return [_parse_message(element.get_attribute('label')) for element in self.driver.get_elements(MESSAGE_CELLS)]
+        return [_parse_message(element.get_attribute('label'))
+                for element in self.driver.get_elements(CONVERSATION_MESSAGE_CELLS)]
 
     @action(conversations_state)
     def delete_conversation(self, conversation: str):
@@ -182,25 +191,29 @@ class Messages(StateGraph):
                 logger.info(f'Deleted conversation {conversation}')
                 return
             # the confirmation sometimes ignores the tap, while it is still appearing
-            logger.info(f'Conversation {conversation} was not deleted, trying again')
+            self.gtl_logger.warning(f'Conversation "{conversation}" was not deleted, trying again')
         raise MessagesError(f'Could not delete conversation "{conversation}"')
 
     def _delete_conversation(self, conversation: str):
+        self.gtl_logger.info(f'Swiping conversation "{conversation}" to the left to reveal the delete button')
         _swipe_left(self.driver, conversation_cell(conversation))
-        self.driver.click(SWIPE_DELETE_BUTTON)
+        self.gtl_logger.info('Pressing delete button')
+        self.driver.click(CONVERSATIONS_SWIPE_DELETE_BUTTON)
         # Deleting has to be confirmed. The confirmation ignores taps while it is appearing, so wait until it is shown.
         # The button is clicked instead of accepted through the alert API, as that does not work when the confirmation
         # also offers to report spam.
         for _ in range(10):
-            if self.driver.is_present(CONFIRM_DELETE_BUTTON):
+            if self.driver.is_present(CONVERSATIONS_CONFIRM_DELETE_BUTTON):
                 break
             sleep(0.5)
         else:
             raise MessagesError(f'Deleting conversation "{conversation}" was not asked to be confirmed')
         sleep(2)
-        self.driver.click(CONFIRM_DELETE_BUTTON)
+        self.gtl_logger.info('Confirming deletion')
+        self.driver.click(CONVERSATIONS_CONFIRM_DELETE_BUTTON)
         sleep(2)
         # the first time, Messages explains that deleted conversations are kept in Recently Deleted for 30 days
-        if self.driver.is_present(RECENTLY_DELETED_TEXT):
-            self.driver.click_alert_button(OK_LABEL)
+        if self.driver.is_present(POPUP_RECENTLY_DELETED_TEXT):
+            self.gtl_logger.info('Dismissing explanation of Recently Deleted')
+            self.driver.click_alert_button(POPUP_OK_LABEL)
             sleep(1)
