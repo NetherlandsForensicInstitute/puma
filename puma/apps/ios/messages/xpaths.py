@@ -15,21 +15,39 @@ CONVERSATION_MESSAGE_BODY_FIELD = accessibility_id('messageBodyField')
 CONVERSATION_SEND_BUTTON = accessibility_id('sendButton')
 # Each message is a cell containing a message balloon. The label of the cell is '<sender>, <text>, <time>'.
 CONVERSATION_MESSAGE_CELLS = ios_class_chain('**/XCUIElementTypeCell[$name == "CKBalloonTextView"$]')
-# The sender of messages sent from this device, as shown in the label of a message. This depends on the language of the
-# device.
-CONVERSATION_SENT_BY_ME = 'Your iMessage'
+CONVERSATION_MESSAGE_BALLOON = 'CKBalloonTextView'
+# The sender of messages sent from this device, as shown in the label of a message, for iMessage and SMS. This depends
+# on the language of the device.
+CONVERSATION_SENT_BY_ME_IMESSAGE = 'Your iMessage'
+CONVERSATION_SENT_BY_ME_SMS = 'Your Text Message'
+# The service of the messages below it is shown above them, e.g. 'iMessage' or 'Text Message • SMS'. The placeholder
+# of the message field shows the service of the next message in the same way.
+CONVERSATION_SERVICE_IMESSAGE = 'iMessage'
+CONVERSATION_SERVICE_SMS = 'Text Message'
 
 # New message. This screen is shown on top of the overview, and also contains a conversation title and message field.
 NEW_MESSAGE_NAVIGATION_BAR = ios_predicate('type == "XCUIElementTypeNavigationBar" AND name == "CKComposeChat"')
 NEW_MESSAGE_RECIPIENT_FIELD = ios_predicate('type == "XCUIElementTypeTextField" AND name != "messageBodyField"')
 NEW_MESSAGE_CANCEL_BUTTON = ios_predicate('type == "XCUIElementTypeButton" AND name == "Cancel"')
 
+# Search results, shown on top of the overview while searching
+SEARCH_RESULTS_LIST = ios_predicate('type == "XCUIElementTypeCollectionView" AND name BEGINSWITH "Search results for:"')
+# the button that closes searching, next to the search field
+SEARCH_RESULTS_CLOSE_BUTTON = accessibility_id('close')
+SEARCH_RESULTS_NO_RESULTS = ios_predicate('type == "XCUIElementTypeStaticText" AND name == "No Results"')
+# The conversations found, in the section 'Conversations'. Messages found are shown in the section 'Messages', which do
+# not have a contact photo button of their own.
+SEARCH_RESULTS_CONVERSATIONS = ios_class_chain(
+    '**/XCUIElementTypeCollectionView[`name BEGINSWITH "Search results for:"`]'
+    '/XCUIElementTypeCell[$type == "XCUIElementTypeButton" AND name == "Contact photo"$]')
+
 # Popups
 POPUP_APPLE_INTELLIGENCE_WELCOME_TEXT = ios_predicate(
     'type == "XCUIElementTypeStaticText" AND name == "Apple Intelligence in Messages"')
 POPUP_CONTINUE_BUTTON = ios_predicate('type == "XCUIElementTypeButton" AND name == "Continue"')
 # Shown the first time a conversation is deleted. The text contains a non-breaking space before 'Deleted'.
-POPUP_RECENTLY_DELETED_TEXT = ios_predicate('type == "XCUIElementTypeAlert" AND name BEGINSWITH "Deleted messages are moved to"')
+POPUP_RECENTLY_DELETED_TEXT = ios_predicate(
+    'type == "XCUIElementTypeAlert" AND name BEGINSWITH "Deleted messages are moved to"')
 POPUP_OK_BUTTON = ios_predicate('type == "XCUIElementTypeButton" AND name == "OK"')
 POPUP_OK_LABEL = 'OK'
 
@@ -58,3 +76,12 @@ def recipient_suggestion(recipient: str) -> str:
     """
     return ios_class_chain(f'**/XCUIElementTypeTable[`name == "Results"`]'
                            f'/XCUIElementTypeCell[`label BEGINSWITH "{recipient}, "`]')
+
+
+def search_result_conversation(name: str) -> str:
+    """
+    A conversation in the search results. Conversations can have names that only differ in upper and lower case, so the
+    name has to match exactly.
+    """
+    return ios_class_chain(f'**/XCUIElementTypeCollectionView[`name BEGINSWITH "Search results for:"`]'
+                           f'/XCUIElementTypeCell[`name == "{name}"`]')
