@@ -104,6 +104,27 @@ Only messages sent from the device with iMessage can be edited (up to 15 minutes
 minutes after sending). These are not available on a simulator, where a `MessagesError` is raised. Deleted messages are
 moved to Recently Deleted.
 
+## Photos, audio and location
+
+```python
+from puma.apps.ios.messages.messages import LiveLocationDuration
+
+phone.send_media(1, conversation="Bob Jansen", caption="Look!")   # the most recent photo or video
+phone.send_voice_message(duration=3)                             # records 3 seconds with the microphone
+phone.send_live_location(LiveLocationDuration.ONE_HOUR)          # ONE_HOUR, END_OF_DAY or INDEFINITELY
+phone.stop_live_location()
+```
+
+Photos, audio messages and locations are included in `get_messages`, with an empty text and a description in
+`attachment`, e.g. `'Includes picture'` or `'Location'`.
+
+- The photo picker shows the newest photos first: `send_media(1)` sends the most recent one. On a simulator, add
+  photos with `xcrun simctl addmedia <udid> <photo>`.
+- On a simulator, audio messages are recorded without sound.
+- Sharing the location is only available on real devices. To share another location than the real location of the
+  device, set the location first, e.g. with `set_location()` of the Appium driver. Sending a
+  fixed location (instead of sharing it for a while) is not available in Messages on iOS 26.
+
 ## Delivery status
 
 ```python
