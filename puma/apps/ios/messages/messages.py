@@ -69,7 +69,8 @@ class Message:
     :param reactions: The reactions (tapbacks) to the message, as (who, reaction). Reactions from this device have None
     as who.
     :param is_reply: Whether the message is a reply to another message.
-    :param reply_to: The text of the message replied to, if it is shown in the conversation.
+    :param reply_to: The text of the message replied to, if it is shown in the conversation. For replies in a thread,
+    this is the message that started the thread.
     """
     sender: Optional[str]
     text: str
@@ -152,8 +153,10 @@ def _parse_messages(page_source: str, default_service: Optional[Service] = None)
                 continue
             message = _parse_message(label, service)
             if message.is_reply:
+                # consecutive replies in the same thread share one preview
                 message.reply_to = reply_preview
-            reply_preview = None
+            else:
+                reply_preview = None
             messages.append(message)
     return messages
 
