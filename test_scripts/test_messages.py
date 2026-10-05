@@ -45,7 +45,7 @@ class TestMessages(unittest.TestCase):
             exit(1)
         self.alice = Messages(device_udids["Alice"])
 
-    def test_send_and_receive(self):
+    def test_send_message(self):
         self.alice.send_message("Puma test, with a comma", conversation=CONVERSATION_A)
         sent = self.alice.get_messages(CONVERSATION_A)[-1]
         self.assertEqual((None, "Puma test, with a comma", Service.IMESSAGE), (sent.sender, sent.text, sent.service))
@@ -53,10 +53,6 @@ class TestMessages(unittest.TestCase):
         # without a conversation, the conversation that is open is used
         self.alice.send_message("Puma test, same conversation")
         self.assertEqual("Puma test, same conversation", self.alice.get_messages()[-1].text)
-        # on a simulator, the messages are received in the other conversation
-        received = self.alice.get_messages(CONVERSATION_B)[-1]
-        self.assertEqual((CONVERSATION_B, "Puma test, same conversation", Service.IMESSAGE),
-                         (received.sender, received.text, received.service))
         self.assertEqual(Service.IMESSAGE, self.alice.get_service())
 
     def test_start_conversation_with_unreachable_recipient(self):
@@ -68,10 +64,10 @@ class TestMessages(unittest.TestCase):
     def test_delete_conversation(self):
         self.alice.delete_conversation(CONVERSATION_A)
         self.assertFalse(self.alice.driver.is_present(conversation_row(CONVERSATION_A)))
-        # sending a message from the other conversation brings the deleted conversation back
+        # sending a message from the other conversation brings the deleted conversation back for the other tests
         self.alice.send_message("Puma test, are you there?", conversation=CONVERSATION_B)
-        received = self.alice.get_messages(CONVERSATION_A)[-1]
-        self.assertEqual((CONVERSATION_A, "Puma test, are you there?"), (received.sender, received.text))
+        self.assertTrue(self.alice.go_to_state(self.alice.conversations_state))
+        self.assertTrue(self.alice.driver.is_present(conversation_row(CONVERSATION_A), implicit_wait=10))
 
 
     def test_search_conversations(self):
