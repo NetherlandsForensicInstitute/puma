@@ -27,6 +27,7 @@ from puma.apps.ios.contacts.contacts import Contacts
 from puma.apps.ios.reminders.reminders import Reminders
 from puma.apps.ios.safari.safari import Safari, PrivateBrowsingLockedError
 from puma.apps.ios.settings.settings import Settings
+from puma.utils import configure_default_logging
 
 
 def say(text):
@@ -175,6 +176,8 @@ if __name__ == "__main__":
                         help="the apps to demo, all apps by default")
     args = parser.parse_args()
 
+    # also shows the errors of Puma, e.g. when the Appium server is not running
+    configure_default_logging()
     capabilities = get_capabilities(args)
     with screen_stays_on(args.udid, capabilities):
         for app in args.apps:
