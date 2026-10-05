@@ -20,6 +20,7 @@ from contextlib import contextmanager
 
 from puma.apps.ios.messages.messages import Messages
 from puma.apps.ios.settings.settings import Settings
+from puma.utils import configure_default_logging
 
 # The two conversations a simulator starts with. Messages sent in one of them are received in the other.
 SIMULATOR_CONVERSATION = "+1 (888) 555-1212"
@@ -98,6 +99,8 @@ if __name__ == "__main__":
                                                "simulator one of the conversations it starts with is used")
     args = parser.parse_args()
 
+    # also shows the errors of Puma, e.g. when the Appium server is not running
+    configure_default_logging()
     capabilities = get_capabilities(args)
     with screen_stays_on(args.udid, capabilities):
         messages_demo(args.udid, capabilities, args.conversation)
