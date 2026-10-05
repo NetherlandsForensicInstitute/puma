@@ -64,9 +64,9 @@ iphone.send_message("Hello from Puma!", conversation="Bob")
 ```
 
 See [using Puma](docs/usage.md) for more examples, and how navigation, contexts and verification of actions work. For a
-demo of Puma on iOS, run `python -m demo.ios_demo --help` from the root of the repository. The demo sends and reads
-messages in Messages. On real devices, it turns off Auto-Lock in Settings during the demo, and restores it afterwards.
-For an extensive step-by-step guide on how to use (and develop) Puma, see the
+demo of Puma on iOS, run `python -m demo.ios_demo --udid <udid>` from the root of the repository. The demo sends and
+reads messages in Messages. On real devices, it turns off Auto-Lock in Settings during the demo, and restores it
+afterwards. For an extensive step-by-step guide on how to use (and develop) Puma, see the
 [Puma Tutorial](tutorial/2026/exercises.md).
 
 ## Supported apps
