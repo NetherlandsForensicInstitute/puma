@@ -65,9 +65,9 @@ iphone.visit_url_new_tab("example.com")
 
 See [using Puma](docs/usage.md) for more examples, and how navigation, contexts and verification of actions work. For a
 demo of Puma on iOS, run `python -m demo.ios_demo --udid <udid>` from the root of the repository. The demo uses Safari,
-Contacts, Calendar and Reminders, and travels a bike route in Apple Maps by simulating the location of the device. On
-real devices, it turns off Auto-Lock in Settings during the demo, and restores it afterwards. For an extensive
-step-by-step guide on how to use (and develop) Puma, see the [Puma Tutorial](tutorial/2026/exercises.md).
+Contacts, Calendar, Reminders and Messages, and travels a bike route in Apple Maps by simulating the location of the
+device. On real devices, it turns off Auto-Lock in Settings during the demo, and restores it afterwards. For an
+extensive step-by-step guide on how to use (and develop) Puma, see the [Puma Tutorial](tutorial/2026/exercises.md).
 
 ## Supported apps
 
