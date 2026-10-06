@@ -7,7 +7,7 @@ from time import sleep, time
 from typing import Optional
 
 from puma.apps.ios.messages import logger
-from puma.apps.ios.messages.xpaths import *
+from puma.apps.ios.messages.locators import *
 from puma.state_graph.action import action
 from puma.state_graph.popup_handler import PopUpHandler, simple_popup_handler
 from puma.state_graph.puma_driver import PumaDriver, supported_version

@@ -86,7 +86,7 @@ class IOSAlertHandler(PopUpHandler):
         driver.click_alert_button(label)
 
 
-known_popups = [simple_popup_handler(APP_UPDATE_POPUP_DISMISS_BUTTON),
+known_android_popups = [simple_popup_handler(APP_UPDATE_POPUP_DISMISS_BUTTON),
                 simple_popup_handler(PERMISSIONS_POPUP_ALLOW_FOREGROUND_BUTTON),
                 simple_popup_handler(PERMISSIONS_POPUP_ALLOW_BUTTON),
                 PopUpHandler([APP_STOPPED_POPUP_TITLE, APP_STOPPED_POPUP_CLOSE_BUTTON], [APP_STOPPED_POPUP_CLOSE_BUTTON])]
@@ -106,4 +106,4 @@ def known_popups_for(platform: Platform) -> List[PopUpHandler]:
     """
     if platform == Platform.IOS:
         return known_ios_popups
-    return known_popups
+    return known_android_popups

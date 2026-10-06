@@ -43,8 +43,8 @@ Searching only works on real devices: the simulator does not index messages, so 
 ## Sending messages
 
 ```python
-phone.start_conversation("Bob Jansen", "Hi Bob!")          # a contact, phone number or email address
-phone.send_message("How are you?", conversation="Bob Jansen")
+phone.start_conversation("Bob", "Hi Bob!")                 # a contact, phone number or email address
+phone.send_message("How are you?", conversation="Bob")
 phone.send_message("Any plans this weekend?")              # without a conversation, the open conversation is used
 ```
 
@@ -55,7 +55,7 @@ When a message cannot be sent to a recipient, `start_conversation` raises a `Mes
 ```python
 from puma.apps.ios.messages.messages import Service
 
-messages = phone.get_messages("Bob Jansen")
+messages = phone.get_messages("Bob")
 # [Message(sender=None, text='Hi Bob!', time='14:45', service=Service.IMESSAGE),
 #  Message(sender='Bob Jansen', text='Fine, thanks!', time='14:46', service=Service.IMESSAGE)]
 messages[0].sent_by_me                   # True
@@ -74,7 +74,7 @@ longer on the screen, the service of the conversation (see `get_service`) is use
 ```python
 from puma.apps.ios.messages.messages import Reaction
 
-phone.reply_to_message("Any plans this weekend?", "Perhaps a movie?", conversation="Bob Jansen")
+phone.reply_to_message("Any plans this weekend?", "Perhaps a movie?", conversation="Bob")
 phone.react_to_message("Perhaps a movie?", Reaction.HEART)   # HEART, THUMBS_UP, THUMBS_DOWN, HAHA, EMPHASIZE, QUESTION
 ```
 
@@ -97,7 +97,7 @@ phone.edit_message("Perhaps a movie?", "Perhaps a movie tonight?")
 phone.get_messages()[-1].edited                              # True
 phone.delete_message_for_everyone("Perhaps a movie tonight?")  # Undo Send: removes it for everyone
 phone.delete_message("Any plans this weekend?")              # deletes the message from this device only
-phone.forward_message("Bob Jansen", "Any plans", "Alice")    # forwards the last message containing 'Any plans'
+phone.forward_message("Bob", "Any plans", "Alice")           # forwards the last message containing 'Any plans'
 ```
 
 Only messages sent from the device with iMessage can be edited (up to 15 minutes after sending) and unsent (up to 2
@@ -109,7 +109,7 @@ moved to Recently Deleted.
 ```python
 from puma.apps.ios.messages.messages import LiveLocationDuration
 
-phone.send_media(1, conversation="Bob Jansen", caption="Look!")   # the most recent photo or video
+phone.send_media(1, conversation="Bob", caption="Look!")          # the most recent photo or video
 phone.send_voice_message(duration=3)                             # records 3 seconds with the microphone
 phone.send_live_location(LiveLocationDuration.ONE_HOUR)          # ONE_HOUR, END_OF_DAY or INDEFINITELY
 phone.stop_live_location()
@@ -142,14 +142,14 @@ iOS only shows the status of the last message sent from the device. For other me
 > and reading the messages of a group conversation, with the sender of each message. They are built on the standard texts of iOS 26 (e.g. "Change Name and Photo" and
 > "Leave this Conversation"), and raise a `MessagesError` when an element is not found. Run `test_groups` in
 > `test_scripts/test_messages.py` with three test contacts to verify them, and adjust the locators marked with TODO in
-> `xpaths.py` where needed.
+> `locators.py` where needed.
 
 ```python
-phone.create_group(["Bob Jansen", "Alice"], "Hi both!", group_name="Weekend")
+phone.create_group(["Bob", "Alice"], "Hi both!", group_name="Weekend")
 phone.add_members(["Charlie"], conversation="Weekend")
 phone.edit_group_name("Weekend", "Weekend trip")
 phone.remove_member("Charlie", conversation="Weekend trip")
-phone.group_exists("Weekend trip", ["Bob Jansen", "Alice"])   # True
+phone.group_exists("Weekend trip", ["Bob", "Alice"])          # True
 phone.leave_group("Weekend trip")
 ```
 
@@ -160,7 +160,7 @@ conversation, which only works on real devices.
 ## Deleting conversations
 
 ```python
-phone.delete_conversation("Bob Jansen")
+phone.delete_conversation("Bob")
 ```
 
 Deleted conversations are moved to Recently Deleted, where iOS keeps them for 30 days.

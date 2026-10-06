@@ -254,7 +254,8 @@ and applications in `puma/apps/ios` on iOS. An application defined elsewhere, e.
 attribute `platform = Platform.ANDROID` or `platform = Platform.IOS` (from `puma.state_graph.puma_driver`). Without it,
 the class raises a `TypeError` when it is defined.
 
-Locators are defined in an `xpaths.py` file next to the application class. Their names start with the screen (state)
+Locators are defined in a file next to the application class: `xpaths.py` for Android applications, `locators.py` for
+iOS applications, as these mostly use other locator strategies than XPaths. Their names start with the screen (state)
 they belong to, e.g. `CONVERSATIONS_COMPOSE_BUTTON` for the compose button on the conversations screen, and pop-ups
 start with `POPUP_`. Locators that depend on a value, such as the name of a conversation, are format strings (Android)
 or small functions (iOS) in the same file.

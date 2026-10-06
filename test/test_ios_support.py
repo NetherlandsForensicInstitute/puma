@@ -10,7 +10,7 @@ from geopy import Point
 from selenium.common import WebDriverException
 
 from puma.state_graph.locators import Locator, accessibility_id, ios_predicate, ios_class_chain, to_by_value
-from puma.state_graph.popup_handler import IOSAlertHandler, known_popups_for, known_popups, known_ios_popups
+from puma.state_graph.popup_handler import IOSAlertHandler, known_popups_for, known_android_popups, known_ios_popups
 from puma.state_graph.puma_driver import PumaDriver, Platform
 from puma.state_graph.state import SimpleState
 from puma.state_graph.state_graph import StateGraph, StateGraphMeta
@@ -112,7 +112,11 @@ class TestStateGraphPlatform(unittest.TestCase):
 
 
 class TestPumaDriverPlatforms(unittest.TestCase):
-    def test_default_driver_is_android(self):
+    def test_platform_is_mandatory(self):
+        with self.assertRaises(ValueError):
+            PumaDriver('mock_udid', 'com.example.app')
+
+    def test_android_driver(self):
         driver = _create_driver(Platform.ANDROID)
         self.assertEqual('AndroidPumaDriver', type(driver).__name__)
         self.assertEqual(Platform.ANDROID, driver.platform)
@@ -217,12 +221,11 @@ class TestIOSPumaDriver(unittest.TestCase):
         self.appium_driver.execute_script.assert_called_with('mobile: pressButton', {'name': 'home'})
 
     def test_keys(self):
-        self.driver.press_enter()
-        self.appium_driver.switch_to.active_element.send_keys.assert_called_with('\n')
-        self.driver.press_backspace()
-        self.appium_driver.switch_to.active_element.send_keys.assert_called_with('\b')
-        with self.assertRaises(NotImplementedError):
-            self.driver.press_left_arrow()
+        for press, usage in ((self.driver.press_enter, 0x28), (self.driver.press_backspace, 0x2A),
+                             (self.driver.press_left_arrow, 0x50)):
+            press()
+            self.appium_driver.execute_script.assert_called_with(
+                'mobile: performIoHidEvent', {'page': 0x07, 'usage': usage, 'durationSeconds': 0.005})
 
     def test_open_url(self):
         self.driver.open_url('https://example.com')
@@ -264,7 +267,7 @@ class TestIOSPopups(unittest.TestCase):
         return driver
 
     def test_known_popups_per_platform(self):
-        self.assertIs(known_popups, known_popups_for(Platform.ANDROID))
+        self.assertIs(known_android_popups, known_popups_for(Platform.ANDROID))
         self.assertIs(known_ios_popups, known_popups_for(Platform.IOS))
 
     def test_permission_alert_is_accepted(self):
