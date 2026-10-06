@@ -1,7 +1,10 @@
 """
 Demo of Puma on iOS: sending and reading messages in Messages.
 
-Run from the root of the repository, with an Appium server running:
+Run from the root of the repository, with an Appium server running. Run it as a module with `python -m`, not as a file
+with `python demo/ios_demo.py`: Python then adds the current directory, the root of the repository, to the import path,
+so that the puma package can be found. Running the file only adds the demo folder, so the import of puma fails (unless
+Puma is installed with pip).
 
     # on a simulator
     python -m demo.ios_demo --udid <simulator udid>
@@ -33,8 +36,8 @@ def say(text):
 
 def get_capabilities(args) -> dict:
     """
-    Real devices need the signing settings for WebDriverAgent. With a free Apple developer account, WebDriverAgent needs
-    a bundle id of your own.
+    Real devices need the signing settings for WebDriverAgent, and a bundle id of your own for it: its default bundle id
+    is already registered by another team.
     """
     if not args.team_id:
         return {}
@@ -93,8 +96,9 @@ if __name__ == "__main__":
     parser.add_argument("--udid", required=True,
                         help="udid of the device, see `xcrun simctl list devices booted` or `xcrun xctrace list devices`")
     parser.add_argument("--team-id", help="real devices only: your Apple developer team id, used to sign WebDriverAgent")
-    parser.add_argument("--wda-bundle-id", help="real devices only: a bundle id of your own for WebDriverAgent, "
-                                                "needed with a free Apple developer account")
+    parser.add_argument("--wda-bundle-id", help="real devices only: a bundle id of your own for WebDriverAgent, e.g. "
+                                                "com.<you>.WebDriverAgentRunner. Needed, as the default one is "
+                                                "already registered by another team")
     parser.add_argument("--conversation", help="the conversation to send a message to. Required on real devices, on a "
                                                "simulator one of the conversations it starts with is used")
     args = parser.parse_args()

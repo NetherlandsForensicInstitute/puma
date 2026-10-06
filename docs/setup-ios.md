@@ -43,7 +43,10 @@ xcrun simctl list devices booted
 7. Appium installs WebDriverAgent on the device, which needs to be signed with your Apple developer account. Pass your
    team id and signing identity as desired capabilities, see
    [the Appium documentation on real device configuration](https://appium.github.io/appium-xcuitest-driver/latest/preparation/real-device-config/).
-   With a free Apple ID, WebDriverAgent also needs a bundle id of your own:
+   On a real device, WebDriverAgent also needs a bundle id of your own, with a free Apple ID as well as with a paid
+   developer account. Its default bundle id (`com.facebook.WebDriverAgentRunner`) is already registered by another
+   team, so Xcode cannot create a provisioning profile for it. Any unique bundle id will do, for example
+   `com.<your name>.WebDriverAgentRunner`:
 
    ```python
    from puma.apps.ios.messages.messages import Messages
@@ -51,7 +54,7 @@ xcrun simctl list devices booted
    phone = Messages("00008110-000A1B2C3D4E5F6G", desired_capabilities={
        "appium:xcodeOrgId": "<your team id>",
        "appium:xcodeSigningId": "Apple Development",
-       "appium:updatedWDABundleId": "com.<your name>.WebDriverAgentRunner",  # free Apple ID only
+       "appium:updatedWDABundleId": "com.<your name>.WebDriverAgentRunner",
    })
    ```
 

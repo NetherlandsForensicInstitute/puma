@@ -112,7 +112,16 @@ The first connection to an iOS device builds WebDriverAgent with Xcode. If this 
 
 Appium could not build or start WebDriverAgent. The Appium server output only shows this code: to see the actual error,
 pass the capability `"appium:showXcodeLog": True`, or run the `xcodebuild` command from the Appium output yourself. On
-real devices, the most common cause is a certificate that is not trusted, see below.
+real devices, the most common causes are a missing bundle id of your own for WebDriverAgent, and a certificate that is
+not trusted, see below.
+
+### iOS: "Failed Registering Bundle Identifier" or "No profiles for 'com.facebook.WebDriverAgentRunner.xctrunner'"
+
+The `xcodebuild` output shows that the app identifier `com.facebook.WebDriverAgentRunner.xctrunner` "cannot be
+registered to your development team because it is not available". This is the default bundle id of WebDriverAgent,
+which is already registered by another team. Give WebDriverAgent a bundle id of your own with the capability
+`"appium:updatedWDABundleId"` (or `--wda-bundle-id` in the iOS demo), see
+[setting up iOS devices](setup-ios.md#physical-devices). This is needed for every Apple developer account, free or paid.
 
 ### iOS: "The application could not be launched because the Developer App Certificate is not trusted"
 
