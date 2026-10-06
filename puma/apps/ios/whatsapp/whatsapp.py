@@ -8,7 +8,7 @@ from typing import Optional, Union
 from selenium.common.exceptions import NoSuchElementException
 
 from puma.apps.ios.whatsapp import logger
-from puma.apps.ios.whatsapp.xpaths import *
+from puma.apps.ios.whatsapp.locators import *
 from puma.state_graph.action import action
 from puma.state_graph.popup_handler import PopUpHandler
 from puma.state_graph.puma_driver import PumaDriver, PumaClickException, Platform, supported_version
