@@ -22,7 +22,7 @@ if [ -f "$CURRENT_DIR/Appium-inspector.dmg" ]; then
    cp "$CURRENT_DIR/Appium-inspector.dmg" APPIUM_INSPECTOR_FILE
 else
   # Download Appium Inspector for macOS
-  APPIUM_INSPECTOR_URL="https://github.com/appium/appium-inspector/releases/download/v2025.3.1/Appium-Inspector-2025.3.1-mac-arm64.dmg"
+  APPIUM_INSPECTOR_URL="https://github.com/appium/appium-inspector/releases/download/v2026.9.2/Appium-Inspector-2026.9.2-mac-arm64.dmg"
 
   echo "Downloading Appium Inspector for macOS..."
   curl -L $APPIUM_INSPECTOR_URL -o "$APPIUM_INSPECTOR_FILE"
