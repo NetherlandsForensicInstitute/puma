@@ -17,7 +17,7 @@ def get_android_default_options() -> UiAutomator2Options:
     """
     options = UiAutomator2Options()
     options.no_reset = True
-    options.platform_name = 'Android'
+    options.platform_name = Platform.ANDROID.value
     options.new_command_timeout = 1200
     return options
 

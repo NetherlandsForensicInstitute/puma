@@ -78,21 +78,24 @@ class PumaDriver:
     elements. It uses Appium's WebDriver for remote control of the application.
 
     PumaDriver is the platform-independent base class. Creating a PumaDriver returns the driver for the requested
-    platform: an AndroidPumaDriver by default, or an IOSPumaDriver when passing `platform=Platform.IOS`.
+    platform, which is mandatory: an AndroidPumaDriver for `platform=Platform.ANDROID`, an IOSPumaDriver for
+    `platform=Platform.IOS`.
 
     All methods that take an XPath also accept a Locator (see puma.state_graph.locators), which allows using other
     locator strategies such as iOS predicate strings.
     """
     platform: Platform = None
 
-    def __new__(cls, *args, platform: Platform = Platform.ANDROID, **kwargs):
+    def __new__(cls, *args, platform: Platform = None, **kwargs):
         if cls is PumaDriver:
             if platform == Platform.IOS:
                 from puma.state_graph.ios_driver import IOSPumaDriver
                 cls = IOSPumaDriver
-            else:
+            elif platform == Platform.ANDROID:
                 from puma.state_graph.android_driver import AndroidPumaDriver
                 cls = AndroidPumaDriver
+            else:
+                raise ValueError(f'A PumaDriver needs a platform, e.g. platform=Platform.ANDROID, got {platform}')
         return super().__new__(cls)
 
     def __init__(self, udid: str, app_package: str, implicit_wait: int = 1, appium_server: str = 'http://localhost:4723', desired_capabilities: Dict[str, str] = None, platform: Platform = None):
@@ -106,7 +109,7 @@ class PumaDriver:
         :param appium_server: The address of the Appium server, defaults to 'http://localhost:4723'.
         :param desired_capabilities: The desired capabilities as passed to the Appium webdriver.
         :param platform: The platform of the device. Only used when instantiating PumaDriver directly, to choose the
-        platform specific driver. Defaults to Android.
+        platform specific driver. Mandatory in that case.
         """
         self.options = self._default_options()
         self.options.udid = udid

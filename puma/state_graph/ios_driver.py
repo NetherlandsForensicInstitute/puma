@@ -16,6 +16,15 @@ NAVIGATION_BAR_BACK_BUTTON = ios_class_chain(
     '**/XCUIElementTypeNavigationBar/XCUIElementTypeButton[`name == "BackButton" OR name == "Back"`]')
 
 
+# Keys of a hardware keyboard, as HID usages on the keyboard page. See the Keyboard/Keypad Page in the HID Usage Tables,
+# https://usb.org/document-library/hid-usage-tables-15
+HID_PAGE_KEYBOARD = 0x07
+HID_KEY_RETURN = 0x28
+HID_KEY_DELETE = 0x2A
+HID_KEY_LEFT_ARROW = 0x50
+# The duration of a single key press, as used by XCTest
+HID_KEY_PRESS_DURATION = 0.005
+
 def wda_ports(udid: str) -> tuple[int, int]:
     """
     Returns the local ports used to connect to WebDriverAgent on a device: one for the WebDriverAgent server, one for the
@@ -44,7 +53,7 @@ def get_ios_default_options() -> XCUITestOptions:
     """
     options = XCUITestOptions()
     options.no_reset = True
-    options.platform_name = 'iOS'
+    options.platform_name = Platform.IOS.value
     options.new_command_timeout = 1200
     # The first time WebDriverAgent needs to be built and installed on a device, which can take a few minutes
     options.wda_launch_timeout = 300_000
@@ -58,7 +67,7 @@ class IOSPumaDriver(PumaDriver):
     iOS differs from Android in a few ways that are relevant to Puma:
     - There is no back button. back() uses the back button in the navigation bar when present, and otherwise swipes
       from the left edge of the screen. States that cannot be left this way (e.g. modal sheets) should define a
-      parent_state_transition.
+      `parent_state_transition`.
     - System pop-ups (such as permission requests) are shown as alerts, which are handled through the Appium alert API
       (see puma.state_graph.popup_handler.IOSAlertHandler).
     - XPath lookups are relatively slow. Consider using Locators (puma.state_graph.locators) such as ios_predicate or
@@ -134,23 +143,33 @@ class IOSPumaDriver(PumaDriver):
         self.gtl_logger.info(f'Pressing home button')
         self.driver.execute_script('mobile: pressButton', {'name': 'home'})
 
+    def _press_key(self, usage: int):
+        """
+        Presses a key of a hardware keyboard, as if a keyboard is connected to the device (e.g. over bluetooth). Unlike
+        typing text, this triggers the action of the key, e.g. the return key submits a search field.
+
+        :param usage: The HID usage of the key, see the HID_KEY constants.
+        """
+        self.driver.execute_script('mobile: performIoHidEvent', {
+            'page': HID_PAGE_KEYBOARD, 'usage': usage, 'durationSeconds': HID_KEY_PRESS_DURATION})
+
     def press_enter(self):
         """
-        Presses the return key on the keyboard, by typing a newline in the focused element.
+        Presses the return key of a hardware keyboard.
         """
-        self.driver.switch_to.active_element.send_keys('\n')
+        self._press_key(HID_KEY_RETURN)
 
     def press_backspace(self):
         """
-        Presses the delete key on the keyboard, by typing a backspace in the focused element.
+        Presses the delete key of a hardware keyboard.
         """
-        self.driver.switch_to.active_element.send_keys('\b')
+        self._press_key(HID_KEY_DELETE)
 
     def press_left_arrow(self):
         """
-        Not supported: the iOS keyboard has no arrow keys.
+        Presses the left arrow key of a hardware keyboard.
         """
-        raise NotImplementedError('The iOS keyboard has no arrow keys, pressing the left arrow is not supported on iOS')
+        self._press_key(HID_KEY_LEFT_ARROW)
 
     def open_url(self, url: str):
         """

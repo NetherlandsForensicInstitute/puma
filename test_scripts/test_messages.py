@@ -1,7 +1,7 @@
 import unittest
 
 from puma.apps.ios.messages.messages import LiveLocationDuration, Messages, MessagesError, Reaction, Service
-from puma.apps.ios.messages.xpaths import conversation_row
+from puma.apps.ios.messages.locators import conversation_row
 
 # Fill in the udid below. Run `xcrun simctl list devices booted` (simulators) or `xcrun xctrace list devices`
 # (real devices) to see the udids.
