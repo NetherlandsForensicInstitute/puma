@@ -1,7 +1,10 @@
-from puma.state_graph.locators import accessibility_id, ios_predicate, ios_class_chain
+from puma.state_graph.locators import accessibility_id, ios_predicate, ios_class_chain, quoted
 
 # Most texts of WhatsApp start with an invisible left-to-right mark (U+200E), e.g. '\u200eDelete for everyone'.
 # Therefore texts are matched with ENDSWITH or CONTAINS.
+
+# A Cancel button, e.g. of the selection of messages, of the photo library and of sending a location
+CANCEL_BUTTON = ios_predicate('type == "XCUIElementTypeButton" AND label ENDSWITH "Cancel"')
 
 # Tab bar
 TAB_CHATS = accessibility_id('TabBarButton_Chats')
@@ -58,7 +61,6 @@ MESSAGE_MENU_DELETE = accessibility_id('ContextMenu_MenuItem_Delete')
 # the toolbar shows the number of selected messages. The sticker tray has a toolbar with the same name, WAToolbar.
 SELECTION_TOOLBAR = accessibility_id('Toolbar_SelectedMessageCount')
 SELECTION_DELETE_BUTTON = accessibility_id('Toolbar_DeleteButton')
-SELECTION_CANCEL_BUTTON = ios_predicate('type == "XCUIElementTypeButton" AND label ENDSWITH "Cancel"')
 DELETE_FOR_EVERYONE_BUTTON = ios_predicate('type == "XCUIElementTypeButton" AND label ENDSWITH "Delete for everyone"')
 
 # Contact info and group info, opened from the name of a chat
@@ -94,6 +96,8 @@ ATTACH_CONTACT = accessibility_id('WAActionSheetController_Contact')
 
 # The tray with stickers and GIFs, opened with the sticker button next to the message field
 STICKER_TRAY = accessibility_id('Stickers_CollectionView')
+# The grabber at the top of the sticker tray: tapping it does nothing, dragging it down closes the tray
+STICKER_TRAY_GRABBER = accessibility_id('StickerBrowserView_grabberView')
 STICKERS = ios_class_chain('**/XCUIElementTypeCollectionView[`name == "Stickers_CollectionView"`]'
                            '/XCUIElementTypeCell[`label BEGINSWITH "\u200eSticker"`]')
 
@@ -107,12 +111,14 @@ MEDIA_VIEWER_IMAGE = accessibility_id('MediaBrowser_Image')
 MEDIA_PICKER_ASSETS = accessibility_id('MediaPicker_Asset')
 MEDIA_PICKER_CAPTION = accessibility_id('MediaPickerSendBar_CaptionTextView')
 MEDIA_PICKER_SEND_BUTTON = accessibility_id('MediaPickerSendBar_SendButton')
+# The albums of the photo library, shown with the Albums button at the top of the photo library. An opened album has
+# a back button with the same name as the back button of the chat below it, which has a longer label.
+MEDIA_PICKER_ALBUMS_BUTTON = ios_predicate('type == "XCUIElementTypeButton" AND label ENDSWITH "Albums"')
+MEDIA_PICKER_ALBUM_BACK_BUTTON = ios_predicate('name == "BackButton" AND label == "Back"')
 MEDIA_PICKER_VIEW_ONCE_BUTTON = ios_predicate('type == "XCUIElementTypeButton" AND label ENDSWITH "Turn on view once"')
-MEDIA_PICKER_CANCEL_BUTTON = ios_predicate('type == "XCUIElementTypeButton" AND label ENDSWITH "Cancel"')
 
 # Sending a location
 LOCATION_TITLE = ios_predicate('type == "XCUIElementTypeStaticText" AND label ENDSWITH "Send location"')
-LOCATION_CANCEL_BUTTON = ios_predicate('type == "XCUIElementTypeButton" AND label ENDSWITH "Cancel"')
 LOCATION_CURRENT = accessibility_id('LocationTable_CurrentLocationCell')
 LOCATION_LIVE = accessibility_id('LocationTable_LiveLocationCell')
 # Sharing the live location, for 1 hour by default
@@ -143,6 +149,9 @@ PROFILE_EDIT_PHOTO_BUTTON = accessibility_id('MyProfileHeaderCell_EditPhotoButto
 PROFILE_CHOOSE_PHOTO = ios_predicate('type == "XCUIElementTypeButton" AND label ENDSWITH "Choose photo"')
 # The photo library of iOS, newest photos first, and the screen to crop the chosen photo
 SYSTEM_PHOTOS = accessibility_id('PXGGridLayout-Info')
+# The Collections of the photo library of iOS, with the albums, and the Cancel button of the photo library
+SYSTEM_PHOTOS_COLLECTIONS = accessibility_id('Collections')
+SYSTEM_PHOTOS_CANCEL_BUTTON = ios_predicate('type == "XCUIElementTypeButton" AND name == "Cancel"')
 CROP_CHOOSE_BUTTON = ios_predicate('type == "XCUIElementTypeButton" '
                                    'AND (label ENDSWITH "Choose" OR label ENDSWITH "Done")')
 # Editing the about: a text field with a Save button. The about can be limited in time, by default to 1 day.
@@ -186,7 +195,7 @@ INCOMING_CALL_DECLINE_BUTTON = ios_predicate('type == "XCUIElementTypeButton" '
 # a single lookup.
 SCREENS_ON_TOP_OF_OVERVIEW = ios_predicate('name IN {"PickerView_SearchBar", "AISearch_PaperPlane_Back_Button"}')
 SCREENS_ON_TOP_OF_CHAT = ios_predicate('name IN {"ContextMenu_ScrollView", "Toolbar_SelectedMessageCount", '
-                                       '"AttachmentPicker_Menu", "Stickers_CollectionView", '
+                                       '"AttachmentPicker_Menu", "Stickers_CollectionView", "MediaPicker_Asset", '
                                        '"NavigationBar_GroupInfoOverflowMenu"} OR label ENDSWITH "Contact info"')
 
 # Pop-ups
@@ -195,14 +204,26 @@ POPUP_DISAPPEARING_MESSAGES_TEXT = ios_predicate('label ENDSWITH "Get started wi
 POPUP_OK_BUTTON = ios_predicate('type == "XCUIElementTypeButton" AND label ENDSWITH "OK"')
 
 
+# Separates the name of a chat from details, e.g. the number of unread messages
+DETAILS_SEPARATOR = ', \u200e'
+
+
+def _is_named(attribute: str, name: str, separator: str = ', ') -> str:
+    """
+    A condition matching an element of which the attribute is a name, optionally followed by details after a separator,
+    e.g. the about of a contact: 'Bob, Available'. The name is quoted, so it can contain quotes.
+    """
+    name = quoted(name)
+    return f'({attribute} == "{name}" OR {attribute} BEGINSWITH "{name}{separator}")'
+
+
 def conversation_row(conversation: str) -> str:
     """
     A chat in the overview, which is a cell named after the chat. For chats with unread messages, the number of unread
     messages follows the name, e.g. 'Bob, \u200e2 unread messages'.
     """
     return ios_class_chain(f'**/XCUIElementTypeTable[`name == "ChatListView_TableView"`]'
-                           f'/XCUIElementTypeCell[`name == "{conversation}" '
-                           f'OR name BEGINSWITH "{conversation}, \u200e"`]')
+                           f'/XCUIElementTypeCell[`{_is_named("name", conversation, DETAILS_SEPARATOR)}`]')
 
 
 def search_result_chat(conversation: str) -> str:
@@ -211,7 +232,7 @@ def search_result_chat(conversation: str) -> str:
     for archived chats.
     """
     return ios_predicate(f'name == "ChatListSearchView_ChatResult" '
-                         f'AND (label == "{conversation}" OR label BEGINSWITH "{conversation}, \u200e")')
+                         f'AND {_is_named("label", conversation, DETAILS_SEPARATOR)}')
 
 
 def archived_row(conversation: str) -> str:
@@ -219,50 +240,37 @@ def archived_row(conversation: str) -> str:
     A chat in the list of archived chats.
     """
     return ios_class_chain(f'**/XCUIElementTypeTable[`name == "WAArchivedChatsViewController"`]'
-                           f'/XCUIElementTypeCell[`name == "{conversation}" '
-                           f'OR name BEGINSWITH "{conversation}, \u200e"`]')
+                           f'/XCUIElementTypeCell[`{_is_named("name", conversation, DETAILS_SEPARATOR)}`]')
 
 
 def new_chat_contact(contact: str) -> str:
     """
     A contact in the list of a new chat. The label is the name, followed by the about of the contact if it has one.
     """
-    return ios_predicate(f'name == "PickerView_ContactCell" '
-                         f'AND (label == "{contact}" OR label BEGINSWITH "{contact}, ")')
+    return ios_predicate(f'name == "PickerView_ContactCell" AND {_is_named("label", contact)}')
 
 
 def picker_contact(contact: str) -> str:
     """
     A contact in the list for choosing contacts, e.g. to share them.
     """
-    return ios_predicate(f'name == "ParticipantPicker_ContactCell" AND '
-                         f'(label == "{contact}" OR label BEGINSWITH "{contact}, ")')
+    return ios_predicate(f'name == "ParticipantPicker_ContactCell" AND {_is_named("label", contact)}')
 
 
 def sent_message(text: str) -> str:
     """
-    A message sent from this device containing a text.
+    The messages sent from this device containing a text, from old to new. A newline in a predicate makes it match
+    nothing, so the text cannot contain newlines.
     """
-    return ios_predicate(f'label CONTAINS "{SENT_TO}" AND label CONTAINS "{text}"')
+    return ios_predicate(f'label CONTAINS "{SENT_TO}" AND label CONTAINS "{quoted(text)}"')
 
 
 def any_message(text: str) -> str:
     """
-    A sent or received message containing a text.
+    The sent and received messages containing a text, from old to new. The text cannot contain newlines.
     """
     return ios_predicate(f'(label CONTAINS "{SENT_TO}" OR label CONTAINS "{RECEIVED_FROM}") '
-                         f'AND label CONTAINS "{text}"')
-
-
-def sent_message_with_status(text: str, status: str) -> str:
-    """
-    A message sent from this device containing a text, with a status: Sent, Delivered or Read. The status is at the end
-    of the label, or followed by a period for replies. WhatsApp spells Read as 'Red'.
-    """
-    statuses = [status, 'Red'] if status == 'Read' else [status]
-    # a newline in a predicate makes it match nothing, so the period after the status of a reply is matched without it
-    endings = ' OR '.join(f'label ENDSWITH ", \u200e{s}" OR label CONTAINS ", \u200e{s}."' for s in statuses)
-    return ios_predicate(f'label CONTAINS "{SENT_TO}" AND label CONTAINS "{text}" AND ({endings})')
+                         f'AND label CONTAINS "{quoted(text)}"')
 
 
 def forward_chat(conversation: str) -> str:
@@ -270,25 +278,41 @@ def forward_chat(conversation: str) -> str:
     A chat in the list to forward messages to. The label is the name, followed by e.g. the about of the contact.
     """
     return ios_predicate(f'name BEGINSWITH "ForwardPicker_" AND type == "XCUIElementTypeCell" '
-                         f'AND (label == "{conversation}" OR label BEGINSWITH "{conversation}, ")')
+                         f'AND {_is_named("label", conversation)}')
 
 
 def group_member(member: str) -> str:
     """
     A member in the group info. The label is the name, followed by e.g. the about of the member.
     """
-    return ios_predicate(f'type == "XCUIElementTypeCell" AND (label == "{member}" OR label BEGINSWITH "{member}, ")')
+    return ios_predicate(f'type == "XCUIElementTypeCell" AND {_is_named("label", member)}')
 
 
 def about_duration(duration: str) -> str:
     """
     A duration of the about: '1 hour', '8 hours', '1 day', '2 days' or '1 week'.
     """
-    return ios_predicate(f'name BEGINSWITH "EvolveAboutBottomSheet_Duration_" AND label ENDSWITH "{duration}"')
+    return ios_predicate(f'name BEGINSWITH "EvolveAboutBottomSheet_Duration_" AND label ENDSWITH "{quoted(duration)}"')
+
+
+def media_picker_album(album: str) -> str:
+    """
+    An album in the list of albums of the photo library, e.g. 'Recents' or 'Favorites'.
+    """
+    return ios_class_chain(f'**/XCUIElementTypeTable/XCUIElementTypeCell'
+                           f'/XCUIElementTypeStaticText[`name == "{quoted(album)}"`]')
+
+
+def system_photos_album(album: str) -> str:
+    """
+    An album in the Collections of the photo library of iOS, e.g. 'Recently Saved'. The albums are shown in rows that
+    scroll sideways: only the first albums of each row can be found.
+    """
+    return ios_predicate(f'type == "XCUIElementTypeButton" AND label == "{quoted(album)}"')
 
 
 def disappearing_messages_option(option: str) -> str:
     """
     An option for disappearing messages: 'Off', '24 hours', '7 days' or '90 days'.
     """
-    return ios_predicate(f'type == "XCUIElementTypeStaticText" AND label ENDSWITH "{option}"')
+    return ios_predicate(f'type == "XCUIElementTypeStaticText" AND label ENDSWITH "{quoted(option)}"')

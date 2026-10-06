@@ -1,6 +1,11 @@
+import inspect
 import unittest
+from unittest.mock import Mock
 
-from puma.apps.ios.whatsapp.whatsapp import Message, _parse_message, _parse_messages
+from puma.apps.android.whatsapp.whatsapp import WhatsApp as AndroidWhatsApp
+from puma.apps.ios.whatsapp.locators import any_message, conversation_row, new_chat_contact
+from puma.apps.ios.whatsapp.whatsapp import Message, WhatsApp, _last, _parse_message, _parse_messages, _wait_until
+from puma.state_graph.locators import quoted
 
 SENT = '\u200eYour message, {text}, 16:08, \u200eSent to Bob, \u200e{status}'
 RECEIVED = '\u200emessage, {text}, 16:05, \u200eReceived from Bob'
@@ -79,6 +84,75 @@ class TestWhatsAppParsing(unittest.TestCase):
                   + '</XCUIElementTypeTable></AppiumAUT>')
         self.assertEqual([Message('Bob', 'Hello', '16:05'), Message(None, 'Hi', '16:08', 'Read')],
                          _parse_messages(source))
+
+
+def _parameters(method) -> list[str]:
+    """
+    The parameters of a method, also of an action: the decorator of an action keeps the method as 'func'.
+    """
+    method = inspect.getclosurevars(method).nonlocals.get('func', method)
+    return [name for name in inspect.signature(method).parameters if name != 'self']
+
+
+def _element(label: str) -> Mock:
+    element = Mock()
+    element.get_attribute.return_value = label
+    return element
+
+
+class TestWhatsAppLocators(unittest.TestCase):
+    def test_quoted(self):
+        self.assertEqual('He said \\"hi\\"', quoted('He said "hi"'))
+        self.assertEqual('a\\\\b', quoted('a\\b'))
+
+    def test_texts_are_quoted(self):
+        self.assertIn('label CONTAINS "He said \\"hi\\""', any_message('He said "hi"'))
+        self.assertIn('label == "Bob \\"B\\" Smith"', new_chat_contact('Bob "B" Smith'))
+        self.assertIn('name == "\\"Work\\""', conversation_row('"Work"'))
+
+    def test_names_with_details(self):
+        # contacts are followed by their about, chats by e.g. the number of unread messages
+        self.assertIn('label BEGINSWITH "Bob, "', new_chat_contact('Bob'))
+        self.assertIn('name BEGINSWITH "Bob, \u200e"', conversation_row('Bob'))
+
+
+class TestWhatsAppHelpers(unittest.TestCase):
+    def test_wait_until_checks_at_least_once(self):
+        self.assertTrue(_wait_until(lambda: True, timeout=0))
+        self.assertFalse(_wait_until(lambda: False, timeout=0))
+
+    def test_last_is_the_newest_element(self):
+        driver = Mock()
+        driver.get_elements.return_value = ['old', 'new']
+        self.assertEqual('new', _last(driver, 'xpath'))
+        driver.is_present.return_value = False
+        self.assertIsNone(_last(driver, 'xpath'))
+
+    def test_status_of_the_newest_message(self):
+        # an older message with the same text has been read, the newest one is only delivered
+        whatsapp = Mock(spec=WhatsApp)
+        whatsapp.driver = Mock()
+        whatsapp.driver.get_elements.return_value = [_element(SENT.format(text='Hi', status='Read')),
+                                                     _element(SENT.format(text='Hi', status='Delivered'))]
+        self.assertFalse(WhatsApp._is_marked(whatsapp, 'Hi', 'Read', implicit_wait=0))
+        self.assertTrue(WhatsApp._is_marked(whatsapp, 'Hi', 'Delivered', implicit_wait=0))
+
+
+class TestWhatsAppParity(unittest.TestCase):
+    def test_parameters_as_on_android(self):
+        """
+        Actions that exist on both platforms start with the same parameters, in the same order, so that calls with
+        positional arguments work on both. iOS can have extra parameters at the end.
+        """
+        android = {name for name in vars(AndroidWhatsApp) if callable(getattr(AndroidWhatsApp, name))
+                   and not name.startswith('_')}
+        shared = sorted(name for name in android if name in vars(WhatsApp))
+        self.assertIn('send_media', shared)
+        for name in shared:
+            with self.subTest(name):
+                android_parameters = _parameters(getattr(AndroidWhatsApp, name))
+                ios_parameters = _parameters(getattr(WhatsApp, name))
+                self.assertEqual(android_parameters, ios_parameters[:len(android_parameters)])
 
 
 if __name__ == '__main__':

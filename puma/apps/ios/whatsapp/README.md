@@ -30,7 +30,9 @@ phone = WhatsApp("00008110-000A1B2C3D4E5F6G", desired_capabilities={
 See [Setting up iOS](../../../../docs/setup-ios.md) for the signing settings of WebDriverAgent.
 
 Chats are identified by their name as shown in WhatsApp: the name of the contact, or the name of the group. Chats that
-are not on the screen are opened by searching for them. With many chats and contacts, WhatsApp on iOS can be slow to
+are not on the screen are opened by searching for them. Messages are identified by (a part of) their text. When
+multiple messages contain the text, the newest one is used. Names and texts can contain quotes, but texts used to
+identify a message cannot contain newlines. With many chats and contacts, WhatsApp on iOS can be slow to
 automate: an action can take up to a minute.
 
 ## Sending messages
@@ -67,6 +69,7 @@ sender, and a status: `Sent`, `Delivered` or `Read`. The kind of a message is `m
 ```python
 phone.send_media(1, conversation="Bob", caption="Look!")   # the newest photo or video in the photo library
 phone.send_media(1, conversation="Bob", view_once=True)
+phone.send_media(1, conversation="Bob", directory_name="Favorites")  # the first photo or video of an album
 phone.open_view_once_photo("Bob")                          # opens the last received view once photo
 phone.send_voice_message(duration=3, conversation="Bob")   # records 3 seconds with the microphone
 phone.send_contact("Alice", conversation="Bob")
@@ -102,11 +105,15 @@ phone.delete_group("Weekend")                             # leaves the group fir
 phone.set_about("Available")                              # shown for 1 day, the default of WhatsApp
 phone.set_about("At work", duration="1 week")             # 1 hour, 8 hours, 1 day, 2 days or 1 week
 phone.change_profile_picture(1)                           # the newest photo in the photo library
+phone.change_profile_picture(1, directory_name="Recently Saved")   # the first photo of an album
 phone.add_status("Hello from Puma!")                      # a text status, shown to your contacts for 24 hours
 phone.delete_status()                                     # deletes all your status updates
 ```
 
-WhatsApp only shows an about for a limited time: an about without an end date cannot be set anymore.
+WhatsApp only shows an about for a limited time: an about without an end date cannot be set anymore. A status is a
+text on iOS, so `add_status` needs a caption, while on Android a status without a caption is a photo taken with the
+camera. For `change_profile_picture`, only the first albums of each row in the Collections of the photo library can be
+chosen, as these rows scroll sideways.
 
 ## Calls
 

@@ -3,9 +3,9 @@ import xml.etree.ElementTree as ElementTree
 from contextlib import contextmanager
 from dataclasses import dataclass
 from time import sleep, time
-from typing import Optional, Union
+from typing import Callable, Optional, Union
 
-from selenium.common.exceptions import NoSuchElementException
+from selenium.common.exceptions import NoSuchElementException, StaleElementReferenceException
 
 from puma.apps.ios.whatsapp import logger
 from puma.apps.ios.whatsapp.locators import *
@@ -139,17 +139,71 @@ def _parse_messages(page_source: str) -> list[Message]:
     return messages
 
 
-def _wait_for(driver: PumaDriver, *xpaths: str, timeout: float = 6) -> bool:
+def _wait_until(condition: Callable[[], bool], timeout: float) -> bool:
     """
-    Waits until any of the elements is present. The elements are checked at least once, also with a timeout of 0.
+    Waits until a condition holds. The condition is checked at least once, also with a timeout of 0.
+
+    :return: Whether the condition holds.
     """
     end = time() + timeout
     while True:
-        if any(driver.is_present(xpath) for xpath in xpaths):
+        if condition():
             return True
         if time() >= end:
             return False
         sleep(0.5)
+
+
+# Waiting for an element is faster and more reliable than a fixed sleep, except on the overview of chats and in the
+# lists of contacts: there, every lookup takes seconds, so these screens are given a fixed time instead.
+def _wait_for(driver: PumaDriver, *xpaths: str, timeout: float = 6) -> bool:
+    """
+    Waits until any of the elements is present.
+
+    :return: Whether any of the elements is present.
+    """
+    return _wait_until(lambda: any(driver.is_present(xpath) for xpath in xpaths), timeout)
+
+
+def _wait_until_gone(driver: PumaDriver, xpath: str, timeout: float = 6) -> bool:
+    """
+    Waits until an element is no longer present, e.g. a screen that closes.
+
+    :return: Whether the element is gone.
+    """
+    return _wait_until(lambda: not driver.is_present(xpath), timeout)
+
+
+def _expect(driver: PumaDriver, xpath: str, description: str, timeout: float = 6):
+    """
+    Waits until an element is present.
+
+    :raises WhatsAppError: When the element is not shown within the timeout.
+    """
+    if not _wait_for(driver, xpath, timeout=timeout):
+        raise WhatsAppError(f'{description} was not shown')
+
+
+def _click(driver: PumaDriver, xpath: str, description: str, timeout: float = 6):
+    """
+    Waits until an element is present, and clicks it.
+
+    :raises WhatsAppError: When the element is not shown within the timeout.
+    """
+    _expect(driver, xpath, description, timeout)
+    driver.gtl_logger.info(f'Pressing {description}')
+    driver.click(xpath)
+
+
+def _last(driver: PumaDriver, xpath: str):
+    """
+    The last of the elements matching a locator, e.g. the newest of the messages containing a text.
+
+    :return: The element, or None when no element matches.
+    """
+    if not driver.is_present(xpath):
+        return None
+    return driver.get_elements(xpath)[-1]
 
 
 def _swipe_row_left(driver: PumaDriver, row: str):
@@ -272,7 +326,7 @@ def _close_message_menu(driver: PumaDriver):
     """
     size = driver.driver.get_window_size()
     driver.execute_script('mobile: tap', {'x': size['width'] / 2, 'y': size['height'] * 0.12})
-    sleep(1)
+    _wait_until_gone(driver, MESSAGE_MENU)
 
 
 class MessageMenuHandler(PopUpHandler):
@@ -290,11 +344,39 @@ class MessageMenuHandler(PopUpHandler):
 
 def _close_sticker_tray(driver: PumaDriver):
     """
-    Closes the sticker tray by tapping the messages above it. The close button of the tray ignores clicks and taps.
+    Closes the sticker tray by dragging its grabber down. Tapping the grabber, or the close button of the tray, does
+    nothing, and tapping the messages above the tray could play a voice message.
     """
-    size = driver.driver.get_window_size()
-    driver.execute_script('mobile: tap', {'x': size['width'] / 2, 'y': size['height'] * 0.3})
-    sleep(1)
+    rect = driver.get_element(STICKER_TRAY_GRABBER).rect
+    x, y = rect['x'] + rect['width'] / 2, rect['y'] + rect['height'] / 2
+    driver.execute_script('mobile: dragFromToForDuration', {
+        'fromX': x, 'fromY': y, 'toX': x, 'toY': driver.driver.get_window_size()['height'] - 5, 'duration': 0.3})
+    _wait_until_gone(driver, STICKER_TRAY)
+
+
+def _close_media_picker(driver: PumaDriver):
+    """
+    Closes the photo library. An opened album has no Cancel button, so the album is closed first.
+    """
+    if driver.is_present(MEDIA_PICKER_ALBUM_BACK_BUTTON):
+        driver.gtl_logger.info('Closing the album')
+        driver.click(MEDIA_PICKER_ALBUM_BACK_BUTTON)
+        _expect(driver, CANCEL_BUTTON, 'The Cancel button of the photo library')
+    driver.gtl_logger.info('Closing the photo library')
+    driver.click(CANCEL_BUTTON)
+    _wait_until_gone(driver, MEDIA_PICKER_ASSETS)
+
+
+class MediaPickerHandler(PopUpHandler):
+    """
+    Closes the photo library when it is left open, also when an album is opened.
+    """
+
+    def __init__(self):
+        super().__init__([MEDIA_PICKER_ASSETS], [])
+
+    def dismiss_popup(self, driver: PumaDriver):
+        _close_media_picker(driver)
 
 
 class StickerTrayHandler(PopUpHandler):
@@ -405,7 +487,7 @@ class WhatsApp(StateGraph):
                                    parent_state_transition=compose_clicks([CALL_END_BUTTON], 'end_call'))
     send_location_state = SimpleState(xpaths=[LOCATION_TITLE, LOCATION_CURRENT],
                                       parent_state=chat_state,
-                                      parent_state_transition=compose_clicks([LOCATION_CANCEL_BUTTON],
+                                      parent_state_transition=compose_clicks([CANCEL_BUTTON],
                                                                              'close_location'))
 
     # Transitions
@@ -427,11 +509,12 @@ class WhatsApp(StateGraph):
         StateGraph.__init__(self, device_udid, WHATSAPP_BUNDLE_ID, **kwargs)
         self.driver.add_back_button(BACK_BUTTON)
         self.add_popup_handlers(MessageMenuHandler(),
-                                PopUpHandler([SELECTION_TOOLBAR, SELECTION_CANCEL_BUTTON], [SELECTION_CANCEL_BUTTON]),
+                                PopUpHandler([SELECTION_TOOLBAR, CANCEL_BUTTON], [CANCEL_BUTTON]),
                                 PopUpHandler([POPUP_DISAPPEARING_MESSAGES_TEXT], [POPUP_OK_BUTTON]),
                                 # the menu of the + button is closed by pressing the + button again
                                 PopUpHandler([ATTACH_MENU], [CHAT_ATTACH_BUTTON]),
                                 StickerTrayHandler(),
+                                MediaPickerHandler(),
                                 # the editor of a text status
                                 PopUpHandler([STATUS_TEXT_FIELD, STATUS_CANCEL_BUTTON], [STATUS_CANCEL_BUTTON]))
 
@@ -443,7 +526,8 @@ class WhatsApp(StateGraph):
             sleep(2)
         self.driver.gtl_logger.info('Pressing send button')
         self.driver.click(CHAT_SEND_BUTTON)
-        sleep(1)
+        # the send button is only shown while there is text to send
+        _wait_until_gone(self.driver, CHAT_SEND_BUTTON)
 
     @action(chat_state)
     def send_message(self, message_text: str, conversation: str = None):
@@ -487,13 +571,15 @@ class WhatsApp(StateGraph):
     @contextmanager
     def _message_menu(self, xpath: str, description: str):
         """
-        Opens the menu of a message by long pressing it. Afterwards, the chat is scrolled back to the latest messages.
+        Opens the menu of a message by long pressing it. When multiple messages match, the newest one is used.
+        Afterwards, the chat is scrolled back to the latest messages.
         """
         swipes = _scroll_to(self.driver, xpath, description)
         try:
             with _short_idle_timeout(self.driver):
                 self.gtl_logger.info(f'Long pressing {description} to open its menu')
-                self.driver.long_click_element(xpath, duration=1)
+                message = _last(self.driver, xpath)
+                self.driver.execute_script('mobile: touchAndHold', {'elementId': message.id, 'duration': 1})
                 if not _wait_for(self.driver, MESSAGE_MENU, timeout=4):
                     raise WhatsAppError(f'Could not open the menu of {description}')
                 yield
@@ -513,7 +599,7 @@ class WhatsApp(StateGraph):
         with self._message_menu(any_message(message_to_reply_to), f'message "{message_to_reply_to}"'):
             self.gtl_logger.info('Choosing Reply')
             self.driver.click(MESSAGE_MENU_REPLY)
-        sleep(1)
+        _wait_until_gone(self.driver, MESSAGE_MENU)
         self._type_and_send(reply_text)
 
     @action(chat_state)
@@ -528,53 +614,65 @@ class WhatsApp(StateGraph):
         with self._message_menu(sent_message(message_text), f'message "{message_text}"'):
             self.gtl_logger.info('Choosing Delete')
             self.driver.click(MESSAGE_MENU_DELETE)
-        _wait_for(self.driver, SELECTION_DELETE_BUTTON)
-        self.gtl_logger.info('Pressing delete button')
-        self.driver.click(SELECTION_DELETE_BUTTON)
+        _click(self.driver, SELECTION_DELETE_BUTTON, 'the delete button')
         if not _wait_for(self.driver, DELETE_FOR_EVERYONE_BUTTON, timeout=3):
-            self.driver.click(SELECTION_CANCEL_BUTTON)
+            self.driver.click(CANCEL_BUTTON)
             raise WhatsAppError(f'Message "{message_text}" cannot be deleted for everyone anymore')
         self.gtl_logger.info('Choosing Delete for everyone')
         self.driver.click(DELETE_FOR_EVERYONE_BUTTON)
-        sleep(1)
+        _wait_until_gone(self.driver, SELECTION_TOOLBAR)
 
     def _is_marked(self, message_text: str, status: str, implicit_wait: float) -> bool:
-        return _wait_for(self.driver, sent_message_with_status(message_text, status), timeout=implicit_wait)
+        """
+        Checks the status of the newest message sent from this device containing the text.
+        """
+        def has_status() -> bool:
+            try:
+                element = _last(self.driver, sent_message(message_text))
+                message = _parse_message(element.get_attribute('label')) if element else None
+            except (NoSuchElementException, StaleElementReferenceException, PumaClickException):
+                # the message is updated when its status changes
+                return False
+            return message is not None and message.status == status
+
+        return _wait_until(has_status, implicit_wait)
 
     @action(chat_state)
-    def is_message_marked_sent(self, message_text: str, conversation: str = None, implicit_wait: float = 5) -> bool:
+    def is_message_marked_sent(self, message_text: str, implicit_wait: float = 5, conversation: str = None) -> bool:
         """
-        Checks whether a message sent from this device is marked as sent (one grey check mark).
+        Checks whether a message sent from this device is marked as sent (one grey check mark). When multiple messages
+        contain the text, the newest one is checked.
 
         :param message_text: The text of the message.
-        :param conversation: The chat of the message. Optional: without a chat, the open chat is used.
         :param implicit_wait: How long to wait for the status, in seconds.
+        :param conversation: The chat of the message. Optional: without a chat, the open chat is used.
         :return: Whether the message is marked as sent.
         """
         return self._is_marked(message_text, 'Sent', implicit_wait)
 
     @action(chat_state)
-    def is_message_marked_delivered(self, message_text: str, conversation: str = None,
-                                    implicit_wait: float = 5) -> bool:
+    def is_message_marked_delivered(self, message_text: str, implicit_wait: float = 5,
+                                    conversation: str = None) -> bool:
         """
-        Checks whether a message sent from this device is marked as delivered (two grey check marks).
+        Checks whether a message sent from this device is marked as delivered (two grey check marks). When multiple
+        messages contain the text, the newest one is checked.
 
         :param message_text: The text of the message.
-        :param conversation: The chat of the message. Optional: without a chat, the open chat is used.
         :param implicit_wait: How long to wait for the status, in seconds.
+        :param conversation: The chat of the message. Optional: without a chat, the open chat is used.
         :return: Whether the message is marked as delivered.
         """
         return self._is_marked(message_text, 'Delivered', implicit_wait)
 
     @action(chat_state)
-    def is_message_marked_read(self, message_text: str, conversation: str = None, implicit_wait: float = 10) -> bool:
+    def is_message_marked_read(self, message_text: str, implicit_wait: float = 10, conversation: str = None) -> bool:
         """
         Checks whether a message sent from this device is marked as read (two blue check marks). This is only shown when
-        both people have read receipts turned on.
+        both people have read receipts turned on. When multiple messages contain the text, the newest one is checked.
 
         :param message_text: The text of the message.
-        :param conversation: The chat of the message. Optional: without a chat, the open chat is used.
         :param implicit_wait: How long to wait for the status, in seconds.
+        :param conversation: The chat of the message. Optional: without a chat, the open chat is used.
         :return: Whether the message is marked as read.
         """
         return self._is_marked(message_text, 'Read', implicit_wait)
@@ -592,20 +690,16 @@ class WhatsApp(StateGraph):
         with self._message_menu(any_message(message_contains), f'message "{message_contains}"'):
             self.gtl_logger.info('Choosing Forward')
             self.driver.click(MESSAGE_MENU_FORWARD)
-        _wait_for(self.driver, SELECTION_FORWARD_BUTTON)
-        self.gtl_logger.info('Pressing forward button')
-        self.driver.click(SELECTION_FORWARD_BUTTON)
-        _wait_for(self.driver, FORWARD_SEARCH_FIELD)
+        _click(self.driver, SELECTION_FORWARD_BUTTON, 'the forward button')
+        _expect(self.driver, FORWARD_SEARCH_FIELD, 'The list of chats to forward to')
         self.gtl_logger.info(f'Searching for chat "{to_chat}"')
         self.driver.send_keys(FORWARD_SEARCH_FIELD, to_chat)
         if not _wait_for(self.driver, forward_chat(to_chat), timeout=20):
             raise WhatsAppError(f'Cannot forward to "{to_chat}": the chat was not found')
         self.gtl_logger.info(f'Choosing chat "{to_chat}"')
         _tap_visible(self.driver, forward_chat(to_chat))
-        _wait_for(self.driver, FORWARD_SEND_BUTTON)
-        self.gtl_logger.info('Pressing forward button')
-        self.driver.click(FORWARD_SEND_BUTTON)
-        sleep(2)
+        _click(self.driver, FORWARD_SEND_BUTTON, 'the forward button')
+        _wait_until_gone(self.driver, FORWARD_SEND_BUTTON, timeout=10)
 
     @action(chat_state)
     def send_contact(self, contact_name: str, conversation: str = None):
@@ -617,10 +711,8 @@ class WhatsApp(StateGraph):
         """
         self.gtl_logger.info('Pressing the + button')
         self.driver.click(CHAT_ATTACH_BUTTON)
-        _wait_for(self.driver, ATTACH_CONTACT)
-        self.gtl_logger.info('Choosing Contact')
-        self.driver.click(ATTACH_CONTACT)
-        _wait_for(self.driver, PICKER_SEARCH_FIELD)
+        _click(self.driver, ATTACH_CONTACT, 'Contact')
+        _expect(self.driver, PICKER_SEARCH_FIELD, 'The list of contacts')
         self.gtl_logger.info(f'Searching for contact "{contact_name}"')
         self.driver.click(PICKER_SEARCH_FIELD)
         self.driver.send_keys(PICKER_SEARCH_FIELD, contact_name)
@@ -629,10 +721,8 @@ class WhatsApp(StateGraph):
         _tap_visible(self.driver, picker_contact(contact_name))
         self.gtl_logger.info('Pressing Next')
         self.driver.click(PICKER_NEXT_BUTTON)
-        _wait_for(self.driver, SHARE_CONTACT_SEND_BUTTON)
-        self.gtl_logger.info('Pressing Send')
-        self.driver.click(SHARE_CONTACT_SEND_BUTTON)
-        sleep(1)
+        _click(self.driver, SHARE_CONTACT_SEND_BUTTON, 'Send')
+        _wait_until_gone(self.driver, SHARE_CONTACT_SEND_BUTTON)
 
     @action(send_location_state, end_state=chat_state)
     def send_current_location(self, conversation: str = None):
@@ -645,7 +735,7 @@ class WhatsApp(StateGraph):
         sleep(3)
         self.gtl_logger.info('Choosing Send your current location')
         self.driver.click(LOCATION_CURRENT)
-        sleep(2)
+        _wait_until_gone(self.driver, LOCATION_TITLE)
 
     @action(send_location_state, end_state=chat_state)
     def send_live_location(self, caption: str = None, conversation: str = None):
@@ -658,13 +748,13 @@ class WhatsApp(StateGraph):
         """
         self.gtl_logger.info('Choosing Share live location')
         self.driver.click(LOCATION_LIVE)
-        _wait_for(self.driver, CAPTION_SEND_BUTTON)
+        _expect(self.driver, CAPTION_SEND_BUTTON, 'The caption of the live location')
         if caption:
             self.gtl_logger.info(f'Entering caption "{caption}"')
             self.driver.send_keys(CAPTION_FIELD, caption)
         self.gtl_logger.info('Pressing Send')
         self.driver.click(CAPTION_SEND_BUTTON)
-        sleep(2)
+        _wait_until_gone(self.driver, CAPTION_SEND_BUTTON)
 
     @action(chat_state)
     def stop_live_location(self, conversation: str = None):
@@ -676,10 +766,8 @@ class WhatsApp(StateGraph):
         swipes = _scroll_to(self.driver, STOP_SHARING_BUTTON, 'the live location that is shared')
         self.gtl_logger.info('Pressing Stop sharing')
         self.driver.click(STOP_SHARING_BUTTON)
-        _wait_for(self.driver, STOP_SHARING_CONFIRM_BUTTON, timeout=3)
-        self.gtl_logger.info('Confirming Stop sharing')
-        self.driver.click(STOP_SHARING_CONFIRM_BUTTON)
-        sleep(1)
+        _click(self.driver, STOP_SHARING_CONFIRM_BUTTON, 'Stop sharing to confirm', timeout=3)
+        _wait_until_gone(self.driver, STOP_SHARING_CONFIRM_BUTTON)
         _scroll_to_latest(self.driver, swipes)
 
     def _set_disappearing_messages(self, option: str):
@@ -690,12 +778,11 @@ class WhatsApp(StateGraph):
                 self.driver.is_present(POPUP_DISAPPEARING_MESSAGES_TEXT):
             self.gtl_logger.info('Dismissing the explanation of disappearing messages')
             self.driver.click(POPUP_OK_BUTTON)
-            _wait_for(self.driver, DISAPPEARING_MESSAGES_TIMER)
+            _expect(self.driver, DISAPPEARING_MESSAGES_TIMER, 'The options of disappearing messages')
         self.gtl_logger.info(f'Choosing {option}')
         self.driver.click(disappearing_messages_option(option))
-        sleep(1)
         self.driver.click(BACK_BUTTON)
-        sleep(1)
+        _expect(self.driver, CHAT_INFO, 'The chat info')
 
     @action(chat_settings_state)
     def activate_disappearing_messages(self, conversation: str = None):
@@ -731,40 +818,47 @@ class WhatsApp(StateGraph):
         sleep(2)
 
     @action(chat_state)
-    def send_media(self, index: int = 1, conversation: str = None, caption: str = None, view_once: bool = False):
+    def send_media(self, index: int = 1, conversation: str = None, directory_name: str = None, caption: str = None,
+                   view_once: bool = False):
         """
         Sends a photo or video from the photo library in a chat.
 
         :param index: Which photo or video to send: 1 for the newest, 2 for the one before, and so on.
         :param conversation: The chat to send the media in. Optional: without a chat, the open chat is used.
+        :param directory_name: Optional: the album to choose the media from, e.g. 'Favorites'. Without an album, the
+        media is chosen from all photos and videos.
         :param caption: Optional caption sent along with the media.
         :param view_once: Whether the media can only be viewed once.
         """
         self.gtl_logger.info('Pressing the + button')
         self.driver.click(CHAT_ATTACH_BUTTON)
-        _wait_for(self.driver, ATTACH_PHOTOS)
-        self.gtl_logger.info('Choosing Photos')
-        self.driver.click(ATTACH_PHOTOS)
-        if not _wait_for(self.driver, MEDIA_PICKER_ASSETS):
-            raise WhatsAppError('The photo library did not open')
+        _click(self.driver, ATTACH_PHOTOS, 'Photos')
+        _expect(self.driver, MEDIA_PICKER_ASSETS, 'The photo library')
+        if directory_name:
+            _click(self.driver, MEDIA_PICKER_ALBUMS_BUTTON, 'Albums')
+            self.gtl_logger.info(f'Opening album "{directory_name}"')
+            if not _swipe_to_find(self.driver, media_picker_album(directory_name), max_swipes=10):
+                _close_media_picker(self.driver)
+                raise WhatsAppError(f'There is no album named "{directory_name}"')
+            self.driver.click(media_picker_album(directory_name))
+            _expect(self.driver, MEDIA_PICKER_ASSETS, f'Album "{directory_name}"')
         # the media are shown in a grid, from new to old
         assets = sorted(self.driver.get_elements(MEDIA_PICKER_ASSETS), key=lambda e: (e.rect['y'], e.rect['x']))
         if index < 1 or index > len(assets):
-            self.driver.click(MEDIA_PICKER_CANCEL_BUTTON)
+            _close_media_picker(self.driver)
             raise WhatsAppError(f'Cannot choose media {index}, only {len(assets)} are shown')
         self.gtl_logger.info(f'Choosing media {index}')
         assets[index - 1].click()
-        _wait_for(self.driver, MEDIA_PICKER_SEND_BUTTON)
+        _expect(self.driver, MEDIA_PICKER_SEND_BUTTON, 'The editor of the media')
         if caption:
             self.gtl_logger.info(f'Entering caption "{caption}"')
             self.driver.send_keys(MEDIA_PICKER_CAPTION, caption)
         if view_once:
             self.gtl_logger.info('Turning on view once')
             self.driver.click(MEDIA_PICKER_VIEW_ONCE_BUTTON)
-            sleep(1)
         self.gtl_logger.info('Pressing Send')
         self.driver.click(MEDIA_PICKER_SEND_BUTTON)
-        sleep(3)
+        _wait_until_gone(self.driver, MEDIA_PICKER_SEND_BUTTON, timeout=10)
 
     @action(chat_state)
     def send_sticker(self, conversation: str = None):
@@ -820,8 +914,10 @@ class WhatsApp(StateGraph):
             if self.driver.is_present(CONVERSATIONS_ARCHIVED):
                 break
             self.driver._scroll_up()
+        else:
+            raise WhatsAppError('There are no archived chats')
         self.driver.click(CONVERSATIONS_ARCHIVED)
-        _wait_for(self.driver, ARCHIVED_TABLE)
+        _expect(self.driver, ARCHIVED_TABLE, 'The list of archived chats')
         _find_row(self.driver, archived_row(conversation), f'archived chat "{conversation}"')
         self.gtl_logger.info(f'Swiping chat "{conversation}" to the left to unarchive it')
         _swipe_row_left(self.driver, archived_row(conversation))
@@ -856,11 +952,11 @@ class WhatsApp(StateGraph):
         members = [members] if isinstance(members, str) else members
         self.gtl_logger.info('Choosing New group')
         self.driver.click(NEW_CHAT_NEW_GROUP)
-        _wait_for(self.driver, PICKER_SEARCH_FIELD)
+        _expect(self.driver, PICKER_SEARCH_FIELD, 'The list of contacts')
         self._choose_contacts(members)
         self.gtl_logger.info('Pressing Next')
         self.driver.click(PICKER_NEXT_BUTTON)
-        _wait_for(self.driver, GROUP_CREATE_BUTTON)
+        _expect(self.driver, GROUP_CREATE_BUTTON, 'The name of the new group')
         self.gtl_logger.info(f'Entering group name "{conversation}"')
         self.driver.send_keys(GROUP_NAME_FIELD, conversation)
         self.gtl_logger.info('Pressing Create')
@@ -878,15 +974,13 @@ class WhatsApp(StateGraph):
         """
         self.gtl_logger.info('Opening the menu of the group info')
         self.driver.click(GROUP_INFO_MENU)
-        _wait_for(self.driver, GROUP_MENU_EDIT_DESCRIPTION)
-        self.gtl_logger.info('Choosing Edit description')
-        self.driver.click(GROUP_MENU_EDIT_DESCRIPTION)
-        _wait_for(self.driver, TEXT_INPUT_FIELD)
+        _click(self.driver, GROUP_MENU_EDIT_DESCRIPTION, 'Edit description')
+        _expect(self.driver, TEXT_INPUT_FIELD, 'The description')
         self.gtl_logger.info(f'Entering description "{description}"')
         self.driver.send_keys(TEXT_INPUT_FIELD, description)
         self.gtl_logger.info('Pressing Save')
         self.driver.click(TEXT_INPUT_SAVE_BUTTON)
-        sleep(2)
+        _wait_until_gone(self.driver, TEXT_INPUT_FIELD)
 
     @action(chat_settings_state)
     def remove_member_from_group(self, conversation: str, member: str):
@@ -898,20 +992,15 @@ class WhatsApp(StateGraph):
         """
         self.gtl_logger.info(f'Opening member "{member}"')
         self.driver.swipe_to_click_element(group_member(member))
-        _wait_for(self.driver, GROUP_REMOVE_MEMBER_BUTTON)
-        self.gtl_logger.info('Choosing Remove from group')
-        self.driver.click(GROUP_REMOVE_MEMBER_BUTTON)
-        _wait_for(self.driver, GROUP_REMOVE_CONFIRM_BUTTON)
-        self.gtl_logger.info('Confirming Remove')
-        self.driver.click(GROUP_REMOVE_CONFIRM_BUTTON)
-        sleep(2)
+        _click(self.driver, GROUP_REMOVE_MEMBER_BUTTON, 'Remove from group')
+        _click(self.driver, GROUP_REMOVE_CONFIRM_BUTTON, 'Remove to confirm')
+        _wait_until_gone(self.driver, GROUP_REMOVE_CONFIRM_BUTTON)
 
     def _exit_group(self, exit_button: str):
         self.gtl_logger.info('Choosing Exit group')
         self.driver.swipe_to_click_element(GROUP_EXIT)
-        _wait_for(self.driver, exit_button)
-        self.driver.click(exit_button)
-        sleep(2)
+        _click(self.driver, exit_button, 'Exit group to confirm')
+        _wait_until_gone(self.driver, exit_button)
 
     @action(chat_settings_state)
     def leave_group(self, conversation: str = None):
@@ -932,9 +1021,7 @@ class WhatsApp(StateGraph):
         if _swipe_to_find(self.driver, GROUP_DELETE, max_swipes=3):
             self.gtl_logger.info('Choosing Delete group')
             self.driver.click(GROUP_DELETE)
-            _wait_for(self.driver, GROUP_DELETE_CONFIRM_BUTTON)
-            self.gtl_logger.info('Confirming Delete group')
-            self.driver.click(GROUP_DELETE_CONFIRM_BUTTON)
+            _click(self.driver, GROUP_DELETE_CONFIRM_BUTTON, 'Delete group to confirm')
         else:
             self.gtl_logger.info('Leaving and deleting the group')
             self._exit_group(GROUP_EXIT_AND_DELETE_BUTTON)
@@ -970,38 +1057,37 @@ class WhatsApp(StateGraph):
         """
         self.gtl_logger.info('Opening About')
         self.driver.click(PROFILE_ABOUT)
-        _wait_for(self.driver, ABOUT_FIELD)
+        _expect(self.driver, ABOUT_FIELD, 'The about')
         if self.driver.is_present(ABOUT_CLEAR_BUTTON):
             self.gtl_logger.info('Clearing the current about')
             self.driver.click(ABOUT_CLEAR_BUTTON)
         self.gtl_logger.info(f'Entering about "{about_text}"')
         self.driver.send_keys(ABOUT_FIELD, about_text)
         if duration:
-            self.gtl_logger.info(f'Choosing duration {duration}')
             self.driver.click(ABOUT_DURATION_BUTTON)
-            _wait_for(self.driver, about_duration(duration))
-            self.driver.click(about_duration(duration))
-            sleep(1)
+            _click(self.driver, about_duration(duration), f'duration {duration}')
+            _wait_until_gone(self.driver, about_duration(duration))
         self.gtl_logger.info('Pressing Save')
         self.driver.click(ABOUT_SAVE_BUTTON)
-        sleep(2)
+        _wait_until_gone(self.driver, ABOUT_SAVE_BUTTON)
 
     @action(updates_state)
-    def add_status(self, caption: str):
+    def add_status(self, caption: str = None):
         """
-        Adds a text status, which is shown to your contacts for 24 hours.
+        Adds a text status, which is shown to your contacts for 24 hours. On Android, a status without a caption is a
+        photo taken with the camera. On iOS, the status is a text, so a caption is required.
 
         :param caption: The text of the status.
         """
+        if not caption:
+            raise ValueError('A text status needs a caption')
         self.gtl_logger.info('Pressing the text status button')
         self.driver.click(UPDATES_TEXT_STATUS_BUTTON)
-        _wait_for(self.driver, STATUS_TEXT_FIELD)
+        _expect(self.driver, STATUS_TEXT_FIELD, 'The editor of the status')
         self.gtl_logger.info(f'Typing status "{caption}"')
         self.driver.get_element(STATUS_TEXT_FIELD).send_keys(caption)
-        _wait_for(self.driver, STATUS_SEND_BUTTON)
-        self.gtl_logger.info('Pressing Send')
-        self.driver.click(STATUS_SEND_BUTTON)
-        sleep(3)
+        _click(self.driver, STATUS_SEND_BUTTON, 'Send')
+        _wait_until_gone(self.driver, STATUS_TEXT_FIELD, timeout=10)
 
     @action(updates_state)
     def delete_status(self):
@@ -1015,15 +1101,13 @@ class WhatsApp(StateGraph):
             return
         self.gtl_logger.info('Pressing Edit')
         self.driver.click(MY_STATUS_EDIT_BUTTON)
-        sleep(1)
+        _expect(self.driver, MY_STATUS_DELETE_BUTTON, 'The selection of status updates')
         for update in self.driver.get_elements(MY_STATUS_UPDATES):
             update.click()
         self.gtl_logger.info('Pressing delete button')
         self.driver.click(MY_STATUS_DELETE_BUTTON)
-        _wait_for(self.driver, MY_STATUS_DELETE_CONFIRM_BUTTON)
-        self.gtl_logger.info('Confirming delete')
-        self.driver.click(MY_STATUS_DELETE_CONFIRM_BUTTON)
-        sleep(2)
+        _click(self.driver, MY_STATUS_DELETE_CONFIRM_BUTTON, 'delete to confirm')
+        _wait_until_gone(self.driver, MY_STATUS_DELETE_CONFIRM_BUTTON)
         if self.driver.is_present(BACK_BUTTON):
             self.driver.click(BACK_BUTTON)
             sleep(1)
@@ -1042,10 +1126,9 @@ class WhatsApp(StateGraph):
             sleep(2)
             self.gtl_logger.info('Closing the profile picture')
             self.driver.click(PROFILE_PICTURE_CLOSE_BUTTON)
-            sleep(1)
+            _wait_until_gone(self.driver, PROFILE_PICTURE_CLOSE_BUTTON)
         else:
             self.gtl_logger.info('The contact has no profile picture')
-
 
     @action(chat_state, end_state=voice_call_state)
     def start_voice_call(self, conversation: str):
@@ -1056,7 +1139,7 @@ class WhatsApp(StateGraph):
         """
         self.gtl_logger.info('Pressing the voice call button')
         self.driver.click(CHAT_VOICE_CALL_BUTTON)
-        _wait_for(self.driver, CALL_END_BUTTON)
+        _expect(self.driver, CALL_END_BUTTON, 'The call')
 
     @action(chat_state, end_state=video_call_state)
     def start_video_call(self, conversation: str):
@@ -1067,7 +1150,7 @@ class WhatsApp(StateGraph):
         """
         self.gtl_logger.info('Pressing the video call button')
         self.driver.click(CHAT_VIDEO_CALL_BUTTON)
-        _wait_for(self.driver, CALL_END_BUTTON)
+        _expect(self.driver, CALL_END_BUTTON, 'The call')
 
     def _end_call(self):
         """
@@ -1084,7 +1167,7 @@ class WhatsApp(StateGraph):
         self.gtl_logger.info('Pressing the end call button')
         self.driver.execute_script('mobile: tap', {'x': rect['x'] + rect['width'] / 2,
                                                    'y': rect['y'] + rect['height'] / 2})
-        sleep(2)
+        _wait_until_gone(self.driver, CALL_END_BUTTON, timeout=10)
 
     @action(voice_call_state, end_state=chat_state)
     def end_voice_call(self, conversation: str = None):
@@ -1107,13 +1190,8 @@ class WhatsApp(StateGraph):
         :param implicit_wait: How long to wait for the call to be connected, in seconds.
         :return: Whether a call is connected.
         """
-        end = time() + implicit_wait
-        while True:
-            if self.driver.is_present(CALL_END_BUTTON) and not self.driver.is_present(CALL_NOT_CONNECTED):
-                return True
-            if time() >= end:
-                return False
-            sleep(0.5)
+        return _wait_until(lambda: self.driver.is_present(CALL_END_BUTTON)
+                           and not self.driver.is_present(CALL_NOT_CONNECTED), implicit_wait)
 
     def _press_incoming_call_button(self, button: str, description: str, timeout: float):
         """
@@ -1149,28 +1227,34 @@ class WhatsApp(StateGraph):
         self._press_incoming_call_button(INCOMING_CALL_DECLINE_BUTTON, 'Decline', timeout)
 
     @action(profile_state)
-    def change_profile_picture(self, index: int = 1):
+    def change_profile_picture(self, index: int = 1, directory_name: str = None):
         """
         Changes the profile picture to a photo from the photo library.
 
         :param index: Which photo to use: 1 for the newest, 2 for the one before, and so on.
+        :param directory_name: Optional: the album to choose the photo from, e.g. 'Recently Saved'. Only the first
+        albums of each row in the Collections of the photo library can be chosen. Without an album, the photo is chosen
+        from all photos.
         """
         self.gtl_logger.info('Pressing Edit photo')
         self.driver.click(PROFILE_EDIT_PHOTO_BUTTON)
-        _wait_for(self.driver, PROFILE_CHOOSE_PHOTO)
-        self.gtl_logger.info('Choosing Choose photo')
-        self.driver.click(PROFILE_CHOOSE_PHOTO)
-        if not _wait_for(self.driver, SYSTEM_PHOTOS):
-            raise WhatsAppError('The photo library did not open')
+        _click(self.driver, PROFILE_CHOOSE_PHOTO, 'Choose photo')
+        _expect(self.driver, SYSTEM_PHOTOS, 'The photo library')
+        if directory_name:
+            _click(self.driver, SYSTEM_PHOTOS_COLLECTIONS, 'Collections')
+            if not _wait_for(self.driver, system_photos_album(directory_name)):
+                self.driver.click(SYSTEM_PHOTOS_CANCEL_BUTTON)
+                raise WhatsAppError(f'There is no album named "{directory_name}"')
+            self.gtl_logger.info(f'Opening album "{directory_name}"')
+            self.driver.click(system_photos_album(directory_name))
+            _expect(self.driver, SYSTEM_PHOTOS, f'Album "{directory_name}"')
         photos = sorted(self.driver.get_elements(SYSTEM_PHOTOS), key=lambda e: (e.rect['y'], e.rect['x']))
         if index < 1 or index > len(photos):
             raise WhatsAppError(f'Cannot choose photo {index}, only {len(photos)} are shown')
         self.gtl_logger.info(f'Choosing photo {index}')
         photos[index - 1].click()
-        _wait_for(self.driver, CROP_CHOOSE_BUTTON)
-        self.gtl_logger.info('Confirming the photo')
-        self.driver.click(CROP_CHOOSE_BUTTON)
-        sleep(3)
+        _click(self.driver, CROP_CHOOSE_BUTTON, 'Choose to confirm the photo')
+        _wait_until_gone(self.driver, CROP_CHOOSE_BUTTON, timeout=10)
 
     @action(new_chat_state, end_state=chat_state)
     def send_broadcast(self, receivers: list[str], broadcast_text: str):
@@ -1185,7 +1269,7 @@ class WhatsApp(StateGraph):
             raise WhatsAppError(f'A broadcast needs at least 2 receivers, got: {receivers}')
         self.gtl_logger.info('Choosing New broadcast')
         self.driver.click(NEW_CHAT_NEW_BROADCAST)
-        _wait_for(self.driver, PICKER_SEARCH_FIELD)
+        _expect(self.driver, PICKER_SEARCH_FIELD, 'The list of contacts')
         self._choose_contacts(receivers)
         self.gtl_logger.info('Pressing Create')
         self.driver.click(PICKER_NEXT_BUTTON)
@@ -1203,11 +1287,11 @@ class WhatsApp(StateGraph):
         """
         swipes = _scroll_to(self.driver, RECEIVED_VIEW_ONCE_PHOTO, 'a view once photo')
         self.gtl_logger.info('Opening the view once photo')
-        self.driver.get_elements(RECEIVED_VIEW_ONCE_PHOTO)[-1].click()
-        if not _wait_for(self.driver, MEDIA_VIEWER_IMAGE):
-            raise WhatsAppError('The view once photo did not open')
+        _last(self.driver, RECEIVED_VIEW_ONCE_PHOTO).click()
+        _expect(self.driver, MEDIA_VIEWER_IMAGE, 'The view once photo')
+        # the photo is shown for a while, like a person viewing it
         sleep(2)
         self.gtl_logger.info('Closing the view once photo')
         self.driver.click(BACK_BUTTON)
-        sleep(1)
+        _wait_until_gone(self.driver, MEDIA_VIEWER_IMAGE)
         _scroll_to_latest(self.driver, swipes)

@@ -47,6 +47,17 @@ class TestWhatsAppIOS(unittest.TestCase):
         self.assertTrue(self.alice.is_message_marked_sent("Puma test, with a comma")
                         or self.alice.is_message_marked_delivered("Puma test, with a comma"))
 
+    def test_quotes_and_the_newest_message(self):
+        # the newest of the messages with the same text is used
+        self.alice.send_message('Puma test, "quoted"', conversation=CONTACT)
+        self.alice.send_message('Puma test, "quoted"')
+        self.alice.reply_to_message('Puma test, "quoted"', "Puma test, reply to the newest")
+        messages = self.alice.get_messages()
+        self.assertEqual(('Puma test, "quoted"', "Puma test, reply to the newest"),
+                         (messages[-2].text, messages[-1].text))
+        self.assertTrue(self.alice.is_message_marked_sent("Puma test, reply to the newest", 10)
+                        or self.alice.is_message_marked_delivered("Puma test, reply to the newest", 10))
+
     def test_create_new_chat(self):
         self.alice.create_new_chat(CONTACT, "Puma test, new chat")
         self.assertEqual("Puma test, new chat", self.alice.get_messages()[-1].text)
@@ -98,7 +109,6 @@ class TestWhatsAppIOS(unittest.TestCase):
         self.alice.leave_group(GROUP_NAME)
         self.alice.delete_group(GROUP_NAME)
         self.assertFalse(self.alice.group_exists(GROUP_NAME, [CONTACT]))
-
 
     def test_broadcast(self):
         if not SECOND_CONTACT:
