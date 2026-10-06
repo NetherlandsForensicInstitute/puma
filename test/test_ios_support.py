@@ -9,6 +9,8 @@ from appium.webdriver.webdriver import WebDriver
 from geopy import Point
 from selenium.common import WebDriverException
 
+from puma.state_graph.android_driver import AndroidPumaDriver
+from puma.state_graph.ios_driver import IOSPumaDriver
 from puma.state_graph.locators import Locator, accessibility_id, ios_predicate, ios_class_chain, to_by_value
 from puma.state_graph.popup_handler import IOSAlertHandler, known_popups_for, known_android_popups, known_ios_popups
 from puma.state_graph.puma_driver import PumaDriver, Platform
@@ -260,8 +262,11 @@ class TestIOSPumaDriver(unittest.TestCase):
 
 class TestIOSPopups(unittest.TestCase):
     def _driver(self, buttons, platform=Platform.IOS):
-        driver = Mock()
+        if platform != Platform.IOS:
+            return Mock(spec=AndroidPumaDriver)
+        driver = Mock(spec=IOSPumaDriver)
         driver.platform = platform
+        driver.gtl_logger = Mock()
         driver.alert_buttons.return_value = buttons
         return driver
 
@@ -292,7 +297,6 @@ class TestIOSPopups(unittest.TestCase):
         handler = IOSAlertHandler(['OK'], ['OK'])
         driver = self._driver(['OK'], platform=Platform.ANDROID)
         self.assertFalse(handler.is_popup_window(driver))
-        driver.alert_buttons.assert_not_called()
 
 
 
