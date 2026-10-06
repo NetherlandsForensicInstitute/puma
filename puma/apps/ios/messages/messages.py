@@ -10,7 +10,7 @@ from puma.apps.ios.messages import logger
 from puma.apps.ios.messages.xpaths import *
 from puma.state_graph.action import action
 from puma.state_graph.popup_handler import PopUpHandler, simple_popup_handler
-from puma.state_graph.puma_driver import PumaDriver, Platform, supported_version
+from puma.state_graph.puma_driver import PumaDriver, supported_version
 from puma.state_graph.state import SimpleState, ContextualState, compose_clicks
 from puma.state_graph.state_graph import StateGraph
 
@@ -479,7 +479,6 @@ class Messages(StateGraph):
     On a simulator, messages cannot be sent to new recipients. The two conversations the simulator starts with do work:
     messages sent in one of them are received in the other.
     """
-    platform = Platform.IOS
 
     # States
     # The welcome screen, the new message screen and the search results are shown on top of the overview, while the

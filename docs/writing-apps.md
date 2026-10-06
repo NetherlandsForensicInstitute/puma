@@ -214,7 +214,6 @@ components mentioned in the [Stategraph section](#stategraph) come together in t
 from puma.state_graph.state_graph import StateGraph
 from puma.state_graph.state import SimpleState, compose_clicks
 from puma.state_graph.action import action
-from puma.state_graph.puma_driver import Platform
 
 APPLICATION_PACKAGE = 'com.example.app'
 
@@ -222,9 +221,6 @@ class ExampleApp(StateGraph):
     """
     A class representing a state graph for managing UI states and transitions in an example application.
     """
-    # Every application defines the platform it runs on: Platform.ANDROID or Platform.IOS
-    platform = Platform.ANDROID
-
     # Define states
     home_state = SimpleState(xpaths=['//android.widget.TextView[@content-desc="Home"]'],
                             initial_state=True)
@@ -253,8 +249,10 @@ class ExampleApp(StateGraph):
 Note that this is a simple example. For a more advanced example using `ContextualState`s, see the [Teleguard
 implementation](../puma/apps/android/teleguard/teleguard.py).
 
-Every application sets the class attribute `platform`. There is no default: a class without it raises a `TypeError`
-when it is defined.
+The platform an application runs on follows from its location: applications in `puma/apps/android` run on Android,
+and applications in `puma/apps/ios` on iOS. An application defined elsewhere, e.g. in your own script, sets the class
+attribute `platform = Platform.ANDROID` or `platform = Platform.IOS` (from `puma.state_graph.puma_driver`). Without it,
+the class raises a `TypeError` when it is defined.
 
 Locators are defined in an `xpaths.py` file next to the application class. Their names start with the screen (state)
 they belong to, e.g. `CONVERSATIONS_COMPOSE_BUTTON` for the compose button on the conversations screen, and pop-ups
@@ -271,8 +269,8 @@ The following steps should be taken to implement support for a new application:
 ### iOS applications
 iOS applications use the same `StateGraph` framework, and live in `apps/ios`. The differences with Android are:
 
-- Set the class attribute `platform = Platform.IOS`. Puma will then create an iOS driver, and validate the application
-  identifier as a bundle id instead of a package name.
+- Puma creates an iOS driver for applications in `apps/ios`, and validates the application identifier as a bundle id
+  instead of a package name.
 - Pass the bundle id of the app (e.g. `com.apple.mobilesafari`) where Android apps pass the package name. The bundle id
   is the iOS equivalent of the package name, and is defined as a constant named `<APP>_BUNDLE_ID`, where Android apps
   use `<APP>_PACKAGE`.
@@ -309,7 +307,6 @@ iOS applications use the same `StateGraph` framework, and live in `apps/ios`. Th
 ```python
 from puma.state_graph.action import action
 from puma.state_graph.locators import accessibility_id, ios_predicate
-from puma.state_graph.puma_driver import Platform
 from puma.state_graph.state import SimpleState, compose_clicks
 from puma.state_graph.state_graph import StateGraph
 
@@ -317,8 +314,6 @@ EXAMPLE_BUNDLE_ID = 'com.example.app'
 
 
 class ExampleIOSApp(StateGraph):
-    platform = Platform.IOS
-
     home_state = SimpleState(xpaths=[ios_predicate('type == "XCUIElementTypeNavigationBar" AND name == "Home"')],
                              initial_state=True)
     # no parent_state_transition: the default back action is used

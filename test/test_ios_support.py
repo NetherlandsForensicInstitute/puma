@@ -13,7 +13,7 @@ from puma.state_graph.locators import Locator, accessibility_id, ios_predicate, 
 from puma.state_graph.popup_handler import IOSAlertHandler, known_popups_for, known_popups, known_ios_popups
 from puma.state_graph.puma_driver import PumaDriver, Platform
 from puma.state_graph.state import SimpleState
-from puma.state_graph.state_graph import StateGraph
+from puma.state_graph.state_graph import StateGraph, StateGraphMeta
 from puma.state_graph.utils import is_valid_bundle_id, is_valid_app_id
 from puma.utils.route_simulator import RouteSimulator
 
@@ -80,6 +80,24 @@ class TestStateGraphPlatform(unittest.TestCase):
             class NoPlatformApp(StateGraph):
                 home_state = SimpleState(xpaths=['//home'], initial_state=True)
         self.assertIn('NoPlatformApp does not define the platform', str(error.exception))
+
+    def test_platform_follows_from_package(self):
+        for module, platform in [('puma.apps.android.example.example', Platform.ANDROID),
+                                 ('puma.apps.ios.example.example', Platform.IOS)]:
+            app = StateGraphMeta('ExampleApp', (StateGraph,),
+                                 {'__module__': module, 'home_state': SimpleState(['//home'], initial_state=True)})
+            self.assertEqual(platform, app.platform)
+
+    def test_explicit_platform_overrides_package(self):
+        app = StateGraphMeta('ExampleApp', (StateGraph,),
+                             {'__module__': 'puma.apps.android.example.example', 'platform': Platform.IOS,
+                              'home_state': SimpleState(['//home'], initial_state=True)})
+        self.assertEqual(Platform.IOS, app.platform)
+
+    def test_package_with_similar_name_is_not_used(self):
+        with self.assertRaises(TypeError):
+            StateGraphMeta('ExampleApp', (StateGraph,),
+                           {'__module__': 'puma.apps.iosx.example', 'home_state': SimpleState(['//home'], initial_state=True)})
 
     def test_invalid_bundle_id(self):
         with self.assertRaises(ValueError) as error:

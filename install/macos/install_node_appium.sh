@@ -1,27 +1,27 @@
 #!/bin/bash
-
-# Exit on error
 set -e
 
-# Install NVM (Node Version Manager)
 echo "Installing NVM..."
 curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.2/install.sh | bash
 
-# Source NVM to use it immediately
 export NVM_DIR="$HOME/.nvm"
-[ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"  # This loads nvm
+[ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
 
-# Install Node.js v19
-echo "Installing Node.js v19..."
-nvm install 19
-nvm use 19
-nvm alias default 19
+echo "Installing Node.js 22 (LTS)..."
+nvm install 22
+nvm use 22
+nvm alias default 22
 
 if ! command -v appium &> /dev/null; then
   echo "Installing Appium..."
   npm install -g appium
-  appium driver install uiautomator2
 else
   echo "Appium is already installed"
 fi
 
+# Install the driver only if it isn't already there
+if ! appium driver list --installed 2>&1 | grep -q uiautomator2; then
+  appium driver install uiautomator2
+fi
+
+appium --version

@@ -3,7 +3,6 @@ from time import sleep
 from puma.apps.android.appium_actions import supported_version
 from puma.state_graph.action import action
 from puma.state_graph.popup_handler import PopUpHandler
-from puma.state_graph.puma_driver import Platform
 from puma.state_graph.state import SimpleState, compose_clicks
 from puma.state_graph.state_graph import StateGraph
 
@@ -25,8 +24,6 @@ POPUP_OK_BUTTON = '//android.widget.Button[@resource-id="android:id/button1" and
 
 @supported_version("1.55")
 class OpenCamera(StateGraph):
-    platform = Platform.ANDROID
-
     # States
     take_photo_state = SimpleState(xpaths=[TAKE_PHOTO, VIDEO_MODE_XPATH], initial_state=True)
     take_video_state = SimpleState(xpaths=[TAKE_VIDEO, PHOTO_MODE_XPATH])

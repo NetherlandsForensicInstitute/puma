@@ -6,7 +6,6 @@ from puma.apps.android.google_chrome.states import BookmarksFolder, CurrentTab
 from puma.apps.android.google_chrome.xpaths import *
 from puma.state_graph.action import action
 from puma.state_graph.popup_handler import PopUpHandler
-from puma.state_graph.puma_driver import Platform
 from puma.state_graph.state import SimpleState, compose_clicks
 from puma.state_graph.state_graph import StateGraph
 
@@ -23,8 +22,6 @@ class GoogleChrome(StateGraph):
     the tab overview as the parent state of most states, as it is the most neutral state from which other states can be
     reached. Moreover, for simplicity, we have not implemented all possible transitions between states.
     """
-    platform = Platform.ANDROID
-
     # States
     tab_overview_state = SimpleState(xpaths=[TAB_LIST, SEARCH_TABS])
     incognito_tab_overview_state = SimpleState(xpaths=[TAB_LIST, SEARCH_INCOGNITO_TABS],

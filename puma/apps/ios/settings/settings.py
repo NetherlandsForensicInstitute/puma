@@ -4,7 +4,7 @@ from typing import Optional
 from puma.apps.ios.settings import logger
 from puma.apps.ios.settings.xpaths import *
 from puma.state_graph.action import action
-from puma.state_graph.puma_driver import PumaDriver, Platform, supported_version
+from puma.state_graph.puma_driver import PumaDriver, supported_version
 from puma.state_graph.state import SimpleState
 from puma.state_graph.state_graph import StateGraph
 
@@ -33,7 +33,6 @@ class Settings(StateGraph):
     Note that the settings available differ between devices and simulators. Simulators for example have no Display &
     Brightness settings, and therefore no Auto-Lock.
     """
-    platform = Platform.IOS
 
     # States. The parent transitions are the default back action, which uses the back button in the navigation bar
     settings_state = SimpleState(xpaths=[SETTINGS_NAVIGATION_BAR, SETTINGS_GENERAL_CELL], initial_state=True)
