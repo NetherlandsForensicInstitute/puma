@@ -2,7 +2,7 @@ from time import sleep
 from typing import Optional
 
 from puma.apps.ios.settings import logger
-from puma.apps.ios.settings.xpaths import *
+from puma.apps.ios.settings.locators import *
 from puma.state_graph.action import action
 from puma.state_graph.puma_driver import PumaDriver, supported_version
 from puma.state_graph.state import SimpleState
