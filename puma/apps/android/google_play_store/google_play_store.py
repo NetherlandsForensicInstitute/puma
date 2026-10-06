@@ -34,8 +34,10 @@ ACCOUNT_ICON = '//android.widget.FrameLayout[starts-with(@content-desc, "Signed 
 
 HOME_SCREEN_TABS = '(//android.view.View[count(.//android.widget.TextView[@text="Games" or @text="Apps" or @text="Search" or @text="Books"]) = 4])[last()]'
 
-# The main buttons of an app page. When the account has more devices, the page also lists these devices, each with its
-# own Install or Uninstall button next to the name of the device. These are ignored.
+# The main buttons of an app page, below the name of the app. When the account has more devices, the page also lists
+# these devices under "Available on more devices" or "Installed on all devices". Each device is a row with the name of
+# the device, its status (e.g. "Installed") and its own Install or Uninstall button. These rows are the only place where
+# a text precedes the button, so buttons preceded by a text are ignored.
 _MAIN_BUTTON = '//android.view.View[@content-desc="{}" and not(../preceding-sibling::android.widget.TextView)]'
 APP_PAGE_INSTALL_BUTTON = _MAIN_BUTTON.format('Install')
 APP_PAGE_UNINSTALL_BUTTON = _MAIN_BUTTON.format('Uninstall')
@@ -47,7 +49,8 @@ APP_PAGE_UNINSTALL_SURE_BUTTON = '//android.view.View[@content-desc="Uninstall"]
 # note the capital O: the home screen has buttons named "More options" as well
 APP_PAGE_THREE_DOTS = '//android.view.View[@content-desc="More Options"]'
 APP_PAGE_NAVIGATE_UP = '//android.view.View[@content-desc="Navigate up"]'
-# Apps that are not installed are shown in a sheet on top of the previous screen, instead of on a page of their own
+# When the page of an app that is not installed is opened with a link, as Puma does, it is shown in a sheet on top of the
+# previous screen instead of on a page of its own. Opened from within the Play Store, it is shown on a page of its own.
 APP_SHEET_CLOSE_SHEET = '//android.view.View[@content-desc="Close sheet"]'
 APP_SHEET_CLOSE = '//android.view.View[@content-desc="Close"]'
 
@@ -69,7 +72,7 @@ class AppState(Enum):
 
 def _close_app_page(driver: PumaDriver):
     """
-    Closes an app page: the sheet of an app that is not installed, or the page of an installed app.
+    Closes an app page: the sheet (see APP_SHEET_CLOSE_SHEET), or the page of its own.
 
     :param driver: Puma driver
     """
@@ -101,7 +104,8 @@ class AppPage(SimpleState, ContextualState):
 
     def validate(self, driver: PumaDriver) -> bool:
         """
-        Installed apps are shown on a page of their own, other apps in a sheet on top of the previous screen.
+        An app page is shown on a page of its own, or in a sheet on top of the previous screen (see
+        APP_SHEET_CLOSE_SHEET).
         """
         return super().validate(driver) or (driver.is_present(APP_SHEET_CLOSE_SHEET) and driver.is_present(APP_SHEET_CLOSE))
 
@@ -154,7 +158,8 @@ class GooglePlayStore(StateGraph):
     and handle unexpected states or errors.
     """
     # The Play Store opens on the tab that was used last (e.g. Games or Apps), so the home state is any of these tabs
-    home_state = SimpleState([ACCOUNT_ICON, HOME_SCREEN_TABS], invalid_xpaths=[APP_SHEET_CLOSE_SHEET], initial_state=True)
+    home_state = SimpleState([ACCOUNT_ICON, HOME_SCREEN_TABS], invalid_xpaths=[APP_SHEET_CLOSE_SHEET, APP_PAGE_NAVIGATE_UP],
+                             initial_state=True)
     profile_state = SimpleState([MANAGE_APPS_AND_DEVICE, PROFILE_GOOGLE], parent_state=home_state)
     manage_apps_state = SimpleState([MANAGE_APP_STATE, MANAGE_APP_STATE_SYNC], parent_state=home_state)
     app_page_state = AppPage(parent_state=home_state)
@@ -230,7 +235,7 @@ class GooglePlayStore(StateGraph):
         self.driver.click(APP_PAGE_UNINSTALL_BUTTON)
         # wait for the confirmation, as the button to confirm has the same name as the button that was just clicked
         if not self.driver.is_present(APP_PAGE_UNINSTALL_DIALOG, implicit_wait=5):
-            raise PumaClickException(f'Uninstalling {package_name} was not asked to be confirmed')
+            raise PumaClickException(f'Uninstall confirmation dialog for {package_name} did not appear')
         self.driver.click(APP_PAGE_UNINSTALL_SURE_BUTTON)
 
     @action(app_page_state)
