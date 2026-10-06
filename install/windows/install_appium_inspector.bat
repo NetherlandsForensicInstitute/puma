@@ -1,7 +1,7 @@
 @echo off
 
 :: Set the URL for the Appium Inspector download
-set "APPIUM_INSPECTOR_URL=https://github.com/appium/appium-inspector/releases/download/v2025.3.1/Appium-Inspector-2025.3.1-win-x64.exe"
+set "APPIUM_INSPECTOR_URL=https://github.com/appium/appium-inspector/releases/download/v2026.9.2/Appium-Inspector-2026.9.2-win-x64.exe"
 
 :: Set the path where the Appium Inspector will be downloaded
 set "DOWNLOAD_PATH=Appium-Inspector.exe"
