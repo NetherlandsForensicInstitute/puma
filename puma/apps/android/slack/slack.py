@@ -2,7 +2,7 @@ from puma.apps.android.slack.xpaths import HOME_HISTORY_BUTTON, HOME_WORKSPACE_S
     CHAT_TITLE, \
     CHAT_BACK_BUTTON, CHAT_TEXT_INPUT, HOME_DIRECT_MESSAGE_BUTTON
 from puma.state_graph.action import action
-from puma.state_graph.puma_driver import PumaDriver, PumaClickException
+from puma.state_graph.puma_driver import PumaDriver, PumaClickException, supported_version
 from puma.state_graph.state import SimpleState, ContextualState, State
 from puma.state_graph.state_graph import StateGraph
 
@@ -37,6 +37,7 @@ class SlackChatState(SimpleState, ContextualState):
         driver.click(chat_xpath)
 
 
+@supported_version("26.09.50.0")
 class Slack(StateGraph):
     def __init__(self, device_udid):
         """
