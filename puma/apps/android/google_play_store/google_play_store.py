@@ -55,7 +55,7 @@ PROFILE_GOOGLE = '//android.widget.TextView[@resource-id="com.android.vending:id
 UPDATE_ALL_BUTTON = '//android.view.View[@content-desc="Update all"]'
 MANAGE_APP_STATE = '//android.widget.TextView[@text="Manage apps & device"]'
 MANAGE_APP_STATE_SYNC = '//android.widget.TextView[@text="Sync apps to devices"]'
-MANAGE_APPS_AND_DEVICES = '//android.widget.TextView[@resource-id="com.android.vending:id/0_resource_name_obfuscated" and @text="Manage apps & device"]'
+MANAGE_APPS_AND_DEVICE = '//android.widget.TextView[@resource-id="com.android.vending:id/0_resource_name_obfuscated" and @text="Manage apps & device"]'
 
 
 class AppState(Enum):
@@ -73,7 +73,7 @@ def _close_app_page(driver: PumaDriver):
 
     :param driver: Puma driver
     """
-    if driver.is_present(APP_SHEET_CLOSE):
+    if driver.is_present(APP_SHEET_CLOSE_SHEET) and driver.is_present(APP_SHEET_CLOSE):
         driver.click(APP_SHEET_CLOSE)
     else:
         driver.click(APP_PAGE_NAVIGATE_UP)
@@ -136,12 +136,12 @@ class AppPage(SimpleState, ContextualState):
         if not is_valid_package_name(package_name):
             raise ValueError(f'Invalid package name: {package_name}')
         driver.open_url(f'https://play.google.com/store/apps/details?id={package_name}')
-        self.last_opened[driver.udid] = package_name
-        # wait until the app page has loaded
         for _ in range(10):
             if self.validate(driver):
+                self.last_opened[driver.udid] = package_name
                 return
             sleep(1)
+        raise PumaClickException(f'The app page of {package_name} did not load')
 
 
 @supported_version("53.3.21-34")
@@ -155,12 +155,12 @@ class GooglePlayStore(StateGraph):
     """
     # The Play Store opens on the tab that was used last (e.g. Games or Apps), so the home state is any of these tabs
     home_state = SimpleState([ACCOUNT_ICON, HOME_SCREEN_TABS], invalid_xpaths=[APP_SHEET_CLOSE_SHEET], initial_state=True)
-    profile_state = SimpleState([MANAGE_APPS_AND_DEVICES, PROFILE_GOOGLE], parent_state=home_state)
+    profile_state = SimpleState([MANAGE_APPS_AND_DEVICE, PROFILE_GOOGLE], parent_state=home_state)
     manage_apps_state = SimpleState([MANAGE_APP_STATE, MANAGE_APP_STATE_SYNC], parent_state=home_state)
     app_page_state = AppPage(parent_state=home_state)
 
     home_state.to(profile_state, compose_clicks([ACCOUNT_ICON], name='click_profile'))
-    profile_state.to(manage_apps_state, compose_clicks([MANAGE_APPS_AND_DEVICES], name='click_manage_apps_and_devices'))
+    profile_state.to(manage_apps_state, compose_clicks([MANAGE_APPS_AND_DEVICE], name='click_manage_apps_and_devices'))
     app_page_state.from_states([home_state, profile_state, manage_apps_state], app_page_state.open_app_page)
 
     def __init__(self, device_udid):

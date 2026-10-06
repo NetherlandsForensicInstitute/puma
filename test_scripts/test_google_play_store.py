@@ -4,10 +4,10 @@ from puma.apps.android.google_play_store.google_play_store import GooglePlayStor
 
 # Fill in the udid below. Run ADB devices to see the udids.
 device_udids = {
-    "Alice": "34281JEHN03866"
+    "Alice": ""
 }
-PACKAGE_NAME = "com.duolingo"  # This app will be installed and uninstalled, so choose an app for which uninstalling does not matter
-UPDATABLE_PACKAGE_NAME = "com.google.android.gm"  # This app should be installed already and updatable. You can check which apps can be updated under "Manage apps and device"
+PACKAGE_NAME = ""  # This app will be installed and uninstalled, so choose an app for which uninstalling does not matter
+UPDATABLE_PACKAGE_NAME = ""  # This app should be installed already and updatable. You can check which apps can be updated under "Manage apps & device"
 
 
 class TestPlayStore(unittest.TestCase):
