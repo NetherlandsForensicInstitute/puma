@@ -50,3 +50,18 @@ phone.send_message(message="Hi Bob!", direct_message="Bob")
 # A second message can be sent without supplying the channel or conversation again:
 phone.send_message("How are you doing?")
 ```
+
+### Sending a picture
+
+You can send a picture from the device, optionally with a caption. Pictures are selected by their index, where
+`picture_id=1` is the most recent picture on the device.
+
+```python
+# Send the most recent picture in a channel
+phone.send_picture(channel="general")
+# Send the third most recent picture with a caption in a direct message conversation
+phone.send_picture(picture_id=3, caption="Look at this!", direct_message="Bob")
+```
+
+The first time a picture is sent, Slack asks for permission to access the photos and videos on the device. Puma grants
+this permission automatically.

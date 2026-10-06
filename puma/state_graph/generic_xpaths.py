@@ -6,6 +6,8 @@ APP_UPDATE_POPUP_DISMISS_BUTTON = '//android.widget.ImageView[@content-desc="Dis
 
 PERMISSIONS_POPUP_ALLOW_FOREGROUND_BUTTON = '//android.widget.Button[@resource-id="com.android.permissioncontroller:id/permission_allow_foreground_only_button"]'
 PERMISSIONS_POPUP_ALLOW_BUTTON = '//android.widget.Button[@resource-id="com.android.permissioncontroller:id/permission_allow_button"]'
+# Media permissions (photos and videos) offer limited or full access, full access is granted
+PERMISSIONS_POPUP_ALLOW_ALL_BUTTON = '//android.widget.Button[@resource-id="com.android.permissioncontroller:id/permission_allow_all_button"]'
 
 # iOS system alerts are handled by button label, see puma.state_graph.popup_handler.IOSAlertHandler
 IOS_PERMISSION_DENY_BUTTON = "Don’t Allow"
