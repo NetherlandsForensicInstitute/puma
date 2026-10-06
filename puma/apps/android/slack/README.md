@@ -35,8 +35,8 @@ phone.go_to_state(phone.channel_state, channel="general")
 phone.go_to_state(phone.channel_state, direct_message="Bob")
 ```
 
-:warning: The channel or direct message conversation needs to be visible on the home screen of the active workspace.
-Matching of channel and conversation names is case-insensitive.
+The channel or direct message conversation needs to be listed on the home screen of the active workspace. If it is out
+of view, Puma will scroll the home screen to find it. Matching of channel and conversation names is case-insensitive.
 
 ### Sending a message
 

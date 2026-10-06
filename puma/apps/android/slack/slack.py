@@ -2,7 +2,7 @@ from puma.apps.android.slack.xpaths import HOME_HISTORY_BUTTON, HOME_WORKSPACE_S
     CHAT_TITLE, \
     CHAT_BACK_BUTTON, CHAT_TEXT_INPUT, HOME_DIRECT_MESSAGE_BUTTON
 from puma.state_graph.action import action
-from puma.state_graph.puma_driver import PumaDriver
+from puma.state_graph.puma_driver import PumaDriver, PumaClickException
 from puma.state_graph.state import SimpleState, ContextualState, State
 from puma.state_graph.state_graph import StateGraph
 
@@ -26,9 +26,15 @@ class SlackChatState(SimpleState, ContextualState):
         if not channel and not direct_message:
             raise ValueError(f'Cannot open a channel without a channel or DM name')
         if channel:
-            driver.click(HOME_CHANNEL_BUTTON.format(channel_name=channel))
-        elif direct_message:
-            driver.click(HOME_DIRECT_MESSAGE_BUTTON.format(direct_message=direct_message))
+            chat_xpath = HOME_CHANNEL_BUTTON.format(channel_name=channel)
+        else:
+            chat_xpath = HOME_DIRECT_MESSAGE_BUTTON.format(direct_message=direct_message)
+        # The home screen might still be scrolled from an earlier visit, so search down first and then back up
+        try:
+            driver.swipe_to_find_element(chat_xpath, max_swipes=20, swipe_down=True)
+        except PumaClickException:
+            driver.swipe_to_find_element(chat_xpath, max_swipes=20, swipe_down=False)
+        driver.click(chat_xpath)
 
 
 class Slack(StateGraph):
