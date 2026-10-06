@@ -1,7 +1,7 @@
 import unittest
 
 from puma.apps.ios.safari.safari import Safari
-from puma.apps.ios.safari.xpaths import TOOLBAR_ADDRESS_BAR, bookmark
+from puma.apps.ios.safari.locators import TOOLBAR_ADDRESS_BAR, bookmark
 
 # Fill in the udid below. Run `xcrun simctl list devices booted` (simulators) or `xcrun xctrace list devices`
 # (real devices) to see the udids.

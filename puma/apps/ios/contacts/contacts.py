@@ -1,7 +1,7 @@
 from time import sleep
 
 from puma.apps.ios.contacts import logger
-from puma.apps.ios.contacts.xpaths import *
+from puma.apps.ios.contacts.locators import *
 from puma.state_graph.action import action
 from puma.state_graph.locators import to_by_value
 from puma.state_graph.puma_driver import PumaDriver, PumaClickException, Platform, supported_version

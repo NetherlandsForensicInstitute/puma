@@ -1,7 +1,7 @@
 import unittest
 
 from puma.apps.ios.apple_maps.apple_maps import AppleMaps, TransportType
-from puma.apps.ios.apple_maps.xpaths import PLACE_DIRECTIONS_BUTTON, DIRECTIONS_TRANSPORT_TYPE_PICKER, \
+from puma.apps.ios.apple_maps.locators import PLACE_DIRECTIONS_BUTTON, DIRECTIONS_TRANSPORT_TYPE_PICKER, \
     transport_type_button
 
 # Fill in the udid below. Run `xcrun simctl list devices booted` (simulators) or `xcrun xctrace list devices`

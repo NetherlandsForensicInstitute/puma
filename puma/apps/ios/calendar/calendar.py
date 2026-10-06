@@ -2,7 +2,7 @@ from datetime import datetime, timedelta
 from time import sleep
 
 from puma.apps.ios.calendar import logger
-from puma.apps.ios.calendar.xpaths import *
+from puma.apps.ios.calendar.locators import *
 from puma.apps.ios.date_picker import select_date, select_time, DATE_PICKER_MONTH, DATE_PICKER_WHEEL
 from puma.state_graph.action import action
 from puma.state_graph.puma_driver import PumaDriver, Platform, supported_version

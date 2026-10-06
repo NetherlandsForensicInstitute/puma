@@ -3,7 +3,7 @@ from time import sleep
 
 from puma.apps.ios.date_picker import select_date, select_time
 from puma.apps.ios.reminders import logger
-from puma.apps.ios.reminders.xpaths import *
+from puma.apps.ios.reminders.locators import *
 from puma.state_graph.action import action
 from puma.state_graph.popup_handler import PopUpHandler, known_ios_popups
 from puma.state_graph.puma_driver import PumaDriver, Platform, supported_version

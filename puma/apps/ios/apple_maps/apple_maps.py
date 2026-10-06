@@ -2,7 +2,7 @@ from enum import Enum
 from time import sleep, time
 
 from puma.apps.ios.apple_maps import logger
-from puma.apps.ios.apple_maps.xpaths import *
+from puma.apps.ios.apple_maps.locators import *
 from puma.state_graph.action import action
 from puma.state_graph.popup_handler import simple_popup_handler
 from puma.state_graph.puma_driver import PumaDriver, Platform, supported_version

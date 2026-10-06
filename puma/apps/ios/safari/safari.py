@@ -2,7 +2,7 @@ from time import sleep, time
 from typing import Callable
 
 from puma.apps.ios.safari import logger
-from puma.apps.ios.safari.xpaths import *
+from puma.apps.ios.safari.locators import *
 from puma.state_graph.action import action
 from puma.state_graph.popup_handler import PopUpHandler, simple_popup_handler
 from puma.state_graph.puma_driver import PumaDriver, PumaClickException, Platform, supported_version
