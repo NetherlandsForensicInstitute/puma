@@ -121,6 +121,7 @@ example implementations:
 * [Google Maps](puma/apps/android/google_maps/README.md)
 * [Google Play Store](puma/apps/android/google_play_store/README.md)
 * [Open Camera](puma/apps/android/open_camera/README.md)
+* [Slack](puma/apps/android/slack/README.md)
 * [Snapchat](puma/apps/android/snapchat/README.md)
 * [Telegram](puma/apps/android/telegram/README.md)
 * [TeleGuard](puma/apps/android/teleguard/README.md)
