@@ -1,9 +1,10 @@
 from enum import Enum
+from time import sleep
 
 from puma.apps.android.google_play_store import logger
 from puma.state_graph.action import action
 from puma.state_graph.popup_handler import PopUpHandler
-from puma.state_graph.puma_driver import supported_version, PumaDriver
+from puma.state_graph.puma_driver import supported_version, PumaDriver, PumaClickException
 from puma.state_graph.state import SimpleState, compose_clicks, ContextualState
 from puma.state_graph.state_graph import StateGraph
 from puma.state_graph.utils import is_valid_package_name
@@ -25,25 +26,36 @@ GOOGLE_PLAY_POINTS_POPUP_HANDLER = PopUpHandler(
 COMPLETE_ACCOUNT_POPUP_HANDLER = PopUpHandler(
     ['//*[@text="Complete account setup"]'],
     ['//*[@text="Continue"]', '//*[@text="Skip"]'])
+GAMER_PROFILE_POPUP_HANDLER = PopUpHandler(
+    ['//android.widget.TextView[@text="Create a gamer profile"]', '//android.view.View[@content-desc="Not now"]'],
+    ['//android.view.View[@content-desc="Not now"]'])
 
 ACCOUNT_ICON = '//android.widget.FrameLayout[starts-with(@content-desc, "Signed in as")]'
 
 HOME_SCREEN_TABS = '(//android.view.View[count(.//android.widget.TextView[@text="Games" or @text="Apps" or @text="Search" or @text="Books"]) = 4])[last()]'
-APPS_TAB_SELECTED = '//android.view.View[.//android.widget.ImageView[@selected="true"] and ./android.widget.TextView[@text="Apps"]]'
 
-APP_PAGE_INSTALL_BUTTON = '//android.view.View[@content-desc="Install"]'
-APP_PAGE_UNINSTALL_BUTTON = '//android.view.View[@content-desc="Uninstall"]'
+# The main buttons of an app page. When the account has more devices, the page also lists these devices, each with its
+# own Install or Uninstall button next to the name of the device. These are ignored.
+_MAIN_BUTTON = '//android.view.View[@content-desc="{}" and not(../preceding-sibling::android.widget.TextView)]'
+APP_PAGE_INSTALL_BUTTON = _MAIN_BUTTON.format('Install')
+APP_PAGE_UNINSTALL_BUTTON = _MAIN_BUTTON.format('Uninstall')
+APP_PAGE_UPDATE_BUTTON = _MAIN_BUTTON.format('Update')
+APP_PAGE_CANCEL_INSTALL_BUTTON = _MAIN_BUTTON.format('Cancel')
+# Uninstalling has to be confirmed in a dialog. While it is shown, the app page is not in the element tree.
+APP_PAGE_UNINSTALL_DIALOG = '//android.widget.TextView[@text="Uninstall this app?"]'
 APP_PAGE_UNINSTALL_SURE_BUTTON = '//android.view.View[@content-desc="Uninstall"]'
-APP_PAGE_UPDATE_BUTTON = '//android.view.View[@content-desc="Update"]'
-APP_PAGE_CANCEL_INSTALL_BUTTON = '//android.view.View[@content-desc="Cancel"]'
-APP_PAGE_THREE_DOTS = '//android.view.View[@content-desc="More options"]'
+# note the capital O: the home screen has buttons named "More options" as well
+APP_PAGE_THREE_DOTS = '//android.view.View[@content-desc="More Options"]'
 APP_PAGE_NAVIGATE_UP = '//android.view.View[@content-desc="Navigate up"]'
+# Apps that are not installed are shown in a sheet on top of the previous screen, instead of on a page of their own
+APP_SHEET_CLOSE_SHEET = '//android.view.View[@content-desc="Close sheet"]'
+APP_SHEET_CLOSE = '//android.view.View[@content-desc="Close"]'
 
-PROFILE_GOOGLE = '//android.widget.Button[@resource-id="com.android.vending:id/0_resource_name_obfuscated" and @text="Google Account"]'
+PROFILE_GOOGLE = '//android.widget.TextView[@resource-id="com.android.vending:id/0_resource_name_obfuscated" and @text="Manage your Google Account"]'
 UPDATE_ALL_BUTTON = '//android.view.View[@content-desc="Update all"]'
-MANAGE_APP_STATE = '//android.widget.TextView[@text="Manage apps and device"]'
+MANAGE_APP_STATE = '//android.widget.TextView[@text="Manage apps & device"]'
 MANAGE_APP_STATE_SYNC = '//android.widget.TextView[@text="Sync apps to devices"]'
-MANAGE_APPS_AND_DEVICES = '//android.widget.TextView[@resource-id="com.android.vending:id/0_resource_name_obfuscated" and @text="Manage apps and device"]'
+MANAGE_APPS_AND_DEVICES = '//android.widget.TextView[@resource-id="com.android.vending:id/0_resource_name_obfuscated" and @text="Manage apps & device"]'
 
 
 class AppState(Enum):
@@ -53,6 +65,18 @@ class AppState(Enum):
     UPDATE_AVAILABLE = 3
     INSTALLING = 4
     INSTALLING_UPDATE = 5
+
+
+def _close_app_page(driver: PumaDriver):
+    """
+    Closes an app page: the sheet of an app that is not installed, or the page of an installed app.
+
+    :param driver: Puma driver
+    """
+    if driver.is_present(APP_SHEET_CLOSE):
+        driver.click(APP_SHEET_CLOSE)
+    else:
+        driver.click(APP_PAGE_NAVIGATE_UP)
 
 
 class AppPage(SimpleState, ContextualState):
@@ -69,11 +93,17 @@ class AppPage(SimpleState, ContextualState):
         :param parent_state: The parent state of this app page state.
         """
         super().__init__(
-            xpaths=[HOME_SCREEN_TABS, APP_PAGE_THREE_DOTS],
+            xpaths=[APP_PAGE_NAVIGATE_UP, APP_PAGE_THREE_DOTS],
             parent_state=parent_state,
-            parent_state_transition=compose_clicks([APP_PAGE_NAVIGATE_UP], "navigate_up"))
+            parent_state_transition=_close_app_page)
         # keep a dict that tracks which app pages were opened last on which device. See validate_context()
         self.last_opened = {}
+
+    def validate(self, driver: PumaDriver) -> bool:
+        """
+        Installed apps are shown on a page of their own, other apps in a sheet on top of the previous screen.
+        """
+        return super().validate(driver) or (driver.is_present(APP_SHEET_CLOSE_SHEET) and driver.is_present(APP_SHEET_CLOSE))
 
     def validate_context(self, driver: PumaDriver, package_name: str = None) -> bool:
         """
@@ -91,7 +121,7 @@ class AppPage(SimpleState, ContextualState):
         """
         if not package_name:
             return True
-        return self.last_opened[driver.udid] == package_name
+        return self.last_opened.get(driver.udid) == package_name
 
     def open_app_page(self, driver: PumaDriver, package_name: str = None):
         """
@@ -107,9 +137,14 @@ class AppPage(SimpleState, ContextualState):
             raise ValueError(f'Invalid package name: {package_name}')
         driver.open_url(f'https://play.google.com/store/apps/details?id={package_name}')
         self.last_opened[driver.udid] = package_name
+        # wait until the app page has loaded
+        for _ in range(10):
+            if self.validate(driver):
+                return
+            sleep(1)
 
 
-@supported_version("48.3.25-31")
+@supported_version("53.3.21-34")
 class GooglePlayStore(StateGraph):
     """
     A class representing a state graph for managing UI states and transitions in the Google Play Store.
@@ -118,14 +153,15 @@ class GooglePlayStore(StateGraph):
     of the Play store UI. It provides methods to navigate between states, validate states,
     and handle unexpected states or errors.
     """
-    apps_tab_state = SimpleState([ACCOUNT_ICON, HOME_SCREEN_TABS, APPS_TAB_SELECTED], initial_state=True)
-    profile_state = SimpleState([MANAGE_APPS_AND_DEVICES, PROFILE_GOOGLE], parent_state=apps_tab_state)
-    manage_apps_state = SimpleState([MANAGE_APP_STATE, MANAGE_APP_STATE_SYNC], parent_state=apps_tab_state)
-    app_page_state = AppPage(parent_state=apps_tab_state)
+    # The Play Store opens on the tab that was used last (e.g. Games or Apps), so the home state is any of these tabs
+    home_state = SimpleState([ACCOUNT_ICON, HOME_SCREEN_TABS], invalid_xpaths=[APP_SHEET_CLOSE_SHEET], initial_state=True)
+    profile_state = SimpleState([MANAGE_APPS_AND_DEVICES, PROFILE_GOOGLE], parent_state=home_state)
+    manage_apps_state = SimpleState([MANAGE_APP_STATE, MANAGE_APP_STATE_SYNC], parent_state=home_state)
+    app_page_state = AppPage(parent_state=home_state)
 
-    apps_tab_state.to(profile_state, compose_clicks([ACCOUNT_ICON], name='click_profile'))
+    home_state.to(profile_state, compose_clicks([ACCOUNT_ICON], name='click_profile'))
     profile_state.to(manage_apps_state, compose_clicks([MANAGE_APPS_AND_DEVICES], name='click_manage_apps_and_devices'))
-    app_page_state.from_states([apps_tab_state, profile_state, manage_apps_state], app_page_state.open_app_page)
+    app_page_state.from_states([home_state, profile_state, manage_apps_state], app_page_state.open_app_page)
 
     def __init__(self, device_udid):
         """
@@ -139,6 +175,7 @@ class GooglePlayStore(StateGraph):
         self.add_popup_handler(TRY_GOOGLE_PASS_POPUP_HANDLER)
         self.add_popup_handler(GOOGLE_PLAY_POINTS_POPUP_HANDLER)
         self.add_popup_handler(COMPLETE_ACCOUNT_POPUP_HANDLER)
+        self.add_popup_handler(GAMER_PROFILE_POPUP_HANDLER)
 
     def _get_app_state_internal(self) -> AppState:
         """
@@ -191,6 +228,9 @@ class GooglePlayStore(StateGraph):
             self.gtl_logger.warn(f'Tried to uninstall app {package_name}, but it was not installed')
             return
         self.driver.click(APP_PAGE_UNINSTALL_BUTTON)
+        # wait for the confirmation, as the button to confirm has the same name as the button that was just clicked
+        if not self.driver.is_present(APP_PAGE_UNINSTALL_DIALOG, implicit_wait=5):
+            raise PumaClickException(f'Uninstalling {package_name} was not asked to be confirmed')
         self.driver.click(APP_PAGE_UNINSTALL_SURE_BUTTON)
 
     @action(app_page_state)
