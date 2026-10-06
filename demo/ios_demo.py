@@ -1,7 +1,10 @@
 """
 Demo of Puma on iOS: sending and reading messages in Messages.
 
-Run from the root of the repository, with an Appium server running:
+Run from the root of the repository, with an Appium server running. Run it as a module with `python -m`, not as a file
+with `python demo/ios_demo.py`: Python then adds the current directory, the root of the repository, to the import path,
+so that the puma package can be found. Running the file only adds the demo folder, so the import of puma fails (unless
+Puma is installed with pip).
 
     # on a simulator
     python -m demo.ios_demo --udid <simulator udid>
