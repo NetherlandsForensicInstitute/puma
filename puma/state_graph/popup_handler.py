@@ -4,6 +4,7 @@ from puma.state_graph.generic_xpaths import APP_STOPPED_POPUP_CLOSE_BUTTON, APP_
     APP_UPDATE_POPUP_DISMISS_BUTTON, PERMISSIONS_POPUP_ALLOW_FOREGROUND_BUTTON, PERMISSIONS_POPUP_ALLOW_BUTTON, \
     IOS_PERMISSION_DENY_BUTTON, IOS_TRACKING_DENY_BUTTON, IOS_PERMISSION_ALLOW_BUTTONS, IOS_ENABLE_DICTATION_BUTTON, \
     IOS_NOT_NOW_BUTTON
+from puma.state_graph.ios_driver import IOSPumaDriver
 from puma.state_graph.puma_driver import PumaDriver, Platform
 from puma.state_graph.state import compose_clicks
 
@@ -73,13 +74,15 @@ class IOSAlertHandler(PopUpHandler):
         self.click_buttons = click_buttons
 
     def is_popup_window(self, driver: PumaDriver) -> bool:
-        if driver.platform != Platform.IOS:
+        if not isinstance(driver, IOSPumaDriver):
             return False
         buttons = driver.alert_buttons()
         return any(label in buttons for label in self.recognize_buttons) and \
             any(label in buttons for label in self.click_buttons)
 
     def dismiss_popup(self, driver: PumaDriver):
+        if not isinstance(driver, IOSPumaDriver):
+            return
         driver.gtl_logger.info('Dismissing alert')
         buttons = driver.alert_buttons()
         label = next(label for label in self.click_buttons if label in buttons)
@@ -87,9 +90,10 @@ class IOSAlertHandler(PopUpHandler):
 
 
 known_android_popups = [simple_popup_handler(APP_UPDATE_POPUP_DISMISS_BUTTON),
-                simple_popup_handler(PERMISSIONS_POPUP_ALLOW_FOREGROUND_BUTTON),
-                simple_popup_handler(PERMISSIONS_POPUP_ALLOW_BUTTON),
-                PopUpHandler([APP_STOPPED_POPUP_TITLE, APP_STOPPED_POPUP_CLOSE_BUTTON], [APP_STOPPED_POPUP_CLOSE_BUTTON])]
+                        simple_popup_handler(PERMISSIONS_POPUP_ALLOW_FOREGROUND_BUTTON),
+                        simple_popup_handler(PERMISSIONS_POPUP_ALLOW_BUTTON),
+                        PopUpHandler([APP_STOPPED_POPUP_TITLE, APP_STOPPED_POPUP_CLOSE_BUTTON],
+                                     [APP_STOPPED_POPUP_CLOSE_BUTTON])]
 
 # iOS permission requests all have a "Don't Allow" button (or "Ask App Not to Track" for the tracking request), while
 # the button granting the permission differs per permission type. Permissions are granted, like on Android.
