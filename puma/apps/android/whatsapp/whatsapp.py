@@ -6,7 +6,7 @@ from puma.apps.android.whatsapp.states import *
 from puma.apps.android.whatsapp.xpaths import *
 from puma.state_graph.action import action
 from puma.state_graph.popup_handler import simple_popup_handler, PopUpHandler
-from puma.state_graph.puma_driver import PumaDriver, PumaClickException, supported_version, Platform
+from puma.state_graph.puma_driver import PumaDriver, PumaClickException, supported_version
 from puma.state_graph.state import SimpleState, compose_clicks
 from puma.state_graph.state_graph import StateGraph
 from puma.utils.xpath_utils import build_content_desc_xpath_widget
@@ -59,7 +59,6 @@ class WhatsApp(StateGraph):
     of the WhatsApp user interface. It provides methods to navigate between states, validate states,
     and handle unexpected states or errors.
     """
-    platform = Platform.ANDROID
 
     conversations_state = SimpleState([CONVERSATIONS_WHATSAPP_LOGO,
                                        CONVERSATIONS_HOME_ROOT_FRAME,

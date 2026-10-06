@@ -7,6 +7,20 @@ from puma.state_graph.puma_driver import PumaDriver, PumaClickException, Platfor
 from puma.state_graph.state import State, ContextualState, Transition, _shortest_path
 from puma.state_graph.utils import safe_func_call, filter_arguments, is_valid_app_id
 
+# The packages of the supported applications, and the platform their applications run on
+_PLATFORM_PACKAGES = {'puma.apps.android': Platform.ANDROID, 'puma.apps.ios': Platform.IOS}
+
+
+def _platform_of_module(module: str) -> Platform | None:
+    """
+    Returns the platform of the applications in the given module, or None if the module is not in puma.apps.android or
+    puma.apps.ios.
+    """
+    for package, platform in _PLATFORM_PACKAGES.items():
+        if module == package or module.startswith(package + '.'):
+            return platform
+    return None
+
 
 class StateGraphMeta(type):
     """
@@ -36,10 +50,12 @@ class StateGraphMeta(type):
         if name == 'StateGraph':
             return new_class
 
-        # every application defines the platform it runs on, there is no default
+        # applications in puma.apps.android and puma.apps.ios run on that platform, other applications define it
         if not isinstance(getattr(new_class, 'platform', None), Platform):
-            raise TypeError(f'{name} does not define the platform it runs on. Set the class attribute '
-                            f'`platform = Platform.ANDROID` or `platform = Platform.IOS`.')
+            new_class.platform = _platform_of_module(namespace.get('__module__', ''))
+            if new_class.platform is None:
+                raise TypeError(f'{name} does not define the platform it runs on. Set the class attribute '
+                                f'`platform = Platform.ANDROID` or `platform = Platform.IOS`.')
 
         # collect states and transitions
         states: list[State] = []
@@ -149,8 +165,9 @@ class StateGraph(metaclass=StateGraphMeta):
     of a user interface. It initializes with a device and application package, and provides
     methods to navigate between states, validate states, and handle unexpected states or errors.
 
-    The platform the application runs on is defined by the class attribute `platform`, which every application must
-    set: `platform = Platform.ANDROID` or `platform = Platform.IOS`.
+    The platform the application runs on is defined by the class attribute `platform`. Applications in
+    puma.apps.android and puma.apps.ios get the platform of their package; other applications must set it:
+    `platform = Platform.ANDROID` or `platform = Platform.IOS`.
     """
     platform: Platform
 
