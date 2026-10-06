@@ -2,10 +2,24 @@ from time import sleep
 from typing import Dict
 
 from puma.state_graph import logger
-from puma.state_graph.popup_handler import known_popups, PopUpHandler
-from puma.state_graph.puma_driver import PumaDriver, PumaClickException
+from puma.state_graph.popup_handler import known_popups_for, PopUpHandler
+from puma.state_graph.puma_driver import PumaDriver, PumaClickException, Platform
 from puma.state_graph.state import State, ContextualState, Transition, _shortest_path
-from puma.state_graph.utils import safe_func_call, filter_arguments, is_valid_package_name
+from puma.state_graph.utils import safe_func_call, filter_arguments, is_valid_app_id
+
+# The packages of the supported applications, and the platform their applications run on
+_PLATFORM_PACKAGES = {'puma.apps.android': Platform.ANDROID, 'puma.apps.ios': Platform.IOS}
+
+
+def _platform_of_module(module: str) -> Platform | None:
+    """
+    Returns the platform of the applications in the given module, or None if the module is not in puma.apps.android or
+    puma.apps.ios.
+    """
+    for package, platform in _PLATFORM_PACKAGES.items():
+        if module == package or module.startswith(package + '.'):
+            return platform
+    return None
 
 
 class StateGraphMeta(type):
@@ -35,6 +49,13 @@ class StateGraphMeta(type):
         # Skip validation for the base PumaUIGraph class
         if name == 'StateGraph':
             return new_class
+
+        # applications in puma.apps.android and puma.apps.ios run on that platform, other applications define it
+        if not isinstance(getattr(new_class, 'platform', None), Platform):
+            new_class.platform = _platform_of_module(namespace.get('__module__', ''))
+            if new_class.platform is None:
+                raise TypeError(f'{name} does not define the platform it runs on. Set the class attribute '
+                                f'`platform = Platform.ANDROID` or `platform = Platform.IOS`.')
 
         # collect states and transitions
         states: list[State] = []
@@ -143,20 +164,25 @@ class StateGraph(metaclass=StateGraphMeta):
     This class uses a state machine approach to manage transitions between different states
     of a user interface. It initializes with a device and application package, and provides
     methods to navigate between states, validate states, and handle unexpected states or errors.
+
+    The platform the application runs on is defined by the class attribute `platform`. Applications in
+    puma.apps.android and puma.apps.ios get the platform of their package; other applications must set it:
+    `platform = Platform.ANDROID` or `platform = Platform.IOS`.
     """
+    platform: Platform
 
     def __init__(self, device_udid: str, app_package: str, appium_server: str = 'http://localhost:4723', desired_capabilities: Dict[str, str] = None):
         """
         Initializes the StateGraph with a device and application package.
 
         :param device_udid: The unique device identifier.
-        :param app_package: The package name of the application.
+        :param app_package: The identifier of the application: the package name on Android, the bundle id on iOS.
         :param desired_capabilities: desired capabilities as passed to the Appium webdriver.
         """
-        if not is_valid_package_name(app_package):
-            raise ValueError(f'The provided package name is invalid: {app_package}')
+        if not is_valid_app_id(app_package, self.platform):
+            raise ValueError(f'The provided {"bundle id" if self.platform == Platform.IOS else "package name"} is invalid: {app_package}')
         self.current_state = self.initial_state
-        self.driver = PumaDriver(device_udid, app_package, appium_server=appium_server, desired_capabilities=desired_capabilities)
+        self.driver = PumaDriver(device_udid, app_package, appium_server=appium_server, desired_capabilities=desired_capabilities, platform=self.platform)
         self.app_popups = []
         self.try_restart = True
         self.gtl_logger = self.driver.gtl_logger
@@ -261,7 +287,7 @@ class StateGraph(metaclass=StateGraphMeta):
         clicked = True
         while clicked:
             clicked = False
-            for popup_handler in known_popups + self.app_popups:
+            for popup_handler in known_popups_for(self.driver.platform) + self.app_popups:
                 if popup_handler.is_popup_window(self.driver):
                     popup_handler.dismiss_popup(self.driver)
                     clicked = True
