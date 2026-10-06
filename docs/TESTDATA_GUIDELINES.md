@@ -144,7 +144,7 @@ If your app is not supported in Puma, you will need to add support for it. To do
 the [contributing documentation](../CONTRIBUTING.md).
 
 After you have written the Puma code and your Puma script, you can now execute it. Be sure to properly prepare the
-device ([enable USB debugging!](../README.md#adb-device-cannot-connect)) and install the application. It's a good idea to
+device ([enable USB debugging!](troubleshooting.md#adb-device-cannot-connect)) and install the application. It's a good idea to
 go into the app settings and grant all possible permissions to the app, to prevent popups from getting in the way of
 your Puma script.
 

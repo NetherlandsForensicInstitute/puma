@@ -1,7 +1,7 @@
 import unittest
 
-from puma.state_graph.puma_driver import PumaDriver
-from puma.state_graph.state import State, ContextualState
+from puma.state_graph.puma_driver import PumaDriver, Platform
+from puma.state_graph.state import State, ContextualState, SimpleState
 from puma.state_graph.state_graph import StateGraphMeta, StateGraph
 
 
@@ -115,14 +115,20 @@ class TestStateGraphMeta(unittest.TestCase):
             StateGraphMeta._validate_graph(states)
 
 
+class AndroidTestApp(StateGraph):
+    platform = Platform.ANDROID
+
+    home_state = SimpleState(xpaths=['//home'], initial_state=True)
+
+
 class TestStateGraph(unittest.TestCase):
     def test_invalid_package_name(self):
         with self.assertRaises(ValueError) as error:
-            StateGraph(device_udid='emulator123', app_package='this is invalid')
-        self.assertEquals('The provided package name is invalid: this is invalid', str(error.exception))
+            AndroidTestApp(device_udid='emulator123', app_package='this is invalid')
+        self.assertEqual('The provided package name is invalid: this is invalid', str(error.exception))
         with self.assertRaises(ValueError) as error:
-            StateGraph(device_udid='emulator123', app_package='')  # also invalid
-        self.assertEquals('The provided package name is invalid: ', str(error.exception))
+            AndroidTestApp(device_udid='emulator123', app_package='')  # also invalid
+        self.assertEqual('The provided package name is invalid: ', str(error.exception))
 
 
 if __name__ == '__main__':
