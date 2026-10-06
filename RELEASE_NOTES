@@ -1,5 +1,6 @@
 Version 6.0.0
 -------------
+248. WhatsApp: Add WhatsApp for iOS
 24. iOS: Add iOS support, with Settings and Messages. StateGraph apps must set their platform
 204. Tutorial: Create new tutorial files
 213. Teleguard: Fix typo in variable name

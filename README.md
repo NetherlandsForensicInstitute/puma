@@ -89,6 +89,7 @@ example implementations. Each version of Puma supports one version of each app, 
 | [WhatsApp for Business](puma/apps/android/whatsapp_business/README.md) | Android  | 2.25.24.78            |
 | [Messages](puma/apps/ios/messages/README.md)                    | iOS      | iOS 26.6              |
 | [Settings](puma/apps/ios/settings/README.md) (real devices only) | iOS      | iOS 26.6              |
+| [WhatsApp](puma/apps/ios/whatsapp/README.md) (real devices only) | iOS      | 26.38.74              |
 
 ## Documentation
 

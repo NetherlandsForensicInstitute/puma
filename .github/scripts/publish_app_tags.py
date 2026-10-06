@@ -15,6 +15,7 @@ from puma.apps.android.whatsapp.whatsapp import WhatsApp
 from puma.apps.android.whatsapp_business.whatsapp_business import WhatsappBusinessActions
 from puma.apps.ios.messages.messages import Messages
 from puma.apps.ios.settings.settings import Settings
+from puma.apps.ios.whatsapp.whatsapp import WhatsApp as WhatsAppIOS
 
 all_app_actions = [
     GoogleCamera,
@@ -28,7 +29,8 @@ all_app_actions = [
     WhatsApp,
     WhatsappBusinessActions,
     Messages,
-    Settings
+    Settings,
+    WhatsAppIOS
 ]
 APP_MODULE = 'puma.apps'
 
