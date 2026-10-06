@@ -30,9 +30,9 @@ message conversation:
 # Go to the home screen
 phone.go_to_state(phone.home_state)
 # Open a channel
-phone.go_to_state(phone.channel_state, channel="general")
+phone.go_to_state(phone.chat_state, channel="general")
 # Open a direct message conversation
-phone.go_to_state(phone.channel_state, direct_message="Bob")
+phone.go_to_state(phone.chat_state, direct_message="Bob")
 ```
 
 The channel or direct message conversation needs to be listed on the home screen of the active workspace. If it is out
@@ -65,3 +65,20 @@ phone.send_picture(picture_id=3, caption="Look at this!", direct_message="Bob")
 
 The first time a picture is sent, Slack asks for permission to access the photos and videos on the device. Puma grants
 this permission automatically.
+
+### Exporting messages
+
+You can export all messages of a channel or direct message conversation to a CSV file. Puma scrolls to the beginning
+of the conversation and collects all messages, oldest first. The CSV file contains the sender, the time, the text and the
+attachments of each message.
+
+```python
+phone.export_messages("general.csv", channel="general")
+phone.export_messages("bob.csv", direct_message="Bob")
+# The messages can also be retrieved as a list
+messages = phone.get_messages(direct_message="Bob")
+```
+
+The time is written as shown by Slack, for example `Sep 29th at 2:06 PM` or `Today at 4:01 PM`. Slack only shows the
+time of the first of consecutive messages of the same sender, so the time of the other messages is left empty.
+Attachments are described as shown by Slack, for example `image: IMG-20260206-WA0002.jpeg`.

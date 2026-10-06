@@ -14,6 +14,17 @@ CHAT_BACK_BUTTON= '//android.view.ViewGroup[@resource-id="com.Slack:id/toolbar_c
 CHAT_TEXT_INPUT= '//android.widget.FrameLayout[@resource-id="com.Slack:id/advanced_message_input_container"]//android.widget.MultiAutoCompleteTextView'
 CHAT_ATTACHMENTS_BUTTON = '//android.widget.FrameLayout[@resource-id="com.Slack:id/advanced_message_input_container"]//android.view.View[@content-desc="Attachments"]'
 CHAT_SEND_BUTTON = '//android.widget.FrameLayout[@resource-id="com.Slack:id/advanced_message_input_container"]//android.view.View[@content-desc="Send"]'
+CHAT_MESSAGES_LIST = '//androidx.recyclerview.widget.RecyclerView[@resource-id="com.Slack:id/messages_list"]'
+# Shown above the first message of the conversation
+CHAT_BEGINNING_OF_CONVERSATION = '//androidx.recyclerview.widget.RecyclerView[@resource-id="com.Slack:id/messages_list"]/android.widget.LinearLayout[@resource-id="com.Slack:id/header_container"]'
+
+# Resource ids of the elements of a message, used for parsing the messages in the page source
+MESSAGES_LIST_ID = 'com.Slack:id/messages_list'
+MESSAGE_ID = 'com.Slack:id/message_layout'
+MESSAGE_SENDER_ID = 'com.Slack:id/name'
+MESSAGE_TIME_ID = 'com.Slack:id/message_time'
+MESSAGE_TEXT_ID = 'com.Slack:id/msg_text'
+MESSAGE_FILE_ID = 'com.Slack:id/file_frame_layout'
 
 # Attachments state
 ATTACHMENTS_UPLOAD_FILE_BUTTON = '//android.widget.TextView[@resource-id="com.Slack:id/title" and @text="Upload a file"]'
