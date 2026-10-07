@@ -156,7 +156,7 @@ class AppPage(SimpleState, ContextualState):
         raise PumaClickException(f'The app page of {package_name} did not load')
 
 
-@supported_version("53.3.21-34")
+@supported_version("53.4.34-34")
 class GooglePlayStore(StateGraph):
     """
     A class representing a state graph for managing UI states and transitions in the Google Play Store.
