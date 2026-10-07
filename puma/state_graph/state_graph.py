@@ -198,13 +198,14 @@ class StateGraph(metaclass=StateGraphMeta):
 
     def is_supported_version(self, installed_version: str, supported_version: str) -> bool:
         """
-        Whether an installed version of the app is the supported version. Override this for apps that report their
-        version in a different format than the supported version is written in.
+        Whether an installed version of the app is the supported version. A supported version also covers its patch
+        releases: 26.6 is supported by 26.6.2. Override this for apps that report their version in a different format
+        than the supported version is written in.
 
         :param installed_version: The version of the app installed on the device.
         :param supported_version: The version that is supported, as set with @supported_version.
         """
-        return installed_version == supported_version
+        return installed_version == supported_version or installed_version.startswith(f'{supported_version}.')
 
     def _check_supported_version(self):
         """
@@ -218,20 +219,16 @@ class StateGraph(metaclass=StateGraphMeta):
         try:
             installed_version = self.driver.get_app_version()
         except AppVersionUnavailable as e:
-            logger.info(f'Not checking the version of {app_package}: {e}')
+            self.gtl_logger.info(f'Not checking the version of {app_package}: {e}')
             return
         except Exception as e:
-            logger.warning(f'Could not check the version of {app_package}: {e!r}')
+            self.gtl_logger.warning(f'Could not check the version of {app_package}: {e!r}')
             return
         if installed_version is None:
-            message = f'{app_package} is not installed. Puma supports version {supported_version}'
+            self.gtl_logger.warning(f'{app_package} is not installed. Puma supports version {supported_version}')
         elif not self.is_supported_version(installed_version, supported_version):
-            message = (f'Installed version {installed_version} of {app_package} differs from the supported version '
-                       f'{supported_version}. Puma may not work as expected')
-        else:
-            return
-        logger.warning(message)
-        self.gtl_logger.warning(message)
+            self.gtl_logger.warning(f'Installed version {installed_version} of {app_package} differs from the '
+                                    f'supported version {supported_version}. Puma may not work as expected')
 
     def go_to_state(self, to_state: State | str, **kwargs) -> bool:
         """

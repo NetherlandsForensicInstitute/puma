@@ -87,7 +87,8 @@ Apps that are built into iOS, such as Settings and Messages, are updated togethe
 supported version is the iOS version, e.g. `26.6`. Third-party iOS apps, installed from the App Store, use their own app
 version, like Android apps.
 
-When a Puma app is created, it logs a warning if the installed version differs from the supported version. This takes
+When a Puma app is created, it logs a warning if the installed version differs from the supported version (patch
+releases are accepted: supported version `26.6` covers `26.6.2`). This takes
 a few calls to the device, and can be turned off with `check_version=False` (or by setting the `check_version` class
 attribute of an app to `False`). An app can override `is_supported_version` if it reports its version in a different
 format than the supported version is written in, like the Google Play Store does.

@@ -189,20 +189,42 @@ class UnversionedApp(StateGraph):
     main_state = SimpleState(['xpath'], initial_state=True)
 
 
+class _RecordHandler(logging.Handler):
+    def __init__(self):
+        super().__init__()
+        self.records = []
+
+    def emit(self, record):
+        self.records.append(record)
+
+
 class TestCheckSupportedVersion(unittest.TestCase):
     def _create_app(self, app_class=VersionedApp, installed_version=None, error: Exception = None, **kwargs):
+        """
+        Creates the app, and returns the records logged by the version check, which logs to the logger of the device.
+        """
+        records = _RecordHandler()
+        device_logger = logging.getLogger('mock_udid')
+        previous_level = device_logger.level
+        device_logger.setLevel(logging.INFO)
+        device_logger.addHandler(records)
+        self.addCleanup(device_logger.setLevel, previous_level)
+        self.addCleanup(device_logger.removeHandler, records)
         with patch('puma.state_graph.puma_driver._get_appium_driver', return_value=_mock_appium_driver()), \
                 patch('adb_pywrapper.adb_device.AdbDevice'), \
                 patch('puma.state_graph.android_driver.AndroidPumaDriver.get_app_version',
                       return_value=installed_version, side_effect=error) as get_app_version:
-            # The driver logs while connecting, so there are always log records. Only those of the check are returned
-            with self.assertLogs('puma.state_graph', level=logging.INFO) as logs:
-                app_class('mock_udid', 'com.example.app', **kwargs)
+            app_class('mock_udid', 'com.example.app', **kwargs)
         self.get_app_version = get_app_version
-        return [record for record in logs.records if record.filename == 'state_graph.py']
+        return records.records
 
     def test_supported_version_does_not_warn(self):
         self.assertEqual([], self._create_app(installed_version='2.0'))
+
+    def test_patch_release_of_supported_version_does_not_warn(self):
+        self.assertEqual([], self._create_app(installed_version='2.0.1'))
+        self.assertEqual(1, len(self._create_app(installed_version='2.01')))
+        self.assertEqual(1, len(self._create_app(installed_version='2.1.0')))
 
     def test_different_version_warns(self):
         records = self._create_app(installed_version='3.1')
@@ -243,14 +265,14 @@ class TestCheckSupportedVersion(unittest.TestCase):
         self.assertEqual([], self._create_app(UncheckedApp, installed_version='3.1', check_version=False))
 
     def test_app_can_override_how_versions_are_compared(self):
-        class PrefixApp(VersionedApp):
+        class SuffixApp(VersionedApp):
             main_state = SimpleState(['xpath'], initial_state=True)
 
             def is_supported_version(self, installed_version, supported_version):
-                return installed_version.startswith(supported_version)
+                return installed_version.endswith(supported_version)
 
-        self.assertEqual([], self._create_app(PrefixApp, installed_version='2.0.1'))
-        self.assertEqual(1, len(self._create_app(VersionedApp, installed_version='2.0.1')))
+        self.assertEqual([], self._create_app(SuffixApp, installed_version='v2.0'))
+        self.assertEqual(1, len(self._create_app(VersionedApp, installed_version='v2.0')))
 
     def test_google_play_store_ignores_version_name_suffix(self):
         play_store = object.__new__(GooglePlayStore)
