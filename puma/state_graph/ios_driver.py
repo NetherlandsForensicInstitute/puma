@@ -1,5 +1,7 @@
 import base64
 import os
+import plistlib
+import subprocess
 import zlib
 from datetime import datetime
 from typing import Dict
@@ -24,6 +26,8 @@ HID_KEY_DELETE = 0x2A
 HID_KEY_LEFT_ARROW = 0x50
 # The duration of a single key press, as used by XCTest
 HID_KEY_PRESS_DURATION = 0.005
+# The Info.plist key holding the version of an app, as shown to users
+VERSION_ATTRIBUTE = 'CFBundleShortVersionString'
 
 def wda_ports(udid: str) -> tuple[int, int]:
     """
@@ -106,6 +110,42 @@ class IOSPumaDriver(PumaDriver):
     @staticmethod
     def _default_options() -> XCUITestOptions:
         return get_ios_default_options()
+
+    def get_app_version(self, app_id: str = None) -> str | None:
+        """
+        Returns the version (CFBundleShortVersionString) of an installed app.
+
+        On real devices this uses Appium. Appium cannot list apps on simulators, so there the Info.plist of the app is
+        read using `xcrun simctl`, which only works if Puma runs on the same machine as the simulator.
+
+        :param app_id: The bundle id of the app. Defaults to the app of this driver.
+        :return: The version, or None if the app is not installed or its version cannot be determined.
+        """
+        bundle_id = app_id or self.app_package
+        if self.is_simulator():
+            return self._simulator_app_version(bundle_id)
+        for application_type in ('User', 'System'):
+            apps = self.execute_script('mobile: listApps', {
+                'applicationType': application_type, 'returnAttributes': [VERSION_ATTRIBUTE]})
+            version = (apps or {}).get(bundle_id, {}).get(VERSION_ATTRIBUTE)
+            if version:
+                return version
+        return None
+
+    def _simulator_app_version(self, bundle_id: str) -> str | None:
+        try:
+            app_path = subprocess.run(['xcrun', 'simctl', 'get_app_container', self.udid, bundle_id, 'app'],
+                                      capture_output=True, text=True, check=True, timeout=30).stdout.strip()
+            with open(os.path.join(app_path, 'Info.plist'), 'rb') as info_plist:
+                return plistlib.load(info_plist).get(VERSION_ATTRIBUTE)
+        except (OSError, subprocess.SubprocessError, plistlib.InvalidFileException):
+            return None
+
+    def _version_for_supported_check(self) -> str | None:
+        # Apple's own apps are versioned with iOS, so the supported version of those is an iOS version
+        if self.app_package.startswith('com.apple.'):
+            return self.driver.capabilities.get('platformVersion')
+        return self.get_app_version()
 
     def app_open(self) -> bool:
         return self.driver.query_app_state(self.app_package) == ApplicationState.RUNNING_IN_FOREGROUND

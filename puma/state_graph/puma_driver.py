@@ -132,6 +132,45 @@ class PumaDriver:
         """
         return self.app_package
 
+    @abstractmethod
+    def get_app_version(self, app_id: str = None) -> str | None:
+        """
+        Returns the version of an app installed on the device.
+
+        :param app_id: The package name (Android) or bundle id (iOS) of the app. Defaults to the app of this driver.
+        :return: The version name, or None if the app is not installed or its version cannot be determined.
+        """
+        pass
+
+    def _version_for_supported_check(self) -> str | None:
+        """
+        :return: The version that is compared to the `supported_version` of an app.
+        """
+        return self.get_app_version()
+
+    def check_supported_version(self, supported_version: str):
+        """
+        Logs a warning when the installed version of the app differs from the version Puma supports for it. Never
+        raises, as a failing version lookup should not prevent the app from being used.
+
+        :param supported_version: The version supported by Puma, as set with @supported_version.
+        """
+        try:
+            installed_version = self._version_for_supported_check()
+        except Exception as e:
+            logger.warning(f'Could not determine the installed version of {self.app_package}: {e}')
+            return
+        if installed_version is None:
+            message = (f'Could not determine the installed version of {self.app_package}. '
+                       f'Puma supports version {supported_version}')
+        elif installed_version != supported_version:
+            message = (f'Installed version {installed_version} of {self.app_package} differs from the supported '
+                       f'version {supported_version}. Puma may not work as expected')
+        else:
+            return
+        logger.warning(message)
+        self.gtl_logger.warning(message)
+
     @staticmethod
     @abstractmethod
     def _default_options() -> AppiumOptions:

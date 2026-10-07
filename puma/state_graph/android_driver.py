@@ -48,6 +48,21 @@ class AndroidPumaDriver(PumaDriver):
     def _default_options() -> UiAutomator2Options:
         return get_android_default_options()
 
+    def get_app_version(self, app_id: str = None) -> str | None:
+        """
+        Returns the version name of an installed app, using adb.
+
+        :param app_id: The package name of the app. Defaults to the app of this driver.
+        :return: The version name, or None if the app is not installed.
+        """
+        try:
+            # An app can have multiple versionName entries (e.g. an updated system app also lists its original
+            # version). The first is the active one.
+            versions = self.adb.package_versions(app_id or self.app_package)
+        except Exception:
+            return None
+        return versions[0].strip() if versions else None
+
     def app_open(self) -> bool:
         return str(self.driver.current_package) == self.app_package
 

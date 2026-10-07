@@ -87,6 +87,11 @@ Apps that are built into iOS, such as Settings and Messages, are updated togethe
 supported version is the iOS version, e.g. `26.6`. Third-party iOS apps, installed from the App Store, use their own app
 version, like Android apps.
 
+When a Puma app is created, it logs a warning if the installed version differs from the supported version. You can look
+up the installed version of any app yourself with `driver.get_app_version()`, which returns `None` if the app is not
+installed. On Android this uses adb. On iOS real devices it uses Appium; on iOS simulators it uses `xcrun simctl`, so
+Puma must run on the same Mac as the simulator.
+
 If you are running your script on a newer app version than the tag, it is advised to first run the test script of your
 app (can be found in the [test scripts directory](../test_scripts)). This test script includes each action that can be
 performed on the phone, and running these first will inform you if all actions are still supported, without messing up

@@ -186,6 +186,9 @@ class StateGraph(metaclass=StateGraphMeta):
         self.app_popups = []
         self.try_restart = True
         self.gtl_logger = self.driver.gtl_logger
+        supported_version = getattr(type(self), 'supported_version', None)
+        if supported_version:
+            self.driver.check_supported_version(supported_version)
 
     def go_to_state(self, to_state: State | str, **kwargs) -> bool:
         """
