@@ -1,5 +1,5 @@
 from enum import Enum
-from time import sleep
+from time import sleep, time
 
 from puma.apps.android.google_play_store import logger
 from puma.state_graph.action import action
@@ -59,6 +59,14 @@ UPDATE_ALL_BUTTON = '//android.view.View[@content-desc="Update all"]'
 MANAGE_APP_STATE = '//android.widget.TextView[@text="Manage apps & device"]'
 MANAGE_APP_STATE_SYNC = '//android.widget.TextView[@text="Sync apps to devices"]'
 MANAGE_APPS_AND_DEVICE = '//android.widget.TextView[@resource-id="com.android.vending:id/0_resource_name_obfuscated" and @text="Manage apps & device"]'
+
+
+class GooglePlayStoreError(Exception):
+    """
+    Raised when the Google Play Store does not respond to an action as expected, e.g. when a confirmation does not
+    appear.
+    """
+    pass
 
 
 class AppState(Enum):
@@ -211,16 +219,43 @@ class GooglePlayStore(StateGraph):
         return self._get_app_state_internal()
 
     @action(app_page_state)
-    def install_app(self, package_name: str = None):
+    def install_app(self, package_name: str = None, timeout: int = 300):
         """
-        Installs the given application. If the application is already installed (or is being installed) this method
-        will log a warning and do nothing.
+        Installs the given application, and waits until it has been installed. If the application is already installed
+        this method will log a warning and do nothing. If it is being installed, this method waits until it has been
+        installed.
         :param package_name: The exact package name of the application.
+        :param timeout: The maximum time to wait for the installation to finish, in seconds.
         """
-        if self._get_app_state_internal() != AppState.NOT_INSTALLED:
+        state = self._get_app_state_internal()
+        if state == AppState.INSTALLING:
+            self._wait_for_installation(package_name, timeout)
+            return
+        if state != AppState.NOT_INSTALLED:
             self.gtl_logger.warn(f'Tried to install app {package_name}, but it was already installed')
             return
         self.driver.click(APP_PAGE_INSTALL_BUTTON)
+        self._wait_for_installation(package_name, timeout)
+
+    def _wait_for_installation(self, package_name: str, timeout: int):
+        """
+        Waits until an installation or update has finished. While installing or updating, the app page only shows a
+        Cancel button. Afterwards, it shows the Uninstall button.
+        :param package_name: The exact package name of the application.
+        :param timeout: The maximum time to wait, in seconds.
+        :raises TimeoutError: If the installation or update did not finish within the timeout.
+        """
+        self.gtl_logger.info(f'Waiting for app {package_name} to be installed')
+        end = time() + timeout
+        while time() < end:
+            # right after pressing Update, the Uninstall button can still be shown next to the Update button
+            if (self.driver.is_present(APP_PAGE_UNINSTALL_BUTTON) and
+                    not self.driver.is_present(APP_PAGE_CANCEL_INSTALL_BUTTON) and
+                    not self.driver.is_present(APP_PAGE_UPDATE_BUTTON)):
+                self.gtl_logger.info(f'App {package_name} has been installed')
+                return
+            sleep(1)
+        raise TimeoutError(f'App {package_name} was not installed within {timeout} seconds')
 
     @action(app_page_state)
     def uninstall_app(self, package_name: str = None):
@@ -229,25 +264,35 @@ class GooglePlayStore(StateGraph):
         nothing.
         :param package_name: The exact package name of the application.
         """
+        if self._get_app_state_internal() == AppState.INSTALLING:
+            # the app is being installed or updated, e.g. right after install_app() or update_app()
+            self._wait_for_installation(package_name, timeout=300)
         if self._get_app_state_internal() not in [AppState.INSTALLED, AppState.UPDATE_AVAILABLE]:
             self.gtl_logger.warn(f'Tried to uninstall app {package_name}, but it was not installed')
             return
         self.driver.click(APP_PAGE_UNINSTALL_BUTTON)
         # wait for the confirmation, as the button to confirm has the same name as the button that was just clicked
         if not self.driver.is_present(APP_PAGE_UNINSTALL_DIALOG, implicit_wait=5):
-            raise PumaClickException(f'Uninstall confirmation dialog for {package_name} did not appear')
+            raise GooglePlayStoreError(f'Uninstall confirmation dialog for {package_name} did not appear')
         self.driver.click(APP_PAGE_UNINSTALL_SURE_BUTTON)
 
     @action(app_page_state)
-    def update_app(self, package_name: str = None):
+    def update_app(self, package_name: str = None, timeout: int = 300):
         """
-        Updates the given application. If no update is available this method will log a warning and do nothing.
+        Updates the given application, and waits until it has been updated. If no update is available this method will
+        log a warning and do nothing. If it is being updated, this method waits until it has been updated.
         :param package_name: The exact package name of the application.
+        :param timeout: The maximum time to wait for the update to finish, in seconds.
         """
-        if self._get_app_state_internal() != AppState.UPDATE_AVAILABLE:
+        state = self._get_app_state_internal()
+        if state == AppState.INSTALLING:
+            self._wait_for_installation(package_name, timeout)
+            return
+        if state != AppState.UPDATE_AVAILABLE:
             self.gtl_logger.warn(f'Tried to update app {package_name}, but there is no update available')
             return
         self.driver.click(APP_PAGE_UPDATE_BUTTON)
+        self._wait_for_installation(package_name, timeout)
 
     @action(manage_apps_state)
     def update_all_apps(self):
