@@ -1,0 +1,85 @@
+# App Store - iOS
+
+The App Store is the app store built into iOS, developed by Apple.
+Puma supports the basic features of the App Store to install and manage apps.
+For detailed information on each method, see the method its PyDoc documentation.
+
+The App Store is part of iOS, so its version is the iOS version.
+
+## Prerequisites
+
+- A real iOS device running iOS 26, set up as described in [Setting up iOS](../../../../docs/setup-ios.md).
+  Simulators have no App Store.
+- The device is signed in with an Apple Account
+- Device language needs to be set to English
+- The machine running Puma has an internet connection. Puma uses it to look up the App Store id of an app, which it
+  needs to open the page of the app.
+- Puma cannot enter a password, or confirm with Face ID or Touch ID. Turn these off for free downloads, so Puma can
+  install apps without being stopped by a confirmation:
+  1. Open Settings, tap your name (Apple Account) at the top, tap Media & Purchases, and tap Password Settings. Turn
+     off the toggle next to *Require Password* under *Free Downloads*.
+  2. If your device asks for Face ID or Touch ID on downloads: Settings > Face ID & Passcode (or Touch ID & Passcode),
+     and turn off *iTunes & App Store*.
+
+  Paid apps always need a confirmation, so Puma cannot install them.
+
+## Initialization
+
+Initialization is done in the following way:
+
+```python
+from puma.apps.ios.app_store.app_store import AppStore
+
+phone = AppStore("00008110-000A1B2C3D4E5F6G")
+```
+
+On a real device, also pass the signing settings for WebDriverAgent as `desired_capabilities`, see
+[Setting up iOS](../../../../docs/setup-ios.md).
+
+Apps are not available in every country. Puma looks up apps in the Dutch App Store by default. Pass the two-letter country
+code of the App Store of your device if it is not the Dutch one:
+
+```python
+phone = AppStore("00008110-000A1B2C3D4E5F6G", country="us")
+```
+
+## Managing specific apps
+
+Puma supports installing, uninstalling, and updating specific apps. The bundle id of the app is required:
+```python
+# we can install multiple apps
+phone.install_app('com.duolingo.DuolingoMobile')
+phone.install_app('net.whatsapp.WhatsApp')
+# installing an app that is already installed will do nothing
+phone.install_app('net.whatsapp.WhatsApp')
+
+# we can remove apps. As with installing, this won't raise an error if the app was already uninstalled.
+# The App Store cannot remove apps, so Puma removes the app without using the App Store, which also works for apps
+# that are not in the App Store
+phone.uninstall_app('com.duolingo.DuolingoMobile')
+
+# if an update is available we can install it. As with other methods, this method does not raise an error if there was no update available
+phone.update_app('net.whatsapp.WhatsApp')
+```
+
+Aside from executing actions, you can also look up the state of an app:
+```python
+state = phone.get_app_state('net.whatsapp.WhatsApp')
+```
+
+This state can have the following values:
+1. `NOT_INSTALLED`: the app is not yet installed
+2. `INSTALLED`: the app is installed and has no update available
+3. `UPDATE_AVAILABLE`: the app is installed and has an update available
+4. `INSTALLING`: the app is being installed or updated. The App Store does not show which of the two.
+5. `UNKNOWN`: An unknown state Puma does not recognize
+
+Installing and updating apps takes a while. The methods return when the download is started, so use `get_app_state` to
+wait until the app is `INSTALLED`.
+
+### Updating all apps
+
+Aside from managing specific apps, Puma can also trigger an update for all apps in the App Store:
+```python
+phone.update_all_apps()
+```
