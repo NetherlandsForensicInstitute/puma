@@ -1,6 +1,7 @@
 import base64
 import os
 import plistlib
+import shutil
 import subprocess
 import zlib
 from datetime import datetime
@@ -11,7 +12,7 @@ from appium.webdriver.applicationstate import ApplicationState
 from selenium.common import WebDriverException
 
 from puma.state_graph.locators import ios_class_chain, to_by_value
-from puma.state_graph.puma_driver import PumaDriver, Platform
+from puma.state_graph.puma_driver import PumaDriver, Platform, AppVersionUnavailable
 
 # The back button in a UINavigationBar. Depending on the iOS version it is named 'BackButton' or 'Back'
 NAVIGATION_BAR_BACK_BUTTON = ios_class_chain(
@@ -28,6 +29,13 @@ HID_KEY_LEFT_ARROW = 0x50
 HID_KEY_PRESS_DURATION = 0.005
 # The Info.plist key holding the version of an app, as shown to users
 VERSION_ATTRIBUTE = 'CFBundleShortVersionString'
+# The attribute telling whether an app is installed by the user ('User') or bundled with iOS ('System')
+APPLICATION_TYPE_ATTRIBUTE = 'ApplicationType'
+SYSTEM_APPLICATION_TYPE = 'System'
+# Where simctl finds apps installed on a simulator. Apps bundled with iOS are found in the simulator runtime instead
+SIMULATOR_USER_APPS_PATH = '/Containers/Bundle/Application/'
+# The exit code of simctl when it cannot find something, such as an app that is not installed
+SIMCTL_NO_SUCH_FILE_EXIT_CODE = 2
 
 def wda_ports(udid: str) -> tuple[int, int]:
     """
@@ -93,6 +101,7 @@ class IOSPumaDriver(PumaDriver):
         """
         super().__init__(udid, app_package, implicit_wait=implicit_wait, appium_server=appium_server, desired_capabilities=desired_capabilities)
         self._back_buttons = []
+        self._cached_device_info = None
 
     def _set_device_options(self, udid: str):
         self.options.wda_local_port, self.options.mjpeg_server_port = wda_ports(udid)
@@ -101,11 +110,19 @@ class IOSPumaDriver(PumaDriver):
     def bundle_id(self) -> str:
         return self.app_package
 
+    def _device_info(self) -> dict:
+        """
+        :return: The device info of Appium. Looked up once, as it does not change during a session.
+        """
+        if self._cached_device_info is None:
+            self._cached_device_info = self.execute_script('mobile: deviceInfo')
+        return self._cached_device_info
+
     def is_simulator(self) -> bool:
         """
         :return: True if the device is a simulator, False if it is a real device.
         """
-        return bool(self.execute_script('mobile: deviceInfo').get('isSimulator'))
+        return bool(self._device_info().get('isSimulator'))
 
     @staticmethod
     def _default_options() -> XCUITestOptions:
@@ -113,39 +130,82 @@ class IOSPumaDriver(PumaDriver):
 
     def get_app_version(self, app_id: str = None) -> str | None:
         """
-        Returns the version (CFBundleShortVersionString) of an installed app.
+        Returns the version (CFBundleShortVersionString) of an installed app. Apps that are bundled with iOS, such as
+        Settings and Messages, do not consistently report a version of their own, so for those the iOS version of the
+        device is returned instead.
 
-        On real devices this uses Appium. Appium cannot list apps on simulators, so there the Info.plist of the app is
-        read using `xcrun simctl`, which only works if Puma runs on the same machine as the simulator.
+        On real devices this uses Appium. Appium cannot list apps on simulators, so there `xcrun simctl` is used, which
+        only works if Puma runs on the same Mac as the simulator.
 
         :param app_id: The bundle id of the app. Defaults to the app of this driver.
-        :return: The version, or None if the app is not installed or its version cannot be determined.
+        :return: The version, or None if the app is not installed.
+        :raises AppVersionUnavailable: if the version cannot be looked up.
         """
         bundle_id = app_id or self.app_package
-        if self.is_simulator():
-            return self._simulator_app_version(bundle_id)
-        for application_type in ('User', 'System'):
-            apps = self.execute_script('mobile: listApps', {
-                'applicationType': application_type, 'returnAttributes': [VERSION_ATTRIBUTE]})
-            version = (apps or {}).get(bundle_id, {}).get(VERSION_ATTRIBUTE)
-            if version:
-                return version
-        return None
-
-    def _simulator_app_version(self, bundle_id: str) -> str | None:
         try:
-            app_path = subprocess.run(['xcrun', 'simctl', 'get_app_container', self.udid, bundle_id, 'app'],
-                                      capture_output=True, text=True, check=True, timeout=30).stdout.strip()
-            with open(os.path.join(app_path, 'Info.plist'), 'rb') as info_plist:
-                return plistlib.load(info_plist).get(VERSION_ATTRIBUTE)
-        except (OSError, subprocess.SubprocessError, plistlib.InvalidFileException):
-            return None
+            app = self._simulator_app(bundle_id) if self.is_simulator() else self._device_app(bundle_id)
+            if app is None:
+                return None
+            version, bundled_with_ios = app
+            if bundled_with_ios:
+                return self._ios_version()
+            if not version:
+                raise AppVersionUnavailable(f'{bundle_id} does not report a version')
+            return version
+        except WebDriverException as e:
+            raise AppVersionUnavailable(f'Appium could not look up the version of {bundle_id}: {e.msg}') from e
 
-    def _version_for_supported_check(self) -> str | None:
-        # Apple's own apps are versioned with iOS, so the supported version of those is an iOS version
-        if self.app_package.startswith('com.apple.'):
-            return self.driver.capabilities.get('platformVersion')
-        return self.get_app_version()
+    def _device_app(self, bundle_id: str) -> tuple[str | None, bool] | None:
+        """
+        :return: The version of the app and whether it is bundled with iOS, or None if the app is not installed.
+        """
+        apps = self.execute_script('mobile: listApps', {
+            'applicationType': 'Any', 'returnAttributes': [VERSION_ATTRIBUTE, APPLICATION_TYPE_ATTRIBUTE]}) or {}
+        app = apps.get(bundle_id)
+        if app is None:
+            return None
+        return app.get(VERSION_ATTRIBUTE), app.get(APPLICATION_TYPE_ATTRIBUTE) == SYSTEM_APPLICATION_TYPE
+
+    def _simulator_app(self, bundle_id: str) -> tuple[str | None, bool] | None:
+        """
+        :return: The version of the app and whether it is bundled with iOS, or None if the app is not installed.
+        """
+        result = self._simctl('get_app_container', self.udid, bundle_id, 'app')
+        if result.returncode == SIMCTL_NO_SUCH_FILE_EXIT_CODE:
+            return None
+        if result.returncode != 0:
+            raise AppVersionUnavailable(f'simctl could not find the app {bundle_id}: {result.stderr.strip()}')
+        app_path = result.stdout.strip()
+        try:
+            with open(os.path.join(app_path, 'Info.plist'), 'rb') as info_plist:
+                version = plistlib.load(info_plist).get(VERSION_ATTRIBUTE)
+        except (OSError, plistlib.InvalidFileException) as e:
+            raise AppVersionUnavailable(f'Could not read the Info.plist of {bundle_id}: {e}') from e
+        # Apps installed on a simulator live in the data of the simulator, apps bundled with iOS in the runtime
+        return version, SIMULATOR_USER_APPS_PATH not in app_path
+
+    def _ios_version(self) -> str:
+        """
+        :return: The iOS version that is actually installed on the device. The platformVersion capability cannot be used
+        for this, as Appium uses it as given by the user and does not check it against the device.
+        """
+        if self.is_simulator():
+            version = self._simctl('getenv', self.udid, 'SIMULATOR_RUNTIME_VERSION').stdout.strip()
+        else:
+            version = self._device_info().get('lockdownInfo', {}).get('ProductVersion')
+        if not version:
+            raise AppVersionUnavailable('Could not determine the iOS version of the device')
+        return version
+
+    @staticmethod
+    def _simctl(*args: str) -> subprocess.CompletedProcess:
+        if shutil.which('xcrun') is None:
+            raise AppVersionUnavailable('xcrun is not available. The version of apps on a simulator can only be looked '
+                                        'up when Puma runs on the same Mac as the simulator')
+        try:
+            return subprocess.run(['xcrun', 'simctl', *args], capture_output=True, text=True, timeout=30)
+        except subprocess.SubprocessError as e:
+            raise AppVersionUnavailable(f'simctl failed: {e}') from e
 
     def app_open(self) -> bool:
         return self.driver.query_app_state(self.app_package) == ApplicationState.RUNNING_IN_FOREGROUND

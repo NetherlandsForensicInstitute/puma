@@ -36,6 +36,13 @@ class Platform(Enum):
     IOS = 'iOS'
 
 
+class AppVersionUnavailable(Exception):
+    """
+    Raised when the version of an app cannot be looked up. This is different from an app that is not installed, for
+    which the lookup succeeds and returns None.
+    """
+
+
 class PumaClickException(Exception):
     """
     Custom exception for handling errors related to clicking actions in the PumaDriver.
@@ -135,41 +142,14 @@ class PumaDriver:
     @abstractmethod
     def get_app_version(self, app_id: str = None) -> str | None:
         """
-        Returns the version of an app installed on the device.
+        Returns the version of an app installed on the device. This is the version as reported by the app, except for
+        apps that are bundled with the OS (iOS), whose version is the OS version.
 
         :param app_id: The package name (Android) or bundle id (iOS) of the app. Defaults to the app of this driver.
-        :return: The version name, or None if the app is not installed or its version cannot be determined.
+        :return: The version, or None if the app is not installed.
+        :raises AppVersionUnavailable: if the version cannot be looked up, for example because adb is not available.
         """
         pass
-
-    def _version_for_supported_check(self) -> str | None:
-        """
-        :return: The version that is compared to the `supported_version` of an app.
-        """
-        return self.get_app_version()
-
-    def check_supported_version(self, supported_version: str):
-        """
-        Logs a warning when the installed version of the app differs from the version Puma supports for it. Never
-        raises, as a failing version lookup should not prevent the app from being used.
-
-        :param supported_version: The version supported by Puma, as set with @supported_version.
-        """
-        try:
-            installed_version = self._version_for_supported_check()
-        except Exception as e:
-            logger.warning(f'Could not determine the installed version of {self.app_package}: {e}')
-            return
-        if installed_version is None:
-            message = (f'Could not determine the installed version of {self.app_package}. '
-                       f'Puma supports version {supported_version}')
-        elif installed_version != supported_version:
-            message = (f'Installed version {installed_version} of {self.app_package} differs from the supported '
-                       f'version {supported_version}. Puma may not work as expected')
-        else:
-            return
-        logger.warning(message)
-        self.gtl_logger.warning(message)
 
     @staticmethod
     @abstractmethod

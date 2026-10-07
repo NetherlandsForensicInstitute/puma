@@ -1,9 +1,11 @@
+import re
 from typing import Dict
 
 from appium.options.android import UiAutomator2Options
 from appium.webdriver.extensions.android.nativekey import AndroidKey
 
-from puma.state_graph.puma_driver import PumaDriver, Platform, KEYCODE_ENTER, KEYCODE_BACKSPACE, KEYCODE_LEFT_ARROW
+from puma.state_graph.puma_driver import PumaDriver, Platform, AppVersionUnavailable, KEYCODE_ENTER, KEYCODE_BACKSPACE, \
+    KEYCODE_LEFT_ARROW
 
 
 def get_android_default_options() -> UiAutomator2Options:
@@ -54,14 +56,17 @@ class AndroidPumaDriver(PumaDriver):
 
         :param app_id: The package name of the app. Defaults to the app of this driver.
         :return: The version name, or None if the app is not installed.
+        :raises AppVersionUnavailable: if adb fails, for example because it is not on the PATH or the device is offline.
         """
-        try:
-            # An app can have multiple versionName entries (e.g. an updated system app also lists its original
-            # version). The first is the active one.
-            versions = self.adb.package_versions(app_id or self.app_package)
-        except Exception:
-            return None
-        return versions[0].strip() if versions else None
+        package = app_id or self.app_package
+        result = self.adb.shell(f'dumpsys package {package}')
+        if not result.success:
+            raise AppVersionUnavailable(f'adb could not get the package info of {package}: '
+                                        f'{(result.stderr or result.stdout).strip()}')
+        # An app can have multiple versionName entries (e.g. an updated system app also lists its original version).
+        # The first is the active one.
+        match = re.search(r'^\s*versionName=(.*)$', result.stdout, re.MULTILINE)
+        return match.group(1).strip() if match else None
 
     def app_open(self) -> bool:
         return str(self.driver.current_package) == self.app_package
