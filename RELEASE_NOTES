@@ -2,6 +2,7 @@ Version 6.1.0
 -------------
 242. iOS: Add App Store support, to install, update and uninstall apps
 228. Google Play Store: support newest version 53.4.34-34
+261. Add a generic wait_until helper, and use it in the Play Store, iOS Messages and WhatsApp Business
 
 Version 6.0.0
 -------------
