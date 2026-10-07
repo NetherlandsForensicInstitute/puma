@@ -1,5 +1,6 @@
 import re
 from enum import Enum
+from time import sleep, time
 
 import requests
 
@@ -16,6 +17,8 @@ LOOKUP_URL = 'https://itunes.apple.com/lookup'
 DEFAULT_COUNTRY = 'nl'
 # The number of seconds to wait for a screen to load
 SCREEN_TIMEOUT = 10
+# The number of seconds to wait for a download to start, or for a confirmation to be asked
+DOWNLOAD_START_TIMEOUT = 8
 _OFFER_STATE = re.compile(r'^AppStore\.offerButton\[state=(?P<state>[^\]]+)\]$')
 
 
@@ -204,6 +207,29 @@ class AppStore(StateGraph):
         """
         return self._get_app_state_internal()
 
+    def _confirm_download(self, bundle_id: str):
+        """
+        Waits until the download has started after clicking Get. The first time an app is downloaded, iOS shows a sheet
+        to confirm the download. If it has an Install button, this method clicks it. If it asks to confirm with the side
+        button, Face ID or a password, Puma cannot do that, so the sheet is closed.
+        :param bundle_id: The bundle id of the application.
+        :raises AppStoreError: If the download needs a confirmation Puma cannot give.
+        """
+        end = time() + DOWNLOAD_START_TIMEOUT
+        while time() < end:
+            if self.driver.is_present(CONFIRMATION_SHEET):
+                if self.driver.is_present(CONFIRMATION_SHEET_INSTALL):
+                    self.gtl_logger.info(f'Confirming the download of {bundle_id}')
+                    self.driver.click(CONFIRMATION_SHEET_INSTALL)
+                else:
+                    self.driver.click(CONFIRMATION_SHEET_CLOSE)
+                    raise AppStoreError(f'Could not install app {bundle_id}, iOS asked to confirm the download with the '
+                                        f'side button, Face ID or a password. Turn this off for downloads, see the '
+                                        f'README of the App Store.')
+            elif self.driver.is_present(OFFER_BUTTON_STARTED):
+                return
+            sleep(0.5)
+
     @action(app_page_state)
     def install_app(self, bundle_id: str):
         """
@@ -213,7 +239,8 @@ class AppStore(StateGraph):
         Puma cannot confirm the installation with Face ID, Touch ID or a password. Turn these off for free downloads,
         see the README.
         :param bundle_id: The bundle id of the application.
-        :raises AppStoreError: If the install state of the app cannot be determined.
+        :raises AppStoreError: If the install state of the app cannot be determined, or if iOS asks for a
+        confirmation Puma cannot give.
         """
         app_state = self._get_app_state_internal()
         if app_state == AppState.UNKNOWN:
@@ -222,6 +249,7 @@ class AppStore(StateGraph):
             self.gtl_logger.warn(f'Tried to install app {bundle_id}, but it was already installed')
             return
         self.driver.click(OFFER_BUTTON)
+        self._confirm_download(bundle_id)
 
     @action(app_page_state)
     def update_app(self, bundle_id: str):

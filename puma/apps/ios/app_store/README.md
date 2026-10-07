@@ -14,14 +14,17 @@ The App Store is part of iOS, so its version is the iOS version.
 - Device language needs to be set to English
 - The machine running Puma has an internet connection. Puma uses it to look up the App Store id of an app, which it
   needs to open the page of the app.
-- Puma cannot enter a password, or confirm with Face ID or Touch ID. Turn these off for free downloads, so Puma can
-  install apps without being stopped by a confirmation:
+- Puma cannot enter a password, or confirm with the side button, Face ID or Touch ID. Turn these off for free
+  downloads, so Puma can install apps without being stopped by a confirmation:
   1. Open Settings, tap your name (Apple Account) at the top, tap Media & Purchases, and tap Password Settings. Turn
      off the toggle next to *Require Password* under *Free Downloads*.
-  2. If your device asks for Face ID or Touch ID on downloads: Settings > Face ID & Passcode (or Touch ID & Passcode),
-     and turn off *iTunes & App Store*.
+  2. Settings > Face ID & Passcode (or Touch ID & Passcode), and turn off *iTunes & App Store*.
 
-  Paid apps always need a confirmation, so Puma cannot install them.
+  The first time an app is downloaded, iOS shows a sheet to confirm the download. With step 2, it has an *Install*
+  button, which Puma clicks. Without step 2, the sheet asks to *Double Click to Install* with the side button. If iOS
+  still asks for the password of your Apple Account after the Install button (check step 1), Puma cannot continue: it
+  closes the sheet and raises an `AppStoreError`. Apps that were downloaded before (shown as *Redownload*) are
+  installed without a sheet. Paid apps always need a confirmation, so Puma cannot install them.
 
 ## Initialization
 

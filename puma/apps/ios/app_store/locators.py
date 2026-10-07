@@ -22,3 +22,15 @@ BACK_BUTTON = accessibility_id('BackButton')
 # button in the top lockup is used.
 OFFER_BUTTON = ios_class_chain('**/XCUIElementTypeCell[`name BEGINSWITH "AppStore.shelfItem.productTopLockup"`]'
                                '/**/XCUIElementTypeButton[`name BEGINSWITH "AppStore.offerButton[state="`]')
+# The first time an app is downloaded, iOS shows a sheet to confirm the download. This sheet is shown by iOS, not by the
+# App Store.
+CONFIRMATION_SHEET = accessibility_id('payment-sheet')
+# With Face ID and Touch ID turned off for downloads, the sheet only has an Install button. Otherwise, the footer is a
+# text asking to confirm with the side button (or Face ID), which is no button.
+CONFIRMATION_SHEET_INSTALL = ios_predicate('type == "XCUIElementTypeButton" AND name == "footer"')
+CONFIRMATION_SHEET_CLOSE = accessibility_id('dismiss')
+# The offer button, once the download has started or the app is installed
+OFFER_BUTTON_STARTED = ios_class_chain(
+    '**/XCUIElementTypeCell[`name BEGINSWITH "AppStore.shelfItem.productTopLockup"`]'
+    '/**/XCUIElementTypeButton[`name BEGINSWITH "AppStore.offerButton[state=" AND (name CONTAINS "downloading" OR '
+    'name CONTAINS "installing" OR name CONTAINS "open")`]')

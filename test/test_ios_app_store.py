@@ -2,7 +2,8 @@ import unittest
 from unittest.mock import Mock, patch
 
 from puma.apps.ios.app_store.app_store import SCREEN_TIMEOUT, AppPage, AppState, AppStore, AppStoreError, lookup_app_store_id
-from puma.apps.ios.app_store.locators import OFFER_BUTTON
+from puma.apps.ios.app_store.locators import CONFIRMATION_SHEET, CONFIRMATION_SHEET_CLOSE, \
+    CONFIRMATION_SHEET_INSTALL, OFFER_BUTTON, OFFER_BUTTON_STARTED
 
 
 def _lookup_response(results: list) -> Mock:
@@ -115,6 +116,45 @@ class TestUnknownState(unittest.TestCase):
         func = next(cell.cell_contents for cell in getattr(AppStore, method).__closure__
                     if callable(cell.cell_contents) and getattr(cell.cell_contents, '__name__', '') == method)
         func(self.app_store, 'com.example.app')
+
+
+class TestConfirmation(unittest.TestCase):
+    def setUp(self):
+        self.app_store = AppStore.__new__(AppStore)
+        self.app_store.driver = Mock()
+        self.app_store.gtl_logger = Mock()
+
+    def _present(self, *present):
+        self.app_store.driver.is_present.side_effect = lambda locator: locator in present
+
+    @patch('puma.apps.ios.app_store.app_store.sleep')
+    def test_sheet_with_install_button_is_confirmed(self, _):
+        # the sheet is shown first, after confirming the download starts
+        shown = [CONFIRMATION_SHEET, CONFIRMATION_SHEET_INSTALL]
+        self.app_store.driver.is_present.side_effect = lambda locator: locator in shown
+        self.app_store.driver.click.side_effect = lambda locator: shown.clear() or shown.append(OFFER_BUTTON_STARTED)
+        self.app_store._confirm_download('com.example.app')
+        self.app_store.driver.click.assert_called_once_with(CONFIRMATION_SHEET_INSTALL)
+
+    @patch('puma.apps.ios.app_store.app_store.sleep')
+    def test_sheet_with_side_button_is_closed(self, _):
+        self._present(CONFIRMATION_SHEET)
+        with self.assertRaises(AppStoreError):
+            self.app_store._confirm_download('com.example.app')
+        self.app_store.driver.click.assert_called_once_with(CONFIRMATION_SHEET_CLOSE)
+
+    @patch('puma.apps.ios.app_store.app_store.sleep')
+    def test_download_started(self, _):
+        self._present(OFFER_BUTTON_STARTED)
+        self.app_store._confirm_download('com.example.app')
+        self.app_store.driver.click.assert_not_called()
+
+    @patch('puma.apps.ios.app_store.app_store.sleep')
+    @patch('puma.apps.ios.app_store.app_store.time', side_effect=[0, 1, 5, 9])
+    def test_nothing_happens(self, *_):
+        self._present()
+        self.app_store._confirm_download('com.example.app')
+        self.app_store.driver.click.assert_not_called()
 
 
 class TestAppState(unittest.TestCase):
