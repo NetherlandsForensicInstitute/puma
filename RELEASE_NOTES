@@ -1,11 +1,11 @@
 Version 6.1.0
 -------------
+242. iOS: Add App Store support, to install, update and uninstall apps
 228. Google Play Store: support newest version 53.4.34-34
 
 Version 6.0.0
 -------------
 24. iOS: Add iOS support, with Settings and Messages. StateGraph apps must set their platform
-242. iOS: Add App Store support, to install, update and uninstall apps
 
 Version 5.1.1
 -------------
