@@ -29,7 +29,9 @@ class TeleGramChatState(SimpleState, ContextualState):
     def go_to_chat(driver: PumaDriver, conversation: str):
         if not conversation:
             raise ValueError(f'Cannot open a conversation without a conversation name')
-        driver.click(CHAT_OVERVIEW_SEARCH_BUTTON)
+        # depending on the scroll position, the search field is either shown inline or behind the search button
+        if not driver.is_present(SEARCH_INPUT_FIELD):
+            driver.click(CHAT_OVERVIEW_SEARCH_BUTTON)
         driver.send_keys(SEARCH_INPUT_FIELD, conversation)
         driver.click(FIRST_SEARCH_HIT.format(conversation=conversation))
 
@@ -60,7 +62,7 @@ class TelegramChatSettingsState(SimpleState, ContextualState):
         driver.click(CHAT_STATE_CONVERSATION_NAME.format(conversation=conversation))
 
 
-@supported_version("12.0.1")
+@supported_version("12.10.6")
 class Telegram(StateGraph):
     """
     A class representing a state graph for managing UI states and transitions in the Telegram Messenger application.
@@ -70,7 +72,7 @@ class Telegram(StateGraph):
     and handle unexpected states or errors.
     """
     conversations_state = SimpleState(
-        [CHAT_OVERVIEW_NEW_MESSAGE_BUTTON, CHAT_OVERVIEW_SEARCH_BUTTON, CHAT_OVERVIEW_NAV_MENU_BUTTON],
+        [CHAT_OVERVIEW_NEW_MESSAGE_BUTTON, CHAT_OVERVIEW_CHATS_TAB],
         initial_state=True)
     chat_state = TeleGramChatState(parent_state=conversations_state)
     chat_settings_state = TelegramChatSettingsState(parent_state=chat_state)
@@ -85,8 +87,7 @@ class Telegram(StateGraph):
          SEND_FROM_GALLERY_THREE_DOTS_BUTTON, SEND_FROM_GALLERY_MEDIA_SWITCH.format(index=1)],
         parent_state=chat_state)  # pressing back goes to the chat state
     new_message_state = SimpleState(
-        [NEW_MESSAGE_STATE_NEW_GROUP_BUTTON, NEW_MESSAGE_STATE_NEW_CONTACT_BUTTON, NEW_MESSAGE_STATE_NEW_CHANNEL_BUTTON,
-         NEW_MESSAGE_STATE_CREATE_NEW_CONTACT_BUTTON],
+        [NEW_MESSAGE_STATE_NEW_GROUP_BUTTON, NEW_MESSAGE_STATE_NEW_CHANNEL_BUTTON, NEW_MESSAGE_STATE_CREATE_NEW_CONTACT_BUTTON],
         parent_state=conversations_state)
 
     conversations_state.to(chat_state, TeleGramChatState.go_to_chat)
@@ -334,7 +335,7 @@ class Telegram(StateGraph):
             except PumaClickException:
                 raise PumaClickException(
                     f'Could not add member {name} as it could not be found in the UI after a search')
-        self.driver.click('//android.widget.ImageView[@content-desc="Next"]')
+        self.driver.click(NEW_GROUP_NEXT)
         self.driver.click('//android.widget.TextView[@text="Add"]')
 
     @action(chat_settings_state)
