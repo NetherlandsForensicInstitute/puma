@@ -10,6 +10,10 @@ from typing_extensions import deprecated
 
 from puma.apps.android import log_action
 from puma.apps.android.appium_actions import AndroidAppiumActions
+from puma.utils.wait import wait_until
+
+# The maximum time to wait for a message to be sent, in seconds
+MESSAGE_SENT_TIMEOUT = 300
 
 
 @deprecated('This class does not use the Puma state machine, and will therefore not be maintained. ' +
@@ -154,9 +158,8 @@ class WhatsAppCommon(AndroidAppiumActions, ABC):
         f"//*[@text='{message_text}']"  # Text field element containing message text
         f"/.."  # Parent of the message (i.e. conversation text row)
         f"//*[@resource-id='{self.app_package}:id/status']")  # Status element
-        while message_status_el.tag_name == "Pending":
-            print("Message pending, waiting for the message to be sent.")
-            sleep(10)
+        wait_until(lambda: message_status_el.tag_name != "Pending", timeout=MESSAGE_SENT_TIMEOUT, interval=10,
+                   description='the message to be sent')
         return message_status_el
 
     @log_action
@@ -469,18 +472,19 @@ class WhatsAppCommon(AndroidAppiumActions, ABC):
             print("On homescreen now")
             # Check if creating the group succeeded
             top_conv = self.driver.find_element(by=AppiumBy.ID, value=f"{self.app_package}:id/single_msg_tv")
-            max_attempts = 20
-            while "Creating" in top_conv.text or "Couldn't create" in top_conv.text:
+
+            def group_created() -> bool:
                 if "Couldn't create" in top_conv.text:
                     print("Couldn't create. Tapping to retry")
                     top_conv.click()
-                else:
-                    print("Waiting for group to be created.")
-                sleep(5)
-                max_attempts -= 1
-                if max_attempts == 0:
-                    raise TimeoutError(
-                        f"Could not create group after 20 attempts. Try restarting your emulator and try again.")
+                    return False
+                return "Creating" not in top_conv.text
+
+            try:
+                wait_until(group_created, timeout=100, interval=5, description='the group to be created')
+            except TimeoutError as e:
+                raise TimeoutError("Could not create group after 20 attempts. Try restarting your emulator and try "
+                                   "again.") from e
         self.return_to_homescreen()
 
     @log_action
