@@ -45,8 +45,9 @@ class AppVersionUnavailable(Exception):
 
 class AppVersionLookupNotSupported(AppVersionUnavailable):
     """
-    Raised when the version of an app cannot be looked up in this setup, which is expected and not a failure. For example
-    when the version of apps on an iOS simulator is looked up from a machine other than the Mac the simulator runs on.
+    Raised when the version of an app cannot be looked up in this setup, which is expected and not a failure. For
+    example when the version of apps on an iOS simulator is looked up from a machine other than the Mac the simulator
+    runs on.
     """
 
 
