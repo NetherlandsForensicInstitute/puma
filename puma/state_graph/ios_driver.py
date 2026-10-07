@@ -200,8 +200,9 @@ class IOSPumaDriver(PumaDriver):
     @staticmethod
     def _simctl(*args: str) -> subprocess.CompletedProcess:
         if shutil.which('xcrun') is None:
-            raise AppVersionLookupNotSupported('xcrun is not available. The version of apps on a simulator can only be looked '
-                                        'up when Puma runs on the same Mac as the simulator')
+            raise AppVersionLookupNotSupported(
+                'xcrun is not available. The version of apps on a simulator can only be looked up when Puma runs on '
+                'the same Mac as the simulator')
         try:
             return subprocess.run(['xcrun', 'simctl', *args], capture_output=True, text=True, timeout=30)
         except subprocess.SubprocessError as e:
