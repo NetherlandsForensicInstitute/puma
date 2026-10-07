@@ -87,6 +87,6 @@ if __name__ == '__main__':
         try:
             puma_repo.create_tag(app_version_tag)
             origin.push(app_version_tag)
-            print("Successfully created tag {app_version_tag}.")
+            print(f"Successfully created tag {app_version_tag}.")
         except Exception as e:
             print(f"Something went wrong when creating or pushing the tag {app_version_tag}.")
