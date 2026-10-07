@@ -70,8 +70,13 @@ This state can have the following values:
 4. `INSTALLING`: the app is being installed or updated. The App Store does not show which of the two.
 5. `UNKNOWN`: An unknown state Puma does not recognize
 
-Installing and updating apps takes a while. The methods return when the download is started, so use `get_app_state` to
-wait until the app is `INSTALLED`.
+`install_app` and `update_app` wait until the app is really installed or updated, which can take a while. If this takes
+longer than `timeout` seconds (default 120), a `TimeoutError` is raised. Puma tries a failed action a second time, so
+it can take twice as long before the error reaches you. Use a larger timeout for big apps or a slow connection:
+```python
+phone.install_app('com.duolingo.DuolingoMobile', timeout=300)
+```
+If the app is already being installed, they wait for that installation to finish. `update_all_apps` does not wait.
 
 ### Updating all apps
 

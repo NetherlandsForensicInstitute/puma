@@ -4,6 +4,7 @@ from unittest.mock import Mock, patch
 from puma.apps.ios.app_store.app_store import SCREEN_TIMEOUT, AppPage, AppState, AppStore, AppStoreError, lookup_app_store_id
 from puma.apps.ios.app_store.locators import CONFIRMATION_SHEET, CONFIRMATION_SHEET_CLOSE, \
     CONFIRMATION_SHEET_INSTALL, OFFER_BUTTON, OFFER_BUTTON_STARTED
+from puma.utils.wait import wait_until
 
 
 def _lookup_response(results: list) -> Mock:
@@ -162,6 +163,65 @@ class TestConfirmation(unittest.TestCase):
         self._present()
         self.app_store._confirm_download('com.example.app')
         self.app_store.driver.click.assert_not_called()
+
+
+class TestWaitForInstallation(unittest.TestCase):
+    def setUp(self):
+        self.app_store = AppStore.__new__(AppStore)
+        self.app_store.driver = Mock()
+        self.app_store.gtl_logger = Mock()
+        self.app_store._confirm_download = Mock()
+        # the wait is run by the driver, which is a mock here. Run it with the real implementation.
+        self.app_store.driver.wait_until.side_effect = lambda condition, timeout, **kwargs: wait_until(condition, timeout, interval=0)
+
+    def _install_action(self, method: str):
+        # the method inside the @action decorator, so no state of the App Store is needed
+        func = next(cell.cell_contents for cell in getattr(AppStore, method).__closure__
+                    if callable(cell.cell_contents) and getattr(cell.cell_contents, '__name__', '') == method)
+        return lambda *args, **kwargs: func(self.app_store, *args, **kwargs)
+
+    def _states(self, *states: AppState):
+        self.app_store._get_app_state_internal = Mock(side_effect=list(states))
+
+    def test_install_waits_until_installed(self):
+        self._states(AppState.NOT_INSTALLED, AppState.NOT_INSTALLED, AppState.INSTALLING, AppState.UNKNOWN,
+                     AppState.INSTALLING, AppState.INSTALLED)
+        self._install_action('install_app')('com.example.app')
+        self.app_store.driver.click.assert_called_once_with(OFFER_BUTTON)
+        self.assertEqual(6, self.app_store._get_app_state_internal.call_count)
+
+    def test_install_confirms_the_download_before_waiting(self):
+        self._states(AppState.NOT_INSTALLED, AppState.INSTALLED)
+        self._install_action('install_app')('com.example.app')
+        self.app_store._confirm_download.assert_called_once_with('com.example.app')
+
+    def test_install_waits_for_installation_in_progress(self):
+        self._states(AppState.INSTALLING, AppState.INSTALLING, AppState.INSTALLED)
+        self._install_action('install_app')('com.example.app')
+        self.app_store.driver.click.assert_not_called()
+
+    def test_install_times_out(self):
+        self.app_store._get_app_state_internal = Mock(return_value=AppState.INSTALLING)
+        self.app_store.driver.wait_until.side_effect = lambda condition, timeout, **kwargs: wait_until(condition, 0.05, interval=0.01)
+        with self.assertRaises(TimeoutError):
+            self._install_action('install_app')('com.example.app', timeout=0.05)
+
+    def test_install_installed_app_does_not_wait(self):
+        self._states(AppState.INSTALLED)
+        self._install_action('install_app')('com.example.app')
+        self.app_store.driver.click.assert_not_called()
+        self.app_store.driver.wait_until.assert_not_called()
+
+    def test_update_waits_until_installed(self):
+        self._states(AppState.UPDATE_AVAILABLE, AppState.UPDATE_AVAILABLE, AppState.INSTALLING, AppState.INSTALLED)
+        self._install_action('update_app')('com.example.app')
+        self.app_store.driver.click.assert_called_once_with(OFFER_BUTTON)
+
+    def test_update_without_update_does_not_wait(self):
+        self._states(AppState.INSTALLED)
+        self._install_action('update_app')('com.example.app')
+        self.app_store.driver.click.assert_not_called()
+        self.app_store.driver.wait_until.assert_not_called()
 
 
 class TestAppState(unittest.TestCase):

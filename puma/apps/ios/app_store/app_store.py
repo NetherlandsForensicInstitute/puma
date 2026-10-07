@@ -18,6 +18,9 @@ LOOKUP_URL = 'https://itunes.apple.com/lookup'
 SCREEN_TIMEOUT = 10
 # The number of seconds to wait for a download to start, or for a confirmation to be asked
 DOWNLOAD_START_TIMEOUT = 8
+# The default number of seconds to wait for an installation or update. An action is tried twice when it fails, so a
+# timeout makes the action take twice as long.
+INSTALL_TIMEOUT = 120
 _OFFER_STATE = re.compile(r'^AppStore\.offerButton\[state=(?P<state>[^\]]+)\]$')
 
 
@@ -182,21 +185,35 @@ class AppStore(StateGraph):
         StateGraph.__init__(self, device_udid, APP_STORE_BUNDLE_ID, **kwargs)
         self.app_page_state.countries[device_udid] = country
 
-    def _get_app_state_internal(self) -> AppState:
+    def _get_app_state_internal(self, log_unknown: bool = True) -> AppState:
         """
         Util method for @action methods on the app_page_state.
+        :param log_unknown: Whether to log an error when the state cannot be determined.
         :return the AppState of the application page, based on the offer button.
         """
         if not self.driver.is_present(OFFER_BUTTON, SCREEN_TIMEOUT):
-            logger.error('Could not find the offer button of the current app.')
+            if log_unknown:
+                logger.error('Could not find the offer button of the current app.')
             return AppState.UNKNOWN
         name = self.driver.get_element(OFFER_BUTTON).get_attribute('name')
         match = _OFFER_STATE.match(name)
         app_state = _APP_STATES.get(match.group('state') if match else None)
         if not app_state:
-            logger.error(f'Could not determine the install state of the current app, the offer button is {name}.')
+            if log_unknown:
+                logger.error(f'Could not determine the install state of the current app, the offer button is {name}.')
             return AppState.UNKNOWN
         return app_state
+
+    def _wait_for_installation(self, bundle_id: str, timeout: int):
+        """
+        Waits until an installation or update has finished, which is when the offer button of the app page shows Open.
+        An unknown state is regarded as not finished, as the offer button is briefly replaced while it changes.
+        :param bundle_id: The bundle id of the application.
+        :param timeout: The maximum time to wait, in seconds.
+        :raises TimeoutError: If the installation or update did not finish within the timeout.
+        """
+        self.driver.wait_until(lambda: self._get_app_state_internal(log_unknown=False) == AppState.INSTALLED,
+                               timeout, description=f'app {bundle_id} to be installed')
 
     @action(app_page_state)
     def get_app_state(self, bundle_id: str) -> AppState:
@@ -233,41 +250,55 @@ class AppStore(StateGraph):
             sleep(0.5)
 
     @action(app_page_state)
-    def install_app(self, bundle_id: str):
+    def install_app(self, bundle_id: str, timeout: int = INSTALL_TIMEOUT):
         """
-        Installs the given application. If the application is already installed (or is being installed) this method
-        will log a warning and do nothing.
+        Installs the given application, and waits until it has been installed. If the application is already installed
+        this method will log a warning and do nothing. If it is being installed, this method waits until it has been
+        installed.
 
         Puma cannot confirm the installation with Face ID, Touch ID or a password. Turn these off for free downloads,
         see the README.
         :param bundle_id: The bundle id of the application.
+        :param timeout: The maximum time to wait for the installation to finish, in seconds.
         :raises AppStoreError: If the install state of the app cannot be determined, or if iOS asks for a
         confirmation Puma cannot give.
+        :raises TimeoutError: If the installation did not finish within the timeout.
         """
         app_state = self._get_app_state_internal()
         if app_state == AppState.UNKNOWN:
             raise AppStoreError(f'Could not install app {bundle_id}, its install state is unknown')
+        if app_state == AppState.INSTALLING:
+            self._wait_for_installation(bundle_id, timeout)
+            return
         # Not only INSTALLED: with UPDATE_AVAILABLE the offer button is the Update button, which must not be clicked here
         if app_state != AppState.NOT_INSTALLED:
             self.gtl_logger.warn(f'Tried to install app {bundle_id}, but it was already installed')
             return
         self.driver.click(OFFER_BUTTON)
         self._confirm_download(bundle_id)
+        self._wait_for_installation(bundle_id, timeout)
 
     @action(app_page_state)
-    def update_app(self, bundle_id: str):
+    def update_app(self, bundle_id: str, timeout: int = INSTALL_TIMEOUT):
         """
-        Updates the given application. If no update is available this method will log a warning and do nothing.
+        Updates the given application, and waits until it has been updated. If no update is available this method will
+        log a warning and do nothing. If it is being updated, this method waits until it has been updated.
         :param bundle_id: The bundle id of the application.
+        :param timeout: The maximum time to wait for the update to finish, in seconds.
         :raises AppStoreError: If the install state of the app cannot be determined.
+        :raises TimeoutError: If the update did not finish within the timeout.
         """
         app_state = self._get_app_state_internal()
         if app_state == AppState.UNKNOWN:
             raise AppStoreError(f'Could not update app {bundle_id}, its install state is unknown')
+        if app_state == AppState.INSTALLING:
+            self._wait_for_installation(bundle_id, timeout)
+            return
         if app_state != AppState.UPDATE_AVAILABLE:
             self.gtl_logger.warn(f'Tried to update app {bundle_id}, but there is no update available')
             return
         self.driver.click(OFFER_BUTTON)
+        self._wait_for_installation(bundle_id, timeout)
 
     def uninstall_app(self, bundle_id: str):
         """
