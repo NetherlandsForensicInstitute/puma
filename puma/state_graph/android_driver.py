@@ -6,6 +6,7 @@ from appium.webdriver.extensions.android.nativekey import AndroidKey
 
 from puma.state_graph.puma_driver import PumaDriver, Platform, AppVersionUnavailable, KEYCODE_ENTER, KEYCODE_BACKSPACE, \
     KEYCODE_LEFT_ARROW
+from puma.state_graph.utils import is_valid_package_name
 
 
 def get_android_default_options() -> UiAutomator2Options:
@@ -56,9 +57,13 @@ class AndroidPumaDriver(PumaDriver):
 
         :param app_id: The package name of the app. Defaults to the app of this driver.
         :return: The version name, or None if the app is not installed.
+        :raises ValueError: if the package name is invalid.
         :raises AppVersionUnavailable: if adb fails, for example because it is not on the PATH or the device is offline.
         """
         package = app_id or self.app_package
+        # The package name is used in a shell command on the device
+        if not is_valid_package_name(package):
+            raise ValueError(f'Invalid package name: {package}')
         result = self.adb.shell(f'dumpsys package {package}')
         if not result.success:
             raise AppVersionUnavailable(f'adb could not get the package info of {package}: '

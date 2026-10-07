@@ -12,7 +12,7 @@ from appium.webdriver.applicationstate import ApplicationState
 from selenium.common import WebDriverException
 
 from puma.state_graph.locators import ios_class_chain, to_by_value
-from puma.state_graph.puma_driver import PumaDriver, Platform, AppVersionUnavailable
+from puma.state_graph.puma_driver import PumaDriver, Platform, AppVersionUnavailable, AppVersionLookupNotSupported
 
 # The back button in a UINavigationBar. Depending on the iOS version it is named 'BackButton' or 'Back'
 NAVIGATION_BAR_BACK_BUTTON = ios_class_chain(
@@ -200,7 +200,7 @@ class IOSPumaDriver(PumaDriver):
     @staticmethod
     def _simctl(*args: str) -> subprocess.CompletedProcess:
         if shutil.which('xcrun') is None:
-            raise AppVersionUnavailable('xcrun is not available. The version of apps on a simulator can only be looked '
+            raise AppVersionLookupNotSupported('xcrun is not available. The version of apps on a simulator can only be looked '
                                         'up when Puma runs on the same Mac as the simulator')
         try:
             return subprocess.run(['xcrun', 'simctl', *args], capture_output=True, text=True, timeout=30)

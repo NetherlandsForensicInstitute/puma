@@ -10,7 +10,8 @@ from selenium.common import WebDriverException
 
 from puma.apps.android.google_play_store.google_play_store import GooglePlayStore
 from puma.state_graph.ios_driver import VERSION_ATTRIBUTE, APPLICATION_TYPE_ATTRIBUTE
-from puma.state_graph.puma_driver import PumaDriver, Platform, AppVersionUnavailable, supported_version
+from puma.state_graph.puma_driver import PumaDriver, Platform, AppVersionUnavailable, AppVersionLookupNotSupported, \
+    supported_version
 from puma.state_graph.state import SimpleState
 from puma.state_graph.state_graph import StateGraph
 
@@ -60,6 +61,11 @@ class TestAndroidAppVersion(unittest.TestCase):
     def test_not_installed(self):
         self.driver.adb.shell.return_value = _adb_result('')
         self.assertIsNone(self.driver.get_app_version())
+
+    def test_invalid_package_name_is_not_used_in_a_command(self):
+        with self.assertRaises(ValueError):
+            self.driver.get_app_version('com.x; pm clear com.whatsapp')
+        self.driver.adb.shell.assert_not_called()
 
     def test_adb_failure_is_not_the_same_as_not_installed(self):
         self.driver.adb.shell.return_value = _adb_result(stderr='/bin/sh: adb: command not found', success=False)
@@ -173,7 +179,7 @@ class TestIOSSimulatorAppVersion(unittest.TestCase):
 
     def test_without_xcrun(self):
         with patch('shutil.which', return_value=None), patch('subprocess.run') as run:
-            with self.assertRaisesRegex(AppVersionUnavailable, 'same Mac'):
+            with self.assertRaisesRegex(AppVersionLookupNotSupported, 'same Mac'):
                 self.driver.get_app_version()
         run.assert_not_called()
 
@@ -237,10 +243,15 @@ class TestCheckSupportedVersion(unittest.TestCase):
         self.assertEqual([logging.WARNING], [record.levelno for record in records])
         self.assertIn('not installed', records[0].getMessage())
 
-    def test_unavailable_version_does_not_warn(self):
-        records = self._create_app(error=AppVersionUnavailable('xcrun is not available'))
+    def test_unsupported_lookup_does_not_warn(self):
+        records = self._create_app(error=AppVersionLookupNotSupported('xcrun is not available'))
         self.assertEqual([logging.INFO], [record.levelno for record in records])
         self.assertIn('xcrun is not available', records[0].getMessage())
+
+    def test_failing_lookup_warns(self):
+        records = self._create_app(error=AppVersionUnavailable('adb: device offline'))
+        self.assertEqual([logging.WARNING], [record.levelno for record in records])
+        self.assertIn('device offline', records[0].getMessage())
 
     def test_unexpected_error_warns_and_does_not_raise(self):
         records = self._create_app(error=RuntimeError('boom'))
@@ -277,6 +288,7 @@ class TestCheckSupportedVersion(unittest.TestCase):
     def test_google_play_store_ignores_version_name_suffix(self):
         play_store = object.__new__(GooglePlayStore)
         self.assertTrue(play_store.is_supported_version('48.3.25-31 [0] [PR] 123456789', '48.3.25-31'))
+        self.assertTrue(play_store.is_supported_version('48.3.25-31.2 [0] [PR] 123456789', '48.3.25-31'))
         self.assertFalse(play_store.is_supported_version('48.4.1-31 [0] [PR] 123456789', '48.3.25-31'))
 
 

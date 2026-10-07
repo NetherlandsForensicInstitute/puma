@@ -178,7 +178,7 @@ class GooglePlayStore(StateGraph):
 
     def is_supported_version(self, installed_version: str, supported_version: str) -> bool:
         # The version name of the Play Store has a suffix, e.g. "48.3.25-31 [0] [PR] 123456789"
-        return installed_version.split(' ')[0] == supported_version
+        return super().is_supported_version(installed_version.split(' ')[0], supported_version)
 
     def __init__(self, device_udid):
         """

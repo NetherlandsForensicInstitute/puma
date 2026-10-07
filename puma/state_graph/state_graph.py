@@ -3,7 +3,8 @@ from typing import Dict
 
 from puma.state_graph import logger
 from puma.state_graph.popup_handler import known_popups_for, PopUpHandler
-from puma.state_graph.puma_driver import PumaDriver, PumaClickException, Platform, AppVersionUnavailable
+from puma.state_graph.puma_driver import PumaDriver, PumaClickException, Platform, AppVersionUnavailable, \
+    AppVersionLookupNotSupported
 from puma.state_graph.state import State, ContextualState, Transition, _shortest_path
 from puma.state_graph.utils import safe_func_call, filter_arguments, is_valid_app_id
 
@@ -193,7 +194,9 @@ class StateGraph(metaclass=StateGraphMeta):
         self.app_popups = []
         self.try_restart = True
         self.gtl_logger = self.driver.gtl_logger
-        if check_version if check_version is not None else self.check_version:
+        if check_version is None:
+            check_version = self.check_version
+        if check_version:
             self._check_supported_version()
 
     def is_supported_version(self, installed_version: str, supported_version: str) -> bool:
@@ -218,7 +221,7 @@ class StateGraph(metaclass=StateGraphMeta):
         app_package = self.driver.app_package
         try:
             installed_version = self.driver.get_app_version()
-        except AppVersionUnavailable as e:
+        except AppVersionLookupNotSupported as e:
             self.gtl_logger.info(f'Not checking the version of {app_package}: {e}')
             return
         except Exception as e:
