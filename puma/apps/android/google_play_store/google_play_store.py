@@ -1,9 +1,10 @@
 from enum import Enum
+from time import sleep, time
 
 from puma.apps.android.google_play_store import logger
 from puma.state_graph.action import action
 from puma.state_graph.popup_handler import PopUpHandler
-from puma.state_graph.puma_driver import supported_version, PumaDriver
+from puma.state_graph.puma_driver import supported_version, PumaDriver, PumaClickException
 from puma.state_graph.state import SimpleState, compose_clicks, ContextualState
 from puma.state_graph.state_graph import StateGraph
 from puma.state_graph.utils import is_valid_package_name
@@ -25,25 +26,47 @@ GOOGLE_PLAY_POINTS_POPUP_HANDLER = PopUpHandler(
 COMPLETE_ACCOUNT_POPUP_HANDLER = PopUpHandler(
     ['//*[@text="Complete account setup"]'],
     ['//*[@text="Continue"]', '//*[@text="Skip"]'])
+GAMER_PROFILE_POPUP_HANDLER = PopUpHandler(
+    ['//android.widget.TextView[@text="Create a gamer profile"]', '//android.view.View[@content-desc="Not now"]'],
+    ['//android.view.View[@content-desc="Not now"]'])
 
 ACCOUNT_ICON = '//android.widget.FrameLayout[starts-with(@content-desc, "Signed in as")]'
 
 HOME_SCREEN_TABS = '(//android.view.View[count(.//android.widget.TextView[@text="Games" or @text="Apps" or @text="Search" or @text="Books"]) = 4])[last()]'
-APPS_TAB_SELECTED = '//android.view.View[.//android.widget.ImageView[@selected="true"] and ./android.widget.TextView[@text="Apps"]]'
 
-APP_PAGE_INSTALL_BUTTON = '//android.view.View[@content-desc="Install"]'
-APP_PAGE_UNINSTALL_BUTTON = '//android.view.View[@content-desc="Uninstall"]'
+# The main buttons of an app page, below the name of the app. When the account has more devices, the page also lists
+# these devices under "Available on more devices" or "Installed on all devices". Each device is a row with the name of
+# the device, its status (e.g. "Installed") and its own Install or Uninstall button. These rows are the only place where
+# a text precedes the button, so buttons preceded by a text are ignored.
+_MAIN_BUTTON = '//android.view.View[@content-desc="{}" and not(../preceding-sibling::android.widget.TextView)]'
+APP_PAGE_INSTALL_BUTTON = _MAIN_BUTTON.format('Install')
+APP_PAGE_UNINSTALL_BUTTON = _MAIN_BUTTON.format('Uninstall')
+APP_PAGE_UPDATE_BUTTON = _MAIN_BUTTON.format('Update')
+APP_PAGE_CANCEL_INSTALL_BUTTON = _MAIN_BUTTON.format('Cancel')
+# Uninstalling has to be confirmed in a dialog. While it is shown, the app page is not in the element tree.
+APP_PAGE_UNINSTALL_DIALOG = '//android.widget.TextView[@text="Uninstall this app?"]'
 APP_PAGE_UNINSTALL_SURE_BUTTON = '//android.view.View[@content-desc="Uninstall"]'
-APP_PAGE_UPDATE_BUTTON = '//android.view.View[@content-desc="Update"]'
-APP_PAGE_CANCEL_INSTALL_BUTTON = '//android.view.View[@content-desc="Cancel"]'
-APP_PAGE_THREE_DOTS = '//android.view.View[@content-desc="More options"]'
+# note the capital O: the home screen has buttons named "More options" as well
+APP_PAGE_THREE_DOTS = '//android.view.View[@content-desc="More Options"]'
 APP_PAGE_NAVIGATE_UP = '//android.view.View[@content-desc="Navigate up"]'
+# When the page of an app that is not installed is opened with a link, as Puma does, it is shown in a sheet on top of the
+# previous screen instead of on a page of its own. Opened from within the Play Store, it is shown on a page of its own.
+APP_SHEET_CLOSE_SHEET = '//android.view.View[@content-desc="Close sheet"]'
+APP_SHEET_CLOSE = '//android.view.View[@content-desc="Close"]'
 
-PROFILE_GOOGLE = '//android.widget.Button[@resource-id="com.android.vending:id/0_resource_name_obfuscated" and @text="Google Account"]'
+PROFILE_GOOGLE = '//android.widget.TextView[@resource-id="com.android.vending:id/0_resource_name_obfuscated" and @text="Manage your Google Account"]'
 UPDATE_ALL_BUTTON = '//android.view.View[@content-desc="Update all"]'
-MANAGE_APP_STATE = '//android.widget.TextView[@text="Manage apps and device"]'
+MANAGE_APP_STATE = '//android.widget.TextView[@text="Manage apps & device"]'
 MANAGE_APP_STATE_SYNC = '//android.widget.TextView[@text="Sync apps to devices"]'
-MANAGE_APPS_AND_DEVICES = '//android.widget.TextView[@resource-id="com.android.vending:id/0_resource_name_obfuscated" and @text="Manage apps and device"]'
+MANAGE_APPS_AND_DEVICE = '//android.widget.TextView[@resource-id="com.android.vending:id/0_resource_name_obfuscated" and @text="Manage apps & device"]'
+
+
+class GooglePlayStoreError(Exception):
+    """
+    Raised when the Google Play Store does not respond to an action as expected, e.g. when a confirmation does not
+    appear.
+    """
+    pass
 
 
 class AppState(Enum):
@@ -53,6 +76,18 @@ class AppState(Enum):
     UPDATE_AVAILABLE = 3
     INSTALLING = 4
     INSTALLING_UPDATE = 5
+
+
+def _close_app_page(driver: PumaDriver):
+    """
+    Closes an app page: the sheet (see APP_SHEET_CLOSE_SHEET), or the page of its own.
+
+    :param driver: Puma driver
+    """
+    if driver.is_present(APP_SHEET_CLOSE_SHEET) and driver.is_present(APP_SHEET_CLOSE):
+        driver.click(APP_SHEET_CLOSE)
+    else:
+        driver.click(APP_PAGE_NAVIGATE_UP)
 
 
 class AppPage(SimpleState, ContextualState):
@@ -69,11 +104,18 @@ class AppPage(SimpleState, ContextualState):
         :param parent_state: The parent state of this app page state.
         """
         super().__init__(
-            xpaths=[HOME_SCREEN_TABS, APP_PAGE_THREE_DOTS],
+            xpaths=[APP_PAGE_NAVIGATE_UP, APP_PAGE_THREE_DOTS],
             parent_state=parent_state,
-            parent_state_transition=compose_clicks([APP_PAGE_NAVIGATE_UP], "navigate_up"))
+            parent_state_transition=_close_app_page)
         # keep a dict that tracks which app pages were opened last on which device. See validate_context()
         self.last_opened = {}
+
+    def validate(self, driver: PumaDriver) -> bool:
+        """
+        An app page is shown on a page of its own, or in a sheet on top of the previous screen (see
+        APP_SHEET_CLOSE_SHEET).
+        """
+        return super().validate(driver) or (driver.is_present(APP_SHEET_CLOSE_SHEET) and driver.is_present(APP_SHEET_CLOSE))
 
     def validate_context(self, driver: PumaDriver, package_name: str = None) -> bool:
         """
@@ -91,7 +133,7 @@ class AppPage(SimpleState, ContextualState):
         """
         if not package_name:
             return True
-        return self.last_opened[driver.udid] == package_name
+        return self.last_opened.get(driver.udid) == package_name
 
     def open_app_page(self, driver: PumaDriver, package_name: str = None):
         """
@@ -106,10 +148,15 @@ class AppPage(SimpleState, ContextualState):
         if not is_valid_package_name(package_name):
             raise ValueError(f'Invalid package name: {package_name}')
         driver.open_url(f'https://play.google.com/store/apps/details?id={package_name}')
-        self.last_opened[driver.udid] = package_name
+        for _ in range(10):
+            if self.validate(driver):
+                self.last_opened[driver.udid] = package_name
+                return
+            sleep(1)
+        raise PumaClickException(f'The app page of {package_name} did not load')
 
 
-@supported_version("48.3.25-31")
+@supported_version("53.4.34-34")
 class GooglePlayStore(StateGraph):
     """
     A class representing a state graph for managing UI states and transitions in the Google Play Store.
@@ -118,14 +165,16 @@ class GooglePlayStore(StateGraph):
     of the Play store UI. It provides methods to navigate between states, validate states,
     and handle unexpected states or errors.
     """
-    apps_tab_state = SimpleState([ACCOUNT_ICON, HOME_SCREEN_TABS, APPS_TAB_SELECTED], initial_state=True)
-    profile_state = SimpleState([MANAGE_APPS_AND_DEVICES, PROFILE_GOOGLE], parent_state=apps_tab_state)
-    manage_apps_state = SimpleState([MANAGE_APP_STATE, MANAGE_APP_STATE_SYNC], parent_state=apps_tab_state)
-    app_page_state = AppPage(parent_state=apps_tab_state)
+    # The Play Store opens on the tab that was used last (e.g. Games or Apps), so the home state is any of these tabs
+    home_state = SimpleState([ACCOUNT_ICON, HOME_SCREEN_TABS], invalid_xpaths=[APP_SHEET_CLOSE_SHEET, APP_PAGE_NAVIGATE_UP],
+                             initial_state=True)
+    profile_state = SimpleState([MANAGE_APPS_AND_DEVICE, PROFILE_GOOGLE], parent_state=home_state)
+    manage_apps_state = SimpleState([MANAGE_APP_STATE, MANAGE_APP_STATE_SYNC], parent_state=home_state)
+    app_page_state = AppPage(parent_state=home_state)
 
-    apps_tab_state.to(profile_state, compose_clicks([ACCOUNT_ICON], name='click_profile'))
-    profile_state.to(manage_apps_state, compose_clicks([MANAGE_APPS_AND_DEVICES], name='click_manage_apps_and_devices'))
-    app_page_state.from_states([apps_tab_state, profile_state, manage_apps_state], app_page_state.open_app_page)
+    home_state.to(profile_state, compose_clicks([ACCOUNT_ICON], name='click_profile'))
+    profile_state.to(manage_apps_state, compose_clicks([MANAGE_APPS_AND_DEVICE], name='click_manage_apps_and_devices'))
+    app_page_state.from_states([home_state, profile_state, manage_apps_state], app_page_state.open_app_page)
 
     def __init__(self, device_udid):
         """
@@ -139,6 +188,7 @@ class GooglePlayStore(StateGraph):
         self.add_popup_handler(TRY_GOOGLE_PASS_POPUP_HANDLER)
         self.add_popup_handler(GOOGLE_PLAY_POINTS_POPUP_HANDLER)
         self.add_popup_handler(COMPLETE_ACCOUNT_POPUP_HANDLER)
+        self.add_popup_handler(GAMER_PROFILE_POPUP_HANDLER)
 
     def _get_app_state_internal(self) -> AppState:
         """
@@ -169,16 +219,43 @@ class GooglePlayStore(StateGraph):
         return self._get_app_state_internal()
 
     @action(app_page_state)
-    def install_app(self, package_name: str = None):
+    def install_app(self, package_name: str = None, timeout: int = 300):
         """
-        Installs the given application. If the application is already installed (or is being installed) this method
-        will log a warning and do nothing.
+        Installs the given application, and waits until it has been installed. If the application is already installed
+        this method will log a warning and do nothing. If it is being installed, this method waits until it has been
+        installed.
         :param package_name: The exact package name of the application.
+        :param timeout: The maximum time to wait for the installation to finish, in seconds.
         """
-        if self._get_app_state_internal() != AppState.NOT_INSTALLED:
+        state = self._get_app_state_internal()
+        if state == AppState.INSTALLING:
+            self._wait_for_installation(package_name, timeout)
+            return
+        if state != AppState.NOT_INSTALLED:
             self.gtl_logger.warn(f'Tried to install app {package_name}, but it was already installed')
             return
         self.driver.click(APP_PAGE_INSTALL_BUTTON)
+        self._wait_for_installation(package_name, timeout)
+
+    def _wait_for_installation(self, package_name: str, timeout: int):
+        """
+        Waits until an installation or update has finished. While installing or updating, the app page only shows a
+        Cancel button. Afterwards, it shows the Uninstall button.
+        :param package_name: The exact package name of the application.
+        :param timeout: The maximum time to wait, in seconds.
+        :raises TimeoutError: If the installation or update did not finish within the timeout.
+        """
+        self.gtl_logger.info(f'Waiting for app {package_name} to be installed')
+        end = time() + timeout
+        while time() < end:
+            # right after pressing Update, the Uninstall button can still be shown next to the Update button
+            if (self.driver.is_present(APP_PAGE_UNINSTALL_BUTTON) and
+                    not self.driver.is_present(APP_PAGE_CANCEL_INSTALL_BUTTON) and
+                    not self.driver.is_present(APP_PAGE_UPDATE_BUTTON)):
+                self.gtl_logger.info(f'App {package_name} has been installed')
+                return
+            sleep(1)
+        raise TimeoutError(f'App {package_name} was not installed within {timeout} seconds')
 
     @action(app_page_state)
     def uninstall_app(self, package_name: str = None):
@@ -187,22 +264,35 @@ class GooglePlayStore(StateGraph):
         nothing.
         :param package_name: The exact package name of the application.
         """
+        if self._get_app_state_internal() == AppState.INSTALLING:
+            # the app is being installed or updated, e.g. right after install_app() or update_app()
+            self._wait_for_installation(package_name, timeout=300)
         if self._get_app_state_internal() not in [AppState.INSTALLED, AppState.UPDATE_AVAILABLE]:
             self.gtl_logger.warn(f'Tried to uninstall app {package_name}, but it was not installed')
             return
         self.driver.click(APP_PAGE_UNINSTALL_BUTTON)
+        # wait for the confirmation, as the button to confirm has the same name as the button that was just clicked
+        if not self.driver.is_present(APP_PAGE_UNINSTALL_DIALOG, implicit_wait=5):
+            raise GooglePlayStoreError(f'Uninstall confirmation dialog for {package_name} did not appear')
         self.driver.click(APP_PAGE_UNINSTALL_SURE_BUTTON)
 
     @action(app_page_state)
-    def update_app(self, package_name: str = None):
+    def update_app(self, package_name: str = None, timeout: int = 300):
         """
-        Updates the given application. If no update is available this method will log a warning and do nothing.
+        Updates the given application, and waits until it has been updated. If no update is available this method will
+        log a warning and do nothing. If it is being updated, this method waits until it has been updated.
         :param package_name: The exact package name of the application.
+        :param timeout: The maximum time to wait for the update to finish, in seconds.
         """
-        if self._get_app_state_internal() != AppState.UPDATE_AVAILABLE:
+        state = self._get_app_state_internal()
+        if state == AppState.INSTALLING:
+            self._wait_for_installation(package_name, timeout)
+            return
+        if state != AppState.UPDATE_AVAILABLE:
             self.gtl_logger.warn(f'Tried to update app {package_name}, but there is no update available')
             return
         self.driver.click(APP_PAGE_UPDATE_BUTTON)
+        self._wait_for_installation(package_name, timeout)
 
     @action(manage_apps_state)
     def update_all_apps(self):
