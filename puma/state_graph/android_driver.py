@@ -4,8 +4,8 @@ from typing import Dict
 from appium.options.android import UiAutomator2Options
 from appium.webdriver.extensions.android.nativekey import AndroidKey
 
-from puma.state_graph.puma_driver import PumaDriver, Platform, AppVersionUnavailable, KEYCODE_ENTER, KEYCODE_BACKSPACE, \
-    KEYCODE_LEFT_ARROW
+from puma.state_graph.puma_driver import PumaDriver, Platform, AppVersionUnavailable, KEYCODE_ENTER, \
+    KEYCODE_BACKSPACE, KEYCODE_LEFT_ARROW
 from puma.state_graph.utils import is_valid_package_name
 
 
