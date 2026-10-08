@@ -1,12 +1,12 @@
 Version 6.1.0
 -------------
+203. Add get_app_version, and warn when the installed app version differs from the supported version
 230. Log which xpath caused SimpleState validation to fail
 228. Google Play Store: support newest version 53.4.34-34
 
 Version 6.0.0
 -------------
 24. iOS: Add iOS support, with Settings and Messages. StateGraph apps must set their platform
-203. Add get_app_version, and warn when the installed app version differs from the supported version
 
 Version 5.1.1
 -------------
