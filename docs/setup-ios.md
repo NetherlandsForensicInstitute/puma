@@ -94,7 +94,7 @@ These prerequisites apply to all iOS apps of Puma. The README of an app lists wh
 
 - The device or simulator is set up as described above, and is running the iOS version the app supports. This is
   iOS 26 for the apps that are built into iOS.
-- The language of the device is set to English, as Puma recognizes screens by their English texts.
+- The language of the device is set to English, as Puma in some cases recognizes UI elements based on the text visible in the UI. In those cases English is assumed as the device language.
 - The device is unlocked while Puma runs, see [Physical devices](#physical-devices).
 - On a real device, pass the signing settings for WebDriverAgent as `desired_capabilities` when initializing an app,
   see step 7 under [Physical devices](#physical-devices).
