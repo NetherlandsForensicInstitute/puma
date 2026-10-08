@@ -1,5 +1,6 @@
 Version 6.1.0
 -------------
+230. Log which xpath caused SimpleState validation to fail
 228. Google Play Store: support newest version 53.4.34-34
 
 Version 6.0.0
