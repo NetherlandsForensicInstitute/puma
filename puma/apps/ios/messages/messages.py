@@ -3,7 +3,7 @@ import xml.etree.ElementTree as ElementTree
 from contextlib import contextmanager
 from dataclasses import dataclass, field
 from enum import Enum
-from time import sleep, time
+from time import sleep
 from typing import Optional
 
 from puma.apps.ios.messages import logger
@@ -249,17 +249,11 @@ def _send_new_message(driver: PumaDriver, recipient: str):
                             f'recipients on a simulator.')
 
 
-def _wait_for(driver: PumaDriver, *xpaths: str, timeout: float = 6) -> bool:
+def _wait_for(driver: PumaDriver, *locators: str, timeout: float = 6) -> bool:
     """
     Waits until any of the elements is present. The elements are checked at least once, also with a timeout of 0.
     """
-    end = time() + timeout
-    while True:
-        if any(driver.is_present(xpath) for xpath in xpaths):
-            return True
-        if time() >= end:
-            return False
-        sleep(0.5)
+    return driver.wait_until_present(*locators, timeout=timeout)
 
 
 def _search(driver: PumaDriver, query: str = ''):

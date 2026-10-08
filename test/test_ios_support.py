@@ -170,6 +170,63 @@ class TestWdaPorts(unittest.TestCase):
         self.assertEqual(8100, driver.options.wda_local_port)
 
 
+class TestPumaDriverWait(unittest.TestCase):
+    def setUp(self):
+        self.appium_driver = _mock_appium_driver()
+        self.driver = _create_driver(Platform.IOS, self.appium_driver)
+        self.driver.gtl_logger = Mock()
+
+    def test_wait_until_logs_to_the_ground_truth_log(self):
+        self.driver.wait_until(lambda: True, timeout=1, description='the thing')
+        self.driver.gtl_logger.info.assert_any_call('Waiting for the thing')
+
+    def test_wait_until_present(self):
+        self.appium_driver.find_elements.side_effect = [[], [Mock()]]
+        self.assertTrue(self.driver.wait_until_present('//one', timeout=5))
+
+    def test_wait_until_present_any_of_the_elements(self):
+        self.appium_driver.find_elements.side_effect = lambda by, value: [Mock()] if value == '//two' else []
+        self.assertTrue(self.driver.wait_until_present('//one', '//two', timeout=5))
+
+    def test_wait_until_present_times_out(self):
+        self.appium_driver.find_elements.return_value = []
+        self.assertFalse(self.driver.wait_until_present('//one', timeout=0))
+
+    def test_wait_until_not_present(self):
+        self.appium_driver.find_elements.side_effect = [[Mock()], []]
+        self.assertTrue(self.driver.wait_until_not_present('//one', timeout=5))
+
+    def test_wait_until_not_present_already_gone(self):
+        self.appium_driver.find_elements.return_value = []
+        self.assertTrue(self.driver.wait_until_not_present('//one', timeout=0))
+
+    def test_wait_until_not_present_waits_for_all_elements(self):
+        self.appium_driver.find_elements.side_effect = lambda by, value: [Mock()] if value == '//two' else []
+        self.assertFalse(self.driver.wait_until_not_present('//one', '//two', timeout=0))
+
+    def test_wait_until_not_present_times_out(self):
+        self.appium_driver.find_elements.return_value = [Mock()]
+        self.assertFalse(self.driver.wait_until_not_present('//one', timeout=0))
+
+    def test_wait_until_not_present_accepts_locators(self):
+        self.appium_driver.find_elements.return_value = []
+        self.assertTrue(self.driver.wait_until_not_present(ios_predicate('name == "Loading"'), timeout=0))
+        self.appium_driver.find_elements.assert_called_with(by=AppiumBy.IOS_PREDICATE, value='name == "Loading"')
+
+    def test_wait_until_locators_present_and_not_present(self):
+        present = {'//one'}
+        self.appium_driver.find_elements.side_effect = lambda by, value: [Mock()] if value in present else []
+        self.assertTrue(self.driver.wait_until_locators(present=['//one'], not_present=['//two'], timeout=0))
+
+    def test_wait_until_locators_fails_when_not_present_element_is_present(self):
+        self.appium_driver.find_elements.return_value = [Mock()]
+        self.assertFalse(self.driver.wait_until_locators(present=['//one'], not_present=['//two'], timeout=0))
+
+    def test_wait_until_locators_fails_when_present_element_is_missing(self):
+        self.appium_driver.find_elements.return_value = []
+        self.assertFalse(self.driver.wait_until_locators(present=['//one'], not_present=['//two'], timeout=0))
+
+
 class TestIOSPumaDriver(unittest.TestCase):
     def setUp(self):
         self.appium_driver = _mock_appium_driver()

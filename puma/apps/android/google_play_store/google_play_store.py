@@ -1,5 +1,4 @@
 from enum import Enum
-from time import sleep, time
 
 from puma.apps.android.google_play_store import logger
 from puma.state_graph.action import action
@@ -108,7 +107,7 @@ class AppPage(SimpleState, ContextualState):
             parent_state=parent_state,
             parent_state_transition=_close_app_page)
         # keep a dict that tracks which app pages were opened last on which device. See validate_context()
-        self.last_opened = {}
+        self.last_opened_app_page = {}
 
     def validate(self, driver: PumaDriver) -> bool:
         """
@@ -133,7 +132,7 @@ class AppPage(SimpleState, ContextualState):
         """
         if not package_name:
             return True
-        return self.last_opened.get(driver.udid) == package_name
+        return self.last_opened_app_page.get(driver.udid) == package_name
 
     def open_app_page(self, driver: PumaDriver, package_name: str = None):
         """
@@ -148,12 +147,11 @@ class AppPage(SimpleState, ContextualState):
         if not is_valid_package_name(package_name):
             raise ValueError(f'Invalid package name: {package_name}')
         driver.open_url(f'https://play.google.com/store/apps/details?id={package_name}')
-        for _ in range(10):
-            if self.validate(driver):
-                self.last_opened[driver.udid] = package_name
-                return
-            sleep(1)
-        raise PumaClickException(f'The app page of {package_name} did not load')
+        try:
+            driver.wait_until(lambda: self.validate(driver), timeout=10)
+        except TimeoutError:
+            raise PumaClickException(f'The app page of {package_name} did not load')
+        self.last_opened_app_page[driver.udid] = package_name
 
 
 @supported_version("53.4.34-34")
@@ -249,17 +247,13 @@ class GooglePlayStore(StateGraph):
         :param timeout: The maximum time to wait, in seconds.
         :raises TimeoutError: If the installation or update did not finish within the timeout.
         """
-        self.gtl_logger.info(f'Waiting for app {package_name} to be installed')
-        end = time() + timeout
-        while time() < end:
+        def installed() -> bool:
             # right after pressing Update, the Uninstall button can still be shown next to the Update button
-            if (self.driver.is_present(APP_PAGE_UNINSTALL_BUTTON) and
+            return (self.driver.is_present(APP_PAGE_UNINSTALL_BUTTON) and
                     not self.driver.is_present(APP_PAGE_CANCEL_INSTALL_BUTTON) and
-                    not self.driver.is_present(APP_PAGE_UPDATE_BUTTON)):
-                self.gtl_logger.info(f'App {package_name} has been installed')
-                return
-            sleep(1)
-        raise TimeoutError(f'App {package_name} was not installed within {timeout} seconds')
+                    not self.driver.is_present(APP_PAGE_UPDATE_BUTTON))
+
+        self.driver.wait_until(installed, timeout, description=f'app {package_name} to be installed')
 
     @action(app_page_state)
     def uninstall_app(self, package_name: str = None):
