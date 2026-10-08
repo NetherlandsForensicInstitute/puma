@@ -90,6 +90,7 @@ example implementations. Each version of Puma supports one version of each app, 
 | [App Store](puma/apps/ios/app_store/README.md) (real devices only) | iOS      | iOS 26.6              |
 | [Messages](puma/apps/ios/messages/README.md)                    | iOS      | iOS 26.6              |
 | [Settings](puma/apps/ios/settings/README.md) (real devices only) | iOS      | iOS 26.6              |
+| [WhatsApp](puma/apps/ios/whatsapp/README.md) (real devices only) | iOS      | 26.38.74              |
 
 ## Documentation
 
