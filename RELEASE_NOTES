@@ -5,7 +5,7 @@ Version 6.1.0
 
 Version 6.0.0
 -------------
-24. iOS: Add iOS support, with Settings and Messages. StateGraph apps must set their platform
+24. iOS: Add iOS support, with Safari, Apple Maps, Contacts, Calendar, Reminders, Settings and Messages, and routes by bike and on foot in the route simulator. StateGraph apps must set their platform
 
 Version 5.1.1
 -------------

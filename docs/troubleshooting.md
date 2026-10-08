@@ -177,3 +177,9 @@ Display & Brightness) while running Puma. This can also be done with Puma, see
 The Developer Mode setting only appears after the device has been paired with Xcode: connect the device, trust the
 computer, and open Window > Devices and Simulators in Xcode. On devices managed by an organization, Developer Mode can
 also be blocked by the administrator.
+
+### iOS: Private tabs in Safari cannot be opened
+
+On real devices, Safari locks private browsing with Face ID after leaving Safari. Puma cannot unlock it, and raises a
+`PrivateBrowsingLockedError`. To use private tabs, turn off "Require Face ID to Unlock Private Browsing" in Settings >
+Apps > Safari.
