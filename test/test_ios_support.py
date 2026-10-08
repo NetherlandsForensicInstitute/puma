@@ -271,8 +271,13 @@ class TestIOSPumaDriver(unittest.TestCase):
         self.appium_driver.execute_script.return_value = {'isSimulator': True, 'name': 'iPhone 17 Pro'}
         self.assertTrue(self.driver.is_simulator())
         self.appium_driver.execute_script.assert_called_with('mobile: deviceInfo')
-        self.appium_driver.execute_script.return_value = {'isSimulator': False}
-        self.assertFalse(self.driver.is_simulator())
+        # The device info is looked up once
+        self.assertTrue(self.driver.is_simulator())
+        self.appium_driver.execute_script.assert_called_once()
+
+        real_device_appium_driver = _mock_appium_driver()
+        real_device_appium_driver.execute_script.return_value = {'isSimulator': False}
+        self.assertFalse(_create_driver(Platform.IOS, real_device_appium_driver).is_simulator())
 
     def test_home(self):
         self.driver.home()
