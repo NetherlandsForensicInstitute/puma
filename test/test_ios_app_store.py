@@ -23,12 +23,19 @@ class TestLookupAppStoreId(unittest.TestCase):
     def test_app_not_found(self, get):
         get.return_value = _lookup_response([])
         with self.assertRaises(AppStoreError):
-            lookup_app_store_id('com.example.unknown')
+            lookup_app_store_id('com.example.unknown', 'nl')
+
+    @patch('puma.apps.ios.app_store.app_store.requests.get')
+    def test_invalid_country(self, get):
+        for country in ['', 'n', 'nld', 'n1']:
+            with self.subTest(country), self.assertRaises(ValueError):
+                lookup_app_store_id('com.duolingo.DuolingoMobile', country)
+        get.assert_not_called()
 
     @patch('puma.apps.ios.app_store.app_store.requests.get')
     def test_invalid_bundle_id(self, get):
         with self.assertRaises(ValueError):
-            lookup_app_store_id('not a bundle id')
+            lookup_app_store_id('not a bundle id', 'nl')
         get.assert_not_called()
 
 
@@ -73,20 +80,20 @@ class TestUninstall(unittest.TestCase):
         self.app_store = AppStore.__new__(AppStore)
         self.app_store.driver = Mock(udid='mock_udid')
         self.app_store.gtl_logger = Mock()
-        self.app_store.app_page_state.last_opened['mock_udid'] = 'com.duolingo.DuolingoMobile'
+        self.app_store.app_page_state.last_opened_app_page['mock_udid'] = 'com.duolingo.DuolingoMobile'
 
     def test_uninstall(self):
         self.app_store.driver.execute_script.return_value = True
         self.app_store.uninstall_app('com.duolingo.DuolingoMobile')
         self.app_store.driver.execute_script.assert_called_with('mobile: removeApp', {'bundleId': 'com.duolingo.DuolingoMobile'})
-        self.assertNotIn('mock_udid', self.app_store.app_page_state.last_opened)
+        self.assertNotIn('mock_udid', self.app_store.app_page_state.last_opened_app_page)
 
     def test_uninstall_not_installed_app(self):
         self.app_store.driver.execute_script.return_value = False
         self.app_store.uninstall_app('com.duolingo.DuolingoMobile')
         self.app_store.driver.execute_script.assert_called_once_with('mobile: isAppInstalled', {'bundleId': 'com.duolingo.DuolingoMobile'})
         self.app_store.gtl_logger.warn.assert_called_once()
-        self.assertIn('mock_udid', self.app_store.app_page_state.last_opened)
+        self.assertIn('mock_udid', self.app_store.app_page_state.last_opened_app_page)
 
     def test_uninstall_invalid_bundle_id(self):
         with self.assertRaises(ValueError):

@@ -14,7 +14,6 @@ from puma.state_graph.utils import is_valid_bundle_id
 
 APP_STORE_BUNDLE_ID = 'com.apple.AppStore'
 LOOKUP_URL = 'https://itunes.apple.com/lookup'
-DEFAULT_COUNTRY = 'nl'
 # The number of seconds to wait for a screen to load
 SCREEN_TIMEOUT = 10
 # The number of seconds to wait for a download to start, or for a confirmation to be asked
@@ -66,7 +65,7 @@ _APP_STATES = {
 }
 
 
-def lookup_app_store_id(bundle_id: str, country: str = DEFAULT_COUNTRY) -> int:
+def lookup_app_store_id(bundle_id: str, country: str) -> int:
     """
     Looks up the id of an app in the App Store, using the public iTunes lookup API. This needs an internet connection
     on the machine Puma runs on.
@@ -74,11 +73,13 @@ def lookup_app_store_id(bundle_id: str, country: str = DEFAULT_COUNTRY) -> int:
     :param bundle_id: The bundle id of the app, e.g. com.duolingo.DuolingoMobile.
     :param country: The two-letter country code of the App Store storefront. Apps are not available in all storefronts.
     :return: The App Store id of the app.
-    :raises ValueError: If the bundle id is invalid.
+    :raises ValueError: If the bundle id or the country code is invalid.
     :raises AppStoreError: If the app was not found in the storefront.
     """
     if not is_valid_bundle_id(bundle_id):
         raise ValueError(f'Invalid bundle id: {bundle_id}')
+    if not re.fullmatch(r'[A-Za-z]{2}', country):
+        raise ValueError(f'Invalid country code, expected two letters: {country}')
     response = requests.get(LOOKUP_URL, params={'bundleId': bundle_id, 'country': country}, timeout=30)
     response.raise_for_status()
     results = response.json().get('results', [])
@@ -106,7 +107,7 @@ class AppPage(SimpleState, ContextualState):
             parent_state=parent_state,
             parent_state_transition=compose_clicks([BACK_BUTTON], 'back'))
         # keep a dict that tracks which app pages were opened last on which device. See validate_context()
-        self.last_opened = {}
+        self.last_opened_app_page = {}
         # the country of the App Store of each device. This state is shared by all devices, so this cannot be a single value
         self.countries = {}
         self._app_store_ids = {}
@@ -124,7 +125,7 @@ class AppPage(SimpleState, ContextualState):
         """
         if not bundle_id:
             return True
-        return self.last_opened.get(driver.udid) == bundle_id
+        return self.last_opened_app_page.get(driver.udid) == bundle_id
 
     def open_app_page(self, driver: PumaDriver, bundle_id: str):
         """
@@ -137,9 +138,9 @@ class AppPage(SimpleState, ContextualState):
         :param bundle_id: bundle id
         """
         if bundle_id not in self._app_store_ids:
-            self._app_store_ids[bundle_id] = lookup_app_store_id(bundle_id, self.countries.get(driver.udid, DEFAULT_COUNTRY))
+            self._app_store_ids[bundle_id] = lookup_app_store_id(bundle_id, self.countries[driver.udid])
         driver.open_url(f'itms-apps://apps.apple.com/app/id{self._app_store_ids[bundle_id]}')
-        self.last_opened[driver.udid] = bundle_id
+        self.last_opened_app_page[driver.udid] = bundle_id
         driver.is_present(APP_PAGE_NAVIGATION_BAR, SCREEN_TIMEOUT)
 
 
@@ -169,12 +170,13 @@ class AppStore(StateGraph):
     account_state.to(updates_state, _open(ACCOUNT_UPDATES_BUTTON, UPDATES_NAVIGATION_BAR, 'open_updates'))
     app_page_state.from_states([today_state, other_tab_state, account_state, updates_state], app_page_state.open_app_page)
 
-    def __init__(self, device_udid: str, country: str = DEFAULT_COUNTRY, **kwargs):
+    def __init__(self, device_udid: str, country: str, **kwargs):
         """
         Initializes the App Store with a device UDID.
 
         :param device_udid: The unique device identifier of the iOS device.
-        :param country: The two-letter country code of the App Store storefront of the device, used to look up apps.
+        :param country: The two-letter country code of the App Store storefront of the device, e.g. 'nl'. Used to look up
+        apps. An app that is not in this storefront cannot be installed.
         :param kwargs: Optional arguments passed to the StateGraph, such as appium_server or desired_capabilities.
         """
         StateGraph.__init__(self, device_udid, APP_STORE_BUNDLE_ID, **kwargs)
@@ -245,6 +247,7 @@ class AppStore(StateGraph):
         app_state = self._get_app_state_internal()
         if app_state == AppState.UNKNOWN:
             raise AppStoreError(f'Could not install app {bundle_id}, its install state is unknown')
+        # Not only INSTALLED: with UPDATE_AVAILABLE the offer button is the Update button, which must not be clicked here
         if app_state != AppState.NOT_INSTALLED:
             self.gtl_logger.warn(f'Tried to install app {bundle_id}, but it was already installed')
             return
@@ -285,7 +288,7 @@ class AppStore(StateGraph):
         else:
             self.driver.execute_script('mobile: removeApp', {'bundleId': bundle_id})
             # The page of the app, if open, still shows the old state. Make sure it is opened again
-            self.app_page_state.last_opened.pop(self.driver.udid, None)
+            self.app_page_state.last_opened_app_page.pop(self.driver.udid, None)
         self.gtl_logger.info(f'Executed action {action_description}')
 
     @action(updates_state)

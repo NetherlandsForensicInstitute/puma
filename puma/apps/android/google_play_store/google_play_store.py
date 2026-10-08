@@ -108,7 +108,7 @@ class AppPage(SimpleState, ContextualState):
             parent_state=parent_state,
             parent_state_transition=_close_app_page)
         # keep a dict that tracks which app pages were opened last on which device. See validate_context()
-        self.last_opened = {}
+        self.last_opened_app_page = {}
 
     def validate(self, driver: PumaDriver) -> bool:
         """
@@ -133,7 +133,7 @@ class AppPage(SimpleState, ContextualState):
         """
         if not package_name:
             return True
-        return self.last_opened.get(driver.udid) == package_name
+        return self.last_opened_app_page.get(driver.udid) == package_name
 
     def open_app_page(self, driver: PumaDriver, package_name: str = None):
         """
@@ -150,7 +150,7 @@ class AppPage(SimpleState, ContextualState):
         driver.open_url(f'https://play.google.com/store/apps/details?id={package_name}')
         for _ in range(10):
             if self.validate(driver):
-                self.last_opened[driver.udid] = package_name
+                self.last_opened_app_page[driver.udid] = package_name
                 return
             sleep(1)
         raise PumaClickException(f'The app page of {package_name} did not load')
