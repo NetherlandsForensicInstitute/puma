@@ -1,8 +1,5 @@
-import re
 import os
-import random
 import re
-import sqlite3
 import unittest
 
 from puma.utils import PROJECT_ROOT
@@ -47,22 +44,6 @@ class TestVersion(unittest.TestCase):
         self.assertEqual(github_tag_version, setup_version,
                          "GitHub tag version is not equal to setup version")
 
+
 if __name__ == '__main__':
-
-    # Connect to the SQLite database (creates it if it doesn't exist)
-    conn = sqlite3.connect('/media/bouke/externe-ssd/dev/libraries/traces/traces-db/src/test/resources/testdata/database/sqlite/blob_in_text_column_benchmark.db')
-    cursor = conn.cursor()
-
-    # Insert 10,000 records with random binary data
-    for _ in range(10000):
-        # Generate random binary data (500-2000 bytes)
-        byte_length = random.randint(500,2000)
-        random_bytes = os.urandom(byte_length).hex()
-        print(random_bytes)
-        # cursor.execute('INSERT INTO data (content) VALUES (?)', (random_bytes,))
-
-    # Commit the changes and close the connection
-    conn.commit()
-    conn.close()
-
-    print("Inserted 10,000 records with random binary data.")
+    unittest.main()

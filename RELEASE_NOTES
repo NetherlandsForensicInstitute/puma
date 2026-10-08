@@ -1,3 +1,15 @@
+Version 6.1.0
+-------------
+228. Google Play Store: support newest version 53.4.34-34
+
+Version 6.0.0
+-------------
+24. iOS: Add iOS support, with Settings and Messages. StateGraph apps must set their platform
+
+Version 5.1.1
+-------------
+254. Fix the release notes test when not on a branch
+
 Version 5.1.0
 -------------
 230. Log which xpath caused SimpleState validation to fail
