@@ -7,7 +7,7 @@ device_udids = {
     "Alice": ""
 }
 PACKAGE_NAME = ""  # This app will be installed and uninstalled, so choose an app for which uninstalling does not matter
-UPDATABLE_PACKAGE_NAME = ""  # This app should be installed already and updatable. You can check which apps can be updated under "Manage apps and device"
+UPDATABLE_PACKAGE_NAME = ""  # This app should be installed already and updatable. You can check which apps can be updated under "Manage apps & device"
 
 
 class TestPlayStore(unittest.TestCase):

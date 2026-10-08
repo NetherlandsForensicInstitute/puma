@@ -1,3 +1,7 @@
+Version 6.1.0
+-------------
+228. Google Play Store: support newest version 53.4.34-34
+
 Version 6.0.0
 -------------
 24. iOS: Add iOS support, with Settings and Messages. StateGraph apps must set their platform
