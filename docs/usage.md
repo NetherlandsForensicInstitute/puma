@@ -87,12 +87,11 @@ Apps that are built into iOS, such as Settings and Messages, are updated togethe
 supported version is the iOS version, e.g. `26.6`. Third-party iOS apps, installed from the App Store, use their own app
 version, like Android apps.
 
-When a Puma app is created, it logs a warning if the installed version differs from the supported version (patch
-releases are accepted: supported version `26.6` covers `26.6.2`). This takes a few calls to the device. It can be turned
-off by setting the `check_version` class attribute of an app to `False` (`GoogleChrome.check_version = False`), or, for
-apps that pass keyword arguments on to `StateGraph` (such as the iOS apps), with `check_version=False` when creating the
-app. An app can override `is_supported_version` if it reports its version in a different format than the supported
-version is written in, like the Google Play Store does.
+When a Puma object is created, it logs a warning if the installed version differs from the supported version (patch
+releases are accepted: supported version `26.6` covers `26.6.2`). This takes a few calls to the device. For apps that
+pass keyword arguments on to `StateGraph` (such as the iOS apps), it can be turned off with `check_version=False` when
+creating the app. An app can override `is_supported_version` if it reports its version in a different format than the
+supported version is written in, like the Google Play Store does.
 
 You can look up the installed version of any app yourself with `driver.get_app_version()`. It returns `None` if the app
 is not installed, and raises an `AppVersionUnavailable` error if the version cannot be looked up. On Android this uses

@@ -172,12 +172,11 @@ class StateGraph(metaclass=StateGraphMeta):
 
     When an application has a supported version (see @supported_version), a warning is logged on creation if the
     installed version differs from it. How versions are compared can be changed by overriding is_supported_version, and
-    the check can be turned off with the `check_version` class attribute or constructor parameter.
+    the check can be turned off with the `check_version` constructor parameter.
     """
     platform: Platform
-    check_version: bool = True
 
-    def __init__(self, device_udid: str, app_package: str, appium_server: str = 'http://localhost:4723', desired_capabilities: Dict[str, str] = None, check_version: bool = None):
+    def __init__(self, device_udid: str, app_package: str, appium_server: str = 'http://localhost:4723', desired_capabilities: Dict[str, str] = None, check_version: bool = True):
         """
         Initializes the StateGraph with a device and application package.
 
@@ -185,7 +184,7 @@ class StateGraph(metaclass=StateGraphMeta):
         :param app_package: The identifier of the application: the package name on Android, the bundle id on iOS.
         :param desired_capabilities: desired capabilities as passed to the Appium webdriver.
         :param check_version: Whether to warn if the installed version of the app differs from the supported version.
-        This takes some calls to the device. Defaults to the `check_version` class attribute, which is True.
+        This takes some calls to the device.
         """
         if not is_valid_app_id(app_package, self.platform):
             raise ValueError(f'The provided {"bundle id" if self.platform == Platform.IOS else "package name"} is invalid: {app_package}')
@@ -194,8 +193,6 @@ class StateGraph(metaclass=StateGraphMeta):
         self.app_popups = []
         self.try_restart = True
         self.gtl_logger = self.driver.gtl_logger
-        if check_version is None:
-            check_version = self.check_version
         if check_version:
             self._check_supported_version()
 
@@ -225,7 +222,7 @@ class StateGraph(metaclass=StateGraphMeta):
             self.gtl_logger.info(f'Not checking the version of {app_package}: {e}')
             return
         except Exception as e:
-            self.gtl_logger.warning(f'Could not check the version of {app_package}: {e!r}')
+            self.gtl_logger.warning(f'Could not check the version of {app_package}: {e}')
             return
         if installed_version is None:
             self.gtl_logger.warning(f'{app_package} is not installed. Puma supports version {supported_version}')

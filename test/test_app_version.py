@@ -266,15 +266,6 @@ class TestCheckSupportedVersion(unittest.TestCase):
         self.assertEqual([], self._create_app(installed_version='3.1', check_version=False))
         self.get_app_version.assert_not_called()
 
-    def test_check_can_be_turned_off_for_an_app_class(self):
-        class UncheckedApp(VersionedApp):
-            main_state = SimpleState(['xpath'], initial_state=True)
-            check_version = False
-
-        self.assertEqual([], self._create_app(UncheckedApp, installed_version='3.1'))
-        self.get_app_version.assert_not_called()
-        self.assertEqual([], self._create_app(UncheckedApp, installed_version='3.1', check_version=False))
-
     def test_app_can_override_how_versions_are_compared(self):
         class SuffixApp(VersionedApp):
             main_state = SimpleState(['xpath'], initial_state=True)
