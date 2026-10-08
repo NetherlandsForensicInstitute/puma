@@ -176,6 +176,10 @@ class GooglePlayStore(StateGraph):
     profile_state.to(manage_apps_state, compose_clicks([MANAGE_APPS_AND_DEVICE], name='click_manage_apps_and_devices'))
     app_page_state.from_states([home_state, profile_state, manage_apps_state], app_page_state.open_app_page)
 
+    def is_supported_version(self, installed_version: str, supported_version: str) -> bool:
+        # The version name of the Play Store has a suffix, e.g. "48.3.25-31 [0] [PR] 123456789"
+        return super().is_supported_version(installed_version.split(' ')[0], supported_version)
+
     def __init__(self, device_udid):
         """
         Initializes the Google Play Store with a device UDID.
