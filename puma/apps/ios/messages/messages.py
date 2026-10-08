@@ -249,11 +249,11 @@ def _send_new_message(driver: PumaDriver, recipient: str):
                             f'recipients on a simulator.')
 
 
-def _wait_for(driver: PumaDriver, *xpaths: str, timeout: float = 6) -> bool:
+def _wait_for(driver: PumaDriver, *locators: str, timeout: float = 6) -> bool:
     """
     Waits until any of the elements is present. The elements are checked at least once, also with a timeout of 0.
     """
-    return driver.wait_until_present(*xpaths, timeout=timeout)
+    return driver.wait_until_present(*locators, timeout=timeout)
 
 
 def _search(driver: PumaDriver, query: str = ''):

@@ -4,7 +4,7 @@ from abc import abstractmethod
 from datetime import datetime
 from enum import Enum
 from pathlib import Path
-from typing import Callable, Dict
+from typing import Callable, Dict, Sequence
 from uuid import uuid4
 
 from PIL import Image
@@ -221,20 +221,49 @@ class PumaDriver:
         """
         wait_until(condition, timeout, interval, description, self.gtl_logger)
 
-    def wait_until_present(self, *xpaths: str, timeout: float = 10, description: str = None) -> bool:
+    def wait_until_locators(self, present: Sequence[str] = (), not_present: Sequence[str] = (), timeout: float = 10,
+                            description: str = None) -> bool:
+        """
+        Waits until any of the `present` elements is present and none of the `not_present` elements is present. An empty
+        list adds no condition. The elements are checked at least once, also with a timeout of 0.
+
+        :param present: The XPaths (or Locators) of the elements to wait for. One of them must be present.
+        :param not_present: The XPaths (or Locators) of the elements to wait to disappear. None of them may be present.
+        :param timeout: The maximum time to wait, in seconds.
+        :param description: What is waited for. Nothing is logged without a description.
+        :return: True if the condition was met, False if the timeout was reached.
+        """
+        def condition():
+            return ((not present or any(self.is_present(locator) for locator in present))
+                    and not any(self.is_present(locator) for locator in not_present))
+
+        try:
+            self.wait_until(condition, timeout, 0.5, description)
+            return True
+        except TimeoutError:
+            return False
+
+    def wait_until_present(self, *locators: str, timeout: float = 10, description: str = None) -> bool:
         """
         Waits until any of the elements is present. The elements are checked at least once, also with a timeout of 0.
 
-        :param xpaths: The XPaths (or Locators) of the elements. The wait ends when any of them is present.
+        :param locators: The XPaths (or Locators) of the elements. The wait ends when any of them is present.
         :param timeout: The maximum time to wait, in seconds.
         :param description: What is waited for. Nothing is logged without a description.
         :return: True if one of the elements is present, False if the timeout was reached.
         """
-        try:
-            self.wait_until(lambda: any(self.is_present(xpath) for xpath in xpaths), timeout, 0.5, description)
-            return True
-        except TimeoutError:
-            return False
+        return self.wait_until_locators(present=locators, timeout=timeout, description=description)
+
+    def wait_until_not_present(self, *locators: str, timeout: float = 10, description: str = None) -> bool:
+        """
+        Waits until none of the elements is present. The elements are checked at least once, also with a timeout of 0.
+
+        :param locators: The XPaths (or Locators) of the elements. The wait ends when none of them is present.
+        :param timeout: The maximum time to wait, in seconds.
+        :param description: What is waited for. Nothing is logged without a description.
+        :return: True if none of the elements is present, False if the timeout was reached.
+        """
+        return self.wait_until_locators(not_present=locators, timeout=timeout, description=description)
 
     def click(self, xpath: str, width_ratio:float=0.5, height_ratio:float=0.5):
         """
