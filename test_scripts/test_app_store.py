@@ -67,10 +67,17 @@ class TestAppStore(unittest.TestCase):
         self.assertEqual(AppState.NOT_INSTALLED, self.alice.get_app_state(BUNDLE_ID))
 
     def test_update_app(self):
+        if self.alice.get_app_state(UPDATABLE_BUNDLE_ID) != AppState.UPDATE_AVAILABLE:
+            self.skipTest(f"No update is available for {UPDATABLE_BUNDLE_ID}, so updating could not be tested")
         self.alice.update_app(UPDATABLE_BUNDLE_ID)
+        _wait_until_installed(self.alice, UPDATABLE_BUNDLE_ID)
 
     def test_update_all_apps(self):
+        if self.alice.get_app_state(UPDATABLE_BUNDLE_ID) != AppState.UPDATE_AVAILABLE:
+            self.skipTest("No updates are available, so updating all apps could not be tested")
         self.alice.update_all_apps()
+        # update_all_apps does not wait for the updates, so the app is being updated or has been updated already
+        self.assertIn(self.alice.get_app_state(UPDATABLE_BUNDLE_ID), [AppState.INSTALLING, AppState.INSTALLED])
 
 
 if __name__ == '__main__':

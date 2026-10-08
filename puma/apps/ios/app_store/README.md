@@ -8,10 +8,9 @@ The App Store is part of iOS, so its version is the iOS version.
 
 ## Prerequisites
 
-- A real iOS device running iOS 26, set up as described in [Setting up iOS](../../../../docs/setup-ios.md).
-  Simulators have no App Store.
+- A real iOS device, set up for Puma as described in
+  [Using Puma apps on iOS](../../../../docs/setup-ios.md#using-puma-apps-on-ios). Simulators have no App Store.
 - The device is signed in with an Apple Account
-- Device language needs to be set to English
 - The machine running Puma has an internet connection. Puma uses it to look up the App Store id of an app, which it
   needs to open the page of the app.
 - Puma cannot enter a password, or confirm with the side button, Face ID or Touch ID. Turn these off for free
@@ -28,23 +27,17 @@ The App Store is part of iOS, so its version is the iOS version.
 
 ## Initialization
 
-Initialization is done in the following way:
+Apps are not available in every country, so the two-letter country code of the App Store of your device is required.
+Puma looks up apps in that App Store. An app that is not in it cannot be installed, and Puma raises an `AppStoreError`:
 
 ```python
 from puma.apps.ios.app_store.app_store import AppStore
 
-phone = AppStore("00008110-000A1B2C3D4E5F6G")
+phone = AppStore("00008110-000A1B2C3D4E5F6G", country="nl")
 ```
 
-On a real device, also pass the signing settings for WebDriverAgent as `desired_capabilities`, see
-[Setting up iOS](../../../../docs/setup-ios.md).
-
-Apps are not available in every country. Puma looks up apps in the Dutch App Store by default. Pass the two-letter country
-code of the App Store of your device if it is not the Dutch one:
-
-```python
-phone = AppStore("00008110-000A1B2C3D4E5F6G", country="us")
-```
+On a real device, also pass the signing settings, see
+[Using Puma apps on iOS](../../../../docs/setup-ios.md#using-puma-apps-on-ios).
 
 ## Managing specific apps
 

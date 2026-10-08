@@ -87,3 +87,14 @@ Some iOS specifics to be aware of:
 - System pop-ups such as permission requests are handled automatically, by granting the permission.
 - Screen recording (`start_recording()`) requires [ffmpeg](installation.md#optional-ffmpeg) on the Mac running Appium.
 - Apps built into iOS (Settings, Messages) change with iOS updates, so their supported version is the iOS version.
+
+## Using Puma apps on iOS
+
+These prerequisites apply to all iOS apps of Puma. The README of an app lists what is specific to that app.
+
+- The device or simulator is set up as described above, and is running the iOS version the app supports. This is
+  iOS 26 for the apps that are built into iOS.
+- The language of the device is set to English, as Puma recognizes screens by their English texts.
+- The device is unlocked while Puma runs, see [Physical devices](#physical-devices).
+- On a real device, pass the signing settings for WebDriverAgent as `desired_capabilities` when initializing an app,
+  see step 7 under [Physical devices](#physical-devices).
