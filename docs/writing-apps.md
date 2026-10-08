@@ -121,6 +121,16 @@ elements that need to be clicked to execute the transition.
 home_state.to(to_state=settings_state, ui_actions=compose_clicks(['xpath_button1', 'xpath_button2']))
 ```
 
+If an element may be out of view, wrap it in `scroll_to` to scroll to it before clicking. The screen is only scrolled
+when the element is not present. Pass `swipe_down=False` to scroll up instead of down:
+
+```python
+home_state.to(settings_state, compose_clicks(['xpath_menu', scroll_to('xpath_settings'), 'xpath_button']))
+```
+
+The state is validated directly after a transition. If a screen takes a while to open, pass `wait` to wait a number of
+seconds after the clicks: `compose_clicks(['xpath_button'], 'open_settings', wait=1)`.
+
 If you're defining a transition to a `ContextualState`, the transition probably needs to know the context to be executed.
 In that case you need to define the transition method from scratch, rather than use `compose_clicks`, by defining a method
 that takes the required context as an argument: 
