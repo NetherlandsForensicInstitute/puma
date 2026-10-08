@@ -1,5 +1,6 @@
 Version 6.1.0
 -------------
+230. Log which xpath caused SimpleState validation to fail
 228. Google Play Store: support newest version 53.4.34-34
 
 Version 6.0.0
@@ -12,7 +13,6 @@ Version 5.1.1
 
 Version 5.1.0
 -------------
-230. Log which xpath caused SimpleState validation to fail
 204. Tutorial: Create new tutorial files
 213. Teleguard: Fix typo in variable name
 199. WhatsApp: Add view contact profile picture functionality
