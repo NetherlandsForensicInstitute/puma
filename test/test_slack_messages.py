@@ -1,6 +1,10 @@
 import unittest
+from datetime import datetime
 
-from puma.apps.android.slack.slack import Message, _merge_messages, _parse_messages
+from puma.apps.android.slack.slack import Message, _merge_messages, _parse_messages, _to_iso_time
+
+# A Thursday
+NOW = datetime(2026, 10, 8, 10, 30)
 
 
 def _message(top: int, bottom: int, sender: str = None, time: str = None, text: str = None, file: str = None) -> str:
@@ -58,6 +62,40 @@ class TestSlackMessagesParsing(unittest.TestCase):
         a, b = Message('Puma', None, 'same', ''), Message('Puma', None, 'other', '')
         # the first screen shows two identical messages, the second screen shows the second one and a new message
         self.assertEqual([a, a, b], _merge_messages([a, a], [a, b]))
+
+
+class TestSlackTimeConversion(unittest.TestCase):
+    def test_relative_dates(self):
+        self.assertEqual('2026-10-08T16:01:00', _to_iso_time('Today at 4:01 PM', NOW))
+        self.assertEqual('2026-10-07T00:15:00', _to_iso_time('Yesterday at 12:15 AM', NOW))
+
+    def test_weekdays_are_in_the_last_week(self):
+        self.assertEqual('2026-10-06T09:00:00', _to_iso_time('Tuesday at 9:00 AM', NOW))
+        self.assertEqual('2026-10-05T12:00:00', _to_iso_time('Monday at 12:00 PM', NOW))
+        # today is shown as 'Today', so the same weekday is a week ago
+        self.assertEqual('2026-10-01T13:00:00', _to_iso_time('Thursday at 1:00 PM', NOW))
+        self.assertEqual('2026-10-02T13:00:00', _to_iso_time('Friday at 1:00 PM', NOW))
+
+    def test_dates(self):
+        self.assertEqual('2026-09-29T14:06:00', _to_iso_time('Sep 29th at 2:06 PM', NOW))
+        self.assertEqual('2026-10-01T08:05:00', _to_iso_time('Oct 1st at 8:05 AM', NOW))
+        self.assertEqual('2026-03-22T11:00:00', _to_iso_time('March 22nd at 11:00 AM', NOW))
+
+    def test_dates_without_year_in_the_future_are_last_year(self):
+        self.assertEqual('2025-12-24T18:00:00', _to_iso_time('Dec 24th at 6:00 PM', NOW))
+
+    def test_dates_with_year(self):
+        self.assertEqual('2025-09-29T14:06:00', _to_iso_time('Sep 29th, 2025 at 2:06 PM', NOW))
+
+    def test_24_hour_clock_and_no_break_spaces(self):
+        self.assertEqual('2026-09-29T14:06:00', _to_iso_time('Sep 29th at 14:06', NOW))
+        self.assertEqual('2026-09-29T14:06:00', _to_iso_time('Sep 29th at 2:06 PM', NOW))
+        self.assertEqual('2026-09-29T14:06:00', _to_iso_time('Sep 29th at 2:06 PM', NOW))
+
+    def test_unknown_formats(self):
+        for shown_time in ('Last week', 'Sometime at 2:06 PM', 'Sep 29th at noon'):
+            with self.assertRaises(ValueError):
+                _to_iso_time(shown_time, NOW)
 
 
 if __name__ == '__main__':

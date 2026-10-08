@@ -2,6 +2,7 @@ import csv
 import re
 import time
 from dataclasses import dataclass, astuple, fields
+from datetime import datetime, timedelta
 from typing import Optional
 from xml.etree import ElementTree
 
@@ -23,8 +24,9 @@ class Message:
     A message in a Slack conversation.
 
     :param sender: The name of the sender.
-    :param time: The time of the message as shown in Slack, e.g. 'Sep 29th at 2:06 PM' or 'Today at 4:01 PM'. Slack
-    only shows the time of the first of consecutive messages of the same sender, the time of the others is None.
+    :param time: The time of the message in ISO 8601 (e.g. '2026-09-29T14:06:00'), in the time zone of the device.
+    Slack does not show seconds, so these are always 0. Slack only shows the time of the first of consecutive messages
+    of the same sender, the time of the others is None.
     :param text: The text of the message, empty if the message only contains a file.
     :param attachments: The files in the message as described by Slack, e.g. 'image: IMG-20260206-WA0002.jpeg'.
     """
@@ -75,6 +77,8 @@ class SlackChatState(SimpleState, ContextualState):
 
 @supported_version("26.09.50.0")
 class Slack(StateGraph):
+    platform = Platform.ANDROID
+
     def __init__(self, device_udid):
         """
         Initializes Slack messenger with a device UDID.
@@ -138,6 +142,8 @@ class Slack(StateGraph):
         :param direct_message: The name of the direct message conversation.
         :return: The messages, with their sender, time, text and attachments.
         """
+        # Slack shows relative dates ('Today') and dates without a year in the time zone of the device
+        now = datetime.fromisoformat(self.driver.driver.get_device_time('YYYY-MM-DDTHH:mm:ss'))
         self._swipe_messages_list(up=True, until=lambda: self.driver.is_present(CHAT_BEGINNING_OF_CONVERSATION))
         messages = []
 
@@ -151,12 +157,19 @@ class Slack(StateGraph):
         # Consecutive messages of the same sender have no header, the sender is the sender of the message above
         for previous, message in zip(messages, messages[1:]):
             message.sender = message.sender or previous.sender
+        for message in messages:
+            if message.time:
+                try:
+                    message.time = _to_iso_time(message.time, now)
+                except ValueError:
+                    self.gtl_logger.warning(f"Unknown time format '{message.time}', the time is kept as shown in Slack")
         return messages
 
     def export_messages(self, file_path: str, channel: str = None, direct_message: str = None):
         """
         Exports all messages in the current or selected channel or direct message conversation to a CSV file, oldest
-        first. The columns are the sender, the time as shown in Slack, the text and the attachments of each message.
+        first. The columns are the sender, the time (ISO 8601, in the time zone of the device), the text and the
+        attachments of each message.
         Slack only shows the time of the first of consecutive messages of the same sender, the time of the others is
         left empty.
 
@@ -283,6 +296,63 @@ def _merge_messages(messages: list[Message], new_messages: list[Message]) -> lis
     return messages + new_messages
 
 
-if __name__ == '__main__':
-    phone = Slack('32131JEHN38079')
-    phone.export_messages('test.csv', channel='general')
+_WEEKDAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
+
+
+def _to_iso_time(shown_time: str, now: datetime) -> str:
+    """
+    Converts a time as shown in Slack to ISO 8601, e.g. 'Sep 29th at 2:06 PM' to '2026-09-29T14:06:00'.
+
+    Slack shows the date as 'Today', 'Yesterday', a weekday for the last week, or a month and day, with the year only
+    when it is not the current year. The time is shown with a 12-hour or 24-hour clock, depending on the device.
+
+    :param shown_time: The time as shown in Slack, e.g. 'Today at 4:01 PM' or 'Sep 29th, 2025 at 14:06'.
+    :param now: The current time on the device, to resolve relative dates and dates without a year.
+    :return: The time in ISO 8601, without time zone.
+    :raises ValueError: If the time format is unknown.
+    """
+    # Android puts a (narrow) no-break space before AM/PM
+    match = re.fullmatch(r'(?P<date>.+) at (?P<time>.+)', ' '.join(shown_time.split()))
+    if not match:
+        raise ValueError(f'Unknown time format: {shown_time}')
+    time_of_day = _parse_time_of_day(match['time'])
+    date = match['date']
+    if date == 'Today':
+        day = now.date()
+    elif date == 'Yesterday':
+        day = now.date() - timedelta(days=1)
+    elif date in _WEEKDAYS:
+        # a day in the last week, today is shown as 'Today'
+        day = now.date() - timedelta(days=(now.weekday() - _WEEKDAYS.index(date)) % 7 or 7)
+    else:
+        day_match = re.fullmatch(r'(?P<month>[A-Z][a-z]+)\.? (?P<day>\d{1,2})(st|nd|rd|th)?(, (?P<year>\d{4}))?', date)
+        if not day_match:
+            raise ValueError(f'Unknown time format: {shown_time}')
+        month = _parse_month(day_match['month'])
+        day_of_month = int(day_match['day'])
+        if day_match['year']:
+            day = datetime(int(day_match['year']), month, day_of_month).date()
+        else:
+            # without a year, the date is in the current year, unless that date is still to come
+            day = datetime(now.year, month, day_of_month).date()
+            if day > now.date():
+                day = datetime(now.year - 1, month, day_of_month).date()
+    return datetime.combine(day, time_of_day).isoformat()
+
+
+def _parse_time_of_day(shown_time: str):
+    for time_format in ('%I:%M %p', '%H:%M'):
+        try:
+            return datetime.strptime(shown_time, time_format).time()
+        except ValueError:
+            pass
+    raise ValueError(f'Unknown time format: {shown_time}')
+
+
+def _parse_month(month: str) -> int:
+    for month_format in ('%b', '%B'):
+        try:
+            return datetime.strptime(month, month_format).month
+        except ValueError:
+            pass
+    raise ValueError(f'Unknown month: {month}')

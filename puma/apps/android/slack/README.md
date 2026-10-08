@@ -79,6 +79,8 @@ phone.export_messages("bob.csv", direct_message="Bob")
 messages = phone.get_messages(direct_message="Bob")
 ```
 
-The time is written as shown by Slack, for example `Sep 29th at 2:06 PM` or `Today at 4:01 PM`. Slack only shows the
-time of the first of consecutive messages of the same sender, so the time of the other messages is left empty.
+The time is written in ISO 8601 (`YYYY-MM-DDTHH:MM:SS`, for example `2026-09-29T14:06:00`), in the time zone of the
+device. Slack does not show seconds, so these are always `00`. Relative dates such as `Today` and dates without a year
+are resolved using the clock of the device. Slack only shows the time of the first of consecutive messages of the same
+sender, so the time of the other messages is left empty.
 Attachments are described as shown by Slack, for example `image: IMG-20260206-WA0002.jpeg`.
