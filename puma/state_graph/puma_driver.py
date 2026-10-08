@@ -36,6 +36,21 @@ class Platform(Enum):
     IOS = 'iOS'
 
 
+class AppVersionUnavailable(Exception):
+    """
+    Raised when the version of an app cannot be looked up. This is different from an app that is not installed, for
+    which the lookup succeeds and returns None.
+    """
+
+
+class AppVersionLookupNotSupported(AppVersionUnavailable):
+    """
+    Raised when the version of an app cannot be looked up in this setup, which is expected and not a failure. For
+    example when the version of apps on an iOS simulator is looked up from a machine other than the Mac the simulator
+    runs on.
+    """
+
+
 class PumaClickException(Exception):
     """
     Custom exception for handling errors related to clicking actions in the PumaDriver.
@@ -131,6 +146,18 @@ class PumaDriver:
         The identifier of the application: the package name on Android, the bundle id on iOS.
         """
         return self.app_package
+
+    @abstractmethod
+    def get_app_version(self, app_id: str = None) -> str | None:
+        """
+        Returns the version of an app installed on the device. This is the version as reported by the app, except for
+        apps that are bundled with the OS (iOS), whose version is the OS version.
+
+        :param app_id: The package name (Android) or bundle id (iOS) of the app. Defaults to the app of this driver.
+        :return: The version, or None if the app is not installed.
+        :raises AppVersionUnavailable: if the version cannot be looked up, for example because adb is not available.
+        """
+        pass
 
     @staticmethod
     @abstractmethod
