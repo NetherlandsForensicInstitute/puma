@@ -34,20 +34,6 @@ def _contextual_parameter_names(function) -> list[str]:
             and parameter.name not in ('driver', 'self')]
 
 
-def _contextual_parameters_on_path(initial_state: State, state: State) -> set[str]:
-    """
-    Returns the contextual arguments needed to navigate from the initial state to the given state: the parameters of
-    the transitions to contextual states on the shortest path, and of the validate_context methods of those states.
-    Returns an empty set if the state cannot be reached.
-    """
-    parameters = set()
-    for transition in _shortest_path(initial_state, state) or []:
-        if isinstance(transition.to_state, ContextualState):
-            parameters.update(_contextual_parameter_names(transition.ui_actions))
-            parameters.update(_contextual_parameter_names(transition.to_state.validate_context))
-    return parameters
-
-
 class StateGraphMeta(type):
     """
     Metaclass for creating and validating StateGraph classes.
@@ -95,37 +81,41 @@ class StateGraphMeta(type):
         new_class.states = states
         new_class.transitions = [transition for state in states for transition in state.transitions]
         new_class.initial_state = next(s for s in states if s.initial_state)
-        new_class.context_parameters = StateGraphMeta._collect_context_parameters(states)
+        new_class.state_context_parameters = StateGraphMeta._collect_state_context_parameters(new_class.initial_state,
+                                                                                             states)
+        new_class.context_parameters = frozenset().union(*new_class.state_context_parameters.values())
 
         # validation
         StateGraphMeta._validate_graph(states)
-        StateGraphMeta._validate_actions(name, namespace, new_class.initial_state)
+        StateGraphMeta._validate_actions(name, namespace, new_class.state_context_parameters)
 
         return new_class
 
     @staticmethod
-    def _collect_context_parameters(states: list[State]) -> frozenset[str]:
+    def _collect_state_context_parameters(initial_state: State, states: list[State]) -> dict[State, frozenset[str]]:
         """
-        Collects the names of the contextual arguments of the state graph: the arguments needed to navigate to a
-        contextual state or to validate its context. These are the parameters of the transitions to contextual states
-        and of the validate_context methods, except for the driver.
+        Collects the names of the contextual arguments needed to navigate to each state: the parameters of the
+        transitions to contextual states on the shortest path from the initial state, and of the validate_context
+        methods of those contextual states, except for the driver.
         Parameters of transitions to other states are not contextual: these transitions always end in the same state,
         so their parameters are content (such as a caption added during the transition) rather than context.
 
+        :param initial_state: The initial state of the state graph.
         :param states: A list of states in the state graph.
-        :return: The names of the contextual arguments.
+        :return: The names of the contextual arguments per state. Empty for states that cannot be reached.
         """
-        contextual_states = [state for state in states if isinstance(state, ContextualState)]
-        # collect all functions that require contextual arguments:
-        # transitions
-        contextual_functions = [transition.ui_actions for state in states for transition in state.transitions
-                                if isinstance(transition.to_state, ContextualState)]
-        # and contextual validation
-        contextual_functions += [state.validate_context for state in contextual_states]
-        return frozenset(name for function in contextual_functions for name in _contextual_parameter_names(function))
+        state_context_parameters = {}
+        for state in states:
+            parameters = set()
+            for transition in _shortest_path(initial_state, state) or []:
+                if isinstance(transition.to_state, ContextualState):
+                    parameters.update(_contextual_parameter_names(transition.ui_actions))
+                    parameters.update(_contextual_parameter_names(transition.to_state.validate_context))
+            state_context_parameters[state] = frozenset(parameters)
+        return state_context_parameters
 
     @staticmethod
-    def _validate_actions(class_name: str, namespace: dict, initial_state: State):
+    def _validate_actions(class_name: str, namespace: dict, state_context_parameters: dict[State, frozenset[str]]):
         """
         Validates that each action accepts the contextual arguments needed to navigate to its state. The arguments of an
         action are passed on to the transitions and validate_context methods on the way to its state, so an action that
@@ -133,7 +123,7 @@ class StateGraphMeta(type):
 
         :param class_name: The name of the class being created.
         :param namespace: The namespace dictionary containing the class attributes.
-        :param initial_state: The initial state of the state graph.
+        :param state_context_parameters: The names of the contextual arguments needed to navigate to each state.
         :raises ValueError: If any action is missing contextual arguments.
         """
         errors = []
@@ -144,7 +134,7 @@ class StateGraphMeta(type):
             action_parameters = inspect.signature(value.action_function).parameters
             if any(p.kind == inspect.Parameter.VAR_KEYWORD for p in action_parameters.values()):
                 continue
-            missing = sorted(_contextual_parameters_on_path(initial_state, action_state) - action_parameters.keys())
+            missing = sorted(state_context_parameters.get(action_state, frozenset()) - action_parameters.keys())
             if missing:
                 errors.append(f"{class_name}.{name} (state '{action_state}') is missing contextual arguments {missing}")
         if errors:
@@ -256,6 +246,7 @@ class StateGraph(metaclass=StateGraphMeta):
     """
     platform: Platform
     context_parameters: frozenset[str] = frozenset()  # set in metaclass
+    state_context_parameters: Dict[State, frozenset[str]] = {}  # set in metaclass
 
     def __init__(self, device_udid: str, app_package: str, appium_server: str = 'http://localhost:4723', desired_capabilities: Dict[str, str] = None, check_version: bool = True):
         """
