@@ -185,6 +185,12 @@ def send_message(self, message:str, conversation:str):
 In this example, the argument `conversation` is not used inside the `send_message` method, but it will be used to properly
 navigate to the correct conversation.
 
+Puma checks this when your application class is defined. If an action is missing an argument that a transition or
+`validate_context` method on the way to its state needs, a `ValueError` is raised that names the action and the missing
+arguments. This also applies to actions in states that come after a contextual state: an action in the chat settings
+of a conversation also needs the `conversation` argument. When the argument is only needed to navigate, you can make it
+optional (`conversation: str = None`), so the action can also be called when the application is already in that state.
+
 ### Ground Truth Logging
 
 The State Graph framework contains a Ground Truth Logger with the goal of logging all actions taken on the device. The

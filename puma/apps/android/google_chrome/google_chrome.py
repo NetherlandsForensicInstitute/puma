@@ -109,10 +109,11 @@ class GoogleChrome(StateGraph):
             return True
 
     @action(bookmarks_folder_state)
-    def load_first_bookmark(self, folder_name: str):
+    def load_first_bookmark(self, folder_name: str, tab_index: int=None):
         """
         Load the first saved bookmark in the specified folder.
         :param folder_name: The name of the folder to load the first bookmark from.
+        :param tab_index: Index of the tab to open the bookmarks from.
         """
         self.driver.click(FIRST_BOOKMARK)
 
