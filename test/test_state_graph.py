@@ -1,7 +1,8 @@
 import unittest
+from unittest.mock import Mock, call, patch
 
 from puma.state_graph.puma_driver import PumaDriver, Platform
-from puma.state_graph.state import State, ContextualState, SimpleState
+from puma.state_graph.state import State, ContextualState, SimpleState, compose_clicks, scroll_to
 from puma.state_graph.state_graph import StateGraphMeta, StateGraph
 
 
@@ -129,6 +130,36 @@ class TestStateGraph(unittest.TestCase):
         with self.assertRaises(ValueError) as error:
             AndroidTestApp(device_udid='emulator123', app_package='')  # also invalid
         self.assertEqual('The provided package name is invalid: ', str(error.exception))
+
+
+class TestComposeClicks(unittest.TestCase):
+    def test_clicks_in_order(self):
+        driver = Mock()
+        compose_clicks(['xpath1', 'xpath2'])(driver)
+        self.assertEqual([call.click('xpath1'), call.click('xpath2')], driver.mock_calls)
+
+    def test_scroll_to(self):
+        driver = Mock()
+        compose_clicks([scroll_to('xpath1', swipe_down=False, max_swipes=5)])(driver)
+        driver.swipe_to_find_element.assert_called_once_with('xpath1', 5, False)
+        driver.swipe_to_find_element.return_value.click.assert_called_once_with()
+        driver.click.assert_not_called()
+
+    def test_mixed_clicks_keep_order(self):
+        driver = Mock()
+        compose_clicks(['xpath1', scroll_to('xpath2'), 'xpath3'])(driver)
+        self.assertEqual([call.click('xpath1'), call.swipe_to_find_element('xpath2', 10, True),
+                          call.swipe_to_find_element().click(), call.click('xpath3')], driver.mock_calls)
+
+    @patch('puma.state_graph.state.sleep')
+    def test_wait(self, sleep):
+        compose_clicks(['xpath1'])(Mock())
+        sleep.assert_not_called()
+        compose_clicks(['xpath1'], wait=1)(Mock())
+        sleep.assert_called_once_with(1)
+
+    def test_name(self):
+        self.assertEqual('open_settings', compose_clicks([scroll_to('xpath')], 'open_settings').__name__)
 
 
 if __name__ == '__main__':

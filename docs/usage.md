@@ -85,7 +85,7 @@ you'd simply have to look up the tag `Xyz_v2`.
 
 Apps that are built into iOS, such as Settings and Messages, are updated together with iOS. For these apps, the
 supported version is the iOS version, e.g. `26.6`. Third-party iOS apps, installed from the App Store, use their own app
-version, like Android apps.
+version, like Android apps. The same goes for the Settings app on Android, whose version is the Android version, e.g. `16`.
 
 When a Puma object is created, it logs a warning if the installed version differs from the supported version (patch
 releases are accepted: supported version `26.6` covers `26.6.2`). This takes a few calls to the device. For apps that
