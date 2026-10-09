@@ -1,5 +1,6 @@
+import inspect
 from time import sleep
-from typing import Dict
+from typing import Any, Dict
 
 from puma.state_graph import logger
 from puma.state_graph.popup_handler import known_popups_for, PopUpHandler
@@ -70,11 +71,40 @@ class StateGraphMeta(type):
         new_class.states = states
         new_class.transitions = [transition for state in states for transition in state.transitions]
         new_class.initial_state = next(s for s in states if s.initial_state)
+        new_class.context_parameters = StateGraphMeta._collect_context_parameters(states)
 
         # validation
         StateGraphMeta._validate_graph(states)
 
         return new_class
+
+    @staticmethod
+    def _collect_context_parameters(states: list[State]) -> frozenset[str]:
+        """
+        Collects the names of the contextual arguments of the state graph: the arguments needed to navigate to a
+        contextual state or to validate its context. These are the parameters of the transitions to contextual states
+        and of the validate_context methods, except for the driver.
+        Parameters of transitions to other states are not contextual: these transitions always end in the same state,
+        so their parameters are content (such as a caption added during the transition) rather than context.
+
+        :param states: A list of states in the state graph.
+        :return: The names of the contextual arguments.
+        """
+        contextual_states = [state for state in states if isinstance(state, ContextualState)]
+        # collect all functions that require contextual arguments:
+        # transitions
+        contextual_functions = [transition.ui_actions for state in states for transition in state.transitions
+                     if isinstance(transition.to_state, ContextualState)]
+        # and contextual validation
+        contextual_functions += [state.validate_context for state in contextual_states]
+        context_parameters = set()
+        for function in contextual_functions:
+            for parameter in inspect.signature(function).parameters.values():
+                if parameter.kind in (inspect.Parameter.VAR_POSITIONAL, inspect.Parameter.VAR_KEYWORD):
+                    continue
+                if parameter.name not in ('driver', 'self'):
+                    context_parameters.add(parameter.name)
+        return frozenset(context_parameters)
 
     @staticmethod
     def _validate_graph(states: list[State]):
@@ -173,8 +203,13 @@ class StateGraph(metaclass=StateGraphMeta):
     When an application has a supported version (see @supported_version), a warning is logged on creation if the
     installed version differs from it. How versions are compared can be changed by overriding is_supported_version, and
     the check can be turned off with the `check_version` constructor parameter.
+
+    The last given value of each contextual argument (an argument of validate_context or of a transition to a contextual
+    state, such as the conversation in a chat app) is remembered. When an action is called without it, the remembered
+    value is used if the state graph has to navigate to the state again, for example when recovering from an error.
     """
     platform: Platform
+    context_parameters: frozenset[str] = frozenset()  # set in metaclass
 
     def __init__(self, device_udid: str, app_package: str, appium_server: str = 'http://localhost:4723', desired_capabilities: Dict[str, str] = None, check_version: bool = True):
         """
@@ -243,24 +278,60 @@ class StateGraph(metaclass=StateGraphMeta):
         if to_state not in self.states:
             raise ValueError(f"{to_state.id} is not a known state in this PumaUiGraph")
         kwargs['driver'] = self.driver
+        self._remember_context(kwargs)
         try:
             self._validate_state(self.current_state, **kwargs)
         except PumaClickException as pce:
             logger.warning(f"Initial state validation encountered a problem {pce}")
+        # when navigating, use remembered values for contextual arguments that were not given
+        navigation_kwargs = None
         while self.current_state != to_state and counter < max_transitions:
             counter += 1
+            if navigation_kwargs is None:
+                navigation_kwargs = self._with_remembered_context(to_state, kwargs)
             try:
                 transition = self._find_shortest_path(to_state)[0]
 
                 self.gtl_logger.info(f"Going from state '{self.current_state}' to '{to_state}', calling transition '{transition.ui_actions.__name__}'")
-                safe_func_call(transition.ui_actions, **kwargs)
+                safe_func_call(transition.ui_actions, **navigation_kwargs)
 
-                self._validate_state(transition.to_state, **kwargs)
+                self._validate_state(transition.to_state, **navigation_kwargs)
             except PumaClickException as pce:
                 logger.warning(f"Transition or state validation failed, recover? {pce}")
         if counter >= max_transitions:
             raise ValueError(f"Too many transitions, state is unrecoverable")
         return True
+
+    @property
+    def _last_context(self) -> Dict[str, Any]:
+        """
+        The last given non-None value of each contextual argument. Created lazily, so subclasses that do not call
+        __init__ (such as test mocks) also have it.
+        """
+        return self.__dict__.setdefault('_last_context_values', {})
+
+    def _remember_context(self, kwargs: Dict[str, Any]):
+        """
+        Remembers the values of the contextual arguments in the given keyword arguments. None values are ignored.
+
+        :param kwargs: The keyword arguments passed to go_to_state.
+        """
+        for name in self.context_parameters:
+            if kwargs.get(name) is not None:
+                self._last_context[name] = kwargs[name]
+
+    def _with_remembered_context(self, to_state: State, kwargs: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Returns the keyword arguments, with the remembered value filled in for each contextual argument that is missing
+        or None.
+
+        :param to_state: The state that is navigated to, used for logging.
+        :param kwargs: The keyword arguments passed to go_to_state.
+        """
+        filled_in = {name: value for name, value in self._last_context.items() if kwargs.get(name) is None}
+        if filled_in:
+            self.gtl_logger.info(f"Using previously given contextual arguments {filled_in} to navigate to '{to_state}'")
+        return {**kwargs, **filled_in}
 
     def _validate_state(self, expected_state: State, **kwargs):
         """
