@@ -1,5 +1,6 @@
 Version 6.1.0
 -------------
+267. Remember contextual arguments, so recovery works when an action is called without them (e.g. send_message without a conversation)
 242. iOS: Add App Store support, to install, update and uninstall apps
 261. Add a generic wait_until helper, and use it in the Play Store, iOS Messages and WhatsApp Business. iOS App Store waits until an app is installed or updated
 203. Add get_app_version, and warn when the installed app version differs from the supported version
