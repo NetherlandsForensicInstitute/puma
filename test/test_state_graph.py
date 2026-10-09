@@ -83,6 +83,14 @@ class TestStateGraphMeta(unittest.TestCase):
         with self.assertRaises(ValueError):
             StateGraphMeta._validate_graph(states)
 
+    def test_graph_without_initial_state(self):
+        with self.assertRaises(ValueError) as error:
+            class NoInitialStateApp(StateGraph):
+                platform = Platform.ANDROID
+
+                state1 = SimpleState(xpaths=['//state1'])
+        self.assertEqual('Graph needs an initial state', str(error.exception))
+
     def test_validate_graph_contextual_state_without_parent(self):
         # Create an invalid state graph with a ContextualState without a parent
         state1 = TestState(id="State1", initial_state=True)

@@ -1,5 +1,6 @@
 Version 6.1.0
 -------------
+271. Minor bugs: better error message for StateGraph without initial state, fix OCR skipping the last word, and fix WhatsApp group_exists always failing
 242. iOS: Add App Store support, to install, update and uninstall apps
 261. Add a generic wait_until helper, and use it in the Play Store, iOS Messages and WhatsApp Business. iOS App Store waits until an app is installed or updated
 203. Add get_app_version, and warn when the installed app version differs from the supported version
