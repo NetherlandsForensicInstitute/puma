@@ -1,6 +1,6 @@
 Version 6.1.0
 -------------
-XXX. Android: Add Settings support, to change the brightness and screen timeout, and to connect to a Wi-Fi network. compose_clicks can scroll to elements with scroll_to, and wait after the clicks
+265. Android: Add Settings support, to change the brightness and screen timeout, and to connect to a Wi-Fi network. compose_clicks can scroll to elements with scroll_to, and wait after the clicks
 242. iOS: Add App Store support, to install, update and uninstall apps
 261. Add a generic wait_until helper, and use it in the Play Store, iOS Messages and WhatsApp Business. iOS App Store waits until an app is installed or updated
 203. Add get_app_version, and warn when the installed app version differs from the supported version
