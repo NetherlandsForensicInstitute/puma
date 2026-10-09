@@ -24,6 +24,30 @@ def _platform_of_module(module: str) -> Platform | None:
     return None
 
 
+def _contextual_parameter_names(function) -> list[str]:
+    """
+    Returns the names of the parameters of a transition or validate_context function that are contextual arguments: all
+    parameters except the driver, self, *args and **kwargs.
+    """
+    return [parameter.name for parameter in inspect.signature(function).parameters.values()
+            if parameter.kind not in (inspect.Parameter.VAR_POSITIONAL, inspect.Parameter.VAR_KEYWORD)
+            and parameter.name not in ('driver', 'self')]
+
+
+def _contextual_parameters_on_path(initial_state: State, state: State) -> set[str]:
+    """
+    Returns the contextual arguments needed to navigate from the initial state to the given state: the parameters of
+    the transitions to contextual states on the shortest path, and of the validate_context methods of those states.
+    Returns an empty set if the state cannot be reached.
+    """
+    parameters = set()
+    for transition in _shortest_path(initial_state, state) or []:
+        if isinstance(transition.to_state, ContextualState):
+            parameters.update(_contextual_parameter_names(transition.ui_actions))
+            parameters.update(_contextual_parameter_names(transition.to_state.validate_context))
+    return parameters
+
+
 class StateGraphMeta(type):
     """
     Metaclass for creating and validating StateGraph classes.
@@ -75,6 +99,7 @@ class StateGraphMeta(type):
 
         # validation
         StateGraphMeta._validate_graph(states)
+        StateGraphMeta._validate_actions(name, namespace, new_class.initial_state)
 
         return new_class
 
@@ -94,17 +119,38 @@ class StateGraphMeta(type):
         # collect all functions that require contextual arguments:
         # transitions
         contextual_functions = [transition.ui_actions for state in states for transition in state.transitions
-                     if isinstance(transition.to_state, ContextualState)]
+                                if isinstance(transition.to_state, ContextualState)]
         # and contextual validation
         contextual_functions += [state.validate_context for state in contextual_states]
-        context_parameters = set()
-        for function in contextual_functions:
-            for parameter in inspect.signature(function).parameters.values():
-                if parameter.kind in (inspect.Parameter.VAR_POSITIONAL, inspect.Parameter.VAR_KEYWORD):
-                    continue
-                if parameter.name not in ('driver', 'self'):
-                    context_parameters.add(parameter.name)
-        return frozenset(context_parameters)
+        return frozenset(name for function in contextual_functions for name in _contextual_parameter_names(function))
+
+    @staticmethod
+    def _validate_actions(class_name: str, namespace: dict, initial_state: State):
+        """
+        Validates that each action accepts the contextual arguments needed to navigate to its state. The arguments of an
+        action are passed on to the transitions and validate_context methods on the way to its state, so an action that
+        is missing one of them cannot navigate to its state, or cannot validate its context.
+
+        :param class_name: The name of the class being created.
+        :param namespace: The namespace dictionary containing the class attributes.
+        :param initial_state: The initial state of the state graph.
+        :raises ValueError: If any action is missing contextual arguments.
+        """
+        errors = []
+        for name, value in namespace.items():
+            action_state = getattr(value, 'action_state', None)
+            if action_state is None:
+                continue
+            action_parameters = inspect.signature(value.action_function).parameters
+            if any(p.kind == inspect.Parameter.VAR_KEYWORD for p in action_parameters.values()):
+                continue
+            missing = sorted(_contextual_parameters_on_path(initial_state, action_state) - action_parameters.keys())
+            if missing:
+                errors.append(f"{class_name}.{name} (state '{action_state}') is missing contextual arguments {missing}")
+        if errors:
+            raise ValueError('\n'.join(errors) + '\nAdd them as parameters of the action (for example '
+                             '"conversation: str = None"), so they can be passed on to the transitions and '
+                             'validate_context methods on the way to the state of the action.')
 
     @staticmethod
     def _validate_graph(states: list[State]):
