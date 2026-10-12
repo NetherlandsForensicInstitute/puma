@@ -81,12 +81,14 @@ class StateGraphMeta(type):
         new_class.states = states
         new_class.transitions = [transition for state in states for transition in state.transitions]
         new_class.initial_state = next(s for s in states if s.initial_state)
-        new_class.state_context_parameters = StateGraphMeta._collect_state_context_parameters(new_class.initial_state,
-                                                                                             states)
-        new_class.context_parameters = frozenset().union(*new_class.state_context_parameters.values())
 
         # validation
         StateGraphMeta._validate_graph(states)
+
+        # contextual arguments, collected after the graph is validated as they need a valid initial state
+        new_class.state_context_parameters = StateGraphMeta._collect_state_context_parameters(new_class.initial_state,
+                                                                                             states)
+        new_class.context_parameters = frozenset().union(*new_class.state_context_parameters.values())
         StateGraphMeta._validate_actions(name, namespace, new_class.state_context_parameters)
 
         return new_class
