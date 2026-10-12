@@ -1,7 +1,7 @@
-import importlib
-import inspect
 import os
-import pkgutil
+from importlib import import_module
+from inspect import getmembers, isclass
+from pkgutil import walk_packages
 from typing import Callable, Tuple
 
 from git import Repo, Remote
@@ -18,9 +18,9 @@ def find_app_classes() -> list[type]:
     :return: The app classes, sorted by module.
     """
     app_classes = []
-    for module_info in pkgutil.walk_packages(puma.apps.__path__, f'{APP_MODULE}.'):
-        module = importlib.import_module(module_info.name)
-        for _, cls in inspect.getmembers(module, inspect.isclass):
+    for module_info in walk_packages(puma.apps.__path__, f'{APP_MODULE}.'):
+        module = import_module(module_info.name)
+        for _, cls in getmembers(module, isclass):
             # only classes defined in this module, with their own supported version (not inherited)
             if cls.__module__ == module.__name__ and 'supported_version' in vars(cls):
                 app_classes.append(cls)
