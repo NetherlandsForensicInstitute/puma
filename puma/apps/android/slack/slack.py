@@ -1,39 +1,18 @@
 import csv
-import re
 import time
-from dataclasses import dataclass, astuple, fields
-from datetime import datetime, timedelta
-from typing import Optional
-from xml.etree import ElementTree
+from dataclasses import astuple, fields
+from datetime import datetime
 
+from puma.apps.android.slack.message_parser import Message, parse_messages, merge_messages, to_iso_time
 from puma.apps.android.slack.xpaths import HOME_HISTORY_BUTTON, HOME_WORKSPACE_SELECTOR, HOME_CHANNEL_BUTTON, \
     CHAT_TITLE, \
     CHAT_BACK_BUTTON, CHAT_TEXT_INPUT, HOME_DIRECT_MESSAGE_BUTTON, CHAT_ATTACHMENTS_BUTTON, CHAT_SEND_BUTTON, \
     ATTACHMENTS_UPLOAD_FILE_BUTTON, ATTACHMENTS_ATTACH_PHOTOS_BUTTON, ATTACHMENTS_MEDIA_STRIP, ATTACHMENTS_PICTURES, \
-    ATTACHMENTS_PICTURE, ATTACHMENTS_DONE_BUTTON, CHAT_MESSAGES_LIST, CHAT_BEGINNING_OF_CONVERSATION, MESSAGES_LIST_ID, \
-    MESSAGE_ID, MESSAGE_SENDER_ID, MESSAGE_TIME_ID, MESSAGE_TEXT_ID, MESSAGE_FILE_ID, ZERO_WIDTH_SPACE
+    ATTACHMENTS_PICTURE, ATTACHMENTS_DONE_BUTTON, CHAT_MESSAGES_LIST, CHAT_BEGINNING_OF_CONVERSATION
 from puma.state_graph.action import action
 from puma.state_graph.puma_driver import PumaDriver, PumaClickException, supported_version, Platform
 from puma.state_graph.state import SimpleState, ContextualState, State, compose_clicks
 from puma.state_graph.state_graph import StateGraph
-
-
-@dataclass
-class Message:
-    """
-    A message in a Slack conversation.
-
-    :param sender: The name of the sender.
-    :param time: The time of the message in ISO 8601 (e.g. '2026-09-29T14:06:00'), in the time zone of the device.
-    Slack does not show seconds, so these are always 0. Slack only shows the time of the first of consecutive messages
-    of the same sender, the time of the others is None.
-    :param text: The text of the message, empty if the message only contains a file.
-    :param attachments: The files in the message as described by Slack, e.g. 'image: IMG-20260206-WA0002.jpeg'.
-    """
-    sender: str
-    time: Optional[str]
-    text: str
-    attachments: str
 
 
 class SlackChatState(SimpleState, ContextualState):
@@ -148,8 +127,12 @@ class Slack(StateGraph):
         messages = []
 
         def collect() -> bool:
+            """
+            Adds the messages on the current screen to the messages collected so far. Used as the stop condition while
+            swiping down: it always returns False, so the swiping continues until the end of the conversation.
+            """
             nonlocal messages
-            messages = _merge_messages(messages, _parse_messages(self.driver.driver.page_source))
+            messages = merge_messages(messages, parse_messages(self.driver.driver.page_source))
             return False
 
         collect()
@@ -160,7 +143,7 @@ class Slack(StateGraph):
         for message in messages:
             if message.time:
                 try:
-                    message.time = _to_iso_time(message.time, now)
+                    message.time = to_iso_time(message.time, now)
                 except ValueError:
                     self.gtl_logger.warning(f"Unknown time format '{message.time}', the time is kept as shown in Slack")
         return messages
@@ -218,12 +201,12 @@ class Slack(StateGraph):
                     return
         raise PumaClickException(f'Did not reach the end of the conversation after {max_swipes} swipes')
 
-    def _find_picture(self, picture_id: int) -> str:
+    def _find_picture(self, picture_index: int) -> str:
         """
-        Finds a picture in the photo strip of the attachments menu. The strip only shows a few pictures at a time, so it
-        is swiped to the left until the picture is shown.
+        Given a picture index n, this method will swipe until that picture is on screen and return the xpath locator for
+        the nth picture.
 
-        :param picture_id: The index of the picture, 1 being the most recent picture on the device.
+        :param picture_index: The index of the picture, 1 being the most recent picture on the device.
         :return: The XPath of the picture.
         """
         seen_pictures = []
@@ -231,128 +214,11 @@ class Slack(StateGraph):
             pictures = [element.get_attribute('content-desc') for element in self.driver.get_elements(ATTACHMENTS_PICTURES)]
             new_pictures = [picture for picture in pictures if picture not in seen_pictures]
             if not new_pictures:
-                raise PumaClickException(f'Could not find picture {picture_id}, only {len(seen_pictures)} pictures were found')
+                raise PumaClickException(f'Could not find picture {picture_index}, only {len(seen_pictures)} pictures were found')
             seen_pictures += new_pictures
-            if len(seen_pictures) >= picture_id:
-                return ATTACHMENTS_PICTURE.format(content_desc=seen_pictures[picture_id - 1])
+            if len(seen_pictures) >= picture_index:
+                return ATTACHMENTS_PICTURE.format(content_desc=seen_pictures[picture_index - 1])
             strip = self.driver.get_element(ATTACHMENTS_MEDIA_STRIP).rect
             y = strip['y'] + strip['height'] / 2
             self.driver.driver.swipe(strip['x'] + strip['width'] * 0.8, y, strip['x'] + strip['width'] * 0.2, y, 500)
 
-
-def _bounds(element: ElementTree.Element) -> tuple[int, int, int, int]:
-    return tuple(int(value) for value in re.findall(r'\d+', element.get('bounds')))
-
-
-def _parse_messages(page_source: str) -> list[Message]:
-    """
-    Parses the messages shown in a conversation. Messages that are only partly shown are skipped, unless they are too
-    large to be shown completely. Messages without a header (the first of consecutive messages of the same sender has
-    one) get None as sender.
-    """
-    messages_list = next(element for element in ElementTree.fromstring(page_source).iter()
-                         if element.get('resource-id') == MESSAGES_LIST_ID)
-    _, list_top, _, list_bottom = _bounds(messages_list)
-    messages = []
-    for message_element in messages_list:
-        if message_element.get('resource-id') != MESSAGE_ID:
-            continue
-        _, top, _, bottom = _bounds(message_element)
-        if (top <= list_top or bottom >= list_bottom) and bottom - top < list_bottom - list_top:
-            continue
-        messages.append(_parse_message(message_element))
-    return messages
-
-
-def _parse_message(message_element: ElementTree.Element) -> Message:
-    """
-    Parses a single message element. A message without a header (the first of consecutive messages of the same sender
-    has one) gets None as sender and time.
-    """
-    sender, message_time, texts, attachments = None, None, [], []
-    for element in message_element.iter():
-        resource_id = element.get('resource-id')
-        if resource_id == MESSAGE_SENDER_ID:
-            sender = element.get('text')
-        elif resource_id == MESSAGE_TIME_ID:
-            message_time = element.get('content-desc')
-        elif resource_id == MESSAGE_TEXT_ID:
-            # Slack inserts zero-width spaces, e.g. after emoji
-            texts.append(element.get('text').replace(ZERO_WIDTH_SPACE, ''))
-        elif resource_id == MESSAGE_FILE_ID:
-            # e.g. 'Open image: IMG-20260206-WA0002.jpeg.'
-            attachments.append(re.sub(r'^Open (.*?)\.?$', r'\1', element.get('content-desc')))
-    return Message(sender, message_time, '\n'.join(texts), '\n'.join(attachments))
-
-
-def _merge_messages(messages: list[Message], new_messages: list[Message]) -> list[Message]:
-    """
-    Appends the messages on a new screen to the messages found so far. The screens overlap, so the largest overlap
-    between the end of the messages and the start of the new messages is not added again.
-    """
-    for overlap in range(min(len(messages), len(new_messages)), 0, -1):
-        if messages[-overlap:] == new_messages[:overlap]:
-            return messages + new_messages[overlap:]
-    return messages + new_messages
-
-
-_WEEKDAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
-
-
-def _to_iso_time(shown_time: str, now: datetime) -> str:
-    """
-    Converts a time as shown in Slack to ISO 8601, e.g. 'Sep 29th at 2:06 PM' to '2026-09-29T14:06:00'.
-
-    Slack shows the date as 'Today', 'Yesterday', a weekday for the last week, or a month and day, with the year only
-    when it is not the current year. The time is shown with a 12-hour or 24-hour clock, depending on the device.
-
-    :param shown_time: The time as shown in Slack, e.g. 'Today at 4:01 PM' or 'Sep 29th, 2025 at 14:06'.
-    :param now: The current time on the device, to resolve relative dates and dates without a year.
-    :return: The time in ISO 8601, without time zone.
-    :raises ValueError: If the time format is unknown.
-    """
-    # Android puts a (narrow) no-break space before AM/PM
-    match = re.fullmatch(r'(?P<date>.+) at (?P<time>.+)', ' '.join(shown_time.split()))
-    if not match:
-        raise ValueError(f'Unknown time format: {shown_time}')
-    time_of_day = _parse_time_of_day(match['time'])
-    date = match['date']
-    if date == 'Today':
-        day = now.date()
-    elif date == 'Yesterday':
-        day = now.date() - timedelta(days=1)
-    elif date in _WEEKDAYS:
-        # a day in the last week, today is shown as 'Today'
-        day = now.date() - timedelta(days=(now.weekday() - _WEEKDAYS.index(date)) % 7 or 7)
-    else:
-        day_match = re.fullmatch(r'(?P<month>[A-Z][a-z]+)\.? (?P<day>\d{1,2})(st|nd|rd|th)?(, (?P<year>\d{4}))?', date)
-        if not day_match:
-            raise ValueError(f'Unknown time format: {shown_time}')
-        month = _parse_month(day_match['month'])
-        day_of_month = int(day_match['day'])
-        if day_match['year']:
-            day = datetime(int(day_match['year']), month, day_of_month).date()
-        else:
-            # without a year, the date is in the current year, unless that date is still to come
-            day = datetime(now.year, month, day_of_month).date()
-            if day > now.date():
-                day = datetime(now.year - 1, month, day_of_month).date()
-    return datetime.combine(day, time_of_day).isoformat()
-
-
-def _parse_time_of_day(shown_time: str):
-    for time_format in ('%I:%M %p', '%H:%M'):
-        try:
-            return datetime.strptime(shown_time, time_format).time()
-        except ValueError:
-            pass
-    raise ValueError(f'Unknown time format: {shown_time}')
-
-
-def _parse_month(month: str) -> int:
-    for month_format in ('%b', '%B'):
-        try:
-            return datetime.strptime(month, month_format).month
-        except ValueError:
-            pass
-    raise ValueError(f'Unknown month: {month}')
