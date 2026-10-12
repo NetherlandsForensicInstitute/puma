@@ -8,9 +8,9 @@ Settings is part of iOS, so its version is the iOS version.
 
 ## Prerequisites
 
-- A real iOS device running iOS 26, set up as described in [Setting up iOS](../../../../docs/setup-ios.md).
+- A real iOS device, set up for Puma as described in
+  [Using Puma apps on iOS](../../../../docs/setup-ios.md#using-puma-apps-on-ios).
   Simulators have fewer settings: there is for example no Auto-Lock setting, as simulators do not lock.
-- Device language needs to be set to English
 
 ## Initialization
 
@@ -22,8 +22,8 @@ from puma.apps.ios.settings.settings import Settings
 phone = Settings("00008110-000A1B2C3D4E5F6G")
 ```
 
-On a real device, also pass the signing settings for WebDriverAgent as `desired_capabilities`, see
-[Setting up iOS](../../../../docs/setup-ios.md).
+On a real device, also pass the signing settings, see
+[Using Puma apps on iOS](../../../../docs/setup-ios.md#using-puma-apps-on-ios).
 
 ## Auto-Lock
 

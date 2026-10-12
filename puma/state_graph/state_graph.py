@@ -3,7 +3,8 @@ from typing import Dict
 
 from puma.state_graph import logger
 from puma.state_graph.popup_handler import known_popups_for, PopUpHandler
-from puma.state_graph.puma_driver import PumaDriver, PumaClickException, Platform
+from puma.state_graph.puma_driver import PumaDriver, PumaClickException, Platform, AppVersionUnavailable, \
+    AppVersionLookupNotSupported
 from puma.state_graph.state import State, ContextualState, Transition, _shortest_path
 from puma.state_graph.utils import safe_func_call, filter_arguments, is_valid_app_id
 
@@ -168,16 +169,22 @@ class StateGraph(metaclass=StateGraphMeta):
     The platform the application runs on is defined by the class attribute `platform`. Applications in
     puma.apps.android and puma.apps.ios get the platform of their package; other applications must set it:
     `platform = Platform.ANDROID` or `platform = Platform.IOS`.
+
+    When an application has a supported version (see @supported_version), a warning is logged on creation if the
+    installed version differs from it. How versions are compared can be changed by overriding is_supported_version, and
+    the check can be turned off with the `check_version` constructor parameter.
     """
     platform: Platform
 
-    def __init__(self, device_udid: str, app_package: str, appium_server: str = 'http://localhost:4723', desired_capabilities: Dict[str, str] = None):
+    def __init__(self, device_udid: str, app_package: str, appium_server: str = 'http://localhost:4723', desired_capabilities: Dict[str, str] = None, check_version: bool = True):
         """
         Initializes the StateGraph with a device and application package.
 
         :param device_udid: The unique device identifier.
         :param app_package: The identifier of the application: the package name on Android, the bundle id on iOS.
         :param desired_capabilities: desired capabilities as passed to the Appium webdriver.
+        :param check_version: Whether to warn if the installed version of the app differs from the supported version.
+        This takes some calls to the device.
         """
         if not is_valid_app_id(app_package, self.platform):
             raise ValueError(f'The provided {"bundle id" if self.platform == Platform.IOS else "package name"} is invalid: {app_package}')
@@ -186,6 +193,42 @@ class StateGraph(metaclass=StateGraphMeta):
         self.app_popups = []
         self.try_restart = True
         self.gtl_logger = self.driver.gtl_logger
+        if check_version:
+            self._check_supported_version()
+
+    def is_supported_version(self, installed_version: str, supported_version: str) -> bool:
+        """
+        Whether an installed version of the app is the supported version. A supported version also covers its patch
+        releases: 26.6 is supported by 26.6.2. Override this for apps that report their version in a different format
+        than the supported version is written in.
+
+        :param installed_version: The version of the app installed on the device.
+        :param supported_version: The version that is supported, as set with @supported_version.
+        """
+        return installed_version == supported_version or installed_version.startswith(f'{supported_version}.')
+
+    def _check_supported_version(self):
+        """
+        Logs a warning when the installed version of the app is not the supported version. Never raises, as a failing
+        check should not prevent the app from being used.
+        """
+        supported_version = getattr(type(self), 'supported_version', None)
+        if not supported_version:
+            return
+        app_package = self.driver.app_package
+        try:
+            installed_version = self.driver.get_app_version()
+        except AppVersionLookupNotSupported as e:
+            self.gtl_logger.info(f'Not checking the version of {app_package}: {e}')
+            return
+        except Exception as e:
+            self.gtl_logger.warning(f'Could not check the version of {app_package}: {e}')
+            return
+        if installed_version is None:
+            self.gtl_logger.warning(f'{app_package} is not installed. Puma supports version {supported_version}')
+        elif not self.is_supported_version(installed_version, supported_version):
+            self.gtl_logger.warning(f'Installed version {installed_version} of {app_package} differs from the '
+                                    f'supported version {supported_version}. Puma may not work as expected')
 
     def go_to_state(self, to_state: State | str, **kwargs) -> bool:
         """

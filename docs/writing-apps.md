@@ -264,7 +264,8 @@ The following steps should be taken to implement support for a new application:
 - Add the desired functionality (see [the next section](#how-to-write-appium-actions))
 - Add a README for this app and add a link to the project README
 - Add a test script in the [test scripts directory](../test_scripts), in which each function is tested.
-- Add your class to the list of apps in [publish_app_tags](../.github/scripts/publish_app_tags.py)
+- Annotate your class with `@supported_version`. On a release, each app is tagged with its supported version by
+  [publish_app_tags](../.github/scripts/publish_app_tags.py), which finds the apps by this annotation
 - Add the app name to the list of supported apps in the [README](../README.md#supported-apps)
 
 ### iOS applications
