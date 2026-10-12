@@ -30,10 +30,13 @@ message conversation:
 # Go to the home screen
 phone.go_to_state(phone.home_state)
 # Open a channel
-phone.go_to_state(phone.chat_state, channel="general")
+phone.go_to_state(phone.chat_state, conversation="#general")
 # Open a direct message conversation
-phone.go_to_state(phone.chat_state, direct_message="Bob")
+phone.go_to_state(phone.chat_state, conversation="@Bob")
 ```
+
+Conversations are named as in Slack: a channel has a `#` prefix (`#general`) and a direct message conversation has a `@`
+prefix (`@Bob`). A name without a prefix is a direct message conversation, so `Bob` is the same as `@Bob`.
 
 The channel or direct message conversation needs to be listed on the home screen of the active workspace. If it is out
 of view, Puma will scroll the home screen to find it. Matching of channel and conversation names is case-insensitive.
@@ -44,10 +47,10 @@ You can send a text message to a channel or in a direct message conversation:
 
 ```python
 # Send a message in a channel
-phone.send_message("Hi everyone!", channel="general")
+phone.send_message("Hi everyone!", conversation="#general")
 # Send a direct message
-phone.send_message(message="Hi Bob!", direct_message="Bob")
-# A second message can be sent without supplying the channel or conversation again:
+phone.send_message(message="Hi Bob!", conversation="@Bob")
+# A second message can be sent without supplying the conversation again:
 phone.send_message("How are you doing?")
 ```
 
@@ -58,9 +61,9 @@ You can send a picture from the device, optionally with a caption. Pictures are 
 
 ```python
 # Send the most recent picture in a channel
-phone.send_picture(channel="general")
+phone.send_picture(conversation="#general")
 # Send the third most recent picture with a caption in a direct message conversation
-phone.send_picture(picture_id=3, caption="Look at this!", direct_message="Bob")
+phone.send_picture(picture_id=3, caption="Look at this!", conversation="@Bob")
 ```
 
 The first time a picture is sent, Slack asks for permission to access the photos and videos on the device. Puma grants
@@ -68,15 +71,27 @@ this permission automatically.
 
 ### Exporting messages
 
-You can export all messages of a channel or direct message conversation to a CSV file. Puma scrolls to the beginning
-of the conversation and collects all messages, oldest first. The CSV file contains the sender, the time, the text and the
-attachments of each message.
+You can export all messages of a channel or direct message conversation to a CSV file. Puma scrolls up from the end of
+the conversation to the beginning and collects all messages. The CSV file contains the sender, the time, the text and
+the attachments of each message, oldest first.
 
 ```python
-phone.export_messages("general.csv", channel="general")
-phone.export_messages("bob.csv", direct_message="Bob")
+phone.export_messages("general.csv", conversation="#general")
+phone.export_messages("bob.csv", conversation="@Bob")
 # The messages can also be retrieved as a list
-messages = phone.get_messages(direct_message="Bob")
+messages = phone.get_messages(conversation="@Bob")
+```
+
+Collecting all messages of a long conversation takes a while. With `message_count`, only the last messages are
+collected, and Puma stops scrolling when it has enough messages. Slack only shows the sender of the first of consecutive
+messages of the same sender, so Puma scrolls a bit further if needed, until the sender of the oldest of these messages is
+shown:
+
+```python
+# Export the last 20 messages
+phone.export_messages("general.csv", conversation="#general", message_count=20)
+# Get the last message
+last_message = phone.get_messages(conversation="@Bob", message_count=1)[0]
 ```
 
 The time is written in ISO 8601 (`YYYY-MM-DDTHH:MM:SS`, for example `2026-09-29T14:06:00`), in the time zone of the
