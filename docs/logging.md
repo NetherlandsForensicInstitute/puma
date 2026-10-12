@@ -14,6 +14,11 @@ Puma contains a separate 'Ground Truth' logger (GTL), which logs all actions and
 device during a Puma run. These logs are stored in separate log files with the `_gtl` suffix. The log lines produced by
 this logger are also present in the regular log files, but the GTL logs only contain information about actions on a device.
 
+The GTL file always contains the INFO lines (and up), also when Puma is used as a module in another project that does not
+configure logging. The lines are also passed on to the logging configuration of your application, but only for the levels
+it enables: an application that only shows warnings does not get the INFO lines of the GTL. All apps on the same device
+share one GTL logger, named after the udid of the device.
+
 ## How to See Puma’s Logs
 
 To see Puma logs in your own script, opt-in to Puma's default log format and level by calling:
