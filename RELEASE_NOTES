@@ -1,6 +1,6 @@
 Version 6.1.0
 -------------
-244. Add an agent skill to explore the UI of a device over adb, without an Appium session
+244. Add AGENTS.md with instructions for AI agents, and an agent skill to explore the UI of a device without an Appium session
 265. Android: Add Settings support, to change the brightness and screen timeout, and to connect to a Wi-Fi network. compose_clicks can scroll to elements with scroll_to, and wait after the clicks
 269. Check that actions accept the contextual arguments of their state when the app class is defined.
 267. Remember contextual arguments, so recovery works when an action is called without them (e.g. send_message without a conversation)
