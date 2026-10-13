@@ -1,5 +1,4 @@
 from datetime import datetime
-from time import sleep
 
 from puma.apps.ios.date_picker import select_date, select_time
 from puma.apps.ios.reminders import logger
@@ -14,10 +13,14 @@ REMINDERS_BUNDLE_ID = 'com.apple.reminders'
 DEFAULT_LIST = 'Reminders'
 
 
+def _switch_on(driver: PumaDriver, switch: str) -> bool:
+    return driver.get_element(switch).get_attribute('value') == '1'
+
+
 def _set_switch(driver: PumaDriver, switch: str, on: bool):
-    if (driver.get_element(switch).get_attribute('value') == '1') != on:
+    if _switch_on(driver, switch) != on:
         driver.click(switch)
-        sleep(1)
+        driver.wait_until(lambda: _switch_on(driver, switch) == on, timeout=5)
 
 
 def _handle_notifications_intro(driver: PumaDriver):
@@ -25,30 +28,25 @@ def _handle_notifications_intro(driver: PumaDriver):
     The first time a due date is set, Reminders explains its notifications, followed by the system notification
     permission request.
     """
-    if driver.is_present(POPUP_NOTIFICATIONS_INTRO_TEXT):
+    # The explanation appears shortly after the date switch is turned on, and only the first time. There is nothing
+    # else to wait for, so this waits for at most a second.
+    if driver.wait_until_present(POPUP_NOTIFICATIONS_INTRO_TEXT, timeout=1):
         driver.gtl_logger.info('Dismissing explanation of notifications')
         driver.click(POPUP_CONTINUE_BUTTON)
-        sleep(2)
+        try:
+            driver.wait_until(lambda: any(handler.is_popup_window(driver) for handler in known_ios_popups), timeout=3)
+        except TimeoutError:
+            # the permission was asked before, e.g. by another app of Puma
+            return
         for handler in known_ios_popups:
             if handler.is_popup_window(driver):
                 handler.dismiss_popup(driver)
-                sleep(1)
-
-
-def _swipe_left(driver: PumaDriver, element: str):
-    """
-    Swipes a row in a list to the left, which reveals the delete button.
-    """
-    rect = driver.get_element(element).rect
-    y = rect['y'] + rect['height'] / 2
-    driver.execute_script('mobile: dragFromToForDuration', {
-        'fromX': rect['x'] + rect['width'] - 20, 'fromY': y, 'toX': rect['x'] + 60, 'toY': y, 'duration': 0.2})
-    sleep(1)
+        driver.wait_until(lambda: not driver.alert_buttons(), timeout=5)
 
 
 def _close_new_list(driver: PumaDriver):
     driver.click(NEW_LIST_CANCEL_BUTTON)
-    sleep(1)
+    driver.wait_until_not_present(NEW_LIST_NAVIGATION_BAR)
 
 
 class ListState(SimpleState, ContextualState):
@@ -70,7 +68,7 @@ class ListState(SimpleState, ContextualState):
     @staticmethod
     def open_list(driver: PumaDriver, list_name: str = DEFAULT_LIST):
         driver.click(list_cell(list_name))
-        sleep(1)
+        driver.wait_until_present(list_title(list_name))
 
 
 @supported_version("26.2")
@@ -114,7 +112,7 @@ class Reminders(StateGraph):
         """
         self.driver.send_keys(NEW_LIST_NAME_FIELD, name)
         self.driver.click(LIST_DONE_BUTTON)
-        sleep(1)
+        self.driver.wait_until_present(list_title(name))
 
     @action(lists_state)
     def delete_list(self, name: str):
@@ -124,16 +122,16 @@ class Reminders(StateGraph):
         :param name: The name of the list.
         """
         self.gtl_logger.info(f'Swiping list "{name}" to the left to reveal the delete button')
-        _swipe_left(self.driver, list_cell(name))
+        self.driver.swipe_left(list_cell(name))
         self.gtl_logger.info('Pressing delete button')
         self.driver.click(LIST_SWIPE_DELETE_BUTTON)
-        sleep(1)
         # deleting a list has to be confirmed
-        buttons = self.driver.alert_buttons()
-        if LISTS_DELETE_LABEL in buttons:
+        self.driver.wait_until(lambda: LISTS_DELETE_LABEL in self.driver.alert_buttons()
+                               or not self.driver.is_present(list_cell(name)), timeout=5)
+        if LISTS_DELETE_LABEL in self.driver.alert_buttons():
             self.gtl_logger.info('Confirming deletion')
             self.driver.click_alert_button(LISTS_DELETE_LABEL)
-            sleep(1)
+        self.driver.wait_until_not_present(list_cell(name))
         logger.info(f'Deleted list {name}')
 
     @action(list_state)
@@ -150,13 +148,14 @@ class Reminders(StateGraph):
         """
         self.gtl_logger.info('Pressing new reminder button')
         self.driver.click(LIST_NEW_REMINDER_BUTTON)
-        sleep(1)
+        # the toolbar for editing a reminder is shown once the new reminder has the keyboard focus
+        self.driver.wait_until_present(LIST_EDIT_DETAILS_BUTTON)
         self.gtl_logger.info(f'Entering title "{title}"')
         self.driver.driver.switch_to.active_element.send_keys(title)
         if notes or due:
             self.gtl_logger.info('Opening the details of the reminder')
             self.driver.click(LIST_EDIT_DETAILS_BUTTON)
-            sleep(1.5)
+            self.driver.wait_until_present(DETAILS_TABLE)
             if notes:
                 self.driver.send_keys(DETAILS_NOTES_FIELD, notes)
             if due:
@@ -170,12 +169,13 @@ class Reminders(StateGraph):
                     select_time(self.driver, due)
             self.gtl_logger.info('Closing the details')
             self.driver.click(LIST_DONE_BUTTON)
-            sleep(1)
+            # the details have their own done button, so wait until they are closed
+            self.driver.wait_until_not_present(DETAILS_TABLE)
         # stop editing the new reminder
         if self.driver.is_present(LIST_DONE_BUTTON):
             self.gtl_logger.info('Pressing done button')
             self.driver.click(LIST_DONE_BUTTON)
-            sleep(1)
+            self.driver.wait_until_not_present(LIST_DONE_BUTTON)
 
     @action(list_state)
     def get_reminders(self, list_name: str = DEFAULT_LIST) -> list[str]:
@@ -211,7 +211,7 @@ class Reminders(StateGraph):
         self.gtl_logger.info(f'Pressing the circle of reminder "{title}"')
         self.driver.click(reminder_circle(title))
         # completed reminders disappear from the list after a few seconds
-        sleep(4)
+        self.driver.wait_until_not_present(reminder_row(title))
 
     @action(list_state)
     def delete_reminder(self, title: str, list_name: str = DEFAULT_LIST):
@@ -222,8 +222,8 @@ class Reminders(StateGraph):
         :param list_name: Optional. The list of the reminder, the default list 'Reminders' if not given.
         """
         self.gtl_logger.info(f'Swiping reminder "{title}" to the left to reveal the delete button')
-        _swipe_left(self.driver, reminder_row(title))
+        self.driver.swipe_left(reminder_row(title))
         self.gtl_logger.info('Pressing delete button')
         self.driver.click(LIST_SWIPE_DELETE_BUTTON)
-        sleep(1)
+        self.driver.wait_until_not_present(reminder_row(title))
         logger.info(f'Deleted reminder {title}')

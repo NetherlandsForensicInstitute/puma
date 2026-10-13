@@ -1,5 +1,4 @@
 from datetime import datetime, timedelta
-from time import sleep
 
 from puma.apps.ios.calendar import logger
 from puma.apps.ios.calendar.locators import *
@@ -24,9 +23,16 @@ def _close_new_event(driver: PumaDriver):
     Closes the new event form, discarding any changes.
     """
     driver.click(NEW_EVENT_CANCEL_BUTTON)
-    sleep(1)
-    if NEW_EVENT_DISCARD_CHANGES_LABEL in driver.alert_buttons():
+    # when the form has changes, Calendar first asks to discard them
+    driver.wait_until(lambda: _discard_changes_shown(driver) or not driver.is_present(NEW_EVENT_NAVIGATION_BAR),
+                      timeout=5)
+    if _discard_changes_shown(driver):
         driver.click_alert_button(NEW_EVENT_DISCARD_CHANGES_LABEL)
+    driver.wait_until_not_present(NEW_EVENT_NAVIGATION_BAR)
+
+
+def _discard_changes_shown(driver: PumaDriver) -> bool:
+    return NEW_EVENT_DISCARD_CHANGES_LABEL in driver.alert_buttons()
 
 
 def _show_date(driver: PumaDriver, date: datetime):
@@ -37,7 +43,6 @@ def _show_date(driver: PumaDriver, date: datetime):
     noon = datetime(date.year, date.month, date.day, 12)
     seconds = int(noon.timestamp() - datetime(2001, 1, 1).timestamp())
     driver.execute_script('mobile: deepLink', {'url': f'calshow:{seconds}', 'bundleId': CALENDAR_BUNDLE_ID})
-    sleep(2)
 
 
 def _open_event(driver: PumaDriver, title: str, date: datetime = None):
@@ -48,21 +53,21 @@ def _open_event(driver: PumaDriver, title: str, date: datetime = None):
     """
     if date:
         _show_date(driver, date)
-        driver.click(day_view_event(title))
+        event = day_view_event(title)
     else:
         driver.click(DAY_VIEW_SEARCH_BUTTON)
-        sleep(1)
         driver.send_keys(SEARCH_FIELD, title)
-        sleep(2)
-        driver.click(search_result(title))
-    sleep(1)
+        event = search_result(title)
+    driver.wait_until_present(event)
+    driver.click(event)
+    driver.wait_until_present(EVENT_DELETE_BUTTON)
 
 
 def _close_search_if_open(driver: PumaDriver):
     # the search results are not updated after changes, so the search is closed instead of reused
     if driver.is_present(SEARCH_CLOSE_BUTTON):
         driver.click(SEARCH_CLOSE_BUTTON)
-        sleep(1)
+        driver.wait_until_not_present(SEARCH_CLOSE_BUTTON)
 
 
 def _close_event(driver: PumaDriver):
@@ -71,7 +76,7 @@ def _close_event(driver: PumaDriver):
     search is closed as well.
     """
     driver.back()
-    sleep(1)
+    driver.wait_until_not_present(EVENT_NAVIGATION_BAR)
     _close_search_if_open(driver)
 
 
@@ -83,9 +88,9 @@ def _close_picker(driver: PumaDriver, cell: str):
     if not (driver.is_present(DATE_PICKER_MONTH) or driver.is_present(DATE_PICKER_WHEEL)):
         # the picker already closed, tapping the cell would open it again
         return
-    rect = driver.get_element(cell).rect
-    driver.tap((int(rect['x'] + 20), int(rect['y'] + rect['height'] / 2)))
-    sleep(1)
+    driver.click(cell + NEW_EVENT_CELL_LABEL)
+    # the picker of the end cell looks the same as the one of the start cell, so wait until this one is gone
+    driver.wait_until_not_present(DATE_PICKER_MONTH, DATE_PICKER_WHEEL)
 
 
 def _set_date(driver: PumaDriver, cell: str, date: datetime):
@@ -93,7 +98,6 @@ def _set_date(driver: PumaDriver, cell: str, date: datetime):
     Sets the date of the start or end of an event.
     """
     driver.click(cell + NEW_EVENT_DATE_BUTTON)
-    sleep(1)
     select_date(driver, date)
     _close_picker(driver, cell)
 
@@ -103,7 +107,6 @@ def _set_time(driver: PumaDriver, cell: str, time: datetime):
     Sets the time of the start or end of an event.
     """
     driver.click(cell + NEW_EVENT_TIME_BUTTON)
-    sleep(1)
     select_time(driver, time)
     _close_picker(driver, cell)
 
@@ -174,20 +177,24 @@ class Calendar(StateGraph):
         if self.driver.get_element(NEW_EVENT_EVENT_SEGMENT).get_attribute('value') != '1':
             self.gtl_logger.info('Switching the form from reminder to event')
             self.driver.click(NEW_EVENT_EVENT_SEGMENT)
-            sleep(1)
         self.driver.send_keys(NEW_EVENT_TITLE_FIELD, title)
         if location:
             self.gtl_logger.info(f'Entering location "{location}"')
             self.driver.click(NEW_EVENT_LOCATION_FIELD)
             self.driver.send_keys(NEW_EVENT_LOCATION_SEARCH_FIELD, location)
-            sleep(1)
+            self.driver.wait_until_present(location_text(location))
             self.driver.click(location_text(location))
-            sleep(1)
+            self.driver.wait_until_not_present(NEW_EVENT_LOCATION_SEARCH_FIELD)
         # the form remembers the all-day setting of the previous event, so set it rather than toggle it
         if (self.driver.get_element(NEW_EVENT_ALL_DAY_SWITCH).get_attribute('value') == '1') != all_day:
             self.gtl_logger.info(f'Turning all-day {"on" if all_day else "off"}')
             self.driver.click(NEW_EVENT_ALL_DAY_SWITCH)
-            sleep(1)
+            # all-day events have no time, so the time buttons disappear or appear
+            start_time = NEW_EVENT_START_CELL + NEW_EVENT_TIME_BUTTON
+            if all_day:
+                self.driver.wait_until_not_present(start_time)
+            else:
+                self.driver.wait_until_present(start_time)
         # The form remembers the dates of the previous event, and refuses to save when the start is after the end.
         # Therefore the end is always set explicitly.
         if end is None:
@@ -202,7 +209,9 @@ class Calendar(StateGraph):
             _set_time(self.driver, NEW_EVENT_END_CELL, end)
         self.gtl_logger.info('Pressing save button')
         self.driver.click(NEW_EVENT_SAVE_BUTTON)
-        sleep(1)
+        # the form closes, or Calendar shows why it cannot save the event
+        self.driver.wait_until(
+            lambda: self.driver.alert_buttons() or not self.driver.is_present(NEW_EVENT_NAVIGATION_BAR), timeout=5)
         if self.driver.alert_buttons():
             # Calendar refused to save the event, e.g. because the end is before the start
             message = self.driver.driver.switch_to.alert.text
@@ -237,9 +246,9 @@ class Calendar(StateGraph):
         """
         self.gtl_logger.info('Pressing delete button')
         self.driver.click(EVENT_DELETE_BUTTON)
-        sleep(1)
+        self.driver.wait_until(lambda: EVENT_DELETE_LABEL in self.driver.alert_buttons(), timeout=5)
         self.gtl_logger.info('Confirming deletion')
         self.driver.click_alert_button(EVENT_DELETE_LABEL)
-        sleep(1)
+        self.driver.wait_until_not_present(EVENT_NAVIGATION_BAR)
         _close_search_if_open(self.driver)
         logger.info(f'Deleted event {title}')

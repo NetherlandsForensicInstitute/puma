@@ -1,5 +1,3 @@
-from time import sleep
-
 from puma.apps.ios.contacts import logger
 from puma.apps.ios.contacts.locators import *
 from puma.state_graph.action import action
@@ -30,9 +28,12 @@ def _close_new_contact(driver: PumaDriver):
     Closes the new contact form, discarding any changes.
     """
     driver.click(NEW_CONTACT_CLOSE_BUTTON)
-    sleep(1)
+    # when the form has changes, Contacts first asks to discard them
+    driver.wait_until(lambda: driver.is_present(NEW_CONTACT_DISCARD_CHANGES_BUTTON)
+                      or not driver.is_present(NEW_CONTACT_NAVIGATION_BAR), timeout=5)
     if driver.is_present(NEW_CONTACT_DISCARD_CHANGES_BUTTON):
         driver.click(NEW_CONTACT_DISCARD_CHANGES_BUTTON)
+    driver.wait_until_not_present(NEW_CONTACT_NAVIGATION_BAR)
 
 
 class ContactState(SimpleState, ContextualState):
@@ -114,7 +115,8 @@ class Contacts(StateGraph):
             self.driver.get_element(NEW_CONTACT_EMAIL_FIELD).send_keys(email)
         self.gtl_logger.info('Pressing done button')
         self.driver.click(NEW_CONTACT_DONE_BUTTON)
-        sleep(1)
+        self.driver.wait_until_not_present(NEW_CONTACT_NAVIGATION_BAR)
+        self.driver.wait_until_present(CONTACT_EDIT_BUTTON)
 
     @action(contact_state)
     def get_contact_details(self, name: str) -> list[str]:
@@ -136,7 +138,7 @@ class Contacts(StateGraph):
         """
         self.gtl_logger.info('Pressing edit button')
         self.driver.click(CONTACT_EDIT_BUTTON)
-        sleep(1)
+        self.driver.wait_until_present(CONTACT_DELETE_BUTTON)
         # The delete button is at the bottom of the edit form. Make sure it is on screen before tapping it, otherwise
         # the tap can be lost on real devices.
         for _ in range(5):
@@ -146,8 +148,8 @@ class Contacts(StateGraph):
             self.driver._scroll_down()
         self.gtl_logger.info('Pressing delete contact button')
         self.driver.click(CONTACT_DELETE_BUTTON)
-        sleep(1)
+        self.driver.wait_until(lambda: CONTACT_CONFIRM_DELETE_LABEL in self.driver.alert_buttons(), timeout=5)
         self.gtl_logger.info('Confirming deletion')
         self.driver.click_alert_button(CONTACT_CONFIRM_DELETE_LABEL)
-        sleep(1)
+        self.driver.wait_until_not_present(CONTACT_NAVIGATION_BAR)
         logger.info(f'Deleted contact {name}')

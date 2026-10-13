@@ -28,6 +28,8 @@ TAB_OVERVIEW_STANDARD_TAB_GROUP_SELECTED = ios_predicate('name == "CapsuleTabGro
 # Bookmarks
 BOOKMARKS_NAVIGATION_BAR = ios_predicate('type == "XCUIElementTypeNavigationBar" AND name == "Sidebar"')
 BOOKMARKS_TABLE = accessibility_id('BookmarksTable')
+# the confirmation shown for a few seconds after adding a bookmark
+BOOKMARKS_ADDED_TOAST = accessibility_id('AddedBookmarkToastButton')
 BOOKMARKS_DISMISS_BUTTON = accessibility_id('DismissButton')
 BOOKMARKS_CONTEXT_MENU_DELETE = accessibility_id('Delete')
 # Face ID prompt, shown when opening locked private tabs on a real device

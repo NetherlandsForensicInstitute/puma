@@ -1,5 +1,5 @@
 from enum import Enum
-from time import sleep, time
+from time import sleep
 
 from puma.apps.ios.apple_maps import logger
 from puma.apps.ios.apple_maps.locators import *
@@ -34,16 +34,17 @@ def _search(driver: PumaDriver, search_string: str):
     category of places (such as 'coffee'), the first search result is opened.
     """
     driver.send_keys(HOME_SEARCH_FIELD, search_string)
-    # wait for the suggestions to be loaded, otherwise Apple Maps sometimes opens an older suggestion
-    _wait_for(driver, HOME_SEARCH_SUGGESTION)
+    # Wait for the suggestions to be loaded, otherwise Apple Maps sometimes opens an older suggestion. The suggestions
+    # keep changing for a moment after they appear, and nothing in the UI shows when they are final.
+    driver.wait_until_present(HOME_SEARCH_SUGGESTION, timeout=6)
     sleep(1)
     driver.gtl_logger.info('Pressing enter to search')
     driver.press_enter()
-    _wait_for(driver, PLACE_DIRECTIONS_BUTTON, HOME_FIRST_SEARCH_RESULT, timeout=10)
+    driver.wait_until_present(PLACE_DIRECTIONS_BUTTON, HOME_FIRST_SEARCH_RESULT, timeout=10)
     if not driver.is_present(PLACE_DIRECTIONS_BUTTON):
         driver.gtl_logger.info('Opening the first search result')
         driver.click(HOME_FIRST_SEARCH_RESULT)
-        sleep(2)
+        driver.wait_until_present(PLACE_DIRECTIONS_BUTTON, timeout=10)
 
 
 def _open_directions(driver: PumaDriver, search_string: str, transport_type: 'TransportType'):
@@ -53,14 +54,16 @@ def _open_directions(driver: PumaDriver, search_string: str, transport_type: 'Tr
     _search(driver, search_string)
     driver.gtl_logger.info('Pressing directions button')
     driver.click(PLACE_DIRECTIONS_BUTTON)
-    sleep(2)
-    # The first time directions are requested, Apple Maps shows a safety warning
-    if driver.is_present(POPUP_GETTING_THERE_SAFELY_OK):
+    driver.wait_until_present(POPUP_GETTING_THERE_SAFELY_OK, DIRECTIONS_TRANSPORT_TYPE_PICKER, timeout=10)
+    # The first time directions are requested, Apple Maps shows a safety warning. It can appear just after the
+    # directions, so it is waited for briefly.
+    if driver.wait_until_present(POPUP_GETTING_THERE_SAFELY_OK, timeout=1):
         driver.gtl_logger.info('Dismissing safety warning')
         driver.click(POPUP_GETTING_THERE_SAFELY_OK)
     driver.gtl_logger.info(f'Selecting transport type {transport_type.value}')
-    driver.click(transport_type_button(transport_type.value))
-    sleep(2)
+    button = transport_type_button(transport_type.value)
+    driver.click(button)
+    driver.wait_until(lambda: driver.get_element(button).get_attribute('value') == '1', timeout=5)
 
 
 def _end_navigation(driver: PumaDriver):
@@ -70,18 +73,9 @@ def _end_navigation(driver: PumaDriver):
     """
     driver.gtl_logger.info('Expanding the navigation tray')
     driver.click(NAVIGATION_TRAY)
-    sleep(1)
     driver.gtl_logger.info('Pressing end route button')
     driver.click(NAVIGATION_END_ROUTE_BUTTON)
-    sleep(2)
-
-
-def _wait_for(driver: PumaDriver, *xpaths: str, timeout: float = 6):
-    start = time()
-    while time() - start < timeout:
-        if any(driver.is_present(xpath) for xpath in xpaths):
-            return
-        sleep(0.3)
+    driver.wait_until_present(PLACE_DIRECTIONS_BUTTON, timeout=10)
 
 
 @supported_version("26.2")
@@ -160,7 +154,7 @@ class AppleMaps(StateGraph):
         _open_directions(self.driver, search_string, transport_type)
         self.gtl_logger.info('Pressing go button to start navigation')
         self.driver.click(DIRECTIONS_GO_BUTTON)
-        sleep(2)
+        self.driver.wait_until_present(NAVIGATION_TRAY, timeout=10)
 
     @action(navigation_state, end_state=place_state)
     def end_navigation(self):
@@ -197,13 +191,13 @@ class AppleMaps(StateGraph):
         self.gtl_logger.info(f'Spoofing the location of the device to the start of the route: {from_query}')
         self.route_simulator.update_speed(0)
         self.route_simulator.execute_route_with_queries(from_query, to_query, ROUTE_TRANSPORT_MODES[transport_type])
+        # Apple Maps takes a moment to pick up the new location, which is not shown in the UI
         sleep(2)
         self.get_directions(to_query, transport_type)
-        _wait_for(self.driver, DIRECTIONS_GO_BUTTON)
-        if self.driver.is_present(DIRECTIONS_GO_BUTTON):
+        if self.driver.wait_until_present(DIRECTIONS_GO_BUTTON, timeout=6):
             self.gtl_logger.info('Pressing go button to start navigation')
             self.driver.click(DIRECTIONS_GO_BUTTON)
-            sleep(2)
+            self.driver.wait_until_present(NAVIGATION_TRAY, timeout=10)
             self.current_state = self.navigation_state
         else:
             self.gtl_logger.warning('Navigation is not available, only showing the directions')

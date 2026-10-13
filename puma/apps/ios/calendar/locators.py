@@ -22,6 +22,8 @@ NEW_EVENT_END_CELL = '//XCUIElementTypeCell[@name="end-date-picker-cell"]'
 # the date and time buttons in a start or end cell. Time buttons contain a colon, e.g. '10:30' or '10:30 AM'
 NEW_EVENT_DATE_BUTTON = '//XCUIElementTypeButton[not(contains(@name, ":")) and @name != "Date and Time Picker"]'
 NEW_EVENT_TIME_BUTTON = '//XCUIElementTypeButton[contains(@name, ":")]'
+# the label on the left of a start or end cell
+NEW_EVENT_CELL_LABEL = '//XCUIElementTypeStaticText[@name="Starts" or @name="Ends"]'
 # Search
 SEARCH_FIELD = ios_predicate('type == "XCUIElementTypeSearchField" AND name == "Search"')
 SEARCH_CLOSE_BUTTON = ios_predicate('type == "XCUIElementTypeButton" AND name == "Close"')

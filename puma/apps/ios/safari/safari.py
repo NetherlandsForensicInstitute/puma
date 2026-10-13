@@ -1,4 +1,3 @@
-from time import sleep, time
 from typing import Callable
 
 from puma.apps.ios.safari import logger
@@ -10,15 +9,6 @@ from puma.state_graph.state import SimpleState, ContextualState, compose_clicks
 from puma.state_graph.state_graph import StateGraph
 
 SAFARI_BUNDLE_ID = 'com.apple.mobilesafari'
-
-
-def _wait_for(driver: PumaDriver, xpath: str, timeout: float = 4) -> bool:
-    start = time()
-    while time() - start < timeout:
-        if driver.is_present(xpath):
-            return True
-        sleep(0.3)
-    return False
 
 
 def open_menu_item(menu_item: str, name: str = 'open_menu_item') -> Callable[[PumaDriver], None]:
@@ -33,13 +23,23 @@ def open_menu_item(menu_item: str, name: str = 'open_menu_item') -> Callable[[Pu
         for _ in range(3):
             driver.gtl_logger.info('Opening the More menu')
             driver.click(TOOLBAR_MORE_BUTTON)
-            if _wait_for(driver, menu_item):
+            if driver.wait_until_present(menu_item, timeout=4):
                 driver.click(menu_item)
                 return
             driver.gtl_logger.warning('The More menu did not open, trying again')
         raise PumaClickException(f'Could not open menu item {menu_item}')
     _open_menu_item.__name__ = name
     return _open_menu_item
+
+
+def _wait_for_page(driver: PumaDriver):
+    """
+    Waits until a page is loaded. While a page is loading, the address bar does not show the title of the page. Just
+    after the page is requested, the address bar can still show the title of the previous page, so first wait until it
+    is gone. A page that loads very quickly can be missed, hence the short timeout.
+    """
+    driver.wait_until_not_present(TOOLBAR_ADDRESS_BAR, timeout=2)
+    driver.wait_until_present(TOOLBAR_ADDRESS_BAR, timeout=20)
 
 
 class PrivateBrowsingLockedError(Exception):
@@ -55,7 +55,7 @@ def _open_private_tabs(driver: PumaDriver):
     cannot unlock it, so the Face ID prompt is cancelled and an exception is raised.
     """
     driver.click(TAB_OVERVIEW_PRIVATE_TAB_GROUP)
-    if _wait_for(driver, POPUP_FACE_ID_PROMPT, timeout=2):
+    if driver.wait_until_present(POPUP_FACE_ID_PROMPT, timeout=2):
         driver.gtl_logger.warning('Private browsing is locked with Face ID, cancelling the Face ID prompt')
         driver.click(POPUP_FACE_ID_CANCEL)
         raise PrivateBrowsingLockedError(
@@ -186,8 +186,9 @@ class Safari(StateGraph):
         :param tab_index: The index of the tab to use, starting at 1. Defaults to the last tab.
         """
         open_menu_item(MENU_ADD_TO_BOOKMARKS)(self.driver)
-        # wait for the 'Added to Bookmarks' confirmation to disappear
-        sleep(2)
+        # the 'Added to Bookmarks' confirmation is shown for about 5 seconds, wait until it is gone
+        self.driver.wait_until_present(BOOKMARKS_ADDED_TOAST, timeout=2)
+        self.driver.wait_until_not_present(BOOKMARKS_ADDED_TOAST)
 
     @action(bookmarks_state, end_state=current_tab_state)
     def load_bookmark(self, title: str):
@@ -197,7 +198,8 @@ class Safari(StateGraph):
         :param title: The title of the bookmark to load.
         """
         self.driver.click(bookmark(title))
-        sleep(1)
+        self.driver.wait_until_not_present(BOOKMARKS_TABLE)
+        _wait_for_page(self.driver)
 
     @action(bookmarks_state)
     def delete_bookmark(self, title: str) -> bool:
@@ -227,11 +229,11 @@ class Safari(StateGraph):
         self.gtl_logger.info('Pressing the address bar')
         self.driver.click(TOOLBAR_ADDRESS_BAR)
         # The first time the address bar is used, Safari explains its search suggestions
-        if (_wait_for(self.driver, TOOLBAR_ADDRESS_BAR_EDIT, 2)
+        if (self.driver.wait_until_present(TOOLBAR_ADDRESS_BAR_EDIT, timeout=2)
                 and self.driver.is_present(POPUP_SEARCH_FIRST_TIME_CONTINUE)):
             self.gtl_logger.info('Dismissing explanation of search suggestions')
             self.driver.click(POPUP_SEARCH_FIRST_TIME_CONTINUE)
         self.driver.send_keys(TOOLBAR_ADDRESS_BAR_EDIT, url_string)
         self.gtl_logger.info('Pressing enter to load the page')
         self.driver.press_enter()
-        sleep(2)
+        _wait_for_page(self.driver)
