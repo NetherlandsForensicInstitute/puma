@@ -10,6 +10,7 @@ Version 6.1.0
 203. Add get_app_version, and warn when the installed app version differs from the supported version
 230. Log which xpath caused SimpleState validation to fail
 228. Google Play Store: support newest version 53.4.34-34
+244. Add an agent skill to explore the UI of a device over adb, without an Appium session
 
 Version 6.0.0
 -------------
