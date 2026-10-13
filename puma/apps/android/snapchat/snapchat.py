@@ -90,7 +90,7 @@ class Snapchat(StateGraph):
     camera_state.to(captured_state, compose_clicks([CAMERA_CAPTURE], name='press_camera_capture'))
     captured_state.to(snap_state, go_to_snap)
 
-    def __init__(self, device_udid):
+    def __init__(self, device_udid, **kwargs):
         """
         Initializes Snapchat with a device UDID.
 
@@ -98,8 +98,9 @@ class Snapchat(StateGraph):
         It can be used with an emulator or a real device attached to the computer.
 
         :param device_udid: The unique device identifier for the Android device.
+        :param kwargs: Optional arguments passed to the StateGraph, such as appium_server or desired_capabilities.
         """
-        StateGraph.__init__(self, device_udid, APPLICATION_PACKAGE)
+        StateGraph.__init__(self, device_udid, APPLICATION_PACKAGE, **kwargs)
         self.add_popup_handler(PopUpHandler([ALERT_DIALOG_DESCRIPTION], [DISCARD_BUTTON]))
 
     @action(chat_state)

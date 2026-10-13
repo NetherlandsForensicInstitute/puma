@@ -98,14 +98,16 @@ class Telegram(StateGraph):
     conversations_state.to(new_message_state,
                            compose_clicks([CHAT_OVERVIEW_NEW_MESSAGE_BUTTON], name='press_new_message_button'))
 
-    def __init__(self, device_udid, telegram_web_version: bool = False):
+    def __init__(self, device_udid, telegram_web_version: bool = False, **kwargs):
         """
         Initializes Telegram messenger with a device UDID.
 
         :param device_udid: The unique device identifier for the Android device.
+        :param telegram_web_version: Whether to use Telegram Web instead of Telegram.
+        :param kwargs: Optional arguments passed to the StateGraph, such as appium_server or desired_capabilities.
         """
         package = TELEGRAM_WEB_PACKAGE if telegram_web_version else TELEGRAM_PACKAGE
-        StateGraph.__init__(self, device_udid, package)
+        StateGraph.__init__(self, device_udid, package, **kwargs)
 
     @action(chat_state)
     def send_message(self, message: str, conversation: str = None):

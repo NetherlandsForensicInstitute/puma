@@ -107,8 +107,15 @@ class WhatsApp(StateGraph):
                                                       name='navigate_to_location'))
     chat_state.to(chat_settings_state, WhatsAppChatState.open_chat_settings)
 
-    def __init__(self, device_udid: str, app_package: str = 'com.whatsapp'):
-        StateGraph.__init__(self, device_udid, app_package)
+    def __init__(self, device_udid: str, app_package: str = 'com.whatsapp', **kwargs):
+        """
+        Initializes WhatsApp with a device UDID.
+
+        :param device_udid: The unique device identifier for the Android device.
+        :param app_package: The package name of the WhatsApp application.
+        :param kwargs: Optional arguments passed to the StateGraph, such as appium_server or desired_capabilities.
+        """
+        StateGraph.__init__(self, device_udid, app_package, **kwargs)
         self.add_popup_handler(simple_popup_handler(CHAT_SETTINGS_DISAPPEARING_MESSAGES_POPUP_OK))
         self.add_popup_handler(PopUpHandler([GOOGLE_BACKUP_POPUP_HEADER, GOOGLE_BACKUP_POPUP_NOT_NOW],
                                             [GOOGLE_BACKUP_POPUP_NOT_NOW]))

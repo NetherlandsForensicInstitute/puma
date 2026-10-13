@@ -90,7 +90,7 @@ class TeleGuard(StateGraph):
     chat_state.to(chat_options_state, compose_clicks([CHAT_STATE_THREE_DOTS], name='go_to_chat_options'))
     chat_state.to(send_media_state, compose_clicks([CHAT_STATE_SEND_MEDIA_BUTTON], name='go_to_send_media'))
 
-    def __init__(self, device_udid):
+    def __init__(self, device_udid, **kwargs):
         """
         Initializes the TestFsm with a device UDID.
 
@@ -98,8 +98,9 @@ class TeleGuard(StateGraph):
         It can be used with an emulator or a real device attached to the computer.
 
         :param device_udid: The unique device identifier for the Android device.
+        :param kwargs: Optional arguments passed to the StateGraph, such as appium_server or desired_capabilities.
         """
-        StateGraph.__init__(self, device_udid, APPLICATION_PACKAGE)
+        StateGraph.__init__(self, device_udid, APPLICATION_PACKAGE, **kwargs)
 
     @action(conversations_state)
     def add_contact(self, teleguard_id: str):
