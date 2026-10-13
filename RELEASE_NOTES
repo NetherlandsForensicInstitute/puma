@@ -1,5 +1,6 @@
 Version 6.1.0
 -------------
+269. Check that actions accept the contextual arguments of their state when the app class is defined.
 267. Remember contextual arguments, so recovery works when an action is called without them (e.g. send_message without a conversation)
 271. Minor bugs: better error message for StateGraph without initial state, fix OCR skipping the last word, and fix WhatsApp group_exists always failing
 274. Fix duplicate and missing ground truth log lines, and tag all apps (including the App Store) on a release
