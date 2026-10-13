@@ -1,8 +1,8 @@
 CHAT_OVERVIEW_NEW_MESSAGE_BUTTON = '//android.widget.FrameLayout[@content-desc="New Message"]'
-CHAT_OVERVIEW_NAV_MENU_BUTTON = '//android.widget.ImageView[@content-desc="Open navigation menu"]'
-CHAT_OVERVIEW_SEARCH_BUTTON = '//android.widget.ImageButton[@content-desc="Search"]'
+CHAT_OVERVIEW_NAV_MENU_BUTTON = '//android.widget.ImageButton[@content-desc="More options"]'
+CHAT_OVERVIEW_SEARCH_BUTTON = '//android.widget.EditText[@text="Search Chats"]'
 
-SEARCH_INPUT_FIELD = '//android.widget.EditText[@text="Search"]'
+SEARCH_INPUT_FIELD = '//android.widget.EditText[@text="Search Chats"]'
 FIRST_SEARCH_HIT = '//androidx.recyclerview.widget.RecyclerView/android.view.ViewGroup[starts-with(lower-case(@text), lower-case("{conversation},"))]'
 
 CHAT_STATE_CONVERSATION_NAME = '//android.widget.ImageView[@content-desc="Go back"]/../android.widget.FrameLayout[starts-with(lower-case(@content-desc),lower-case("{conversation}\n"))]/android.widget.TextView[starts-with(lower-case(@text), lower-case("{conversation}"))]'
@@ -21,9 +21,9 @@ CHAT_STATE_DELETE_AND_LEAVE_GROUP_FOR_ALL = '//android.widget.CheckBox[@text="De
 CHAT_STATE_DELETE_AND_LEAVE_GROUP_CONFIRM_BUTTON = '//android.widget.TextView[@text="Delete Group" or @text="Delete chat"]'
 
 SEND_MEDIA_STATE_INSTANT_CAMERA_BUTTON = '//android.widget.FrameLayout[@content-desc="Instant camera"]/preceding-sibling::android.widget.FrameLayout[last()]'
-SEND_MEDIA_STATE_GALLERY_BUTTON = '//android.widget.FrameLayout[@text="Gallery"]'
-SEND_MEDIA_STATE_FILE_BUTTON = '//android.widget.FrameLayout[@text="File"]'
-SEND_MEDIA_STATE_LOCATION_BUTTON = '//android.widget.FrameLayout[@text="Location"]'
+SEND_MEDIA_STATE_GALLERY_BUTTON = '//android.widget.TextView[@text="Gallery"]'
+SEND_MEDIA_STATE_FILE_BUTTON = '//android.widget.TextView[@text="File"]'
+SEND_MEDIA_STATE_LOCATION_BUTTON = '//android.widget.TextView[@text="Location"]'
 
 SEND_MEDIA_STATE_SEND_CURRENT_LOCATION_BUTTON = '//android.widget.TextView[@text="Send selected location"]'
 SEND_MEDIA_STATE_MY_LOCATION_BUTTON = '//android.widget.ImageView[@content-desc="My location"]'
