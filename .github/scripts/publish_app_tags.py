@@ -1,53 +1,37 @@
 import os
+from importlib import import_module
+from inspect import getmembers, isclass
+from pkgutil import walk_packages
 from typing import Callable, Tuple
 
 from git import Repo, Remote
 
-from puma.apps.android.google_camera.google_camera import GoogleCamera
-from puma.apps.android.google_chrome.google_chrome import GoogleChrome
-from puma.apps.android.google_maps.google_maps import GoogleMapsActions
-from puma.apps.android.google_play_store.google_play_store import GooglePlayStore
-from puma.apps.android.open_camera.open_camera import OpenCamera
-from puma.apps.android.snapchat.snapchat import Snapchat
-from puma.apps.android.telegram.telegram import Telegram
-from puma.apps.android.teleguard.teleguard import TeleGuard
-from puma.apps.android.whatsapp.whatsapp import WhatsApp
-from puma.apps.android.whatsapp_business.whatsapp_business import WhatsappBusinessActions
-from puma.apps.ios.apple_maps.apple_maps import AppleMaps
-from puma.apps.ios.calendar.calendar import Calendar
-from puma.apps.ios.contacts.contacts import Contacts
-from puma.apps.ios.messages.messages import Messages
-from puma.apps.ios.reminders.reminders import Reminders
-from puma.apps.ios.safari.safari import Safari
-from puma.apps.ios.settings.settings import Settings
+import puma.apps
 
-all_app_actions = [
-    GoogleCamera,
-    GoogleChrome,
-    GoogleMapsActions,
-    GooglePlayStore,
-    OpenCamera,
-    Snapchat,
-    Telegram,
-    TeleGuard,
-    WhatsApp,
-    WhatsappBusinessActions,
-    AppleMaps,
-    Calendar,
-    Contacts,
-    Messages,
-    Reminders,
-    Safari,
-    Settings
-]
 APP_MODULE = 'puma.apps'
+
+
+def find_app_classes() -> list[type]:
+    """
+    Finds the classes of all supported apps: the classes in puma.apps with a supported version (see
+    @supported_version). New apps are found automatically.
+    :return: The app classes, sorted by module.
+    """
+    app_classes = []
+    for module_info in walk_packages(puma.apps.__path__, f'{APP_MODULE}.'):
+        module = import_module(module_info.name)
+        for _, cls in getmembers(module, isclass):
+            # only classes defined in this module, with their own supported version (not inherited)
+            if cls.__module__ == module.__name__ and 'supported_version' in vars(cls):
+                app_classes.append(cls)
+    return sorted(app_classes, key=lambda cls: cls.__module__)
 
 
 def get_app_name_and_platform(app_action_class: Callable) -> Tuple:
     """
     Extract the app name and platform from the module of the app action class. The module structure is as follows:
         puma.apps.android.whatsapp.whatsapp
-        puma.apps.ios.safari.safari
+        puma.apps.ios.messages.messages
     Note that this may not work anymore when the module structure is altered.
     :param app_action_class: App action class
     :return: app name, platform
@@ -89,7 +73,7 @@ if __name__ == '__main__':
     origin.set_url(remote_url)
 
     repo_tags = puma_repo.tags
-    for app_action_class in all_app_actions:
+    for app_action_class in find_app_classes():
         platform, app_name = get_app_name_and_platform(app_action_class)
         app_version_tag = f"{app_name}-{platform}-v{app_action_class.supported_version}"# Note that supported_version is a custom decorator, so your IDE might not autocomplete it.
         if app_version_tag in repo_tags:
@@ -97,6 +81,6 @@ if __name__ == '__main__':
         try:
             puma_repo.create_tag(app_version_tag)
             origin.push(app_version_tag)
-            print("Successfully created tag {app_version_tag}.")
+            print(f"Successfully created tag {app_version_tag}.")
         except Exception as e:
             print(f"Something went wrong when creating or pushing the tag {app_version_tag}.")

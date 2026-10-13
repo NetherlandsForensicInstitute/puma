@@ -8,8 +8,8 @@ Messages is part of iOS, so its version is the iOS version.
 
 ## Prerequisites
 
-- An iOS device or simulator running iOS 26, set up as described in [Setting up iOS](../../../../docs/setup-ios.md)
-- Device language needs to be set to English
+- An iOS device or simulator, set up for Puma as described in
+  [Using Puma apps on iOS](../../../../docs/setup-ios.md#using-puma-apps-on-ios)
 - To send and receive messages, a real device signed in to iMessage. On a simulator, messages cannot be sent
   to new recipients. The simulator does start with two conversations, which can be used for testing: messages sent in
   one of them are received in the other.
@@ -24,8 +24,8 @@ from puma.apps.ios.messages.messages import Messages
 phone = Messages("A1B2C3D4-E5F6-4A7B-8C9D-0E1F2A3B4C5D")
 ```
 
-On a real device, also pass the signing settings for WebDriverAgent as `desired_capabilities`, see
-[Setting up iOS](../../../../docs/setup-ios.md).
+On a real device, also pass the signing settings, see
+[Using Puma apps on iOS](../../../../docs/setup-ios.md#using-puma-apps-on-ios).
 
 ## Opening and searching conversations
 
