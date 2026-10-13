@@ -1,6 +1,7 @@
 from abc import ABC, abstractmethod
 from collections import deque
 from dataclasses import dataclass
+from time import sleep
 from typing import Callable, List
 
 from puma.state_graph import logger
@@ -146,20 +147,51 @@ class Transition:
     ui_actions: Callable[..., None]
 
 
-def compose_clicks(xpaths: List[str], name: str = 'click') -> Callable[[PumaDriver], None]:
+@dataclass(frozen=True)
+class ScrollTo:
+    """
+    An element in compose_clicks that may need scrolling before it can be clicked. Create it with scroll_to().
+    """
+    locator: str
+    swipe_down: bool = True
+    max_swipes: int = 10
+
+
+def scroll_to(locator: str, swipe_down: bool = True, max_swipes: int = 10) -> ScrollTo:
+    """
+    Marks an element in compose_clicks that may need scrolling before it can be clicked. The screen is only scrolled
+    when the element is not present, e.g. `compose_clicks([xpath1, scroll_to(xpath2), xpath3])`.
+
+    :param locator: The XPath (or Locator) of the element to click.
+    :param swipe_down: True to scroll down to the element, False to scroll up to it.
+    :param max_swipes: The maximum number of swipes.
+    :return: The element to pass to compose_clicks.
+    """
+    return ScrollTo(locator, swipe_down, max_swipes)
+
+
+def compose_clicks(xpaths: List[str | ScrollTo], name: str = 'click', wait: float = 0) -> Callable[[PumaDriver], None]:
     """
     Helper function to create a lambda for constructing transitions by clicking elements.
 
     This function generates a lambda function that, when executed, will click on a series
-    of elements specified by their XPaths.
+    of elements specified by their XPaths. Elements that may need scrolling before they can be clicked are wrapped
+    in scroll_to().
 
-    :param xpaths: A list of XPaths of the elements to be clicked.
+    :param xpaths: A list of XPaths of the elements to be clicked, optionally wrapped in scroll_to().
     :param name: The name to give this lambda function.
+    :param wait: Optional. The number of seconds to wait after the clicks, e.g. for a screen that takes a while to
+                 open. States are validated directly after a transition.
     :return: A lambda function that takes a driver and performs the clicking actions.
     """
     def _click_(driver):
         for xpath in xpaths:
-            driver.click(xpath)
+            if isinstance(xpath, ScrollTo):
+                driver.swipe_to_find_element(xpath.locator, xpath.max_swipes, xpath.swipe_down).click()
+            else:
+                driver.click(xpath)
+        if wait:
+            sleep(wait)
     _click_.__name__ = name
     return _click_
 
