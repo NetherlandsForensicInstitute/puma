@@ -60,19 +60,16 @@ class StateGraphMeta(type):
 
         # collect states and transitions
         states: list[State] = []
-        transitions = []
         for key, value in namespace.items():
             if isinstance(value, State):
                 states.append(value)
                 value.id = key
-            if isinstance(value, Transition):
-                transitions.append(value)
         new_class.states = states
         new_class.transitions = [transition for state in states for transition in state.transitions]
-        new_class.initial_state = next(s for s in states if s.initial_state)
 
-        # validation
+        # validation, before the initial state is looked up, so a missing initial state gives a clear error
         StateGraphMeta._validate_graph(states)
+        new_class.initial_state = next(s for s in states if s.initial_state)
 
         return new_class
 
