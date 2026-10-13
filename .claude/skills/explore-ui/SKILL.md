@@ -139,7 +139,8 @@ wrong.
 
 iOS needs a Mac with Xcode. There is no counterpart of `uiautomator dump`: the UI hierarchy is only available through
 WebDriverAgent (WDA), the XCTest app that Appium installs on the device. WDA is an HTTP server, and it keeps running
-after the Appium session that started it has ended. You can ask it for the screen directly, without a session.
+after the Appium session that started it has ended. You can ask it for the screen directly, and operate the device
+through it, without Appium.
 
 Puma gives each device its own local WDA port:
 
@@ -168,7 +169,7 @@ invisible characters.
 Serializing the hierarchy is slow on iOS (seconds on a full screen), and only elements on or near the screen are in
 it.
 
-On a simulator, `xcrun simctl` operates the device without WDA, but cannot read the hierarchy or tap:
+On a simulator, `xcrun simctl` can also do the following without WDA. It cannot read the hierarchy or tap:
 
 ```bash
 xcrun simctl list devices booted
@@ -179,8 +180,45 @@ xcrun simctl io <udid> screenshot screen.png
 xcrun simctl listapps <udid>
 ```
 
-To tap or type on iOS, use Puma: `app.driver.click(locator)` on an app object reuses the Appium session as long as the
-Python process lives, so keep one interactive Python process open instead of starting a script for each step.
+### Operating the device
+
+WDA also taps, types and finds elements over HTTP, so you do not need Puma or Appium for this either. Unlike reading
+the screen, these requests need a WDA session id in the url. WDA has one session at a time:
+
+- `/status` returns the id of the current session as `sessionId`. If there is one, use it.
+- Only when there is none, create one. Creating a session ends the current one, which breaks an Appium session that
+  is still in use.
+
+```bash
+WDA=http://127.0.0.1:<port>
+curl -s $WDA/status                                             # "sessionId" is the current session, if any
+curl -s -X POST $WDA/session -d '{"capabilities": {}}'          # create a session, only when there is none
+S=$WDA/session/<session id>
+
+curl -s -X POST $S/wda/tap -d '{"x": 200, "y": 400}'            # coordinates in points, not pixels
+curl -s -X POST $S/wda/touchAndHold -d '{"x": 200, "y": 400, "duration": 1.5}'
+curl -s -X POST $S/wda/dragfromtoforduration -d '{"fromX": 200, "fromY": 600, "toX": 200, "toY": 200, "duration": 0.3}'
+curl -s -X POST $S/wda/keys -d '{"value": ["hello"]}'           # type in the focused field
+curl -s -X POST $S/wda/pressButton -d '{"name": "home"}'
+curl -s -X POST $S/wda/apps/launch -d '{"bundleId": "<bundle id>"}'
+curl -s -X POST $S/wda/apps/terminate -d '{"bundleId": "<bundle id>"}'
+```
+
+Checking a locator, and clicking the element it finds. `using` is `accessibility id`, `predicate string`,
+`class chain` or `xpath`, the strategies of `accessibility_id`, `ios_predicate`, `ios_class_chain` and plain XPaths
+in Puma:
+
+```bash
+curl -s -X POST $S/elements -d '{"using": "predicate string", "value": "type == \"XCUIElementTypeButton\" AND name == \"Done\""}'
+curl -s -X POST $S/element/<element id>/click
+curl -s $S/element/<element id>/rect
+```
+
+`/elements` returns an id for each match, so the number of ids is the number of matches. This is the same lookup
+Appium does at runtime, so a locator that matches here matches in Puma.
+
+Coordinates are in points: the screen size in points is in `curl -s $S/window/size`, and a screenshot is two or three
+times as large.
 
 ## Finishing
 
