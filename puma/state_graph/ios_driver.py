@@ -234,8 +234,11 @@ class IOSPumaDriver(PumaDriver):
         self.gtl_logger.info('Swiping from left edge to go back')
         window_size = self.driver.get_window_size()
         y = window_size['height'] / 2
+        self._drag((1, y), (window_size['width'] * 0.8, y), 0.3)
+
+    def _drag(self, start: tuple[float, float], end: tuple[float, float], duration: float):
         self.driver.execute_script('mobile: dragFromToForDuration', {
-            'fromX': 1, 'fromY': y, 'toX': window_size['width'] * 0.8, 'toY': y, 'duration': 0.3})
+            'fromX': start[0], 'fromY': start[1], 'toX': end[0], 'toY': end[1], 'duration': duration})
 
     def home(self):
         """
@@ -286,8 +289,7 @@ class IOSPumaDriver(PumaDriver):
         self.gtl_logger.info('Opening notification center')
         window_size = self.driver.get_window_size()
         x = window_size['width'] * 0.25
-        self.driver.execute_script('mobile: dragFromToForDuration', {
-            'fromX': x, 'fromY': 1, 'toX': x, 'toY': window_size['height'] * 0.6, 'duration': 0.3})
+        self._drag((x, 1), (x, window_size['height'] * 0.6), 0.3)
 
     def alert_buttons(self) -> list[str]:
         """

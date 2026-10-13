@@ -268,6 +268,24 @@ class TestIOSPumaDriver(unittest.TestCase):
         self.assertGreater(arguments['toX'], arguments['fromX'])
         self.assertEqual(arguments['fromY'], arguments['toY'])
 
+    def test_swipe_left(self):
+        row = Mock()
+        row.rect = {'x': 20, 'y': 100, 'width': 200, 'height': 40}
+        self.appium_driver.find_elements.return_value = [row]
+        self.appium_driver.find_element.return_value = row
+        self.driver.swipe_left('//row', start=0.1, end=0.6, duration=0.5)
+        self.appium_driver.execute_script.assert_called_with('mobile: dragFromToForDuration', {
+            'fromX': 200, 'fromY': 120, 'toX': 100, 'toY': 120, 'duration': 0.5})
+
+    def test_swipe_left_on_android(self):
+        appium_driver = _mock_appium_driver()
+        row = Mock()
+        row.rect = {'x': 20, 'y': 100, 'width': 200, 'height': 40}
+        appium_driver.find_elements.return_value = [row]
+        appium_driver.find_element.return_value = row
+        _create_driver(Platform.ANDROID, appium_driver).swipe_left('//row', start=0.1, end=0.6, duration=0.5)
+        appium_driver.swipe.assert_called_with(200, 120, 100, 120, 500)
+
     def test_is_simulator(self):
         self.appium_driver.execute_script.return_value = {'isSimulator': True, 'name': 'iPhone 17 Pro'}
         self.assertTrue(self.driver.is_simulator())

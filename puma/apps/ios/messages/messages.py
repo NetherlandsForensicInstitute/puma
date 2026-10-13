@@ -199,17 +199,6 @@ def _title_matches(title: str, conversation: str) -> bool:
     return title == conversation or conversation.startswith(f'{title} ')
 
 
-def _swipe_left(driver: PumaDriver, element: str):
-    """
-    Swipes a row in a list to the left, which reveals the delete button.
-    """
-    rect = driver.get_element(element).rect
-    y = rect['y'] + rect['height'] / 2
-    driver.execute_script('mobile: dragFromToForDuration', {
-        'fromX': rect['x'] + rect['width'] - 20, 'fromY': y, 'toX': rect['x'] + 60, 'toY': y, 'duration': 0.2})
-    sleep(1)
-
-
 def _close_new_message(driver: PumaDriver):
     driver.click(NEW_MESSAGE_CANCEL_BUTTON)
     sleep(1)
@@ -891,7 +880,8 @@ class Messages(StateGraph):
         """
         self._require(details_member(member), f'Removing "{member}"')
         self.gtl_logger.info(f'Swiping "{member}" to the left to reveal the remove button')
-        _swipe_left(self.driver, details_member(member))
+        self.driver.swipe_left(details_member(member))
+        self.driver.wait_until_present(DETAILS_REMOVE_MEMBER, timeout=2)
         self._require(DETAILS_REMOVE_MEMBER, f'Removing "{member}"')
         self.gtl_logger.info('Pressing remove')
         self.driver.click(DETAILS_REMOVE_MEMBER)
@@ -1045,7 +1035,7 @@ class Messages(StateGraph):
 
     def _delete_conversation(self, conversation: str):
         self.gtl_logger.info(f'Swiping conversation "{conversation}" to the left to reveal the delete button')
-        _swipe_left(self.driver, conversation_cell(conversation))
+        self.driver.swipe_left(conversation_cell(conversation))
         self.gtl_logger.info('Pressing delete button')
         self.driver.click(CONVERSATIONS_SWIPE_DELETE_BUTTON)
         # Deleting has to be confirmed. The confirmation ignores taps while it is appearing, so wait until it is shown.
