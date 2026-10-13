@@ -96,6 +96,19 @@ conversations_state = SimpleState(["xpath1", "xpath2"], initial_state=True)
 chat_state = ExampleAppChatState(parent_state=conversations_state)
 ```
 
+###### Remembered contextual arguments
+
+Puma remembers the last value given for each contextual argument, and reuses it when it has to navigate to a contextual
+state without that argument. For example, after `send_message('hi', conversation='Alice')`, you can call
+`send_message('hi again')` without a conversation. If an error occurs and Puma has to recover (for instance by restarting
+the app), it navigates back to the chat with Alice instead of failing.
+
+Contextual arguments are detected automatically: they are the parameters of `validate_context` and of the transitions to
+contextual states (except `driver`). Parameters of transitions to other states, such as a caption added while
+navigating, are not remembered. Remembered values are only used to navigate: when you're already in a chat, an action
+without a conversation still runs in the current chat. To make this work, give contextual parameters the same name in
+your actions, transitions and `validate_context` methods.
+
 ###### Special case: Contextual states that cannot be validated from the UI
 
 For some contextual states, the information that is required for validation is not present in the app UI. For example,
@@ -171,6 +184,12 @@ def send_message(self, message:str, conversation:str):
 
 In this example, the argument `conversation` is not used inside the `send_message` method, but it will be used to properly
 navigate to the correct conversation.
+
+Puma checks this when your application class is defined. If an action is missing an argument that a transition or
+`validate_context` method on the way to its state needs, a `ValueError` is raised that names the action and the missing
+arguments. This also applies to actions in states that come after a contextual state: an action in the chat settings
+of a conversation also needs the `conversation` argument. When the argument is only needed to navigate, you can make it
+optional (`conversation: str = None`), so the action can also be called when the application is already in that state.
 
 ### Ground Truth Logging
 
