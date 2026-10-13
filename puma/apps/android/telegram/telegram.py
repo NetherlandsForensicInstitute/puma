@@ -223,9 +223,10 @@ class Telegram(StateGraph):
         self.driver.click(ANSWER_CALL_NOTIFICATION_BUTTON)
 
     @action(call_state)
-    def mute_mic(self):
+    def mute_mic(self, conversation: str = None):
         """
         Mutes or unmutes the microphone when in a call.
+        :param conversation: The conversation of the call. Optional: not needed when already in the call
         """
         self.driver.click(CALL_STATE_MUTE_BUTTON)
 
