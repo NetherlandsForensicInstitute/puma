@@ -17,9 +17,9 @@ Settings is part of Android, so its version is the Android version.
 Initialization is standard:
 
 ```python
-from puma.apps.android.settings.settings import Settings
+from puma.apps.android.settings.settings import AndroidSettings
 
-phone = Settings("emulator-5554")
+phone = AndroidSettings("emulator-5554")
 ```
 
 ## Brightness and screen timeout

@@ -20,7 +20,7 @@ def _screen(title: str, *xpaths: str, parent_state: SimpleState) -> SimpleState:
 
 
 @supported_version("16")
-class Settings(StateGraph):
+class AndroidSettings(StateGraph):
     """
     A class representing the Settings application on Android.
 
@@ -46,7 +46,7 @@ class Settings(StateGraph):
 
     def __init__(self, device_udid: str, **kwargs):
         """
-        Initializes Settings with a device UDID.
+        Initializes AndroidSettings with a device UDID.
 
         :param device_udid: The unique device identifier for the Android device.
         :param kwargs: Optional arguments passed to the StateGraph, such as appium_server or desired_capabilities.

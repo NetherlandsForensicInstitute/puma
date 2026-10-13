@@ -1,6 +1,6 @@
 import unittest
 
-from puma.apps.android.settings.settings import Settings
+from puma.apps.android.settings.settings import AndroidSettings
 
 # Fill in the udid below. Run ADB devices to see the udids.
 device_udids = {
@@ -27,7 +27,7 @@ class TestAndroidSettings(unittest.TestCase):
         if not device_udids["Alice"]:
             print("No udid was configured for Alice. Please add at the top of the script.\nExiting....")
             exit(1)
-        self.alice = Settings(device_udids["Alice"])
+        self.alice = AndroidSettings(device_udids["Alice"])
 
     def test_brightness(self):
         original = self.alice.get_brightness()
@@ -60,7 +60,7 @@ class TestAndroidSettings(unittest.TestCase):
         self.assertTrue(self.alice.connect_to_wifi(WIFI_SSID, WIFI_PASSWORD))
 
     def test_transitions(self):
-        for state in Settings.states:
+        for state in AndroidSettings.states:
             self.alice.go_to_state(state)
 
 
