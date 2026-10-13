@@ -621,7 +621,7 @@ class WhatsApp(StateGraph):
         else:
             WhatsAppChatState.open_chat_settings(self.driver, conversation)
 
-            found_member_elements = self.driver.swipe_to_find_elements(CHAT_SETTINGS_ANY_MEMBER, max_swipes=4)
+            found_member_elements = self.driver.swipe_to_find_elements(CHAT_SETTINGS_ANY_MEMBER, num_swipes=4)
             found_member_names = [member.text for member in found_member_elements]
 
             if set(found_member_names) != set(expected_member_names):

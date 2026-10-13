@@ -9,7 +9,7 @@ class BoundingBox:
     """
     Class describing a rectangle in an image.
     properties:
-        x,y: the top right corner
+        x,y: the top left corner
         width, height: the dimensions
         middle: a tuple describing the center of the rectangle
     """
@@ -59,7 +59,10 @@ def recognize_text(path_to_image: str) -> list[RecognizedText]:
         log_error_and_raise_exception(logger, f'Could not analyze image because file does not exist: {path_to_image}')
     data = pytesseract.image_to_data(path_to_image, output_type='dict')
     all_text = []
-    for i in range(0, len(data['text']) - 1):
+    for i in range(len(data['text'])):
+        # Tesseract also reports the blocks, paragraphs and lines it found, which have no text of their own
+        if not data['text'][i].strip():
+            continue
         text = RecognizedText(data['text'][i], data['left'][i], data['top'][i], data['width'][i], data['height'][i],
                               data['conf'][i])
         all_text.append(text)
