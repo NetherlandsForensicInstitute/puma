@@ -478,6 +478,29 @@ class PumaDriver:
         element.clear()
         element.send_keys(text)
 
+    def is_keyboard_shown(self) -> bool:
+        """
+        Checks if the on-screen keyboard is currently shown. Some apps change their UI when the keyboard is open, e.g.
+        by hiding elements or by needing an extra back press to leave a screen.
+
+        :return: True if the on-screen keyboard is shown, False otherwise.
+        """
+        return bool(self.driver.is_keyboard_shown())
+
+    def wait_until_keyboard_shown(self, shown: bool = True, timeout: float = 5) -> bool:
+        """
+        Waits until the on-screen keyboard is shown (or hidden), as the keyboard takes a moment to open and close.
+
+        :param shown: True to wait until the keyboard is shown, False to wait until it is hidden.
+        :param timeout: The maximum time to wait, in seconds.
+        :return: True if the keyboard reached the requested state, False if the timeout was reached.
+        """
+        try:
+            self.wait_until(lambda: self.is_keyboard_shown() == shown, timeout, 0.5)
+            return True
+        except TimeoutError:
+            return False
+
     @abstractmethod
     def press_enter(self):
         """

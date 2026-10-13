@@ -227,6 +227,30 @@ class TestPumaDriverWait(unittest.TestCase):
         self.assertFalse(self.driver.wait_until_locators(present=['//one'], not_present=['//two'], timeout=0))
 
 
+class TestPumaDriverKeyboard(unittest.TestCase):
+    def test_is_keyboard_shown_on_both_platforms(self):
+        for platform in Platform:
+            for shown in (True, False):
+                appium_driver = _mock_appium_driver()
+                appium_driver.is_keyboard_shown.return_value = shown
+                self.assertIs(shown, _create_driver(platform, appium_driver).is_keyboard_shown())
+
+    def test_wait_until_keyboard_shown(self):
+        appium_driver = _mock_appium_driver()
+        appium_driver.is_keyboard_shown.side_effect = [False, True]
+        self.assertTrue(_create_driver(Platform.ANDROID, appium_driver).wait_until_keyboard_shown(timeout=5))
+
+    def test_wait_until_keyboard_hidden(self):
+        appium_driver = _mock_appium_driver()
+        appium_driver.is_keyboard_shown.side_effect = [True, False]
+        self.assertTrue(_create_driver(Platform.ANDROID, appium_driver).wait_until_keyboard_shown(shown=False, timeout=5))
+
+    def test_wait_until_keyboard_shown_times_out(self):
+        appium_driver = _mock_appium_driver()
+        appium_driver.is_keyboard_shown.return_value = False
+        self.assertFalse(_create_driver(Platform.ANDROID, appium_driver).wait_until_keyboard_shown(timeout=0))
+
+
 class TestIOSPumaDriver(unittest.TestCase):
     def setUp(self):
         self.appium_driver = _mock_appium_driver()
