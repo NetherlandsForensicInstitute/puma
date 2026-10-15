@@ -349,6 +349,36 @@ class PumaDriver:
             location = int(top_left[0] + width_ratio * size[1]), int(top_left[1] + height_ratio * size[0])
             self.tap(location, duration=duration)
 
+    def swipe_left(self, xpath: str, start: float = 0.05, end: float = 0.85, duration: float = 0.2):
+        """
+        Swipes an element to the left, across the middle of the element. In lists this typically reveals the delete
+        button of a row.
+
+        The start and end are ratios of the width of the element, measured from its right edge: 0 is the right edge,
+        0.5 the middle, and 1 the left edge.
+
+        :param xpath: The XPath (or Locator) of the element to swipe.
+        :param start: Optional. Where the swipe starts, as a ratio of the width from the right edge.
+        :param end: Optional. Where the swipe ends, as a ratio of the width from the right edge.
+        :param duration: Optional. The duration of the swipe, in seconds.
+        """
+        rect = self.get_element(xpath).rect
+        y = rect['y'] + rect['height'] / 2
+        right = rect['x'] + rect['width']
+        self.gtl_logger.info(f'Swiping element {xpath} to the left')
+        self._drag((right - start * rect['width'], y), (right - end * rect['width'], y), duration)
+
+    @abstractmethod
+    def _drag(self, start: tuple[float, float], end: tuple[float, float], duration: float):
+        """
+        Drags a finger over the screen in a straight line.
+
+        :param start: The (x, y) coordinates where the drag starts.
+        :param end: The (x, y) coordinates where the drag ends.
+        :param duration: The duration of the drag, in seconds.
+        """
+        pass
+
     def get_element(self, xpath: str):
         """
         Retrieves an element specified by its XPath.
