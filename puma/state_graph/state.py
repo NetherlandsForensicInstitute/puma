@@ -178,8 +178,7 @@ def compose_clicks(xpaths: List[str | ScrollTo], name: str, wait: float = 0) -> 
     of elements specified by their XPaths. Elements that may need scrolling before they can be clicked are wrapped
     in scroll_to().
 
-    :param xpaths: A list of XPaths of the elements to be clicked, optionally wrapped in scroll_to().
-    :param name: The name to give this lambda function. It is logged when the transition is executed, so pick a
+    :param name: Descriptive name of this function (used for logging)
                  descriptive name, e.g. 'open_settings'.
     :param wait: Optional. The number of seconds to wait after the clicks, e.g. for a screen that takes a while to
                  open. States are validated directly after a transition.
