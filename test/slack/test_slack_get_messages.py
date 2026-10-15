@@ -172,17 +172,18 @@ class TestSlackGetMessages(unittest.TestCase):
                 self.slack.get_messages(message_count=message_count)
 
     def test_keyboard_is_closed_before_collecting_messages(self):
-        # e.g. after sending a message
-        self.slack.driver.is_keyboard_shown.return_value = True
-        self.slack.driver.back.side_effect = lambda: setattr(self.slack.driver.is_keyboard_shown, 'return_value', False)
-        self.assertEqual(self.expected[-1:], self.slack.get_messages(message_count=1))
-        self.slack.driver.back.assert_called_once()
-        self.slack.driver.wait_until_keyboard_shown.assert_called_once_with(shown=False)
+        # the keyboard takes up half of the conversation, e.g. after sending a message
+        self.slack.driver.close_keyboard.side_effect = lambda: self.assertEqual(0, self.slack.driver.driver.swipes)
+        self.conversation.swipes = 0
+        original_swipe = self.conversation.swipe
 
-    def test_keyboard_is_not_closed_when_it_is_not_shown(self):
-        self.slack.get_messages(message_count=1)
-        self.slack.driver.back.assert_not_called()
-        self.slack.driver.wait_until_keyboard_shown.assert_not_called()
+        def count_swipes(*args):
+            self.conversation.swipes += 1
+            original_swipe(*args)
+
+        self.conversation.swipe = count_swipes
+        self.assertEqual(self.expected[-1:], self.slack.get_messages(message_count=1))
+        self.slack.driver.close_keyboard.assert_called_once_with()
 
     # The sender of messages without a header
 

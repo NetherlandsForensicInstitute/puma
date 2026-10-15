@@ -48,17 +48,8 @@ class SlackChatState(SimpleState, ContextualState):
     @staticmethod
     def back_to_home(driver: PumaDriver):
         # When the keyboard is open, going back only closes the keyboard
-        SlackChatState.close_keyboard(driver)
+        driver.close_keyboard()
         driver.back()
-
-    @staticmethod
-    def close_keyboard(driver: PumaDriver):
-        """
-        Closes the on-screen keyboard if it is open, e.g. after sending a message.
-        """
-        if driver.is_keyboard_shown():
-            driver.back()
-            driver.wait_until_keyboard_shown(shown=False)
 
     def validate_context(self, driver: PumaDriver, conversation: str = None) -> bool:
         if conversation:
@@ -170,7 +161,7 @@ class Slack(StateGraph):
         # Slack shows relative dates ('Today') and dates without a year in the time zone of the device
         now = datetime.fromisoformat(self.driver.driver.get_device_time('YYYY-MM-DDTHH:mm:ss'))
         # The keyboard takes up half of the conversation
-        SlackChatState.close_keyboard(self.driver)
+        self.driver.close_keyboard()
         messages = []
 
         def collect(page_source: str) -> bool:

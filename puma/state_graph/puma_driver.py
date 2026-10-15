@@ -537,6 +537,20 @@ class PumaDriver:
         except TimeoutError:
             return False
 
+    def close_keyboard(self, timeout: float = 5) -> bool:
+        """
+        Closes the on-screen keyboard if it is shown, and waits until it is hidden. Nothing is done when the keyboard is
+        not shown.
+
+        :param timeout: The maximum time to wait until the keyboard is hidden, in seconds.
+        :return: True if the keyboard is hidden, False if the timeout was reached.
+        """
+        if not self.is_keyboard_shown():
+            return True
+        self.gtl_logger.info('Closing the on-screen keyboard')
+        self.driver.hide_keyboard()
+        return self.wait_until_keyboard_shown(shown=False, timeout=timeout)
+
     @abstractmethod
     def press_enter(self):
         """
