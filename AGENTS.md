@@ -54,9 +54,12 @@ at the top of the script. Do not commit a UDID, phone number, password or other 
 
 Process:
 
-- Every change belongs to a GitHub issue. The branch is created from `main`, and its name starts with the issue number
-  and a dash: `244-create-agents-md`.
-- Add a line to [RELEASE_NOTES](RELEASE_NOTES) for the issue, as the first line under the top version: the newest
+- Every change goes through a pull request. Never push to `main`.
+- Every pull request is linked to a GitHub issue (`Closes #244` in the description). If there is no issue for the
+  change, ask for one first.
+- The title of every pull request starts with the issue number: `244: Add AGENTS.md`.
+- The branch is created from `main`, and its name starts with the issue number and a dash: `244-create-agents-md`.
+- Every pull request adds a line to [RELEASE_NOTES](RELEASE_NOTES), as the first line under the top version: the newest
   entry comes first. The line starts with the issue number. A unit test fails when the issue number of the branch is
   not in the release notes.
 - The top version in `RELEASE_NOTES` must be equal to the version in `puma/version.py`. When that version has already
