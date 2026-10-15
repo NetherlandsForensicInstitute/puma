@@ -59,7 +59,7 @@ def _fake_slack(screen: FakeSlackScreen) -> Slack:
     slack.driver.click.side_effect = screen.click
     slack.driver.back.side_effect = screen.back
     slack.driver.send_keys.side_effect = screen.send_keys
-    slack.driver.driver.is_keyboard_shown.return_value = False
+    slack.driver.is_keyboard_shown.return_value = False
     slack.driver.app_open.return_value = True
     slack.gtl_logger = logging.getLogger('test_slack_navigation')
     return slack
@@ -118,6 +118,22 @@ class TestSlackNavigation(unittest.TestCase):
         with self.assertRaises(ValueError):
             self._send('a', conversation='#does-not-exist')
         self.assertEqual([], self.screen.sent)
+
+    def test_going_back_with_the_keyboard_open(self):
+        # going back only closes the keyboard when it is open, so the back button is pressed twice
+        self.assertEqual('#general', self._send('a', conversation='#general'))
+        self.slack.driver.is_keyboard_shown.return_value = True
+
+        def back():
+            if self.slack.driver.is_keyboard_shown.return_value:
+                self.slack.driver.is_keyboard_shown.return_value = False
+            else:
+                self.screen.back()
+
+        self.slack.driver.back.side_effect = back
+        self.assertEqual('@Bob', self._send('b', conversation='@Bob'))
+        self.assertEqual(2, self.slack.driver.back.call_count)
+        self.slack.driver.wait_until_keyboard_shown.assert_called_once_with(shown=False)
 
 
 if __name__ == '__main__':

@@ -49,9 +49,6 @@ class FakeConversation:
         self.offset = min(self.max_offset, max(self.min_offset, self.offset + round(start_y - end_y)))
         self.lowest_offset = min(self.lowest_offset, self.offset)
 
-    def is_keyboard_shown(self) -> bool:
-        return False
-
     def is_present(self, xpath, *args, **kwargs) -> bool:
         if xpath in (CHAT_BACK_BUTTON, CHAT_TEXT_INPUT):
             return True
@@ -73,6 +70,7 @@ def _slack_in_conversation(conversation: FakeConversation) -> Slack:
     slack.driver = Mock(platform=Platform.ANDROID)
     slack.driver.is_present.side_effect = conversation.is_present
     slack.driver.app_open.return_value = True
+    slack.driver.is_keyboard_shown.return_value = False
     slack.driver.get_element.side_effect = lambda xpath: Mock(
         rect={'x': 0, 'y': LIST_TOP, 'width': 1080, 'height': LIST_HEIGHT}) if xpath == CHAT_MESSAGES_LIST else Mock()
     slack.driver.driver = conversation
@@ -172,6 +170,19 @@ class TestSlackGetMessages(unittest.TestCase):
         for message_count in (0, -1):
             with self.assertRaises(ValueError):
                 self.slack.get_messages(message_count=message_count)
+
+    def test_keyboard_is_closed_before_collecting_messages(self):
+        # e.g. after sending a message
+        self.slack.driver.is_keyboard_shown.return_value = True
+        self.slack.driver.back.side_effect = lambda: setattr(self.slack.driver.is_keyboard_shown, 'return_value', False)
+        self.assertEqual(self.expected[-1:], self.slack.get_messages(message_count=1))
+        self.slack.driver.back.assert_called_once()
+        self.slack.driver.wait_until_keyboard_shown.assert_called_once_with(shown=False)
+
+    def test_keyboard_is_not_closed_when_it_is_not_shown(self):
+        self.slack.get_messages(message_count=1)
+        self.slack.driver.back.assert_not_called()
+        self.slack.driver.wait_until_keyboard_shown.assert_not_called()
 
     # The sender of messages without a header
 

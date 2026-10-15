@@ -48,9 +48,17 @@ class SlackChatState(SimpleState, ContextualState):
     @staticmethod
     def back_to_home(driver: PumaDriver):
         # When the keyboard is open, going back only closes the keyboard
-        if driver.driver.is_keyboard_shown():
-            driver.back()
+        SlackChatState.close_keyboard(driver)
         driver.back()
+
+    @staticmethod
+    def close_keyboard(driver: PumaDriver):
+        """
+        Closes the on-screen keyboard if it is open, e.g. after sending a message.
+        """
+        if driver.is_keyboard_shown():
+            driver.back()
+            driver.wait_until_keyboard_shown(shown=False)
 
     def validate_context(self, driver: PumaDriver, conversation: str = None) -> bool:
         if conversation:
@@ -161,9 +169,8 @@ class Slack(StateGraph):
             raise ValueError(f'The message count should be at least 1, got {message_count}')
         # Slack shows relative dates ('Today') and dates without a year in the time zone of the device
         now = datetime.fromisoformat(self.driver.driver.get_device_time('YYYY-MM-DDTHH:mm:ss'))
-        # The keyboard takes up half of the conversation, e.g. after sending a message
-        if self.driver.driver.is_keyboard_shown():
-            self.driver.driver.hide_keyboard()
+        # The keyboard takes up half of the conversation
+        SlackChatState.close_keyboard(self.driver)
         messages = []
 
         def collect(page_source: str) -> bool:
