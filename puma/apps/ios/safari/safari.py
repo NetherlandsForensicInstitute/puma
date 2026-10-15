@@ -191,22 +191,24 @@ class Safari(StateGraph):
         self.driver.wait_until_not_present(BOOKMARKS_ADDED_TOAST)
 
     @action(bookmarks_state, end_state=current_tab_state)
-    def load_bookmark(self, title: str):
+    def load_bookmark(self, title: str, tab_index: int = None):
         """
         Loads a bookmark in the current tab.
 
         :param title: The title of the bookmark to load.
+        :param tab_index: The index of the tab to use, starting at 1. Defaults to the last tab.
         """
         self.driver.click(bookmark(title))
         self.driver.wait_until_not_present(BOOKMARKS_TABLE)
         _wait_for_page(self.driver)
 
     @action(bookmarks_state)
-    def delete_bookmark(self, title: str) -> bool:
+    def delete_bookmark(self, title: str, tab_index: int = None) -> bool:
         """
         Deletes a bookmark.
 
         :param title: The title of the bookmark to delete.
+        :param tab_index: The index of the tab to use, starting at 1. Defaults to the last tab.
         :return: True if the bookmark has been deleted, False if there was no bookmark with this title.
         """
         if not self.driver.is_present(bookmark(title)):

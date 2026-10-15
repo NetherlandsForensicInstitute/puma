@@ -26,27 +26,27 @@ def go_to_chat(driver: PumaDriver, conversation: str):
     driver.get_elements(CONVERSATIONS_ROW_BY_SUBJECT.format(conversation=conversation))[-1].click()
 
 
-def go_to_voice_call(driver: PumaDriver, contact: str):
+def go_to_voice_call(driver: PumaDriver, conversation: str):
     """
     Starts a voice call with a specific user.
 
     :param driver: The PumaDriver instance used to interact with the application.
-    :param contact: The name of user to call.
+    :param conversation: The name of user to call.
     """
     driver.click(CALL_TAB_SEARCH_BUTTON)
-    driver.send_keys(SEARCH_BAR, contact)
+    driver.send_keys(SEARCH_BAR, conversation)
     driver.click(VOICE_CALL_START_BUTTON)
 
 
-def go_to_video_call(driver: PumaDriver, contact: str):
+def go_to_video_call(driver: PumaDriver, conversation: str):
     """
     Starts a video call with a specific user.
 
     :param driver: The PumaDriver instance used to interact with the application.
-    :param contact: The name of user to call.
+    :param conversation: The name of user to call.
     """
     driver.click(CALL_TAB_SEARCH_BUTTON)
-    driver.send_keys(SEARCH_BAR, contact)
+    driver.send_keys(SEARCH_BAR, conversation)
     driver.click(VIDEO_CALL_START_BUTTON)
 
 
