@@ -426,6 +426,19 @@ self.add_popup_handler(PopUpHandler(['/xpath/for/recognition', '/xpath/recogniti
 There is also a convenience method `simple_popup_handler`, which only requires a single XPath expression that is used
 for recognition and dismissal and returns a `PopUpHandler`.
 
+### On-screen keyboard
+Some apps change their UI when the on-screen keyboard is open: elements are hidden or moved, or the first back press
+only closes the keyboard. Use `self.driver.is_keyboard_shown()` to check whether the keyboard is open. The keyboard
+takes a moment to open and close, so use `self.driver.wait_until_keyboard_shown()` (or
+`wait_until_keyboard_shown(shown=False)`) directly after an interaction that opens or closes it:
+```python
+self.driver.click('//text_field')
+self.driver.wait_until_keyboard_shown()
+...
+if self.driver.is_keyboard_shown():
+    self.driver.back()  # closes the keyboard on Android
+```
+
 ### Case Sensitivity in XPath:
 XPath is case-sensitive by default. As the element attribute values regularly change, and sometimes the only change is
 casing, use case insensitivity as much as possible. To make an XPath expression case-insensitive, you can do the
