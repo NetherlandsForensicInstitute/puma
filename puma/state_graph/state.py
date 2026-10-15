@@ -160,7 +160,7 @@ class ScrollTo:
 def scroll_to(locator: str, swipe_down: bool = True, max_swipes: int = 10) -> ScrollTo:
     """
     Marks an element in compose_clicks that may need scrolling before it can be clicked. The screen is only scrolled
-    when the element is not present, e.g. `compose_clicks([xpath1, scroll_to(xpath2), xpath3])`.
+    when the element is not present, e.g. `compose_clicks([xpath1, scroll_to(xpath2), xpath3], 'open_settings')`.
 
     :param locator: The XPath (or Locator) of the element to click.
     :param swipe_down: True to scroll down to the element, False to scroll up to it.
@@ -170,7 +170,7 @@ def scroll_to(locator: str, swipe_down: bool = True, max_swipes: int = 10) -> Sc
     return ScrollTo(locator, swipe_down, max_swipes)
 
 
-def compose_clicks(xpaths: List[str | ScrollTo], name: str = 'click', wait: float = 0) -> Callable[[PumaDriver], None]:
+def compose_clicks(xpaths: List[str | ScrollTo], name: str, wait: float = 0) -> Callable[[PumaDriver], None]:
     """
     Helper function to create a lambda for constructing transitions by clicking elements.
 
@@ -179,7 +179,8 @@ def compose_clicks(xpaths: List[str | ScrollTo], name: str = 'click', wait: floa
     in scroll_to().
 
     :param xpaths: A list of XPaths of the elements to be clicked, optionally wrapped in scroll_to().
-    :param name: The name to give this lambda function.
+    :param name: The name to give this lambda function. It is logged when the transition is executed, so pick a
+                 descriptive name, e.g. 'open_settings'.
     :param wait: Optional. The number of seconds to wait after the clicks, e.g. for a screen that takes a while to
                  open. States are validated directly after a transition.
     :return: A lambda function that takes a driver and performs the clicking actions.
