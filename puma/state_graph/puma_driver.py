@@ -432,22 +432,28 @@ class PumaDriver:
     def swipe_to_find_element(self, xpath: str, max_swipes: int = 10, swipe_down: bool = True):
         """
         Swipes up or down to find an element specified by its XPath. This is necessary when the element you want to click on
-        is out of view.
+        is out of view. Stops early when a swipe no longer changes the screen, as the end of the view has been reached.
 
         :param xpath: The XPath (or Locator) of the element to find.
         :param max_swipes: The maximum number of swipe attempts to find the element.
         :param swipe_down: If the element can be found below, True, otherwise False.
-        :raises PumaClickException: If the element cannot be found after the maximum number of swipes.
+        :raises PumaClickException: If the element cannot be found after the maximum number of swipes, or after reaching
+        the end of the view.
         """
         for attempt in range(max_swipes):
             if self.is_present(xpath):
                 return self.get_element(xpath)
+            self.gtl_logger.warning(f"Attempt {attempt + 1}: Element not found, swiping")
+            page_before = self.driver.page_source
+            if swipe_down:
+                self._scroll_down()
             else:
-                self.gtl_logger.warning(f"Attempt {attempt + 1}: Element not found, swiping")
-                if swipe_down:
-                    self._scroll_down()
-                else:
-                    self._scroll_up()
+                self._scroll_up()
+            if self.driver.page_source == page_before:
+                if self.is_present(xpath):
+                    return self.get_element(xpath)
+                raise PumaClickException(f'Reached the end of the view after {attempt + 1} swipes, '
+                                         f'cannot find element with xpath {xpath}')
         raise PumaClickException(f'After {max_swipes} swipes, cannot find element with xpath {xpath}')
 
     def swipe_to_find_elements(self, xpath: str, num_swipes: int = 10):
@@ -530,6 +536,20 @@ class PumaDriver:
             return True
         except TimeoutError:
             return False
+
+    def close_keyboard(self, timeout: float = 5) -> bool:
+        """
+        Closes the on-screen keyboard if it is shown, and waits until it is hidden. Nothing is done when the keyboard is
+        not shown.
+
+        :param timeout: The maximum time to wait until the keyboard is hidden, in seconds.
+        :return: True if the keyboard is hidden, False if the timeout was reached.
+        """
+        if not self.is_keyboard_shown():
+            return True
+        self.gtl_logger.info('Closing the on-screen keyboard')
+        self.driver.hide_keyboard()
+        return self.wait_until_keyboard_shown(shown=False, timeout=timeout)
 
     @abstractmethod
     def press_enter(self):
