@@ -37,10 +37,14 @@ phone.send_message(message="How are you?")  # in the current chat
 ### Sending a snap
 
 A snap is a photo taken with the camera of the phone. We can send a snap to one friend from the chat with that friend,
-or to several friends at once from the camera tab. Both can have a caption:
+or to several friends at once from the camera tab. From the camera tab, the snap can also be posted to My Story, which is
+visible to friends only, or to the public story, which is visible to everyone. Snaps can have a caption:
 
 ```python
 phone.send_snap(conversation="Charlie", caption="Hi Charlie!")  # takes a photo in the chat with Charlie and sends it
 phone.send_snap_to(recipients=["Charlie", "Bob"], caption="Hi!")  # takes a photo on the camera tab and sends it to both
+phone.send_snap_to(my_story=True, caption="Hello!")  # posts the snap to My Story, visible to friends only
+phone.send_snap_to(recipients=["Charlie"], my_story=True)  # sends the snap to Charlie and posts it to My Story
+phone.send_snap_to(public_story=True)  # posts the snap to the public story, visible to everyone
 phone.flip_camera()  # switches between the front and the rear camera
 ```

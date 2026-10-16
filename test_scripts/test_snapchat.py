@@ -49,6 +49,13 @@ class TestSnapchat(unittest.TestCase):
         self.alice.send_snap_to(recipients=[self.contact_charlie], caption='Hi Charlie!')
         self.alice.send_snap_to(recipients=[self.contact_bob, self.contact_charlie])
 
+    def test_send_snap_to_my_story(self):
+        self.alice.send_snap_to(my_story=True, caption='Hello!')
+        self.alice.send_snap_to(recipients=[self.contact_charlie], my_story=True)
+
+    def test_send_snap_to_public_story(self):
+        self.alice.send_snap_to(public_story=True, caption='Hello everyone!')
+
     def test_flip_camera(self):
         self.alice.flip_camera()
         self.alice.flip_camera()

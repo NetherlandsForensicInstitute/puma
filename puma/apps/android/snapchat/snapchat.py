@@ -192,6 +192,7 @@ class Snapchat(StateGraph):
         """
         StateGraph.__init__(self, device_udid, APPLICATION_PACKAGE, **kwargs)
         self.add_popup_handlers(PopUpHandler([POPUP_LOCATION_ALLOW_BUTTON], [POPUP_CANCEL_BUTTON]),
+                                PopUpHandler([POPUP_AUTO_SAVE_STORY_TITLE], [POPUP_CANCEL_BUTTON]),
                                 simple_popup_handler(POPUP_DISCARD_SNAP_BUTTON),
                                 PopUpHandler([POPUP_CAMERA_PERMISSION_TITLE], [POPUP_CAMERA_PERMISSION_ALLOW_BUTTON]))
 
@@ -231,24 +232,46 @@ class Snapchat(StateGraph):
             self.driver.click(f'{CHAT_SNAP_PREVIEW_MORE_FRIENDS_BUTTON}/following-sibling::android.view.ViewGroup')
 
     @action(snap_preview_state, end_state=camera_state)
-    def send_snap_to(self, recipients: list[str], caption: str = None):
+    def send_snap_to(self, recipients: list[str] = None, caption: str = None, my_story: bool = False,
+                     public_story: bool = False):
         """
-        Takes a photo with the camera tab and sends it as a snap to one or more friends.
+        Takes a photo with the camera tab and sends it as a snap to one or more friends, and/or posts it to a story.
 
-        :param recipients: The names of the friends to send the snap to.
+        :param recipients: The names of the friends to send the snap to. Optional when posting to a story.
         :param caption: An optional caption to put on the photo.
+        :param my_story: Whether to post the snap to My Story, which is visible to friends only.
+        :param public_story: Whether to post the snap to the public story, which is visible to everyone. The first time,
+        Snapchat introduces the public story and the public profile, which is accepted. Cannot be combined with my_story.
         """
-        if not recipients:
-            raise ValueError('Cannot send a snap without recipients')
+        if my_story and public_story:
+            raise ValueError('Cannot post a snap to both My Story and the public story: Snapchat allows only one of them')
+        if not recipients and not my_story and not public_story:
+            raise ValueError('Cannot send a snap without recipients or posting it to a story')
+        recipients = recipients or []
         if caption:
             self._add_caption(caption)
         self.driver.click(SNAP_PREVIEW_SEND_TO_BUTTON)
+        # The stories are at the top of the list, which changes when searching for friends, so they are selected first
+        if my_story:
+            self.gtl_logger.info('Selecting My Story')
+            self.driver.click(SEND_TO_MY_STORY)
+            if self.driver.is_present(SEND_TO_ADD_TO_STORY_CONFIRM_BUTTON, implicit_wait=1):
+                self.driver.click(SEND_TO_ADD_TO_STORY_CONFIRM_BUTTON)
+        elif public_story:
+            self.gtl_logger.info('Selecting the public story')
+            self.driver.click(SEND_TO_PUBLIC_STORY)
+            if self.driver.is_present(SEND_TO_PUBLIC_STORY_INTRODUCTION_OKAY_BUTTON, implicit_wait=1):
+                self.driver.click(SEND_TO_PUBLIC_STORY_INTRODUCTION_OKAY_BUTTON)
         for recipient in recipients:
             self._select_recipient(recipient)
-        self.gtl_logger.info(f'Sending the snap to {", ".join(recipients)}')
+        self.gtl_logger.info('Sending the snap')
         self.driver.click(SEND_TO_SEND_BUTTON)
-        # Snapchat returns to the camera after sending
-        self.driver.wait_until_present(NAVIGATION_CAMERA_TAB, description='camera to open')
+        # Snapchat returns to the camera after sending. The first time a snap is posted to a story, it first asks to
+        # save these snaps in Memories, which is declined.
+        self.driver.wait_until_present(NAVIGATION_CAMERA_TAB, POPUP_AUTO_SAVE_STORY_TITLE, description='camera to open')
+        if self.driver.is_present(POPUP_AUTO_SAVE_STORY_TITLE):
+            self.driver.click(POPUP_CANCEL_BUTTON)
+            self.driver.wait_until_present(NAVIGATION_CAMERA_TAB, description='camera to open')
 
     def _add_caption(self, caption: str):
         self.gtl_logger.info('Adding a caption to the snap')

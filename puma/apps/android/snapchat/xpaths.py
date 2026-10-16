@@ -50,7 +50,15 @@ SEND_TO_BACK_BUTTON = '//android.view.View[@resource-id="com.snapchat.android:id
 SEND_TO_RECIPIENT = '//android.view.View[./javaClass[lower-case(@text)=lower-case("{recipient}")]]'
 SEND_TO_SELECTED_RECIPIENT = ('//android.view.ViewGroup[@resource-id="com.snapchat.android:id/send_to_confirmation_bar"]'
                               '//android.widget.TextView[lower-case(@text)=lower-case("{recipient}")]')
-SEND_TO_SEND_BUTTON = '//android.view.View[@resource-id="com.snapchat.android:id/send_to_send_button"]'
+# The stories to post to, visible to friends only or to everyone. Only one of them can be selected. The name of a story
+# is the first line of its row: the row of the last snap has the story it was posted to as second line.
+SEND_TO_MY_STORY = '//android.view.View[./javaClass[1][@text="My Story · Friends Only"]]'
+SEND_TO_PUBLIC_STORY = '//android.view.View[./javaClass[1][@text="My Story · Public"]]'
+# Asks to confirm adding the snap to My Story, when My Story is selected. Cancel deselects My Story.
+SEND_TO_ADD_TO_STORY_CONFIRM_BUTTON = '//android.view.View[@resource-id="com.snapchat.android:id/add_to_story_dialog_confirm_view"]'
+# Introduces the public story and the public profile, the first time the public story is selected.
+SEND_TO_PUBLIC_STORY_INTRODUCTION_OKAY_BUTTON = '//android.widget.Button[@resource-id="introducing-public-story-nux-button"]'
+SEND_TO_SEND_BUTTON ='//android.view.View[@resource-id="com.snapchat.android:id/send_to_send_button"]'
 
 # Pop-ups
 POPUP_DIALOG = '//android.widget.LinearLayout[@resource-id="com.snapchat.android:id/dialog_content"]'
@@ -59,6 +67,9 @@ POPUP_CANCEL_BUTTON = '//android.widget.TextView[@resource-id="com.snapchat.andr
 POPUP_LOCATION_ALLOW_BUTTON = '//android.view.View[@resource-id="com.snapchat.android:id/location_permission_alert_confirm_view"]'
 # Asks whether to abandon a snap that was edited (e.g. has a caption), when leaving the preview.
 POPUP_DISCARD_SNAP_BUTTON = '//android.view.View[@resource-id="com.snapchat.android:id/discard_alert_dialog_discard_view"]'
+# Asks to save the snaps posted to a story in Memories, the first time a snap is posted to a story. Declined.
+POPUP_AUTO_SAVE_STORY_TITLE = ('//android.widget.TextView[@resource-id="com.snapchat.android:id/alert_dialog_title"'
+                               ' and starts-with(@text, "Auto-Save Story Snaps")]')
 # Covers the camera until Snapchat may use the camera and microphone. Allowing it shows the permission requests of
 # Android, which are handled by the generic pop-up handlers.
 POPUP_CAMERA_PERMISSION_TITLE = '//android.widget.TextView[@text="Snapchat is a camera app"]'
