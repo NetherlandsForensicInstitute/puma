@@ -42,8 +42,9 @@ python -m unittest test.test_state_graph                            # one test m
 
 CI runs the unit tests on Python 3.10 and 3.11: write syntax and library calls that both support.
 
-The unit tests include a release notes test that reads the issue number from the branch name, so they pass on a
-branch named `<issue number>-<title>` and fail on any other.
+The unit tests include a release notes test that reads the issue number from the branch name, so they fail on a
+branch whose name does not start with `<issue number>-`. The test is skipped on `main`, on
+`dependabot` branches and when no branch is checked out.
 
 The scripts in `test_scripts` need a device, a running Appium server (`appium`) and the UDID of the device filled in at
 the top of the script. Keep UDIDs, phone numbers, passwords and other data of a device or account out of commits.
