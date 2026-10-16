@@ -40,7 +40,7 @@ class PopUpHandler:
         :param driver: The PumaDriver instance to use for searching and clicking the button.
         """
         driver.gtl_logger.info('Dismissing pop-up')
-        compose_clicks(self.dismiss_xpaths)(driver)
+        compose_clicks(self.dismiss_xpaths, 'dismiss_popup')(driver)
 
 
 def simple_popup_handler(xpath: str):

@@ -14,7 +14,7 @@ class BookmarksFolder(SimpleState, ContextualState):
         """
         super().__init__(xpaths=[BOOKMARKS_SORT_VIEW, BOOKMARKS_GO_BACK, BOOKMARKS_CREATE_FOLDER],
                          parent_state=parent_state,
-                         parent_state_transition=compose_clicks([BOOKMARKS_GO_BACK]))
+                         parent_state_transition=compose_clicks([BOOKMARKS_GO_BACK], 'go_back_from_bookmarks_folder'))
 
     def validate_context(self, driver: PumaDriver, folder_name: str = None) -> bool:
         """
@@ -49,7 +49,7 @@ class CurrentTab(SimpleState, ContextualState):
         super().__init__(
             xpaths=[URL_BAR, NEW_TAB_FROM_CURRENT_TAB],
             parent_state=parent_state,
-            parent_state_transition=compose_clicks([TAB_SWITCH_BUTTON]))
+            parent_state_transition=compose_clicks([TAB_SWITCH_BUTTON], 'go_to_tab_overview'))
         # Keep a dict that tracks which tab indices were opened last on which device. See validate_context()
         self.last_opened = {}
 
