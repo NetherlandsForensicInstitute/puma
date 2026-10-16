@@ -1,6 +1,7 @@
 import unittest
 from unittest.mock import Mock, call, patch
 
+from puma.state_graph.action import action
 from puma.state_graph.puma_driver import PumaDriver, Platform
 from puma.state_graph.state import State, ContextualState, SimpleState, compose_clicks, scroll_to
 from puma.state_graph.state_graph import StateGraphMeta, StateGraph
@@ -110,6 +111,30 @@ class TestStateGraphMeta(unittest.TestCase):
         state2 = TestState(id="State2", recognize_only=True)
         with self.assertRaises(ValueError):
             StateGraphMeta._validate_graph([state1, state2])
+
+    def test_action_in_recognize_only_state_is_not_allowed(self):
+        with self.assertRaises(ValueError) as error:
+            class RecognizeOnlyActionApp(StateGraph):
+                platform = Platform.ANDROID
+
+                state1 = SimpleState(xpaths=['//state1'], initial_state=True)
+                state2 = SimpleState(xpaths=['//state2'], parent_state=state1, recognize_only=True)
+
+                @action(state2)
+                def do_something(self):
+                    pass
+        self.assertIn("RecognizeOnlyActionApp.do_something (state 'state2')", str(error.exception))
+
+    def test_action_ending_in_recognize_only_state_is_allowed(self):
+        class RecognizeOnlyEndStateApp(StateGraph):
+            platform = Platform.ANDROID
+
+            state1 = SimpleState(xpaths=['//state1'], initial_state=True)
+            state2 = SimpleState(xpaths=['//state2'], parent_state=state1, recognize_only=True)
+
+            @action(state1, end_state=state2)
+            def open_state2(self):
+                pass
 
     def test_graph_without_initial_state(self):
         with self.assertRaises(ValueError) as error:

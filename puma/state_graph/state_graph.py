@@ -87,6 +87,7 @@ class StateGraphMeta(type):
                                                                                              states)
         new_class.context_parameters = frozenset().union(*new_class.state_context_parameters.values())
         StateGraphMeta._validate_actions(name, namespace, new_class.state_context_parameters)
+        StateGraphMeta._validate_no_actions_in_recognize_only_states(name, namespace)
 
         return new_class
 
@@ -140,6 +141,22 @@ class StateGraphMeta(type):
             raise ValueError('\n'.join(errors) + '\nAdd them as parameters of the action (for example '
                              '"conversation: str = None"), so they can be passed on to the transitions and '
                              'validate_context methods on the way to the state of the action.')
+
+    @staticmethod
+    def _validate_no_actions_in_recognize_only_states(class_name: str, namespace: dict):
+        """
+        Validates that no action is defined in a recognize-only state. Recognize-only states are never navigated to, so
+        an action in such a state could not navigate to its state.
+
+        :param class_name: The name of the class being created.
+        :param namespace: The namespace dictionary containing the class attributes.
+        :raises ValueError: If any action is defined in a recognize-only state.
+        """
+        errors = [f"{class_name}.{name} (state '{value.action_state}')" for name, value in namespace.items()
+                  if getattr(value, 'action_state', None) is not None and value.action_state.recognize_only]
+        if errors:
+            raise ValueError('Actions cannot be defined in recognize-only states, as these are never navigated to: '
+                             + ', '.join(errors))
 
     @staticmethod
     def _validate_graph(states: list[State]):

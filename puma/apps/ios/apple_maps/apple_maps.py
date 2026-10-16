@@ -158,12 +158,16 @@ class AppleMaps(StateGraph):
         self.driver.click(DIRECTIONS_GO_BUTTON)
         self.driver.wait_until_present(NAVIGATION_TRAY, timeout=10)
 
-    @action(navigation_state, end_state=place_state)
     def end_navigation(self):
         """
-        Ends turn-by-turn navigation. Apple Maps then shows the destination.
+        Ends turn-by-turn navigation, if it is active. Apple Maps then shows the destination.
+        This is not an action, as the navigation state is recognize-only: it is only entered by starting navigation.
         """
+        if not self.driver.is_present(NAVIGATION_TRAY):
+            logger.info('Navigation is not active, not ending it')
+            return
         _end_navigation(self.driver)
+        self.current_state = self.place_state
 
     def start_route(self, from_query: str, to_query: str, speed: int,
                     transport_type: TransportType = TransportType.CAR):
@@ -213,8 +217,7 @@ class AppleMaps(StateGraph):
         """
         self.gtl_logger.info('Stopping the spoofed route')
         self.route_simulator.stop_route()
-        if self.driver.is_present(NAVIGATION_TRAY):
-            self.end_navigation()
+        self.end_navigation()
         self.gtl_logger.info('Resetting the location of the device to its real location')
         self.driver.execute_script('mobile: resetSimulatedLocation')
         logger.info('Stopped route')
