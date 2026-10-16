@@ -32,7 +32,7 @@ CONVERSATIONS_CHAT_ABLE_CONTACT = build_wa_resource_id_text_xpath('chat_able_con
 CONVERSATIONS_NEW_BROADCAST_TITLE = build_wa_resource_id_text_xpath('title', 'New broadcast')
 CONVERSATIONS_ROW_BY_SUBJECT = f'//*[contains(@resource-id,"{WHATSAPP_PACKAGE}:id/conversations_row_contact_name") and @text="{{conversation}}"]'
 
-SETTINGS_QR = build_wa_resource_id_xpath_widget('ImageView', 'profile_info_qr_code')
+SETTINGS_QR = build_wa_resource_id_xpath_widget('Button', 'menuitem_qr_code')
 SETTINGS_ACCOUNT_SWITCH = build_wa_resource_id_xpath_widget('ImageView', 'account_switcher_button')
 
 PROFILE_PROFILE_PICTURE = build_wa_resource_id_xpath_widget('ImageView', 'photo_btn')
@@ -45,9 +45,9 @@ PROFILE_SAVE_BUTTON = build_wa_resource_id_xpath('done_btn')
 PROFILE_INFO_STATUS_CARD = build_wa_resource_id_xpath('profile_info_status_card')
 
 NEW_CHAT_HEADER = '//android.widget.TextView[@text="Select contact" or @text="New chat"]'
-NEW_CHAT_NEW_GROUP = build_wa_resource_id_text_xpath_widget('TextView', 'contactpicker_row_name', 'New group')
-NEW_CHAT_NEW_CONTACT = build_wa_resource_id_text_xpath_widget('TextView', 'contactpicker_row_name', 'New contact')
-NEW_CHAT_NEW_COMMUNITY = build_wa_resource_id_text_xpath_widget('TextView', 'contactpicker_row_name', 'New community')
+NEW_CHAT_NEW_GROUP = build_text_xpath('New group')
+NEW_CHAT_NEW_CONTACT = build_text_xpath('New contact')
+NEW_CHAT_NEW_COMMUNITY = build_text_xpath('New community')
 
 CHAT_ROOT_LAYOUT = build_wa_resource_id_xpath_widget('LinearLayout', 'conversation_root_layout')
 CHAT_CONTACT_HEADER = build_wa_resource_id_xpath_widget('TextView', 'conversation_contact_name')
@@ -97,12 +97,15 @@ SEND_LOCATION_CAPTION = build_wa_resource_id_xpath('comment')
 
 CHAT_SETTINGS_CONTACT_NAME = (f'{build_wa_resource_id_xpath_widget("TextView", "contact_title")} | '
                               f'{build_wa_resource_id_xpath_widget("TextView", "business_title")} | '
-                              f'{build_wa_resource_id_xpath_widget("TextView", "group_title")}')
+                              f'{build_wa_resource_id_xpath_widget("TextView", "group_title")} | '
+                              f'{build_wa_resource_id_xpath_widget("Button", "group_title")}')
 CHAT_SETTINGS_CONTACT_NAME_TEXT = (f'//android.widget.TextView[@resource-id="{WHATSAPP_PACKAGE}:id/contact_title" and contains(lower-case(@text), "{{conversation}}")] | '
                                    f'//android.widget.TextView[@resource-id="{WHATSAPP_PACKAGE}:id/business_title" and contains(lower-case(@text), "{{conversation}}")] | '
-                                   f'//android.widget.TextView[@resource-id="{WHATSAPP_PACKAGE}:id/group_title" and contains(lower-case(@text), "{{conversation}}")]')
+                                   f'//android.widget.TextView[@resource-id="{WHATSAPP_PACKAGE}:id/group_title" and contains(lower-case(@text), "{{conversation}}")] | '
+                                   f'//android.widget.Button[@resource-id="{WHATSAPP_PACKAGE}:id/group_title" and contains(lower-case(@text), "{{conversation}}")]')
 CHAT_SETTINGS_NOTIFICATIONS = build_wa_resource_id_xpath_widget('LinearLayout', 'notifications_and_sounds_layout')
-CHAT_SETTINGS_MEDIA_VISIBILITY = build_wa_resource_id_xpath_widget('Button', 'media_visibility_layout')
+CHAT_SETTINGS_MEDIA_VISIBILITY = (f'{build_wa_resource_id_xpath_widget("Button", "media_visibility_layout")} | '
+                                  f'{build_wa_resource_id_xpath_widget("LinearLayout", "group_settings_layout")}')
 CHAT_SETTINGS_ANY_MEMBER = f'//android.widget.TextView[@resource-id="{WHATSAPP_PACKAGE}:id/name"]'
 CHAT_SETTINGS_MEMBER = build_wa_resource_id_text_xpath('name', '{member}')
 CHAT_SETTINGS_REMOVE_MEMBER = "//*[starts-with(@text, 'Remove')]"
@@ -119,7 +122,7 @@ RADIO_BUTTON_OFF = build_text_xpath_widget('RadioButton', 'Off')
 
 UPDATES_HEADER = f'//android.view.ViewGroup[@resource-id="{WHATSAPP_PACKAGE}:id/toolbar"]/android.widget.TextView[@text="Updates"]'
 UPDATES_STATUS_HEADER = build_wa_resource_id_text_xpath_widget('TextView', 'header_textview', 'Status')
-UPDATES_NEW_STATUS = build_content_desc_xpath_widget('ImageButton', 'New status update')
+UPDATES_NEW_STATUS = build_content_desc_xpath_widget('ImageButton', 'New status')
 UPDATES_EDIT_CAPTION = build_wa_resource_id_xpath_widget('EditText', 'caption')
 UPDATES_SHUTTER = build_wa_resource_id_xpath_widget('ImageView', 'shutter')
 UPDATES_CAMERA_BUTTON = build_content_desc_xpath_widget('Button', 'Camera')
@@ -152,8 +155,8 @@ RECEIVE_CALL_DECLINE_BUTTON = build_content_desc_xpath_widget('Button', 'Decline
 TEXT_ENTRY = build_wa_resource_id_xpath('entry')
 TEXT_VIEWS = '//android.widget.TextView'
 
-OPEN_SETTINGS_BY_TITLE = build_text_xpath_widget('TextView', 'Settings')
-PROFILE_INFO = build_wa_resource_id_xpath_widget('TextView', 'profile_info_name')
+OPEN_SETTINGS_BY_TITLE = build_content_desc_xpath_widget('Button', 'Settings')
+PROFILE_INFO = build_wa_resource_id_xpath_widget('LinearLayout', 'me_tab_profile_picture_container')
 
 HAMBURGER_MENU = build_content_desc_xpath_widget('ImageView', 'More options')
 SEARCH_BAR = build_wa_resource_id_xpath_widget('EditText', 'search_view_edit_text')

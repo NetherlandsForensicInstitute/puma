@@ -1,5 +1,6 @@
 Version 6.1.0
 -------------
+292. Whatsapp: support newest version 2.26.40.76, including fixing long_click_element holding for milliseconds instead of seconds when a width or height ratio is given
 146. The name parameter of compose_clicks is mandatory
 282. Android apps accept optional arguments such as desired_capabilities and appium_server, like the iOS apps
 187. PumaDriver can detect whether the on-screen keyboard is shown
