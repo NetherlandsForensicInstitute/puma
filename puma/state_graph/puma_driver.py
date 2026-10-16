@@ -347,7 +347,7 @@ class PumaDriver:
             top_left = element.location['x'], element.location['y']
             size = element.size['height'], element.size['width']
             location = int(top_left[0] + width_ratio * size[1]), int(top_left[1] + height_ratio * size[0])
-            self.tap(location, duration=duration)
+            self.tap(location, duration=duration * 1000)  # tap takes milliseconds
 
     def get_element(self, xpath: str):
         """
