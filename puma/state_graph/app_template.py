@@ -18,11 +18,12 @@ class TemplateApp(StateGraph):
                          parent_state=state1)
 
     # Define transitions. Only forward transitions are needed, back transitions are added automatically
-    state1.to(state2, compose_clicks(['xpath1', 'xpath2']))
+    state1.to(state2, compose_clicks(['xpath1', 'xpath2'], 'go_to_state2'))
 
     # init
-    def __init__(self, device_udid):
-        StateGraph.__init__(self, device_udid, APPLICATION_PACKAGE)
+    def __init__(self, device_udid, **kwargs):
+        # kwargs such as appium_server or desired_capabilities are passed to the StateGraph
+        StateGraph.__init__(self, device_udid, APPLICATION_PACKAGE, **kwargs)
 
     # Define your actions
     @action(state1)

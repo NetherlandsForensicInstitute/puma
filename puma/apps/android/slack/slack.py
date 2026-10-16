@@ -79,14 +79,15 @@ class SlackChatState(SimpleState, ContextualState):
 class Slack(StateGraph):
     platform = Platform.ANDROID
 
-    def __init__(self, device_udid):
+    def __init__(self, device_udid, **kwargs):
         """
         Initializes Slack messenger with a device UDID.
 
         :param device_udid: The unique device identifier for the Android device.
+        :param kwargs: Optional arguments passed to the StateGraph, such as appium_server or desired_capabilities.
         """
         package = 'com.Slack'
-        StateGraph.__init__(self, device_udid, package)
+        StateGraph.__init__(self, device_udid, package, **kwargs)
 
     home_state = SimpleState(
         [HOME_HISTORY_BUTTON, HOME_WORKSPACE_SELECTOR],
