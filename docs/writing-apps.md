@@ -39,6 +39,32 @@ home_state = SimpleState(xpaths=['//android.widget.TextView[@content-desc="Home"
                          initial_state=True)
 ```
 
+Every state must be reachable from the initial state, and the initial state must be reachable from every state, so
+Puma can always navigate to the state of an action and never gets stuck. Defining a `parent_state` is optional, but it
+automatically adds a transition to the parent state through the `back` gesture. Puma checks this when your application
+class is defined, and raises a `ValueError` naming the states that are missing transitions.
+
+##### Recognize-only states
+
+An exception to the validation above are recognize-only states: states that only exist to be recognized. Some states
+exist only as intermediary steps of an action, or can be reached through unpredictable behavior of applications. For
+example, the iOS App Store can open in a different tab than the expected Today tab. These other tabs are defined in Puma
+so Puma can easily navigate towards the correct tab.
+Defining those states is not strictly needed, but it enables Puma to recognize them and quickly navigate out of them,
+which is faster than relying on the state recovery mechanism. Mark such states with `recognize_only=True`, so the
+framework knows no transition towards them is needed. They still need a transition towards other states, which usually
+can be done with a `parent_state`:
+
+```python
+other_tab_state = SimpleState(xpaths=['xpath_other_tab_selected'], parent_state=today_state,
+                              parent_state_transition=compose_clicks(['xpath_today_tab'], 'open_today'),
+                              recognize_only=True)
+```
+
+An example of an intermediary state is turn-by-turn navigation in Apple Maps, which is only entered by the
+`start_navigation` action. Puma never navigates to a recognize-only state, so actions cannot be defined in these states:
+Puma raises a `ValueError` when the application class is defined.
+
 ##### Contextual states
 
 A `ContextualState` is a special kind of state that takes context into account when validating the UI. Imagine you're in a
@@ -291,7 +317,8 @@ start with `POPUP_`. Locators that depend on a value, such as the name of a conv
 or small functions (iOS) in the same file.
 
 The following steps should be taken to implement support for a new application:
-- Add the desired functionality (see [the next section](#how-to-write-appium-actions))
+- Add the desired functionality (see [the next section](#how-to-write-appium-actions)). Make sure every state can be
+  reached from the initial state, or mark it [recognize-only](#recognize-only-states)
 - Add a README for this app and add a link to the project README
 - Add a test script in the [test scripts directory](../test_scripts), in which each function is tested.
 - Annotate your class with `@supported_version`. On a release, each app is tagged with its supported version by

@@ -159,10 +159,12 @@ class AppStore(StateGraph):
 
     today_state = SimpleState(xpaths=[TODAY_NAVIGATION_BAR, ACCOUNT_BUTTON],
                               invalid_xpaths=[ACCOUNT_CLOSE_BUTTON, UPDATES_NAVIGATION_BAR], initial_state=True)
-    # Any other tab than Today, which has no account button. Product pages show the tab bar as well.
+    # Any other tab than Today, which has no account button. Product pages show the tab bar as well. This state is only
+    # recognized, so recovery can go back to Today when the App Store opens on another tab.
     other_tab_state = SimpleState(xpaths=[OTHER_TAB_SELECTED],
                                   invalid_xpaths=[APP_PAGE_NAVIGATION_BAR, ACCOUNT_CLOSE_BUTTON, UPDATES_NAVIGATION_BAR],
-                                  parent_state=today_state, parent_state_transition=compose_clicks([TODAY_TAB], 'open_today'))
+                                  parent_state=today_state, parent_state_transition=compose_clicks([TODAY_TAB], 'open_today'),
+                                  recognize_only=True)
     account_state = SimpleState(xpaths=[ACCOUNT_CLOSE_BUTTON, ACCOUNT_UPDATES_BUTTON], parent_state=today_state,
                                 parent_state_transition=compose_clicks([ACCOUNT_CLOSE_BUTTON], 'close_account'))
     updates_state = SimpleState(xpaths=[UPDATES_NAVIGATION_BAR], parent_state=account_state,
