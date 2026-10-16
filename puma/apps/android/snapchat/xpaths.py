@@ -13,7 +13,7 @@ CAMERA_FLIP_BUTTON = '//android.view.ViewGroup[@content-desc="Flip Camera"]'
 # Camera opened from a chat, which sends the snap to that chat
 CHAT_CAMERA_CLOSE_BUTTON = '//android.widget.ImageView[@content-desc="Close camera"]'
 CHAT_CAMERA_RECIPIENT = ('//android.widget.TextView[@text="Send To"]'
-                         '/following-sibling::android.widget.TextView[@text="{conversation}"]')
+                         '/following-sibling::android.widget.TextView[lower-case(@text)=lower-case("{conversation}")]')
 
 # Conversations, the chat tab
 CONVERSATIONS_TITLE = '//android.widget.TextView[@text="Chat" and @clickable="true"]'
@@ -23,14 +23,14 @@ CONVERSATIONS_SEARCH_BUTTON = '//android.widget.FrameLayout[@resource-id="com.sn
 SEARCH_TEXT_FIELD = '//android.widget.EditText[@resource-id="search-textfield"]'
 SEARCH_CANCEL_BUTTON = '//android.view.View[@resource-id="dismiss-button"]'
 SEARCH_FRIEND_RESULT = ('//android.view.View[@resource-id="friend-result-cell"'
-                        ' and .//android.widget.TextView[@resource-id="result-title" and @content-desc="{conversation}"]]')
+                        ' and .//android.widget.TextView[@resource-id="result-title" and lower-case(@content-desc)=lower-case("{conversation}")]]')
 
 # Chat
 CHAT_TEXT_FIELD = '//android.widget.EditText[@resource-id="com.snapchat.android:id/chat_input_text_field"]'
 CHAT_MESSAGE_LIST = '//androidx.recyclerview.widget.RecyclerView[@resource-id="com.snapchat.android:id/chat_message_list"]'
 CHAT_CAMERA_BUTTON = '//android.widget.ImageButton[@resource-id="com.snapchat.android:id/chat_input_bar_camera"]'
 CHAT_TITLE = ('//android.widget.FrameLayout[@resource-id="com.snapchat.android:id/avatar_icon"]'
-              '/following-sibling::*//android.widget.TextView[@text="{conversation}"]')
+              '/following-sibling::*//android.widget.TextView[lower-case(@text)=lower-case("{conversation}")]')
 
 # Preview of a snap that was just taken, on the camera tab and in a chat
 SNAP_PREVIEW_FRAME = '//android.widget.FrameLayout[@resource-id="com.snapchat.android:id/preview_frame"]'
@@ -42,14 +42,14 @@ SNAP_PREVIEW_SEND_TO_BUTTON = '//android.view.ViewGroup[@resource-id="com.snapch
 # Preview of a snap taken from a chat: it has a button to send it to the chat, and one to add more friends
 CHAT_SNAP_PREVIEW_MORE_FRIENDS_BUTTON = '//android.widget.TextView[@text="+ More Friends"]'
 CHAT_SNAP_PREVIEW_SEND_BUTTON = ('//android.widget.TextView[@text="+ More Friends"]'
-                                 '/following-sibling::android.view.ViewGroup[.//android.widget.TextView[@text="{conversation}"]]')
+                                 '/following-sibling::android.view.ViewGroup[.//android.widget.TextView[lower-case(@text)=lower-case("{conversation}")]]')
 
 # Send to, where the recipients of a snap are chosen
 SEND_TO_SEARCH_FIELD = '//android.widget.EditText[@resource-id="com.snapchat.android:id/input_field_edit_text"]'
 SEND_TO_BACK_BUTTON = '//android.view.View[@resource-id="com.snapchat.android:id/subscreen_top_left"]'
-SEND_TO_RECIPIENT = '//android.view.View[./javaClass[@text="{recipient}"]]'
+SEND_TO_RECIPIENT = '//android.view.View[./javaClass[lower-case(@text)=lower-case("{recipient}")]]'
 SEND_TO_SELECTED_RECIPIENT = ('//android.view.ViewGroup[@resource-id="com.snapchat.android:id/send_to_confirmation_bar"]'
-                              '//android.widget.TextView[@text="{recipient}"]')
+                              '//android.widget.TextView[lower-case(@text)=lower-case("{recipient}")]')
 SEND_TO_SEND_BUTTON = '//android.view.View[@resource-id="com.snapchat.android:id/send_to_send_button"]'
 
 # Pop-ups
