@@ -1,6 +1,10 @@
 Version 6.1.0
 -------------
 247. iOS: Add Telegram support, to send messages, photos and the location, and to read messages
+146. The name parameter of compose_clicks is mandatory
+282. Android apps accept optional arguments such as desired_capabilities and appium_server, like the iOS apps
+187. PumaDriver can detect whether the on-screen keyboard is shown
+24. iOS: Add Safari, Apple Maps, Contacts, Calendar and Reminders, and routes by bike and on foot in the route simulator
 265. Android: Add Settings support, to change the brightness and screen timeout, and to connect to a Wi-Fi network. compose_clicks can scroll to elements with scroll_to, and wait after the clicks
 269. Check that actions accept the contextual arguments of their state when the app class is defined.
 267. Remember contextual arguments, so recovery works when an action is called without them (e.g. send_message without a conversation)

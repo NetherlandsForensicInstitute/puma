@@ -144,27 +144,27 @@ class TestStateGraph(unittest.TestCase):
 class TestComposeClicks(unittest.TestCase):
     def test_clicks_in_order(self):
         driver = Mock()
-        compose_clicks(['xpath1', 'xpath2'])(driver)
+        compose_clicks(['xpath1', 'xpath2'], 'name')(driver)
         self.assertEqual([call.click('xpath1'), call.click('xpath2')], driver.mock_calls)
 
     def test_scroll_to(self):
         driver = Mock()
-        compose_clicks([scroll_to('xpath1', swipe_down=False, max_swipes=5)])(driver)
+        compose_clicks([scroll_to('xpath1', swipe_down=False, max_swipes=5)], 'name')(driver)
         driver.swipe_to_find_element.assert_called_once_with('xpath1', 5, False)
         driver.swipe_to_find_element.return_value.click.assert_called_once_with()
         driver.click.assert_not_called()
 
     def test_mixed_clicks_keep_order(self):
         driver = Mock()
-        compose_clicks(['xpath1', scroll_to('xpath2'), 'xpath3'])(driver)
+        compose_clicks(['xpath1', scroll_to('xpath2'), 'xpath3'], 'name')(driver)
         self.assertEqual([call.click('xpath1'), call.swipe_to_find_element('xpath2', 10, True),
                           call.swipe_to_find_element().click(), call.click('xpath3')], driver.mock_calls)
 
     @patch('puma.state_graph.state.sleep')
     def test_wait(self, sleep):
-        compose_clicks(['xpath1'])(Mock())
+        compose_clicks(['xpath1'], 'name')(Mock())
         sleep.assert_not_called()
-        compose_clicks(['xpath1'], wait=1)(Mock())
+        compose_clicks(['xpath1'], 'name', wait=1)(Mock())
         sleep.assert_called_once_with(1)
 
     def test_name(self):

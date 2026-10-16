@@ -178,13 +178,14 @@ class GooglePlayStore(StateGraph):
         # The version name of the Play Store has a suffix, e.g. "48.3.25-31 [0] [PR] 123456789"
         return super().is_supported_version(installed_version.split(' ')[0], supported_version)
 
-    def __init__(self, device_udid):
+    def __init__(self, device_udid, **kwargs):
         """
         Initializes the Google Play Store with a device UDID.
 
         :param device_udid: The unique device identifier for the Android device.
+        :param kwargs: Optional arguments passed to the StateGraph, such as appium_server or desired_capabilities.
         """
-        StateGraph.__init__(self, device_udid, APPLICATION_PACKAGE)
+        StateGraph.__init__(self, device_udid, APPLICATION_PACKAGE, **kwargs)
         self.add_popup_handler(PAYMENT_POPUP_HANDLER)
         self.add_popup_handler(LOCAL_RECOMMENDATIONS_POPUP_HANDLER)
         self.add_popup_handler(TRY_GOOGLE_PASS_POPUP_HANDLER)

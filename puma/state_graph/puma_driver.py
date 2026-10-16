@@ -349,6 +349,36 @@ class PumaDriver:
             location = int(top_left[0] + width_ratio * size[1]), int(top_left[1] + height_ratio * size[0])
             self.tap(location, duration=duration)
 
+    def swipe_left(self, xpath: str, start: float = 0.05, end: float = 0.85, duration: float = 0.2):
+        """
+        Swipes an element to the left, across the middle of the element. In lists this typically reveals the delete
+        button of a row.
+
+        The start and end are ratios of the width of the element, measured from its right edge: 0 is the right edge,
+        0.5 the middle, and 1 the left edge.
+
+        :param xpath: The XPath (or Locator) of the element to swipe.
+        :param start: Optional. Where the swipe starts, as a ratio of the width from the right edge.
+        :param end: Optional. Where the swipe ends, as a ratio of the width from the right edge.
+        :param duration: Optional. The duration of the swipe, in seconds.
+        """
+        rect = self.get_element(xpath).rect
+        y = rect['y'] + rect['height'] / 2
+        right = rect['x'] + rect['width']
+        self.gtl_logger.info(f'Swiping element {xpath} to the left')
+        self._drag((right - start * rect['width'], y), (right - end * rect['width'], y), duration)
+
+    @abstractmethod
+    def _drag(self, start: tuple[float, float], end: tuple[float, float], duration: float):
+        """
+        Drags a finger over the screen in a straight line.
+
+        :param start: The (x, y) coordinates where the drag starts.
+        :param end: The (x, y) coordinates where the drag ends.
+        :param duration: The duration of the drag, in seconds.
+        """
+        pass
+
     def get_element(self, xpath: str):
         """
         Retrieves an element specified by its XPath.
@@ -477,6 +507,29 @@ class PumaDriver:
         element = self.get_element(xpath)
         element.clear()
         element.send_keys(text)
+
+    def is_keyboard_shown(self) -> bool:
+        """
+        Checks if the on-screen keyboard is currently shown. Some apps change their UI when the keyboard is open, e.g.
+        by hiding elements or by needing an extra back press to leave a screen.
+
+        :return: True if the on-screen keyboard is shown, False otherwise.
+        """
+        return bool(self.driver.is_keyboard_shown())
+
+    def wait_until_keyboard_shown(self, shown: bool = True, timeout: float = 5) -> bool:
+        """
+        Waits until the on-screen keyboard is shown (or hidden), as the keyboard takes a moment to open and close.
+
+        :param shown: True to wait until the keyboard is shown, False to wait until it is hidden.
+        :param timeout: The maximum time to wait, in seconds.
+        :return: True if the keyboard reached the requested state, False if the timeout was reached.
+        """
+        try:
+            self.wait_until(lambda: self.is_keyboard_shown() == shown, timeout, 0.5)
+            return True
+        except TimeoutError:
+            return False
 
     @abstractmethod
     def press_enter(self):
