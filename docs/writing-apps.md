@@ -62,8 +62,8 @@ other_tab_state = SimpleState(xpaths=['xpath_other_tab_selected'], parent_state=
 ```
 
 An example of an intermediary state is turn-by-turn navigation in Apple Maps, which is only entered by the
-`start_navigation` action. Puma cannot navigate to a recognize-only state, so an action that starts in such a state only
-works when the app is already there.
+`start_navigation` action. Puma never navigates to a recognize-only state, so actions cannot be defined in these states:
+Puma raises a `ValueError` when the application class is defined.
 
 ##### Contextual states
 
