@@ -60,7 +60,7 @@ class TelegramChatSettingsState(SimpleState, ContextualState):
         driver.click(CHAT_STATE_CONVERSATION_NAME.format(conversation=conversation))
 
 
-@supported_version("12.0.1")
+@supported_version("13.0.2")
 class Telegram(StateGraph):
     """
     A class representing a state graph for managing UI states and transitions in the Telegram Messenger application.
@@ -85,7 +85,7 @@ class Telegram(StateGraph):
          SEND_FROM_GALLERY_THREE_DOTS_BUTTON, SEND_FROM_GALLERY_MEDIA_SWITCH.format(index=1)],
         parent_state=chat_state)  # pressing back goes to the chat state
     new_message_state = SimpleState(
-        [NEW_MESSAGE_STATE_NEW_GROUP_BUTTON, NEW_MESSAGE_STATE_NEW_CONTACT_BUTTON, NEW_MESSAGE_STATE_NEW_CHANNEL_BUTTON,
+        [NEW_MESSAGE_STATE_NEW_GROUP_BUTTON, NEW_MESSAGE_STATE_NEW_CHANNEL_BUTTON,
          NEW_MESSAGE_STATE_CREATE_NEW_CONTACT_BUTTON],
         parent_state=conversations_state)
 
@@ -337,7 +337,7 @@ class Telegram(StateGraph):
             except PumaClickException:
                 raise PumaClickException(
                     f'Could not add member {name} as it could not be found in the UI after a search')
-        self.driver.click('//android.widget.ImageView[@content-desc="Next"]')
+        self.driver.click(CHAT_SETTINGS_STATE_ADD_MEMBERS_NEXT)
         self.driver.click('//android.widget.TextView[@text="Add"]')
 
     @action(chat_settings_state)

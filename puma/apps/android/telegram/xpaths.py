@@ -1,8 +1,8 @@
 CHAT_OVERVIEW_NEW_MESSAGE_BUTTON = '//android.widget.FrameLayout[@content-desc="New Message"]'
-CHAT_OVERVIEW_NAV_MENU_BUTTON = '//android.widget.ImageView[@content-desc="Open navigation menu"]'
-CHAT_OVERVIEW_SEARCH_BUTTON = '//android.widget.ImageButton[@content-desc="Search"]'
+CHAT_OVERVIEW_NAV_MENU_BUTTON = '//android.widget.TextView[@text="Settings"]'
+CHAT_OVERVIEW_SEARCH_BUTTON = '//android.widget.EditText[@text="Search Chats"]'
 
-SEARCH_INPUT_FIELD = '//android.widget.EditText[@text="Search"]'
+SEARCH_INPUT_FIELD = '//android.widget.EditText[@text="Search Chats"]'
 FIRST_SEARCH_HIT = '//androidx.recyclerview.widget.RecyclerView/android.view.ViewGroup[starts-with(lower-case(@text), lower-case("{conversation},"))]'
 
 CHAT_STATE_CONVERSATION_NAME = '//android.widget.ImageView[@content-desc="Go back"]/../android.widget.FrameLayout[starts-with(lower-case(@content-desc),lower-case("{conversation}\n"))]/android.widget.TextView[starts-with(lower-case(@text), lower-case("{conversation}"))]'
@@ -18,12 +18,12 @@ CHAT_STATE_STOP_LIVE_LOCATION_SHARING_BUTTON = '//android.widget.ImageView[@cont
 CHAT_STATE_STOP_LIVE_LOCATION_CONFIRM_BUTTON = '//android.widget.TextView[@text="Stop"]'
 CHAT_STATE_DELETE_AND_LEAVE_GROUP = '//android.widget.TextView[@text="Delete and Leave Group"]'
 CHAT_STATE_DELETE_AND_LEAVE_GROUP_FOR_ALL = '//android.widget.CheckBox[@text="Delete the group for all members"]'
-CHAT_STATE_DELETE_AND_LEAVE_GROUP_CONFIRM_BUTTON = '//android.widget.TextView[@text="Delete Group" or @text="Delete chat"]'
+CHAT_STATE_DELETE_AND_LEAVE_GROUP_CONFIRM_BUTTON = '//android.widget.TextView[@text="Delete Group" or @text="Delete chat" or @text="Delete Chat"]'
 
 SEND_MEDIA_STATE_INSTANT_CAMERA_BUTTON = '//android.widget.FrameLayout[@content-desc="Instant camera"]/preceding-sibling::android.widget.FrameLayout[last()]'
-SEND_MEDIA_STATE_GALLERY_BUTTON = '//android.widget.FrameLayout[@text="Gallery"]'
-SEND_MEDIA_STATE_FILE_BUTTON = '//android.widget.FrameLayout[@text="File"]'
-SEND_MEDIA_STATE_LOCATION_BUTTON = '//android.widget.FrameLayout[@text="Location"]'
+SEND_MEDIA_STATE_GALLERY_BUTTON = '//android.widget.TextView[@text="Gallery"]'
+SEND_MEDIA_STATE_FILE_BUTTON = '//android.widget.TextView[@text="File"]'
+SEND_MEDIA_STATE_LOCATION_BUTTON = '//android.widget.TextView[@text="Location"]'
 
 SEND_MEDIA_STATE_SEND_CURRENT_LOCATION_BUTTON = '//android.widget.TextView[@text="Send selected location"]'
 SEND_MEDIA_STATE_MY_LOCATION_BUTTON = '//android.widget.ImageView[@content-desc="My location"]'
@@ -48,7 +48,7 @@ NEW_MESSAGE_STATE_NEW_CHANNEL_BUTTON = '//android.widget.FrameLayout[@text="New 
 NEW_MESSAGE_STATE_CREATE_NEW_CONTACT_BUTTON = '//android.widget.FrameLayout[@content-desc="Create New Contact"]'
 
 NEW_GROUP_MEMBER = '//android.widget.FrameLayout/android.widget.TextView[lower-case(@text)=lower-case("{member}")]'
-NEW_GROUP_NEXT = '//android.widget.ImageView[@content-desc="Next"]'
+NEW_GROUP_NEXT = '//android.widget.FrameLayout[@content-desc="Next"]'
 NEW_GROUP_NAME_INPUT = '//android.widget.EditText'
 NEW_GROUP_AUTO_DELETE_OPTION = '//android.widget.TextView[@text="Auto-Delete Messages"]'
 NEW_GROUP_DONE_BUTTON = '//android.widget.FrameLayout[@content-desc="Done"]'
@@ -62,9 +62,10 @@ CHAT_SETTINGS_STATE_CONVERSATION_STATUS_CONTEXT = '(//android.widget.TextView[lo
 CHAT_SETTINGS_EDIT_GROUP_BUTTON = '//android.widget.ImageButton[@content-desc="Edit"]'
 CHAT_SETTINGS_STATE_ADD_MEMBERS = '//android.widget.TextView[@text="Add Members"]'
 CHAT_SETTINGS_STATE_ADD_MEMBERS_SEARCH = '//android.widget.EditText[@text]'
+CHAT_SETTINGS_STATE_ADD_MEMBERS_NEXT = '//android.widget.FrameLayout[@content-desc="Next"]'
 CHAT_SETTINGS_STATE_MEMBER_CONTEXT = '//androidx.recyclerview.widget.RecyclerView/android.widget.FrameLayout[android.view.View and count(android.widget.TextView) >= 2 and android.widget.TextView[lower-case(@text)=lower-case("{member}")]]'
 CHAT_SETTINGS_STATE_REMOVE_MEMBER_BUTTON = '//android.widget.TextView[@text="Remove from group"]'
 
 EDIT_GROUP_NAME= '//android.widget.EditText[1]'
-EDIT_GROUP_DESCRIPTION= '//android.widget.EditText[2]'
+EDIT_GROUP_DESCRIPTION= '(//android.widget.EditText)[2]'
 EDIT_GROUP_DONE= '//android.widget.ImageButton[@content-desc="Done"]'
