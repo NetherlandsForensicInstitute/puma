@@ -1,16 +1,23 @@
 # Puma for agents
 
 Puma is a Python library that executes app-specific actions on mobile devices, such as sending a WhatsApp message, by
-operating the UI of the app through [Appium](https://appium.io/). It is used to create test and reference data for
-digital forensics. Each supported app is a class that models the app as a graph of states (screens), transitions
-between them, and actions.
+operating the UI of the app through [Appium](https://appium.io/). It creates test and reference data for digital
+forensics. Each supported app is a class that models the app as a graph of states (screens), transitions between them,
+and actions.
 
-Read these before changing code. This file only summarizes them.
+## Read first
 
-- [README.md](README.md): what Puma is, and the supported apps
-- [CONTRIBUTING.md](CONTRIBUTING.md): issues, branches, pull requests and coding standards
-- [docs/writing-apps.md](docs/writing-apps.md): the StateGraph, and how to add or change an app, on Android and iOS
-- [docs/usage.md](docs/usage.md): how Puma is used, which tells you what an action should look like to its users
+Read the document that matches your task before you change code. This file summarizes them and adds what they lack.
+
+- Any change: [CONTRIBUTING.md](CONTRIBUTING.md) for issues, branches, pull requests and coding standards
+- Adding or changing an app, a state, a transition or a locator: [docs/writing-apps.md](docs/writing-apps.md) for the
+  StateGraph, on Android and iOS
+- Adding or changing an action: [docs/usage.md](docs/usage.md) for how users call it, which tells you what it should
+  look like
+- Choosing an app to extend or checking what is supported: [README.md](README.md)
+- Seeing the screen of a device, or finding and checking locators: the skill
+  [explore-ui](.claude/skills/explore-ui/SKILL.md), which reads the UI straight from the device and is faster than an
+  Appium session
 
 ## Layout
 
@@ -20,8 +27,8 @@ Read these before changing code. This file only summarizes them.
 | `puma/apps/android/<app>/` | An Android app: `<app>.py`, `xpaths.py`, `README.md` |
 | `puma/apps/ios/<app>/` | An iOS app: `<app>.py`, `locators.py`, `README.md` |
 | `puma/utils/`, `puma/computer_vision/` | Logging, waiting, OCR and other helpers |
-| `test/` | Unit tests. They need no device, and run in CI |
-| `test_scripts/` | One script per app that tests every action on a real device. Run by hand only |
+| `test/` | Unit tests. They need no device and run in CI |
+| `test_scripts/` | One script per app that tests every action on a real device. Run by hand |
 | `docs/`, `tutorial/`, `demo/` | Documentation, the tutorial and the iOS demo |
 | `.claude/skills/` | Skills: instructions for agents for specific tasks |
 
@@ -33,67 +40,69 @@ python -m unittest discover test                                    # the unit t
 python -m unittest test.test_state_graph                            # one test module
 ```
 
-CI runs the unit tests on Python 3.10 and 3.11, so do not use newer syntax or library features.
+CI runs the unit tests on Python 3.10 and 3.11: write syntax and library calls that both support.
 
-The scripts in `test_scripts` need a device, a running Appium server (`appium`) and the UDID of the device filled in
-at the top of the script. Do not commit a UDID, phone number, password or other data of a device or account.
+The unit tests include a release notes test that reads the issue number from the branch name, so they pass on a
+branch named `<issue number>-<title>` and fail on any other.
+
+The scripts in `test_scripts` need a device, a running Appium server (`appium`) and the UDID of the device filled in at
+the top of the script. Keep UDIDs, phone numbers, passwords and other data of a device or account out of commits.
 
 ## Working with a device
 
-- To see what is on the screen of a device, and to find or check locators, follow the skill
-  [explore-ui](.claude/skills/explore-ui/SKILL.md). It reads the UI directly from the device, which is faster than
-  starting an Appium session.
-- Devices hold real accounts. Do not send messages, place calls, delete data or change settings unless the task asks
-  for it, and leave the device as you found it. The one exception is auto-lock, which the
-  [explore-ui](.claude/skills/explore-ui/SKILL.md) skill has you turn off while exploring and restore afterwards.
-- Check that no other script or agent is using the device before you operate it.
-- The language of the device must be English.
-- iOS needs a Mac with Xcode. On another system you cannot run or verify iOS code: say so, instead of assuming it
-  works.
+Devices hold real accounts, so treat every device as someone's phone.
+
+- Reading the screen is always safe. Tap to navigate only. Sending messages, placing calls, deleting data and changing
+  settings need a task that asks for them. The exception is auto-lock, which
+  [explore-ui](.claude/skills/explore-ui/SKILL.md) has you turn off while exploring and restore afterwards.
+- Leave the device as you found it.
+- Check that no other script or agent uses the device before you operate it.
+- Set the language of the device to English.
+- iOS needs a Mac with Xcode. On another system you cannot run or verify iOS code: say so, instead of assuming it works.
 
 ## Rules for changes
 
 Process:
 
-- Every change goes through a pull request. Never push to `main`.
-- Every pull request is linked to a GitHub issue (`Closes #244` in the description). If there is no issue for the
-  change, ask for one first.
-- The title of every pull request starts with the issue number: `244: Add AGENTS.md`.
-- The branch is created from `main`, and its name starts with the issue number and a dash: `244-create-agents-md`.
-- Every pull request adds a line to [RELEASE_NOTES](RELEASE_NOTES), as the first line under the top version: the newest
-  entry comes first. The line starts with the issue number. A unit test fails when the issue number of the branch is
-  not in the release notes.
-- The top version in `RELEASE_NOTES` must be equal to the version in `puma/version.py`. When that version has already
-  been released, add a new version at the top and set the same version in `puma/version.py`.
-- Commit and open pull requests only when asked to.
+- Every change goes through a pull request into `main`; commit and open a pull request when asked to.
+- Link every pull request to a GitHub issue with `Closes #244` in the description. If the change has no issue, ask for
+  one first.
+- Start the pull request title with the issue number: `244: Add AGENTS.md`.
+- Create the branch from `main` and start its name with the issue number and a dash: `244-create-agents-md`.
+- Add a line to [RELEASE_NOTES](RELEASE_NOTES) as the first line under the top version, so the newest entry comes first.
+  Start the line with the issue number. A unit test fails when the issue number of the branch is not in the release
+  notes.
+- Keep the top version in `RELEASE_NOTES` equal to the version in `puma/version.py`. When that version has already
+  been released, add a new version at the top and set the same version in `puma/version.py`. A version is released when
+  it is a git tag.
 
 Code:
 
 - Follow PEP 8. Put type hints on all arguments and return values.
 - Write pydoc in reStructuredText style (`:param name:`, `:return:`) for every public class and method. Methods that
-  start with `_` do not need it.
+  start with `_` need none.
 - Match the code around your change: its naming, its structure and how much it comments.
 
 Apps:
 
-- An app class extends `StateGraph` and has a `@supported_version` annotation with the app version it supports. This
-  annotation is used to tag the app on a release.
-- An app supports exactly one app version. Do not make code backwards compatible with older app versions: update it to
-  the new version, and update `@supported_version`, the README of the app and the table in [README.md](README.md).
-- When you update an app to a new version, all its actions must work on that version, not only the one you were asked
+- An app class extends `StateGraph` and has a `@supported_version` annotation with the app version it supports. A
+  release uses this annotation to tag the app.
+- An app supports exactly one app version. Update code to the new version and drop support for older versions: change
+  `@supported_version`, the README of the app and the table in [README.md](README.md).
+- When you update an app to a new version, make all its actions work on that version, not only the one you were asked
   about. Run the test script of the app in `test_scripts`.
-- Locators go in `xpaths.py` (Android) or `locators.py` (iOS), named after the state they belong to. On iOS, prefer
+- Put locators in `xpaths.py` (Android) or `locators.py` (iOS), named after the state they belong to. On iOS, prefer
   `accessibility_id`, `ios_predicate` and `ios_class_chain` over XPaths.
-- Prefer locators that do not depend on the language or on texts that change: `content-desc`, then `resource-id`,
-  then text.
-- A new app also needs a README, a test script in `test_scripts`, and a row in the table in [README.md](README.md).
+- Prefer locators in this order: `content-desc`, then `resource-id`, then text, so they survive a change of language and
+  texts.
+- A new app needs a README, a test script in `test_scripts`, and a row in the table in [README.md](README.md).
   A new action needs a test in the test script of the app, and an entry in the README of the app when it is a major
   feature.
-- Classes marked `@deprecated` (those based on `AndroidAppiumActions`) are not maintained. Do not add functionality
-  to them: rewrite the functionality with the `StateGraph`.
+- Classes marked `@deprecated` (those based on `AndroidAppiumActions`) are not maintained. Rewrite their functionality
+  with the `StateGraph` instead of extending them.
 
 ## Verifying your work
 
 - Run the unit tests for every change.
-- A change to an app is only verified when it has run on a device with the supported app version. If you could not do
-  that, say which parts you did not verify.
+- A change to an app is verified when it has run on a device with the supported app version. Say which parts you could
+  not run there.

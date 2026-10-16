@@ -2,7 +2,7 @@
 Explore the UI of a connected Android device over adb, without starting an Appium session.
 
 The UI hierarchy is printed in the same shape as the Appium page source (the class of an element is its tag), so the
-XPaths you test here can be used in Puma. See ../SKILL.md for how and when to use this.
+XPaths you test here can be used in Puma. See ../references/android.md for how and when to use this.
 
     python ui.py tree                 the elements on screen that carry information
     python ui.py find '<xpath>' ...   the elements matching each XPath (needs lxml)
