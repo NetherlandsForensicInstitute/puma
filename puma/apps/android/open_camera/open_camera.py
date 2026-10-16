@@ -32,8 +32,14 @@ class OpenCamera(StateGraph):
     take_photo_state.to(take_video_state, compose_clicks([VIDEO_MODE_XPATH], name='go_to_video_mode'))
     take_video_state.to(take_photo_state, compose_clicks([PHOTO_MODE_XPATH], name='go_to_photo_mode'))
 
-    def __init__(self, device_udid):
-        StateGraph.__init__(self, device_udid, OPEN_CAMERA_PACKAGE)
+    def __init__(self, device_udid, **kwargs):
+        """
+        Initializes Open Camera with a device UDID.
+
+        :param device_udid: The unique device identifier for the Android device.
+        :param kwargs: Optional arguments passed to the StateGraph, such as appium_server or desired_capabilities.
+        """
+        StateGraph.__init__(self, device_udid, OPEN_CAMERA_PACKAGE, **kwargs)
         self.add_popup_handler(PopUpHandler([POPUP_TITLE], [POPUP_OK_BUTTON]))
 
     @action(take_photo_state)

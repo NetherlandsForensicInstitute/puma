@@ -48,13 +48,14 @@ class GoogleChrome(StateGraph):
     current_tab_state.to(bookmarks_state, compose_clicks([THREE_DOTS, OPEN_BOOKMARKS], 'go_to_current_tab'))
     bookmarks_state.to(bookmarks_folder_state, bookmarks_folder_state.go_to_bookmarks_folder)
 
-    def __init__(self, device_udid):
+    def __init__(self, device_udid, **kwargs):
         """
         Initializes Google Chrome with a device UDID.
 
         :param device_udid: The unique device identifier for the Android device.
+        :param kwargs: Optional arguments passed to the StateGraph, such as appium_server or desired_capabilities.
         """
-        StateGraph.__init__(self, device_udid, GOOGLE_CHROME_PACKAGE)
+        StateGraph.__init__(self, device_udid, GOOGLE_CHROME_PACKAGE, **kwargs)
         self.add_popup_handlers(PopUpHandler([NEW_ADS_PRIVACY_TEXT_XPATH], [ACK_BUTTON_XPATH]),
                                 PopUpHandler([OTHER_ADS_PRIVACY_TEXT_XPATH], [MORE_BUTTON_XPATH, ACK_BUTTON_XPATH]),
                                 PopUpHandler([TURN_ON_AD_PRIVACY_TEXT_XPATH], [ACK_BUTTON_XPATH]),

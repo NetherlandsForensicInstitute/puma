@@ -1,5 +1,6 @@
 Version 6.1.0
 -------------
+282. Android apps accept optional arguments such as desired_capabilities and appium_server, like the iOS apps
 187. PumaDriver can detect whether the on-screen keyboard is shown
 24. iOS: Add Safari, Apple Maps, Contacts, Calendar and Reminders, and routes by bike and on foot in the route simulator
 265. Android: Add Settings support, to change the brightness and screen timeout, and to connect to a Wi-Fi network. compose_clicks can scroll to elements with scroll_to, and wait after the clicks
