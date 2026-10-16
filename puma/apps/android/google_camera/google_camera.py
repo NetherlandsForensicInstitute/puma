@@ -60,13 +60,14 @@ class GoogleCamera(StateGraph):
     photo.to(settings, go_to_settings)
     video.to(settings, go_to_settings)
 
-    def __init__(self, device_udid):
+    def __init__(self, device_udid, **kwargs):
         """
         Initializes the GoogleCamera with a device UDID.
 
         :param device_udid: The unique device identifier for the Android device.
+        :param kwargs: Optional arguments passed to the StateGraph, such as appium_server or desired_capabilities.
         """
-        StateGraph.__init__(self, device_udid, APPLICATION_PACKAGE)
+        StateGraph.__init__(self, device_udid, APPLICATION_PACKAGE, **kwargs)
         self.add_popup_handler(PopUpHandler([POPUP_TURN_ON_BY_DEFAULT], [DONE]))
         self.add_popup_handler(PopUpHandler([POPUP_BOTTOMSHEET], [POPUP_GOT_IT]))
 
