@@ -39,6 +39,28 @@ home_state = SimpleState(xpaths=['//android.widget.TextView[@content-desc="Home"
                          initial_state=True)
 ```
 
+Every state must be reachable from the initial state, and the initial state must be reachable from every state, so
+Puma can always navigate to the state of an action and never gets stuck. A `parent_state` counts as a transition back to
+that parent. Puma checks this when your application class is defined, and raises a `ValueError` naming the states that
+are missing transitions.
+
+##### Recognize-only states
+
+Some states only need to be recognized, and are never navigated to. For example, the iOS App Store can open on another
+tab than Today. The state for those other tabs only exists so that Puma recognizes it when recovering, and can go back to
+Today. Mark such a state with `recognize_only=True`, so it does not need a transition to it. It still needs a way back
+to the initial state, usually through its parent state:
+
+```python
+other_tab_state = SimpleState(xpaths=['xpath_other_tab_selected'], parent_state=today_state,
+                              parent_state_transition=compose_clicks(['xpath_today_tab'], 'open_today'),
+                              recognize_only=True)
+```
+
+This is also useful for states that are only entered by an action, such as turn-by-turn navigation in Apple Maps, which
+is started by `start_navigation`. Puma cannot navigate to a recognize-only state, so an action that starts in such a
+state only works when the app is already there.
+
 ##### Contextual states
 
 A `ContextualState` is a special kind of state that takes context into account when validating the UI. Imagine you're in a
@@ -291,7 +313,8 @@ start with `POPUP_`. Locators that depend on a value, such as the name of a conv
 or small functions (iOS) in the same file.
 
 The following steps should be taken to implement support for a new application:
-- Add the desired functionality (see [the next section](#how-to-write-appium-actions))
+- Add the desired functionality (see [the next section](#how-to-write-appium-actions)). Make sure every state can be
+  reached from the initial state, or mark it [recognize-only](#recognize-only-states)
 - Add a README for this app and add a link to the project README
 - Add a test script in the [test scripts directory](../test_scripts), in which each function is tested.
 - Annotate your class with `@supported_version`. On a release, each app is tagged with its supported version by
