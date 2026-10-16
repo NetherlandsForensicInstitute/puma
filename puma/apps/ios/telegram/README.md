@@ -46,7 +46,8 @@ phone.send_current_location(conversation="Alice")
 ```
 
 The indices of `send_media_from_gallery` are the 1-based positions of the photos in the gallery picker of Telegram,
-after the camera. Folders (albums) are not supported.
+after the camera. Folders (albums) are not supported. When one of the photos is not shown in the picker, a
+`TelegramError` is raised before anything is selected or sent, so none of the photos is sent.
 
 ## Reading messages
 
@@ -113,7 +114,9 @@ Compared to [Telegram on Android](../../android/telegram/README.md), these are m
 - The option to send the current location is the first of two unnamed rows. When there are not exactly two rows, for
   example when the live location is already shared, `send_current_location` raises an error instead of guessing, as the
   second row starts sharing the live location. After sending, Puma checks that a new location message appeared, ignoring the status of messages that
-  changes in the meantime. Two locations in the same minute are only recognized while the first is still on the screen.
+  changes in the meantime, and logs a warning if it did not. It never raises after the location was sent, as the
+  framework repeats an action that raises, which would send the location twice. Two locations in the same minute are
+  only recognized while the first is still on the screen.
 - Only messages of today have been seen. Dates in another format are expected to show up as the second last line of the
   value of a sent message, which is how the date of other days is read.
 - Searching also suggests public channels and other accounts. Puma only opens the result with exactly the name of the

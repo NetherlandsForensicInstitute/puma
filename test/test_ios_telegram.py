@@ -1,10 +1,10 @@
 import unittest
-from unittest.mock import Mock, patch
+from unittest.mock import MagicMock, Mock, patch
 
 from puma.state_graph.puma_driver import Platform
 from puma.state_graph.state_graph import StateGraph
-from puma.apps.ios.telegram.locators import chat_header, conversation_row, quoted, gallery_media
-from puma.apps.ios.telegram.telegram import Telegram, Message, _is_new_message, _parse_message, _parse_messages
+from puma.apps.ios.telegram.locators import chat_header, conversation_row, gallery_media
+from puma.apps.ios.telegram.telegram import Telegram, TelegramError, Message, _is_new_message, _parse_message, _parse_messages
 
 
 def _element(element_type: str, name: str, value: str) -> str:
@@ -61,14 +61,10 @@ class TestTelegramParsing(unittest.TestCase):
 
 
 class TestTelegramLocators(unittest.TestCase):
-    def test_quoted_escapes_quotes(self):
-        self.assertEqual('"Alice NFI"', quoted('Alice NFI'))
-        self.assertEqual('"Say \\"hi\\""', quoted('Say "hi"'))
-        self.assertEqual('"a\\\\b"', quoted('a\\b'))
-
-    def test_conversation_locators_use_the_name(self):
+    def test_conversation_locators_use_the_escaped_name(self):
         self.assertIn('label == "Alice NFI"', conversation_row('Alice NFI'))
         self.assertIn('label == "Alice NFI"', chat_header('Alice NFI'))
+        self.assertIn('label == "Say \\"hi\\""', conversation_row('Say "hi"'))
         self.assertTrue(gallery_media(2).endswith('[2]'))
 
 
@@ -134,3 +130,72 @@ class TestUnknownScreen(unittest.TestCase):
 
     def test_telegram_does_not_override_the_recovery_of_the_framework(self):
         self.assertIs(StateGraph.recover_state, Telegram.recover_state)
+
+
+def _telegram_with_screen(page_source: str, rows: int = 2) -> Telegram:
+    """
+    A Telegram on the location screen or the gallery, with a mocked driver. The rows are the options to share the
+    location, the header of the places is below them.
+    """
+    telegram = Telegram.__new__(Telegram)
+    telegram.gtl_logger = Mock()
+    telegram.driver = MagicMock()
+    telegram.driver.driver.page_source = page_source
+    telegram.driver.wait_until_present.return_value = True
+    telegram.driver.wait_until_not_present.return_value = True
+    telegram.driver.get_element.return_value.rect = {'y': 700}
+    telegram.option_rows = [Mock(rect={'y': 580 + 55 * i}) for i in range(rows)]
+    telegram.driver.get_elements.return_value = telegram.option_rows
+    return telegram
+
+
+class TestSendingIsNotRepeated(unittest.TestCase):
+    """
+    The framework repeats an action that raises, so nothing may raise after something was sent.
+    """
+    empty_chat = '<AppiumAUT></AppiumAUT>'
+
+    def _send_location(self, telegram: Telegram):
+        # the function of the action, without the states of the framework
+        Telegram.send_current_location.action_function(telegram)
+
+    def test_location_that_cannot_be_checked_does_not_raise(self):
+        telegram = _telegram_with_screen(self.empty_chat)
+        # the new message never shows up
+        telegram.driver.wait_until.side_effect = TimeoutError
+        self._send_location(telegram)
+        telegram.option_rows[0].click.assert_called_once()
+        telegram.option_rows[1].click.assert_not_called()
+        telegram.gtl_logger.warning.assert_called_once()
+
+    def test_location_screen_that_does_not_close_does_not_raise(self):
+        telegram = _telegram_with_screen(self.empty_chat)
+        telegram.driver.wait_until_not_present.return_value = False
+        self._send_location(telegram)
+        telegram.option_rows[0].click.assert_called_once()
+        telegram.gtl_logger.warning.assert_called_once()
+
+    def test_location_is_not_sent_when_the_options_are_not_the_expected_two(self):
+        # the live location could be among them, and a retry sends nothing as nothing was tapped
+        for rows in (0, 1, 3):
+            telegram = _telegram_with_screen(self.empty_chat, rows)
+            with self.assertRaises(TelegramError):
+                self._send_location(telegram)
+            for row in telegram.option_rows:
+                row.click.assert_not_called()
+
+    def test_media_that_is_not_in_the_gallery_is_not_selected_or_sent(self):
+        telegram = _telegram_with_screen(self.empty_chat)
+        telegram.driver.driver.find_elements.return_value = [Mock(), Mock()]
+        with self.assertRaisesRegex(TelegramError, 'only 2 photos'):
+            Telegram.send_media_from_gallery.action_function(telegram, [1, 2, 3])
+        telegram.driver.click.assert_called_once()  # only the gallery tab
+        with self.assertRaises(ValueError):
+            Telegram.send_media_from_gallery.action_function(telegram, 0)
+
+    def test_gallery_that_does_not_close_does_not_raise(self):
+        telegram = _telegram_with_screen(self.empty_chat)
+        telegram.driver.driver.find_elements.return_value = [Mock(), Mock()]
+        telegram.driver.wait_until_not_present.return_value = False
+        Telegram.send_media_from_gallery.action_function(telegram, 1)
+        telegram.gtl_logger.warning.assert_called_once()

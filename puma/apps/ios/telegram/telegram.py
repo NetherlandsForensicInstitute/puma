@@ -4,6 +4,8 @@ from dataclasses import dataclass
 from time import sleep
 from typing import Optional
 
+from selenium.common.exceptions import NoSuchElementException
+
 from puma.apps.ios.telegram import logger
 from puma.apps.ios.telegram.locators import *
 from puma.state_graph.action import action
@@ -38,8 +40,8 @@ class Message:
     :param time: The date and time of the message, as shown on the screen (e.g. '14 Oct 2026 at 13:01').
     :param status: The status shown by Telegram, e.g. 'Seen by recipient'. Empty for messages that are sent, but not
     seen yet.
-    :param kind: The kind of message, e.g. 'message' or 'photo'. A shared location is a 'message' with the text
-    'Location'.
+    :param kind: The kind of message, as Telegram names it: 'message' (also for a shared location, which has the text
+    'Location') or 'photo'. Other kinds were not seen yet.
     """
     sender: Optional[str]
     text: str
@@ -87,6 +89,13 @@ def _parse_messages(page_source: str) -> list[Message]:
             if message:
                 messages.append(message)
     return messages
+
+
+def _messages_on_screen(driver: PumaDriver) -> list[Message]:
+    """
+    The messages of the open chat that are on the screen.
+    """
+    return _parse_messages(driver.driver.page_source)
 
 
 def _is_new_message(before: list[Message], after: list[Message], text: str) -> bool:
@@ -144,7 +153,8 @@ def _close_chat(driver: PumaDriver):
             driver.gtl_logger.info(f'The chat is still open, swiping back again (attempt {attempt})')
         driver.back()
         # a swipe on the overview itself does nothing, so a slow swipe followed by another one is harmless. The state
-        # itself is used, so this condition cannot differ from the one of the state.
+        # itself is used, so this condition cannot differ from the one of the state. Telegram is defined below, which is
+        # fine as the name is only looked up when a chat is closed, after the module is loaded.
         try:
             driver.wait_until(lambda: Telegram.conversations_state.validate(driver), 3, 0.5)
             return
@@ -168,15 +178,14 @@ def _search_result(driver: PumaDriver, conversation: str, timeout: float = 10):
         results = [element for element in driver.driver.find_elements(by=by, value=value)
                    if element.rect['y'] >= bottom]
         return sorted(results, key=lambda element: element.rect['y'])
-    results = []
-    for _ in range(int(timeout)):
-        results = find()
-        if results:
-            break
-        sleep(1)
+    try:
+        driver.wait_until(lambda: bool(find()), timeout, description=f'a search result named "{conversation}"')
+    except TimeoutError:
+        return None
+    results = find()
     if len(results) > 1:
         logger.warning(f'Found {len(results)} search results named "{conversation}", using the first one')
-    return results[0] if results else None
+    return results[0]
 
 
 class ChatState(SimpleState, ContextualState):
@@ -197,13 +206,13 @@ class ChatState(SimpleState, ContextualState):
     @staticmethod
     def open_chat(driver: PumaDriver, conversation: str):
         """
-        Opens a chat from the overview, by searching for it. Searching also finds chats that are not on the screen.
-        Only the exact name of the chat is opened, as the search also suggests other chats and channels.
+        Opens a chat from the search screen, by searching for it. Searching also finds chats that are not on the
+        screen of the overview. Only the exact name of the chat is opened, as the search also suggests other chats and
+        channels.
         """
         if not conversation:
             raise ValueError('Cannot open a chat without the name of the chat')
         driver.gtl_logger.info(f'Searching for chat "{conversation}"')
-        _open_search(driver)
         driver.send_keys(CONVERSATIONS_SEARCH_FIELD, conversation)
         result = _search_result(driver, conversation)
         if result is None:
@@ -239,8 +248,10 @@ class Telegram(StateGraph):
                                    parent_state_transition=compose_clicks([ATTACH_CLOSE_BUTTON], 'close_send_media'))
 
     # Transitions
+    # A chat is opened from the search screen. Going back from a chat leads to the overview, not to the search screen, so
+    # the overview stays the parent of the chat.
     conversations_state.to(search_state, _open_search)
-    conversations_state.to(chat_state, ChatState.open_chat)
+    search_state.to(chat_state, ChatState.open_chat)
     chat_state.to(send_media_state, compose_clicks([CHAT_SEND_MEDIA_BUTTON], 'open_send_media', wait=1))
 
     def __init__(self, device_udid: str, **kwargs):
@@ -264,7 +275,7 @@ class Telegram(StateGraph):
         :param conversation: the conversation (group or 1 on 1) to send the message in. Not needed when already in a conversation.
         """
         self.driver.send_keys(CHAT_INPUT, message)
-        self.driver.gtl_logger.info('Pressing send button')
+        self.gtl_logger.info('Pressing send button')
         self.driver.click(CHAT_SEND_BUTTON)
 
     @action(send_media_state, end_state=chat_state)
@@ -278,34 +289,44 @@ class Telegram(StateGraph):
         :param caption: An optional text message attached to the media file(s)
         :param conversation: the conversation (group or 1 on 1) to send the media in. Not needed when already in a
         conversation.
+        :raises TelegramError: If one of the media is not in the gallery, or cannot be selected. Nothing is sent then,
+        so none of the requested media is sent when some of it is missing.
         """
         if not media_index:
             raise ValueError('Cannot send media from gallery without a proper set of indices')
         if isinstance(media_index, int):
             media_index = [media_index]
+        if min(media_index) < 1:
+            raise ValueError(f'The indices of the media are 1-based, got {media_index}')
         self.driver.click(ATTACH_GALLERY_TAB)
         if not self.driver.wait_until_present(GALLERY_CAMERA, timeout=10, description='the gallery'):
             raise TelegramError('The gallery did not open. Does Telegram have access to the photos?')
-        selected = 0
-        for index in media_index:
-            try:
+        # nothing is selected or sent when a requested photo is not there, so that a retry of the action is harmless.
+        # Only the thumbnails near the screen are in the element tree.
+        by, value = to_by_value(GALLERY_MEDIA)
+        available = len(self.driver.driver.find_elements(by=by, value=value))
+        if max(media_index) > available:
+            raise TelegramError(f'Cannot select the media with indices {media_index}, as only {available} photos or '
+                                f'videos are shown in the gallery')
+        try:
+            for index in media_index:
                 self.driver.click(gallery_media(index), GALLERY_SELECT_WIDTH_RATIO, GALLERY_SELECT_HEIGHT_RATIO)
                 self.gtl_logger.info(f'Selected gallery item with index {index}')
-                selected += 1
-            except PumaClickException:
-                logger.warning(f'Could not select media with index {index}. Are enough media files present?')
-        if selected == 0:
-            raise PumaClickException(f'Tried to select gallery items with indexes {media_index}, but could not '
-                                     f'select any of them.')
-        if caption:
-            # an element click does not focus the field, a tap on its left side does
-            self.driver.click(GALLERY_CAPTION_FIELD, 0.2, 0.5)
-            sleep(1)
-            self.driver.driver.switch_to.active_element.send_keys(caption)
-            self.gtl_logger.info(f'Entered caption {caption}')
+            if caption:
+                # an element click does not focus the field, a tap on its left side does
+                self.driver.click(GALLERY_CAPTION_FIELD, 0.2, 0.5)
+                sleep(1)
+                self.driver.driver.switch_to.active_element.send_keys(caption)
+                self.gtl_logger.info(f'Entered caption {caption}')
+        except (PumaClickException, NoSuchElementException) as e:
+            # closing the sheet clears the selection, so that a retry of the action does not toggle it
+            self.driver.click(ATTACH_CLOSE_BUTTON)
+            raise TelegramError(f'Could not select the media with indices {media_index}: {e}')
+        # after pressing send, nothing may raise: the framework repeats an action that raises, which sends it twice
         self.driver.click(GALLERY_SEND_BUTTON)
         self.gtl_logger.info('Pressed send button')
-        self.driver.wait_until_not_present(ATTACH_GALLERY_TAB, timeout=10, description='the gallery to close')
+        if not self.driver.wait_until_not_present(ATTACH_GALLERY_TAB, timeout=10, description='the gallery to close'):
+            self.gtl_logger.warning('The gallery did not close after sending the media')
 
     @action(send_media_state, end_state=chat_state)
     def send_current_location(self, conversation: str = None):
@@ -328,20 +349,22 @@ class Telegram(StateGraph):
             raise TelegramError(f'Expected 2 options to share the location, but found {len(rows)}. Is the location '
                                 f'already being shared?')
         # the chat stays in the element tree under the sheet, so the messages before sending are known
-        before = _parse_messages(self.driver.driver.page_source)
+        before = _messages_on_screen(self.driver)
         rows[0].click()
+        # the location is sent now. Nothing below may raise: the framework repeats an action that raises, which would
+        # send the location twice. The checks that the location was sent only log a warning.
         if not self.driver.wait_until_not_present(ATTACH_LOCATION_TAB, timeout=10,
                                                   description='the location screen to close'):
-            raise TelegramError('The location screen did not close. Was the location not sent?')
-        if not self._wait_for_new_message('Location', before):
-            raise TelegramError('The location was not sent')
+            self.gtl_logger.warning('The location screen did not close after sending the location')
+        elif not self._wait_for_new_message('Location', before):
+            self.gtl_logger.warning('No new location message was found after sending the location')
 
     def _wait_for_new_message(self, text: str, before: list[Message], timeout: float = 10) -> bool:
         """
         Waits until a message with a text was added to the messages on the screen.
         """
         def new_message():
-            return _is_new_message(before, _parse_messages(self.driver.driver.page_source), text)
+            return _is_new_message(before, _messages_on_screen(self.driver), text)
         try:
             self.driver.wait_until(new_message, timeout, description=f'the message "{text}"')
             return True
@@ -356,4 +379,4 @@ class Telegram(StateGraph):
         :param conversation: the conversation (group or 1 on 1) to read. Not needed when already in a conversation.
         :return: The messages, the oldest first.
         """
-        return _parse_messages(self.driver.driver.page_source)
+        return _messages_on_screen(self.driver)

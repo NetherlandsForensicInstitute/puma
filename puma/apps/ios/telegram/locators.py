@@ -1,11 +1,4 @@
-from puma.state_graph.locators import accessibility_id, ios_predicate, ios_class_chain
-
-
-def quoted(text: str) -> str:
-    """
-    A text as a string literal in an iOS predicate or class chain.
-    """
-    return '"' + text.replace('\\', '\\\\').replace('"', '\\"') + '"'
+from puma.state_graph.locators import ios_predicate, ios_class_chain, quoted
 
 
 # Telegram draws most of its own interface, so many controls (the buttons in the navigation bar, the tab bar and the
@@ -34,7 +27,6 @@ KEEP_CURRENT_SELECTION_BUTTON = 'Keep Current Selection'
 
 # A chat
 CHAT_SEND_MEDIA_BUTTON = ios_predicate('type == "XCUIElementTypeButton" AND name == "Send media"')
-CHAT_VOICE_MESSAGE_BUTTON = ios_predicate('type == "XCUIElementTypeButton" AND name == "Voice message"')
 CHAT_INPUT = ios_class_chain('**/XCUIElementTypeTextView')
 # While typing, the voice message button turns into the send button, which has a tiny frame (2x2 points)
 CHAT_SEND_BUTTON = ios_predicate('type == "XCUIElementTypeButton" AND name == "Send"')
@@ -50,7 +42,7 @@ def chat_header(conversation: str) -> str:
     search results have a cell with the same name, which has the last message as its value, and is never in the element
     tree at the same time as an open chat.
     """
-    return ios_predicate(f'type == "XCUIElementTypeOther" AND label == {quoted(conversation)} '
+    return ios_predicate(f'type == "XCUIElementTypeOther" AND label == "{quoted(conversation)}" '
                          f'AND NOT value CONTAINS "Message"')
 
 
@@ -59,11 +51,12 @@ def conversation_row(conversation: str) -> str:
     All elements with the name of a chat: a result of the search, or the header of an open chat (which is above the
     search results and never on the search screen). Callers pick the one below the search field.
     """
-    return ios_predicate(f'type == "XCUIElementTypeOther" AND label == {quoted(conversation)}')
+    return ios_predicate(f'type == "XCUIElementTypeOther" AND label == "{quoted(conversation)}"')
 
 
 # The sheet that opens from the send media button. Its tabs are named, its close button is not: it is the unnamed button
-# of 44 by 44 points in the top left corner of the sheet.
+# of 44 by 44 points in the top left corner of the sheet. Sizes and places in points were measured on an iPhone 15 Pro
+# (393 by 852 points, with a Dynamic Island), like those of the title button above.
 ATTACH_GALLERY_TAB = ios_predicate('type == "XCUIElementTypeButton" AND name == "Gallery"')
 ATTACH_LOCATION_TAB = ios_predicate('type == "XCUIElementTypeButton" AND name == "Location"')
 ATTACH_CLOSE_BUTTON = ios_predicate('type == "XCUIElementTypeButton" AND name == nil AND rect.width == 44 AND rect.height == 44 '
@@ -73,9 +66,11 @@ ATTACH_CLOSE_BUTTON = ios_predicate('type == "XCUIElementTypeButton" AND name ==
 # circle in its top right corner, which is not in the element tree, so it is tapped relative to the photo.
 GALLERY_CAMERA = ios_predicate('type == "XCUIElementTypeButton" AND name == "Camera"')
 GALLERY_MEDIA_CLASS_CHAIN = '**/XCUIElementTypeImage[`name BEGINSWITH "Photo " OR name BEGINSWITH "Video "`]'
+GALLERY_MEDIA = ios_class_chain(GALLERY_MEDIA_CLASS_CHAIN)
 GALLERY_SELECT_WIDTH_RATIO = 0.86
 GALLERY_SELECT_HEIGHT_RATIO = 0.13
-# Once media is selected, a caption can be added and sent. The caption field is a button without a name or label.
+# Once media is selected, a caption can be added and sent. The caption field is a button without a name or label, of
+# about 300 points wide on an iPhone 15 Pro (measured there, like the other sizes in points).
 # The send button of the chat has a tiny frame (2 by 2 points), the one of the gallery is a normal button.
 GALLERY_SEND_BUTTON = ios_predicate('type == "XCUIElementTypeButton" AND name == "Send" AND rect.width > 30')
 GALLERY_CAPTION_FIELD = ios_predicate('type == "XCUIElementTypeButton" AND name == nil AND rect.width > 250 '
