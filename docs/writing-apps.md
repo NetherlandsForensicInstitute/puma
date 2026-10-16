@@ -134,6 +134,16 @@ elements that need to be clicked to execute the transition.
 home_state.to(to_state=settings_state, ui_actions=compose_clicks(['xpath_button1', 'xpath_button2']))
 ```
 
+If an element may be out of view, wrap it in `scroll_to` to scroll to it before clicking. The screen is only scrolled
+when the element is not present. Pass `swipe_down=False` to scroll up instead of down:
+
+```python
+home_state.to(settings_state, compose_clicks(['xpath_menu', scroll_to('xpath_settings'), 'xpath_button']))
+```
+
+The state is validated directly after a transition. If a screen takes a while to open, pass `wait` to wait a number of
+seconds after the clicks: `compose_clicks(['xpath_button'], 'open_settings', wait=1)`.
+
 If you're defining a transition to a `ContextualState`, the transition probably needs to know the context to be executed.
 In that case you need to define the transition method from scratch, rather than use `compose_clicks`, by defining a method
 that takes the required context as an argument: 
@@ -353,7 +363,7 @@ class ExampleIOSApp(StateGraph):
 
 Use Appium Inspector with the capabilities `platformName: iOS`, `appium:automationName: XCUITest` and `appium:udid` to
 inspect the UI hierarchy. See the [iOS apps](../puma/apps/ios) for complete examples, such as
-[Messages](../puma/apps/ios/messages/messages.py).
+[Safari](../puma/apps/ios/safari/safari.py).
 
 ## How to write Appium actions
 Appium is a framework for testing applications, based on Selenium. In this project, we use Appium to execute actions on the device.
@@ -416,6 +426,19 @@ self.add_popup_handler(PopUpHandler(['/xpath/for/recognition', '/xpath/recogniti
 ```
 There is also a convenience method `simple_popup_handler`, which only requires a single XPath expression that is used
 for recognition and dismissal and returns a `PopUpHandler`.
+
+### On-screen keyboard
+Some apps change their UI when the on-screen keyboard is open: elements are hidden or moved, or the first back press
+only closes the keyboard. Use `self.driver.is_keyboard_shown()` to check whether the keyboard is open. The keyboard
+takes a moment to open and close, so use `self.driver.wait_until_keyboard_shown()` (or
+`wait_until_keyboard_shown(shown=False)`) directly after an interaction that opens or closes it:
+```python
+self.driver.click('//text_field')
+self.driver.wait_until_keyboard_shown()
+...
+if self.driver.is_keyboard_shown():
+    self.driver.back()  # closes the keyboard on Android
+```
 
 ### Case Sensitivity in XPath:
 XPath is case-sensitive by default. As the element attribute values regularly change, and sometimes the only change is
