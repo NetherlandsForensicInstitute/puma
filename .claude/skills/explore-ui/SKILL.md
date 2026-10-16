@@ -134,8 +134,10 @@ adb shell screencap -p /sdcard/screen.png; adb pull /sdcard/screen.png; adb shel
 
 ## iOS
 
-This section is not verified on a device. Check each step before relying on it, and correct this file when it is
-wrong.
+Verified on a real iPhone (iPhone 15 Pro, iOS 26.6.2, WebDriverAgent 16.12.10): reading the screen, all four locator
+strategies, tapping, clicking, dragging, the home button and launching an app. Not verified: creating a WDA session,
+`touchAndHold`, `terminate` and the `simctl` commands. Check those before relying on them, and correct this file when
+they are wrong.
 
 iOS needs a Mac with Xcode. There is no counterpart of `uiautomator dump`: the UI hierarchy is only available through
 WebDriverAgent (WDA), the XCTest app that Appium installs on the device. WDA is an HTTP server, and it keeps running
@@ -185,7 +187,8 @@ xcrun simctl listapps <udid>
 WDA also taps, types and finds elements over HTTP, so you do not need Puma or Appium for this either. Unlike reading
 the screen, these requests need a WDA session id in the url. WDA has one session at a time:
 
-- `/status` returns the id of the current session as `sessionId`. If there is one, use it.
+- `/status` returns the id of the current session as `sessionId`, next to `value` and not inside it. If there is one,
+  use it. The session of a Puma run stays valid after the run has ended.
 - Only when there is none, create one. Creating a session ends the current one, which breaks an Appium session that
   is still in use.
 
@@ -214,7 +217,9 @@ curl -s -X POST $S/element/<element id>/click
 curl -s $S/element/<element id>/rect
 ```
 
-`/elements` returns an id for each match, so the number of ids is the number of matches. This is the same lookup
+`/elements` returns an id for each match, so the number of ids is the number of matches. An `accessibility id` often
+matches more than one element, for example a table cell and its label: check the rects, as the first match is not always
+the one you want to click. This is the same lookup
 Appium does at runtime, so a locator that matches here matches in Puma.
 
 Coordinates are in points: the screen size in points is in `curl -s $S/window/size`, and a screenshot is two or three
