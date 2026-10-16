@@ -131,14 +131,14 @@ Typically, these actions are assembled using the `compose_clicks` function, whic
 elements that need to be clicked to execute the transition.
 
 ```python
-home_state.to(to_state=settings_state, ui_actions=compose_clicks(['xpath_button1', 'xpath_button2']))
+home_state.to(to_state=settings_state, ui_actions=compose_clicks(['xpath_button1', 'xpath_button2'], 'open_settings'))
 ```
 
 If an element may be out of view, wrap it in `scroll_to` to scroll to it before clicking. The screen is only scrolled
 when the element is not present. Pass `swipe_down=False` to scroll up instead of down:
 
 ```python
-home_state.to(settings_state, compose_clicks(['xpath_menu', scroll_to('xpath_settings'), 'xpath_button']))
+home_state.to(settings_state, compose_clicks(['xpath_menu', scroll_to('xpath_settings'), 'xpath_button'], 'open_settings'))
 ```
 
 The state is validated directly after a transition. If a screen takes a while to open, pass `wait` to wait a number of
@@ -256,7 +256,7 @@ class ExampleApp(StateGraph):
     settings_state = SimpleState(xpaths=['//android.widget.TextView[@content-desc="Settings"]'])
 
     # Define transitions
-    home_state.to(settings_state, compose_clicks(['//android.widget.Button[@content-desc="Go to Settings"]']))
+    home_state.to(settings_state, compose_clicks(['//android.widget.Button[@content-desc="Go to Settings"]'], 'open_settings'))
 
     def __init__(self, device_udid, **kwargs):
         """
