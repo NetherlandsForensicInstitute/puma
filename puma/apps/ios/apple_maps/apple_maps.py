@@ -98,9 +98,11 @@ class AppleMaps(StateGraph):
                                    parent_state=place_state,
                                    parent_state_transition=compose_clicks([CARD_CLOSE_BUTTON], 'close_directions'))
     # turn-by-turn navigation, which is only available on real devices. Ending the navigation shows the destination.
+    # Navigation is started by start_navigation and start_route, not by a transition, so this state is only recognized.
     navigation_state = SimpleState(xpaths=[NAVIGATION_TRAY],
                                    parent_state=place_state,
-                                   parent_state_transition=_end_navigation)
+                                   parent_state_transition=_end_navigation,
+                                   recognize_only=True)
 
     # Transitions
     home_state.to(place_state, _search)

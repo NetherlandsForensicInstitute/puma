@@ -84,6 +84,33 @@ class TestStateGraphMeta(unittest.TestCase):
         with self.assertRaises(ValueError):
             StateGraphMeta._validate_graph(states)
 
+    def test_validate_graph_state_can_be_left_but_not_reached(self):
+        state1 = TestState(id="State1", initial_state=True)
+        state2 = TestState(id="State2", parent_state=state1)
+        with self.assertRaises(ValueError) as error:
+            StateGraphMeta._validate_graph([state1, state2])
+        self.assertIn("cannot be reached from the initial state 'State1': [State2]", str(error.exception))
+
+    def test_validate_graph_state_can_be_reached_but_not_left(self):
+        state1 = TestState(id="State1", initial_state=True)
+        state2 = TestState(id="State2")
+        state1.to(state2, None)
+        with self.assertRaises(ValueError) as error:
+            StateGraphMeta._validate_graph([state1, state2])
+        self.assertIn("initial state 'State1' cannot be reached, so navigation would get stuck there: [State2]",
+                      str(error.exception))
+
+    def test_validate_graph_recognize_only_state_does_not_need_transition_to_it(self):
+        state1 = TestState(id="State1", initial_state=True)
+        state2 = TestState(id="State2", parent_state=state1, recognize_only=True)
+        StateGraphMeta._validate_graph([state1, state2])
+
+    def test_validate_graph_recognize_only_state_needs_path_to_initial_state(self):
+        state1 = TestState(id="State1", initial_state=True)
+        state2 = TestState(id="State2", recognize_only=True)
+        with self.assertRaises(ValueError):
+            StateGraphMeta._validate_graph([state1, state2])
+
     def test_graph_without_initial_state(self):
         with self.assertRaises(ValueError) as error:
             class NoInitialStateApp(StateGraph):

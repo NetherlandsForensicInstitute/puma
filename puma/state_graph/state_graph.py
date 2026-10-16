@@ -186,18 +186,27 @@ class StateGraphMeta(type):
 
     @staticmethod
     def _validate_every_state_reachable(states):
+        """
+        Validates that every state can be reached from the initial state, and that the initial state can be reached
+        from every state, so navigation can never get stuck. A parent state counts as a transition to that parent.
+        Recognize-only states are never navigated to, so they do not need to be reachable from the initial state.
+        """
         initial_state = next(s for s in states if s.initial_state)
-        unreachable_transitions = [s for s in states if not s.initial_state and not (
-                    bool(_shortest_path(initial_state, s)))]
-        unreachable_parents = [s for s in states if not s.initial_state and not (
-            bool(_shortest_path(s, initial_state)))]
-        if unreachable_parents or unreachable_parents:
-            raise ValueError(
-                f"Some states cannot be reached from the initial state '{initial_state}'.\n"
-                f"Add the missing transitions or missing parent states to your Puma StateGraph to fix this issue.\n"
-                f"Missing transitions: {unreachable_transitions}\n"
-                f"Missing parent states: {unreachable_parents}"
-            )
+        not_reachable_from_initial = [s for s in states if s is not initial_state and not s.recognize_only
+                                      and _shortest_path(initial_state, s) is None]
+        cannot_reach_initial = [s for s in states if s is not initial_state
+                                and _shortest_path(s, initial_state) is None]
+        errors = []
+        if not_reachable_from_initial:
+            errors.append(f"These states cannot be reached from the initial state '{initial_state}': "
+                          f"{not_reachable_from_initial}. Add transitions to them, or mark them recognize_only if "
+                          f"they are only recognized and never navigated to.")
+        if cannot_reach_initial:
+            errors.append(f"From these states the initial state '{initial_state}' cannot be reached, so navigation "
+                          f"would get stuck there: {cannot_reach_initial}. Add a parent state or transitions from "
+                          f"them.")
+        if errors:
+            raise ValueError('\n'.join(errors))
 
     @staticmethod
     def _validate_contextual_states(states):
