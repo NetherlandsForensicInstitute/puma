@@ -200,7 +200,6 @@ class WhatsApp(StateGraph):
         """
         self.driver.click(
             f'//*[@resource-id="{WHATSAPP_PACKAGE}:id/contactpicker_text_container"]//*[@text="{conversation}"]')
-        self.driver.click(build_content_desc_xpath_widget('Button', 'Message'))
         self.send_message(first_message)
 
     def open_more_options(self):
@@ -237,8 +236,9 @@ class WhatsApp(StateGraph):
         :param message_text: literal message text of the message to remove. The first match will be removed in case
         there are multiple with the same text.
         """
-        self.driver.long_click_element(
-            f"//*[@resource-id='{WHATSAPP_PACKAGE}:id/conversation_text_row']//*[@text='{message_text}']")
+        message_xpath = f"//*[@resource-id='{WHATSAPP_PACKAGE}:id/conversation_text_row']//*[@text='{message_text}']"
+        self.driver.swipe_to_find_element(message_xpath, swipe_down=False)
+        self.driver.long_click_element(message_xpath)
         self.driver.click(CHAT_DELETE_BUTTON)
         self.driver.click(CHAT_DELETE_FOR_EVERYONE)
 

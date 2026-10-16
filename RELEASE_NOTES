@@ -1,5 +1,6 @@
 Version 6.1.0
 -------------
+292. Whatsapp: support newest version 2.26.40.76
 282. Android apps accept optional arguments such as desired_capabilities and appium_server, like the iOS apps
 269. Check that actions accept the contextual arguments of their state when the app class is defined.
 267. Remember contextual arguments, so recovery works when an action is called without them (e.g. send_message without a conversation)
