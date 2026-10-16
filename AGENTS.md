@@ -44,7 +44,8 @@ at the top of the script. Do not commit a UDID, phone number, password or other 
   [explore-ui](.claude/skills/explore-ui/SKILL.md). It reads the UI directly from the device, which is faster than
   starting an Appium session.
 - Devices hold real accounts. Do not send messages, place calls, delete data or change settings unless the task asks
-  for it, and leave the device as you found it.
+  for it, and leave the device as you found it. The one exception is auto-lock, which the
+  [explore-ui](.claude/skills/explore-ui/SKILL.md) skill has you turn off while exploring and restore afterwards.
 - Check that no other script or agent is using the device before you operate it.
 - The language of the device must be English.
 - iOS needs a Mac with Xcode. On another system you cannot run or verify iOS code: say so, instead of assuming it

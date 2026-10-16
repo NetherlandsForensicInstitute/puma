@@ -20,6 +20,13 @@ Use this to explore. The code you write still runs through Appium, so finish by 
 - Check that nobody else is using the device. If a Puma script is running against it, your taps break that run.
 - Leave the device as you found it: go back to the home screen when you are done.
 - The device must be unlocked with its screen on, and its language set to English.
+- A device that locks while you explore makes every read fail, and iOS does not start apps on a locked device. Turn
+  auto-lock off for the exploration and back on when you are done. This is the one setting you may change without being
+  asked, and only because you restore it: note the current value first, so you can put back that value and not a default.
+  - iOS: Settings > Display & Brightness > Auto-Lock > Never.
+  - Android: Settings > Display > Screen timeout, or `adb shell settings get system screen_off_timeout` to read the
+    value and `adb shell settings put system screen_off_timeout <ms>` to set it.
+  - Restore it also when the exploration fails halfway.
 
 ## Android
 
