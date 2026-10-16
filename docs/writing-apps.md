@@ -40,16 +40,20 @@ home_state = SimpleState(xpaths=['//android.widget.TextView[@content-desc="Home"
 ```
 
 Every state must be reachable from the initial state, and the initial state must be reachable from every state, so
-Puma can always navigate to the state of an action and never gets stuck. A `parent_state` counts as a transition back to
-that parent. Puma checks this when your application class is defined, and raises a `ValueError` naming the states that
-are missing transitions.
+Puma can always navigate to the state of an action and never gets stuck. Defining a `parent_state` is optional, but it
+automatically adds a transition to the parent state through the `back` gesture. Puma checks this when your application
+class is defined, and raises a `ValueError` naming the states that are missing transitions.
 
 ##### Recognize-only states
 
-Some states only need to be recognized, and are never navigated to. For example, the iOS App Store can open on another
-tab than Today. The state for those other tabs only exists so that Puma recognizes it when recovering, and can go back to
-Today. Mark such a state with `recognize_only=True`, so it does not need a transition to it. It still needs a way back
-to the initial state, usually through its parent state:
+An exception to the validation above are recognize-only states: states that only exist to be recognized. Some states
+exist only as intermediary steps of an action, or can be reached through unpredictable behavior of applications. For
+example, the iOS App Store can open in a different tab than the expected Today tab. These other tabs are defined in Puma
+so Puma can easily navigate towards the correct tab.
+Defining those states is not strictly needed, but it enables Puma to recognize them and quickly navigate out of them,
+which is faster than relying on the state recovery mechanism. Mark such states with `recognize_only=True`, so the
+framework knows no transition towards them is needed. They still need a transition towards other states, which usually
+can be done with a `parent_state`:
 
 ```python
 other_tab_state = SimpleState(xpaths=['xpath_other_tab_selected'], parent_state=today_state,
@@ -57,9 +61,9 @@ other_tab_state = SimpleState(xpaths=['xpath_other_tab_selected'], parent_state=
                               recognize_only=True)
 ```
 
-This is also useful for states that are only entered by an action, such as turn-by-turn navigation in Apple Maps, which
-is started by `start_navigation`. Puma cannot navigate to a recognize-only state, so an action that starts in such a
-state only works when the app is already there.
+An example of an intermediary state is turn-by-turn navigation in Apple Maps, which is only entered by the
+`start_navigation` action. Puma cannot navigate to a recognize-only state, so an action that starts in such a state only
+works when the app is already there.
 
 ##### Contextual states
 
