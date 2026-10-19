@@ -63,8 +63,12 @@ SEND_TO_SEND_BUTTON ='//android.view.View[@resource-id="com.snapchat.android:id/
 # Pop-ups
 POPUP_DIALOG = '//android.widget.LinearLayout[@resource-id="com.snapchat.android:id/dialog_content"]'
 POPUP_CANCEL_BUTTON = '//android.widget.TextView[@resource-id="com.snapchat.android:id/cancel_button"]'
-# Asks to share the location, shown after taking the first snap. Declined.
+# Asks to share the location, e.g. after taking the first snap or on the map. Allowing it shows the permission request
+# of Android, which is handled by the generic pop-up handlers.
 POPUP_LOCATION_ALLOW_BUTTON = '//android.view.View[@resource-id="com.snapchat.android:id/location_permission_alert_confirm_view"]'
+# Asks to create a Bitmoji avatar, when Snapchat is opened. Covers the whole screen. Declined.
+POPUP_CREATE_AVATAR_TITLE = '//android.widget.TextView[@content-desc="Create Your Personal Avatar"]'
+POPUP_CREATE_AVATAR_NOT_NOW_BUTTON = '//android.widget.Button[@content-desc="Not Now"]'
 # Asks whether to abandon a snap that was edited (e.g. has a caption), when leaving the preview.
 POPUP_DISCARD_SNAP_BUTTON = '//android.view.View[@resource-id="com.snapchat.android:id/discard_alert_dialog_discard_view"]'
 # Asks to save the snaps posted to a story in Memories, the first time a snap is posted to a story. Declined.

@@ -191,7 +191,8 @@ class Snapchat(StateGraph):
         :param kwargs: Optional arguments passed to the StateGraph, such as appium_server or desired_capabilities.
         """
         StateGraph.__init__(self, device_udid, APPLICATION_PACKAGE, **kwargs)
-        self.add_popup_handlers(PopUpHandler([POPUP_LOCATION_ALLOW_BUTTON], [POPUP_CANCEL_BUTTON]),
+        self.add_popup_handlers(simple_popup_handler(POPUP_LOCATION_ALLOW_BUTTON),
+                                PopUpHandler([POPUP_CREATE_AVATAR_TITLE], [POPUP_CREATE_AVATAR_NOT_NOW_BUTTON]),
                                 PopUpHandler([POPUP_AUTO_SAVE_STORY_TITLE], [POPUP_CANCEL_BUTTON]),
                                 simple_popup_handler(POPUP_DISCARD_SNAP_BUTTON),
                                 PopUpHandler([POPUP_CAMERA_PERMISSION_TITLE], [POPUP_CAMERA_PERMISSION_ALLOW_BUTTON]))

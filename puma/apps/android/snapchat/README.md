@@ -22,7 +22,7 @@ from puma.apps.android.snapchat.snapchat import Snapchat
 phone = Snapchat("emulator-5444")
 ```
 
-Puma allows Snapchat to use the camera and microphone when it asks for it, and declines sharing the location.
+Puma allows Snapchat to use the camera, the microphone and the location when it asks for it.
 
 ### Sending a message
 
