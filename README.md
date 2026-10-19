@@ -86,7 +86,7 @@ example implementations. Each version of Puma supports one version of each app, 
 | [Snapchat](puma/apps/android/snapchat/README.md)                | Android  | 12.89.0.40            |
 | [Telegram](puma/apps/android/telegram/README.md)                | Android  | 12.0.1                |
 | [TeleGuard](puma/apps/android/teleguard/README.md)              | Android  | 4.0.9                 |
-| [WhatsApp](puma/apps/android/whatsapp/README.md)                | Android  | 2.26.2.70             |
+| [WhatsApp](puma/apps/android/whatsapp/README.md)                | Android  | 2.26.40.76            |
 | [WhatsApp for Business](puma/apps/android/whatsapp_business/README.md) | Android  | 2.25.24.78            |
 | [App Store](puma/apps/ios/app_store/README.md) (real devices only) | iOS      | iOS 26.6              |
 | [Apple Maps](puma/apps/ios/apple_maps/README.md)                | iOS      | iOS 26.2              |
