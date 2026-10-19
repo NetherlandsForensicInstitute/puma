@@ -1,6 +1,7 @@
 Version 6.1.0
 -------------
 234. Android: Update Snapchat support based on version 14.28.0.54. Contains breaking changes for Snapchat.
+247. iOS: Add Telegram support, to send messages, photos and the location, and to read messages
 272. States must now be reachable from the initial state (and vice-versa). States that are only added for recognition purposes can be marked with `recognize_only=True` to skip this check
 244. Add AGENTS.md with instructions for AI agents, and an agent skill to explore the UI of a device without an Appium session
 146. The name parameter of compose_clicks is mandatory
