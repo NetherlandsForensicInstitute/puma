@@ -1,6 +1,6 @@
 Version 6.1.0
 -------------
-292. Whatsapp: support newest version 2.26.40.76, including fixing long_click_element holding for milliseconds instead of seconds when a width or height ratio is given
+292. Whatsapp: support newest version 2.26.40.76, including fixing PumaDriver.long_click_element()
 247. iOS: Add Telegram support, to send messages, photos and the location, and to read messages
 272. States must now be reachable from the initial state (and vice-versa). States that are only added for recognition purposes can be marked with `recognize_only=True` to skip this check
 244. Add AGENTS.md with instructions for AI agents, and an agent skill to explore the UI of a device without an Appium session
