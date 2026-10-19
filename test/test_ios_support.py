@@ -241,6 +241,25 @@ class TestPumaDriverKeyboard(unittest.TestCase):
         appium_driver.is_keyboard_shown.side_effect = [False, True]
         self.assertTrue(_create_driver(Platform.ANDROID, appium_driver).wait_until_keyboard_shown(timeout=5))
 
+    def test_close_keyboard_on_both_platforms(self):
+        for platform in Platform:
+            with self.subTest(platform=platform):
+                appium_driver = _mock_appium_driver()
+                appium_driver.is_keyboard_shown.side_effect = [True, False]
+                self.assertTrue(_create_driver(platform, appium_driver).close_keyboard(timeout=5))
+                appium_driver.hide_keyboard.assert_called_once_with()
+
+    def test_close_keyboard_when_keyboard_is_not_shown(self):
+        appium_driver = _mock_appium_driver()
+        appium_driver.is_keyboard_shown.return_value = False
+        self.assertTrue(_create_driver(Platform.ANDROID, appium_driver).close_keyboard())
+        appium_driver.hide_keyboard.assert_not_called()
+
+    def test_close_keyboard_times_out(self):
+        appium_driver = _mock_appium_driver()
+        appium_driver.is_keyboard_shown.return_value = True
+        self.assertFalse(_create_driver(Platform.ANDROID, appium_driver).close_keyboard(timeout=0))
+
     def test_wait_until_keyboard_hidden(self):
         appium_driver = _mock_appium_driver()
         appium_driver.is_keyboard_shown.side_effect = [True, False]

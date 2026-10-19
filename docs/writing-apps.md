@@ -463,8 +463,8 @@ takes a moment to open and close, so use `self.driver.wait_until_keyboard_shown(
 self.driver.click('//text_field')
 self.driver.wait_until_keyboard_shown()
 ...
-if self.driver.is_keyboard_shown():
-    self.driver.back()  # closes the keyboard on Android
+# closes the keyboard if it is shown, and waits until it is hidden
+self.driver.close_keyboard()
 ```
 
 ### Case Sensitivity in XPath:
