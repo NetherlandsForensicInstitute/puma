@@ -87,6 +87,7 @@ class StateGraphMeta(type):
                                                                                              states)
         new_class.context_parameters = frozenset().union(*new_class.state_context_parameters.values())
         StateGraphMeta._validate_actions(name, namespace, new_class.state_context_parameters)
+        StateGraphMeta._validate_no_actions_in_recognize_only_states(name, namespace)
 
         return new_class
 
@@ -142,6 +143,22 @@ class StateGraphMeta(type):
                              'validate_context methods on the way to the state of the action.')
 
     @staticmethod
+    def _validate_no_actions_in_recognize_only_states(class_name: str, namespace: dict):
+        """
+        Validates that no action is defined in a recognize-only state. Recognize-only states are never navigated to, so
+        an action in such a state could not navigate to its state.
+
+        :param class_name: The name of the class being created.
+        :param namespace: The namespace dictionary containing the class attributes.
+        :raises ValueError: If any action is defined in a recognize-only state.
+        """
+        errors = [f"{class_name}.{name} (state '{value.action_state}')" for name, value in namespace.items()
+                  if getattr(value, 'action_state', None) is not None and value.action_state.recognize_only]
+        if errors:
+            raise ValueError('Actions cannot be defined in recognize-only states, as these are never navigated to: '
+                             + ', '.join(errors))
+
+    @staticmethod
     def _validate_graph(states: list[State]):
         """
         Validates the state graph to ensure it meets specific criteria.
@@ -186,18 +203,27 @@ class StateGraphMeta(type):
 
     @staticmethod
     def _validate_every_state_reachable(states):
+        """
+        Validates that every state can be reached from the initial state, and that the initial state can be reached
+        from every state, so navigation can never get stuck. A parent state counts as a transition to that parent.
+        Recognize-only states are never navigated to, so they do not need to be reachable from the initial state.
+        """
         initial_state = next(s for s in states if s.initial_state)
-        unreachable_transitions = [s for s in states if not s.initial_state and not (
-                    bool(_shortest_path(initial_state, s)))]
-        unreachable_parents = [s for s in states if not s.initial_state and not (
-            bool(_shortest_path(s, initial_state)))]
-        if unreachable_parents or unreachable_parents:
-            raise ValueError(
-                f"Some states cannot be reached from the initial state '{initial_state}'.\n"
-                f"Add the missing transitions or missing parent states to your Puma StateGraph to fix this issue.\n"
-                f"Missing transitions: {unreachable_transitions}\n"
-                f"Missing parent states: {unreachable_parents}"
-            )
+        not_reachable_from_initial = [s for s in states if s is not initial_state and not s.recognize_only
+                                      and _shortest_path(initial_state, s) is None]
+        cannot_reach_initial = [s for s in states if s is not initial_state
+                                and _shortest_path(s, initial_state) is None]
+        errors = []
+        if not_reachable_from_initial:
+            errors.append(f"These states cannot be reached from the initial state '{initial_state}': "
+                          f"{not_reachable_from_initial}. Add transitions to them, or mark them recognize_only if "
+                          f"they are only recognized and never navigated to.")
+        if cannot_reach_initial:
+            errors.append(f"From these states the initial state '{initial_state}' cannot be reached, so navigation "
+                          f"would get stuck there: {cannot_reach_initial}. Add a parent state or transitions from "
+                          f"them.")
+        if errors:
+            raise ValueError('\n'.join(errors))
 
     @staticmethod
     def _validate_contextual_states(states):
