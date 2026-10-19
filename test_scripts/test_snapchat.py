@@ -41,20 +41,20 @@ class TestSnapchat(unittest.TestCase):
         self.alice.send_message(message='Hi Charlie!', conversation=self.contact_charlie)
         self.alice.send_message(message='How are you?')
 
-    def test_send_snap(self):
-        self.alice.send_snap(conversation=self.contact_charlie, caption='Hi Charlie!')
-        self.alice.send_snap()
+    def test_send_snap_in_chat(self):
+        self.alice.send_snap_in_chat(conversation=self.contact_charlie, caption='Hi Charlie!')
+        self.alice.send_snap_in_chat()
 
-    def test_send_snap_to(self):
-        self.alice.send_snap_to(recipients=[self.contact_charlie], caption='Hi Charlie!')
-        self.alice.send_snap_to(recipients=[self.contact_bob, self.contact_charlie])
+    def test_send_snap(self):
+        self.alice.send_snap(recipients=[self.contact_charlie], caption='Hi Charlie!')
+        self.alice.send_snap(recipients=[self.contact_bob, self.contact_charlie])
 
     def test_send_snap_to_my_story(self):
-        self.alice.send_snap_to(my_story=True, caption='Hello!')
-        self.alice.send_snap_to(recipients=[self.contact_charlie], my_story=True)
+        self.alice.send_snap(my_story=True, caption='Hello!')
+        self.alice.send_snap(recipients=[self.contact_charlie], my_story=True)
 
     def test_send_snap_to_public_story(self):
-        self.alice.send_snap_to(public_story=True, caption='Hello everyone!')
+        self.alice.send_snap(public_story=True, caption='Hello everyone!')
 
     def test_flip_camera(self):
         self.alice.flip_camera()

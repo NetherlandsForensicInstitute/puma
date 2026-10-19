@@ -41,10 +41,10 @@ or to several friends at once from the camera tab. From the camera tab, the snap
 visible to friends only, or to the public story, which is visible to everyone. Snaps can have a caption:
 
 ```python
-phone.send_snap(conversation="Charlie", caption="Hi Charlie!")  # takes a photo in the chat with Charlie and sends it
-phone.send_snap_to(recipients=["Charlie", "Bob"], caption="Hi!")  # takes a photo on the camera tab and sends it to both
-phone.send_snap_to(my_story=True, caption="Hello!")  # posts the snap to My Story, visible to friends only
-phone.send_snap_to(recipients=["Charlie"], my_story=True)  # sends the snap to Charlie and posts it to My Story
-phone.send_snap_to(public_story=True)  # posts the snap to the public story, visible to everyone
+phone.send_snap_in_chat(conversation="Charlie", caption="Hi Charlie!")  # takes a photo in the chat with Charlie and sends it
+phone.send_snap(recipients=["Charlie", "Bob"], caption="Hi!")  # takes a photo on the camera tab and sends it to both
+phone.send_snap(my_story=True, caption="Hello!")  # posts the snap to My Story, visible to friends only
+phone.send_snap(recipients=["Charlie"], my_story=True)  # sends the snap to Charlie and posts it to My Story
+phone.send_snap(public_story=True)  # posts the snap to the public story, visible to everyone
 phone.flip_camera()  # switches between the front and the rear camera
 ```

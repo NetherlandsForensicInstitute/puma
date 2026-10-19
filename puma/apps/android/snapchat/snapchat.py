@@ -168,7 +168,7 @@ class Snapchat(StateGraph):
                                      invalid_xpaths=[POPUP_DIALOG],
                                      parent_state=camera_state,
                                      parent_state_transition=discard_snap)
-    # Only reached during send_snap_to. Pressing back returns to the preview the snap was taken in.
+    # Only reached during send_snap. Pressing back returns to the preview the snap was taken in.
     send_to_state = SimpleState([SEND_TO_SEARCH_FIELD, SEND_TO_BACK_BUTTON],
                                 parent_state=snap_preview_state,
                                 parent_state_transition=leave_send_to,
@@ -217,12 +217,12 @@ class Snapchat(StateGraph):
         self.driver.click(CAMERA_FLIP_BUTTON)
 
     @action(chat_snap_preview_state, end_state=chat_state)
-    def send_snap(self, conversation: str = None, caption: str = None):
+    def send_snap_in_chat(self, caption: str = None, conversation: str = None):
         """
         Takes a photo and sends it as a snap to a friend, from the chat with that friend.
 
-        :param conversation: The name of the friend to send the snap to. Not needed when already in that chat.
         :param caption: An optional caption to put on the photo.
+        :param conversation: The name of the friend to send the snap to. Not needed when already in that chat.
         """
         if caption:
             self._add_caption(caption)
@@ -233,7 +233,7 @@ class Snapchat(StateGraph):
             self.driver.click(f'{CHAT_SNAP_PREVIEW_MORE_FRIENDS_BUTTON}/following-sibling::android.view.ViewGroup')
 
     @action(snap_preview_state, end_state=camera_state)
-    def send_snap_to(self, recipients: list[str] = None, caption: str = None, my_story: bool = False,
+    def send_snap(self, recipients: list[str] = None, caption: str = None, my_story: bool = False,
                      public_story: bool = False):
         """
         Takes a photo with the camera tab and sends it as a snap to one or more friends, and/or posts it to a story.
