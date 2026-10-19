@@ -58,16 +58,16 @@ android_phone = GoogleChrome("emulator-5554")
 android_phone.visit_url_new_tab("example.com")
 
 # iOS
-from puma.apps.ios.messages.messages import Messages
-iphone = Messages("A1B2C3D4-E5F6-4A7B-8C9D-0E1F2A3B4C5D")
-iphone.send_message("Hello from Puma!", conversation="Bob")
+from puma.apps.ios.safari.safari import Safari
+iphone = Safari("A1B2C3D4-E5F6-4A7B-8C9D-0E1F2A3B4C5D")
+iphone.visit_url_new_tab("example.com")
 ```
 
 See [using Puma](docs/usage.md) for more examples, and how navigation, contexts and verification of actions work. For a
-demo of Puma on iOS, run `python -m demo.ios_demo --udid <udid>` from the root of the repository. The demo sends and
-reads messages in Messages. On real devices, it turns off Auto-Lock in Settings during the demo, and restores it
-afterwards. For an extensive step-by-step guide on how to use (and develop) Puma, see the
-[Puma Tutorial](tutorial/2026/exercises.md).
+demo of Puma on iOS, run `python -m demo.ios_demo --udid <udid>` from the root of the repository. The demo uses Safari,
+Contacts, Calendar, Reminders and Messages, and travels a bike route in Apple Maps by simulating the location of the
+device. On real devices, it turns off Auto-Lock in Settings during the demo, and restores it afterwards. For an
+extensive step-by-step guide on how to use (and develop) Puma, see the [Puma Tutorial](tutorial/2026/exercises.md).
 
 ## Supported apps
 
@@ -82,14 +82,21 @@ example implementations. Each version of Puma supports one version of each app, 
 | [Google Maps](puma/apps/android/google_maps/README.md)          | Android  | 26.10.01              |
 | [Google Play Store](puma/apps/android/google_play_store/README.md) | Android  | 48.3.25-31            |
 | [Open Camera](puma/apps/android/open_camera/README.md)          | Android  | 1.55                  |
+| [Settings](puma/apps/android/settings/README.md) (Google Pixel) | Android  | Android 16            |
 | [Snapchat](puma/apps/android/snapchat/README.md)                | Android  | 12.89.0.40            |
 | [Telegram](puma/apps/android/telegram/README.md)                | Android  | 12.0.1                |
 | [TeleGuard](puma/apps/android/teleguard/README.md)              | Android  | 4.0.9                 |
 | [WhatsApp](puma/apps/android/whatsapp/README.md)                | Android  | 2.26.2.70             |
 | [WhatsApp for Business](puma/apps/android/whatsapp_business/README.md) | Android  | 2.25.24.78            |
 | [App Store](puma/apps/ios/app_store/README.md) (real devices only) | iOS      | iOS 26.6              |
+| [Apple Maps](puma/apps/ios/apple_maps/README.md)                | iOS      | iOS 26.2              |
+| [Calendar](puma/apps/ios/calendar/README.md)                    | iOS      | iOS 26.2              |
+| [Contacts](puma/apps/ios/contacts/README.md)                    | iOS      | iOS 26.2              |
 | [Messages](puma/apps/ios/messages/README.md)                    | iOS      | iOS 26.6              |
+| [Reminders](puma/apps/ios/reminders/README.md)                  | iOS      | iOS 26.2              |
+| [Safari](puma/apps/ios/safari/README.md)                        | iOS      | iOS 26.2              |
 | [Settings](puma/apps/ios/settings/README.md) (real devices only) | iOS      | iOS 26.6              |
+| [Telegram](puma/apps/ios/telegram/README.md) (real devices only) | iOS      | 13.0                  |
 
 ## Documentation
 

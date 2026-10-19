@@ -1,6 +1,7 @@
 from abc import ABC, abstractmethod
 from collections import deque
 from dataclasses import dataclass
+from time import sleep
 from typing import Callable, List
 
 from puma.state_graph import logger
@@ -12,16 +13,19 @@ class State(ABC):
     Abstract class representing a state. Each state represents a window in the UI.
     """
 
-    def __init__(self, initial_state: bool = False, parent_state: 'State' = None, parent_state_transition: Callable[..., None] = None):
+    def __init__(self, initial_state: bool = False, parent_state: 'State' = None, parent_state_transition: Callable[..., None] = None, recognize_only: bool = False):
         """
         Initializes a new State instance.
 
         :param initial_state: Whether this is the initial state of the FSM.
         :param parent_state: The parent state of this state, or None if it has no parent.
         :param parent_state_transition: How to transition back to the parent state. By default, this is a press on the back button.
+        :param recognize_only: Whether this state is only recognized (for example during recovery) and never navigated
+        to, so it does not need a transition to it.
         """
         self.id = None  # set in metaclass
         self.initial_state = initial_state
+        self.recognize_only = recognize_only
         self.parent_state = parent_state
         self.transitions = []
 
@@ -80,7 +84,7 @@ class SimpleState(State):
     Simple State. This is a standard state which can be validated by providing a list of present XPaths.
     """
 
-    def __init__(self, xpaths: List[str], invalid_xpaths: list[str] = [], initial_state: bool = False, parent_state: 'State' = None, parent_state_transition: Callable[..., None] = None):
+    def __init__(self, xpaths: List[str], invalid_xpaths: list[str] = [], initial_state: bool = False, parent_state: 'State' = None, parent_state_transition: Callable[..., None] = None, recognize_only: bool = False):
         """
         Initializes a new SimpleState instance.
 
@@ -89,8 +93,10 @@ class SimpleState(State):
         :param initial_state: Whether this is the initial state.
         :param parent_state: The parent state of this state, or None if it has no parent.
         :param parent_state_transition: How to transition back to the parent state. By default, this is a press on the back button.
+        :param recognize_only: Whether this state is only recognized (for example during recovery) and never navigated
+        to, so it does not need a transition to it.
         """
-        super().__init__(initial_state=initial_state, parent_state=parent_state, parent_state_transition=parent_state_transition)
+        super().__init__(initial_state=initial_state, parent_state=parent_state, parent_state_transition=parent_state_transition, recognize_only=recognize_only)
         if not xpaths:
             raise ValueError(f'Cannot create a SimpleState without any xpath validation expressions.')
         self.present_xpaths = xpaths
@@ -146,20 +152,51 @@ class Transition:
     ui_actions: Callable[..., None]
 
 
-def compose_clicks(xpaths: List[str], name: str = 'click') -> Callable[[PumaDriver], None]:
+@dataclass(frozen=True)
+class ScrollTo:
+    """
+    An element in compose_clicks that may need scrolling before it can be clicked. Create it with scroll_to().
+    """
+    locator: str
+    swipe_down: bool = True
+    max_swipes: int = 10
+
+
+def scroll_to(locator: str, swipe_down: bool = True, max_swipes: int = 10) -> ScrollTo:
+    """
+    Marks an element in compose_clicks that may need scrolling before it can be clicked. The screen is only scrolled
+    when the element is not present, e.g. `compose_clicks([xpath1, scroll_to(xpath2), xpath3], 'open_settings')`.
+
+    :param locator: The XPath (or Locator) of the element to click.
+    :param swipe_down: True to scroll down to the element, False to scroll up to it.
+    :param max_swipes: The maximum number of swipes.
+    :return: The element to pass to compose_clicks.
+    """
+    return ScrollTo(locator, swipe_down, max_swipes)
+
+
+def compose_clicks(xpaths: List[str | ScrollTo], name: str, wait: float = 0) -> Callable[[PumaDriver], None]:
     """
     Helper function to create a lambda for constructing transitions by clicking elements.
 
     This function generates a lambda function that, when executed, will click on a series
-    of elements specified by their XPaths.
+    of elements specified by their XPaths. Elements that may need scrolling before they can be clicked are wrapped
+    in scroll_to().
 
-    :param xpaths: A list of XPaths of the elements to be clicked.
-    :param name: The name to give this lambda function.
+    :param xpaths: A list of XPaths of the elements to be clicked, optionally wrapped in scroll_to().
+    :param name: Descriptive name of this function (used for logging)
+    :param wait: Optional. The number of seconds to wait after the clicks, e.g. for a screen that takes a while to
+                 open. States are validated directly after a transition.
     :return: A lambda function that takes a driver and performs the clicking actions.
     """
     def _click_(driver):
         for xpath in xpaths:
-            driver.click(xpath)
+            if isinstance(xpath, ScrollTo):
+                driver.swipe_to_find_element(xpath.locator, xpath.max_swipes, xpath.swipe_down).click()
+            else:
+                driver.click(xpath)
+        if wait:
+            sleep(wait)
     _click_.__name__ = name
     return _click_
 

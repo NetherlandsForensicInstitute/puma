@@ -83,6 +83,9 @@ class AndroidPumaDriver(PumaDriver):
         self.gtl_logger.info(f'Pressing back button')
         self.driver.press_keycode(AndroidKey.BACK)
 
+    def _drag(self, start: tuple[float, float], end: tuple[float, float], duration: float):
+        self.driver.swipe(int(start[0]), int(start[1]), int(end[0]), int(end[1]), int(duration * 1000))
+
     def home(self):
         """
         Simulates pressing the home button on the device.

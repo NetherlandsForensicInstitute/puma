@@ -39,10 +39,13 @@ pip install -r requirements.txt
 ## Issues
 - Open an issue for bug reports, feature requests, or general feedback.
 - When opening an issue, please provide as much detail as possible, including screenshots, and steps to reproduce for bug reports. If the issue is about a specific app, include its package name and version.
+- Add all relevant labels to the issue: the platform (`Android`, `iOS`), the app (e.g. `WhatsApp`), and the type
+  (e.g. `bug`, `enhancement`, `documentation`).
 
 
 ## Pull Requests
-- All contributions to the project must be submitted via pull request.
+- All contributions to the project must be submitted via pull request: do not push to `main` directly. The title of
+  the pull request starts with the issue number, e.g. `244: Add AGENTS.md`.
 - Ensure that your pull request addresses a specific issue or feature request. If none exists, please open a new issue first to discuss the changes you'd like to make.
 - Follow the [GitHub Flow](https://guides.github.com/introduction/flow/) workflow:
   1. Create a new branch from `main`. The branch name should start with the issue number. When adding support for a new
