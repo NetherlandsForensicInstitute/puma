@@ -18,14 +18,15 @@ class Message:
     """
     A message in a Slack conversation.
 
-    :param sender: The name of the sender.
+    :param sender: The name of the sender, or None if it is not known because the beginning of the conversation was not
+    reached.
     :param time: The time of the message in ISO 8601 (e.g. '2026-09-29T14:06:00'), in the time zone of the device.
     Slack does not show seconds, so these are always 0. Slack only shows the time of the first of consecutive messages
     of the same sender, the time of the others is None.
     :param text: The text of the message, empty if the message only contains a file.
     :param attachments: The files in the message as described by Slack, e.g. 'image: IMG-20260206-WA0002.jpeg'.
     """
-    sender: str
+    sender: Optional[str]
     time: Optional[str]
     text: str
     attachments: str
@@ -78,7 +79,7 @@ def to_iso_time(shown_time: str, now: datetime) -> str:
     match = re.fullmatch(r'(?P<date>.+) at (?P<time>.+)', ' '.join(shown_time.split()))
     if not match:
         raise ValueError(f'Unknown time format: {shown_time}')
-    time_of_day = _parse_time_of_day(match['time'])
+    time_of_day = _strptime(match['time'], ('%I:%M %p', '%H:%M')).time()
     date = match['date']
     if date == 'Today':
         day = now.date()
@@ -91,7 +92,7 @@ def to_iso_time(shown_time: str, now: datetime) -> str:
         day_match = re.fullmatch(r'(?P<month>[A-Z][a-z]+)\.? (?P<day>\d{1,2})(st|nd|rd|th)?(, (?P<year>\d{4}))?', date)
         if not day_match:
             raise ValueError(f'Unknown time format: {shown_time}')
-        month = _parse_month(day_match['month'])
+        month = _strptime(day_match['month'], ('%b', '%B')).month
         day_of_month = int(day_match['day'])
         if day_match['year']:
             day = datetime(int(day_match['year']), month, day_of_month).date()
@@ -128,19 +129,11 @@ def _parse_message(message_element: ElementTree.Element) -> Message:
     return Message(sender, message_time, '\n'.join(texts), '\n'.join(attachments))
 
 
-def _parse_time_of_day(shown_time: str):
-    for time_format in ('%I:%M %p', '%H:%M'):
+def _strptime(value: str, formats: tuple[str, ...]) -> datetime:
+    """Parses the value with the first of the formats that matches."""
+    for value_format in formats:
         try:
-            return datetime.strptime(shown_time, time_format).time()
+            return datetime.strptime(value, value_format)
         except ValueError:
             pass
-    raise ValueError(f'Unknown time format: {shown_time}')
-
-
-def _parse_month(month: str) -> int:
-    for month_format in ('%b', '%B'):
-        try:
-            return datetime.strptime(month, month_format).month
-        except ValueError:
-            pass
-    raise ValueError(f'Unknown month: {month}')
+    raise ValueError(f'Unknown format: {value}')

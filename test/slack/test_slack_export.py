@@ -5,7 +5,7 @@ import unittest
 from unittest.mock import Mock
 
 from puma.apps.android.slack.message_parser import Message
-from puma.apps.android.slack.slack import Slack
+from . import slack_without_device
 
 HEADER = ['sender', 'time', 'text', 'attachments']
 
@@ -23,10 +23,8 @@ class TestSlackExportMessages(unittest.TestCase):
 
     def _export(self, messages: list[Message], **kwargs) -> list[list[str]]:
         """Exports the given messages, and returns the rows of the CSV file."""
-        # created without calling __init__, so we do not try to connect to a real device
-        self.slack = Slack.__new__(Slack)
+        self.slack = slack_without_device()
         self.slack.get_messages = Mock(return_value=messages)
-        self.slack.gtl_logger = Mock()
         self.slack.export_messages(self.file_path, **kwargs)
         with open(self.file_path, newline='', encoding='utf-8') as file:
             return list(csv.reader(file))

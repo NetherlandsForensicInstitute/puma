@@ -9,6 +9,5 @@ install/install_macos.sh text eol=lf
 install/macos/*.sh text eol=lf
 install/common/*.sh text eol=lf
 
-
 # Keep the lines of both branches when both add release notes, instead of a merge conflict
 RELEASE_NOTES merge=union

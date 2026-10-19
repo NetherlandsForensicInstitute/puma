@@ -6,7 +6,7 @@ from puma.apps.android.slack.message_parser import Message
 from puma.apps.android.slack.slack import Slack
 from puma.apps.android.slack.xpaths import CHAT_BACK_BUTTON, CHAT_TEXT_INPUT, CHAT_MESSAGES_LIST, \
     CHAT_BEGINNING_OF_CONVERSATION
-from puma.state_graph.puma_driver import Platform
+from . import slack_without_device
 from .test_slack_messages import _message, _page
 
 LIST_TOP, LIST_BOTTOM = 265, 2174
@@ -62,20 +62,12 @@ class FakeConversation:
 
 
 def _slack_in_conversation(conversation: FakeConversation) -> Slack:
-    # created without calling __init__, so we do not try to connect to a real device
-    slack = Slack.__new__(Slack)
-    slack.current_state = Slack.chat_state
-    slack.app_popups = []
-    slack.try_restart = True
-    slack.driver = Mock(platform=Platform.ANDROID)
+    slack = slack_without_device(Slack.chat_state)
     slack.driver.is_present.side_effect = conversation.is_present
-    slack.driver.app_open.return_value = True
-    slack.driver.is_keyboard_shown.return_value = False
     slack.driver.get_element.side_effect = lambda xpath: Mock(
         rect={'x': 0, 'y': LIST_TOP, 'width': 1080, 'height': LIST_HEIGHT}) if xpath == CHAT_MESSAGES_LIST else Mock()
     slack.driver.driver = conversation
     conversation.get_device_time = lambda time_format: '2026-10-08T10:30:00'
-    slack.gtl_logger = Mock()
     return slack
 
 

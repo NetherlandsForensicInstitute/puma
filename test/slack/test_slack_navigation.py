@@ -1,11 +1,10 @@
 import logging
 import unittest
-from unittest.mock import Mock
 
 from puma.apps.android.slack.slack import Slack, parse_conversation
 from puma.apps.android.slack.xpaths import HOME_HISTORY_BUTTON, HOME_WORKSPACE_SELECTOR, HOME_CHANNEL_BUTTON, \
     HOME_DIRECT_MESSAGE_BUTTON, CHAT_BACK_BUTTON, CHAT_TEXT_INPUT, CHAT_TITLE
-from puma.state_graph.puma_driver import Platform
+from . import slack_without_device
 
 # A workspace with a channel and a direct message conversation that have the same name
 CHANNELS = ['general', 'random', 'bob']
@@ -49,19 +48,11 @@ class FakeSlackScreen:
 
 
 def _fake_slack(screen: FakeSlackScreen) -> Slack:
-    # created without calling __init__, so we do not try to connect to a real device
-    slack = Slack.__new__(Slack)
-    slack.current_state = slack.initial_state
-    slack.app_popups = []
-    slack.try_restart = True
-    slack.driver = Mock(platform=Platform.ANDROID)
+    slack = slack_without_device()
     slack.driver.is_present.side_effect = screen.is_present
     slack.driver.click.side_effect = screen.click
     slack.driver.back.side_effect = screen.back
     slack.driver.send_keys.side_effect = screen.send_keys
-    slack.driver.is_keyboard_shown.return_value = False
-    slack.driver.app_open.return_value = True
-    slack.gtl_logger = logging.getLogger('test_slack_navigation')
     return slack
 
 

@@ -11,10 +11,10 @@ from puma.apps.android.slack.xpaths import HOME_HISTORY_BUTTON, HOME_WORKSPACE_S
     ATTACHMENTS_PICTURE, ATTACHMENTS_DONE_BUTTON, CHAT_MESSAGES_LIST, CHAT_BEGINNING_OF_CONVERSATION
 from puma.state_graph.action import action
 from puma.state_graph.puma_driver import PumaDriver, PumaClickException, supported_version, Platform
-from puma.state_graph.state import SimpleState, ContextualState, State, compose_clicks
+from puma.state_graph.state import SimpleState, ContextualState, State
 from puma.state_graph.state_graph import StateGraph
 
-
+APPLICATION_PACKAGE = 'com.Slack'
 CHANNEL_PREFIX = '#'
 DIRECT_MESSAGE_PREFIX = '@'
 
@@ -27,11 +27,11 @@ def parse_conversation(conversation: str) -> tuple[bool, str]:
     :param conversation: The name of the conversation, e.g. '#general', '@Bob' or 'Bob'.
     :return: Whether the conversation is a channel, and the name of the conversation without the prefix.
     """
-    is_channel = conversation.startswith(CHANNEL_PREFIX)
-    name = conversation[1:] if conversation.startswith((CHANNEL_PREFIX, DIRECT_MESSAGE_PREFIX)) else conversation
+    name = conversation[1:] if conversation and conversation[0] in (CHANNEL_PREFIX, DIRECT_MESSAGE_PREFIX) \
+        else conversation
     if not name:
         raise ValueError(f"'{conversation}' is not the name of a channel or direct message conversation")
-    return is_channel, name
+    return conversation.startswith(CHANNEL_PREFIX), name
 
 
 class SlackChatState(SimpleState, ContextualState):
@@ -60,8 +60,6 @@ class SlackChatState(SimpleState, ContextualState):
 
     @staticmethod
     def go_to_chat(driver: PumaDriver, conversation: str = None):
-        if not conversation:
-            raise ValueError(f'Cannot open a conversation without the name of a channel or direct message conversation')
         is_channel, name = parse_conversation(conversation)
         if is_channel:
             chat_xpath = HOME_CHANNEL_BUTTON.format(channel_name=name)
@@ -86,8 +84,7 @@ class Slack(StateGraph):
         :param device_udid: The unique device identifier for the Android device.
         :param kwargs: Optional arguments passed to the StateGraph, such as appium_server or desired_capabilities.
         """
-        package = 'com.Slack'
-        StateGraph.__init__(self, device_udid, package, **kwargs)
+        StateGraph.__init__(self, device_udid, APPLICATION_PACKAGE, **kwargs)
 
     home_state = SimpleState(
         [HOME_HISTORY_BUTTON, HOME_WORKSPACE_SELECTOR],
@@ -95,10 +92,10 @@ class Slack(StateGraph):
         initial_state=True
     )
     chat_state = SlackChatState(parent_state=home_state)
-    attachments_state = SimpleState([ATTACHMENTS_UPLOAD_FILE_BUTTON], parent_state=chat_state)
+    # only recognized, to close an attachments menu that was left open during recovery
+    attachments_state = SimpleState([ATTACHMENTS_UPLOAD_FILE_BUTTON], parent_state=chat_state, recognize_only=True)
 
     home_state.to(chat_state, SlackChatState.go_to_chat)
-    chat_state.to(attachments_state, compose_clicks([CHAT_ATTACHMENTS_BUTTON], name='go_to_attachments'))
 
     @action(chat_state)
     def send_message(self, message: str, conversation: str = None):

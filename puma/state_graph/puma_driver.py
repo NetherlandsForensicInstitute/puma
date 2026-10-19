@@ -440,20 +440,24 @@ class PumaDriver:
         :raises PumaClickException: If the element cannot be found after the maximum number of swipes, or after reaching
         the end of the view.
         """
+        page_source = None
         for attempt in range(max_swipes):
             if self.is_present(xpath):
                 return self.get_element(xpath)
             self.gtl_logger.warning(f"Attempt {attempt + 1}: Element not found, swiping")
-            page_before = self.driver.page_source
+            # the page source after the previous swipe is reused, so each swipe needs only one
+            page_source = page_source or self.driver.page_source
             if swipe_down:
                 self._scroll_down()
             else:
                 self._scroll_up()
-            if self.driver.page_source == page_before:
+            new_page_source = self.driver.page_source
+            if new_page_source == page_source:
                 if self.is_present(xpath):
                     return self.get_element(xpath)
                 raise PumaClickException(f'Reached the end of the view after {attempt + 1} swipes, '
                                          f'cannot find element with xpath {xpath}')
+            page_source = new_page_source
         raise PumaClickException(f'After {max_swipes} swipes, cannot find element with xpath {xpath}')
 
     def swipe_to_find_elements(self, xpath: str, num_swipes: int = 10):
