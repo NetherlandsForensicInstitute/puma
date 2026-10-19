@@ -96,6 +96,7 @@ example implementations. Each version of Puma supports one version of each app, 
 | [Reminders](puma/apps/ios/reminders/README.md)                  | iOS      | iOS 26.2              |
 | [Safari](puma/apps/ios/safari/README.md)                        | iOS      | iOS 26.2              |
 | [Settings](puma/apps/ios/settings/README.md) (real devices only) | iOS      | iOS 26.6              |
+| [Telegram](puma/apps/ios/telegram/README.md) (real devices only) | iOS      | 13.0                  |
 
 ## Documentation
 

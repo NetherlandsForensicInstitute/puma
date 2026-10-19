@@ -13,16 +13,19 @@ class State(ABC):
     Abstract class representing a state. Each state represents a window in the UI.
     """
 
-    def __init__(self, initial_state: bool = False, parent_state: 'State' = None, parent_state_transition: Callable[..., None] = None):
+    def __init__(self, initial_state: bool = False, parent_state: 'State' = None, parent_state_transition: Callable[..., None] = None, recognize_only: bool = False):
         """
         Initializes a new State instance.
 
         :param initial_state: Whether this is the initial state of the FSM.
         :param parent_state: The parent state of this state, or None if it has no parent.
         :param parent_state_transition: How to transition back to the parent state. By default, this is a press on the back button.
+        :param recognize_only: Whether this state is only recognized (for example during recovery) and never navigated
+        to, so it does not need a transition to it.
         """
         self.id = None  # set in metaclass
         self.initial_state = initial_state
+        self.recognize_only = recognize_only
         self.parent_state = parent_state
         self.transitions = []
 
@@ -81,7 +84,7 @@ class SimpleState(State):
     Simple State. This is a standard state which can be validated by providing a list of present XPaths.
     """
 
-    def __init__(self, xpaths: List[str], invalid_xpaths: list[str] = [], initial_state: bool = False, parent_state: 'State' = None, parent_state_transition: Callable[..., None] = None):
+    def __init__(self, xpaths: List[str], invalid_xpaths: list[str] = [], initial_state: bool = False, parent_state: 'State' = None, parent_state_transition: Callable[..., None] = None, recognize_only: bool = False):
         """
         Initializes a new SimpleState instance.
 
@@ -90,8 +93,10 @@ class SimpleState(State):
         :param initial_state: Whether this is the initial state.
         :param parent_state: The parent state of this state, or None if it has no parent.
         :param parent_state_transition: How to transition back to the parent state. By default, this is a press on the back button.
+        :param recognize_only: Whether this state is only recognized (for example during recovery) and never navigated
+        to, so it does not need a transition to it.
         """
-        super().__init__(initial_state=initial_state, parent_state=parent_state, parent_state_transition=parent_state_transition)
+        super().__init__(initial_state=initial_state, parent_state=parent_state, parent_state_transition=parent_state_transition, recognize_only=recognize_only)
         if not xpaths:
             raise ValueError(f'Cannot create a SimpleState without any xpath validation expressions.')
         self.present_xpaths = xpaths
