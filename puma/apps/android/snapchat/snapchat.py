@@ -1,5 +1,6 @@
 from puma.apps.android.snapchat.xpaths import *
 from puma.state_graph.action import action
+from puma.state_graph.locators import xpath_quoted
 from puma.state_graph.popup_handler import PopUpHandler, simple_popup_handler
 from puma.state_graph.puma_driver import PumaDriver, PumaClickException, supported_version
 from puma.state_graph.state import SimpleState, ContextualState, State, compose_clicks
@@ -19,7 +20,7 @@ def open_chat(driver: PumaDriver, conversation: str):
         raise ValueError('Cannot open a chat without the name of a conversation')
     driver.click(CONVERSATIONS_SEARCH_BUTTON)
     driver.send_keys(SEARCH_TEXT_FIELD, conversation)
-    driver.click(SEARCH_FRIEND_RESULT.format(conversation=conversation))
+    driver.click(SEARCH_FRIEND_RESULT.format(conversation=xpath_quoted(conversation)))
     driver.wait_until_present(CHAT_TEXT_FIELD, description='chat to open')
 
 
@@ -85,7 +86,7 @@ class SnapchatChatState(SimpleState, ContextualState):
         """
         if not conversation:
             return True
-        return driver.is_present(CHAT_TITLE.format(conversation=conversation))
+        return driver.is_present(CHAT_TITLE.format(conversation=xpath_quoted(conversation)))
 
 
 class SnapchatChatCameraState(SimpleState, ContextualState):
@@ -114,7 +115,7 @@ class SnapchatChatCameraState(SimpleState, ContextualState):
         """
         if not conversation:
             return True
-        return driver.is_present(CHAT_CAMERA_RECIPIENT.format(conversation=conversation))
+        return driver.is_present(CHAT_CAMERA_RECIPIENT.format(conversation=xpath_quoted(conversation)))
 
 
 class SnapchatChatSnapPreviewState(SimpleState, ContextualState):
@@ -143,7 +144,7 @@ class SnapchatChatSnapPreviewState(SimpleState, ContextualState):
         """
         if not conversation:
             return True
-        return driver.is_present(CHAT_SNAP_PREVIEW_SEND_BUTTON.format(conversation=conversation))
+        return driver.is_present(CHAT_SNAP_PREVIEW_RECIPIENT.format(conversation=xpath_quoted(conversation)))
 
 
 @supported_version('14.28.0.54')
@@ -219,24 +220,24 @@ class Snapchat(StateGraph):
     @action(chat_snap_preview_state, end_state=chat_state)
     def send_snap_in_chat(self, caption: str = None, conversation: str = None):
         """
-        Takes a photo and sends it as a snap to a friend, from the chat with that friend.
+        Takes a photo and sends it as a snap to a friend, from the chat with that friend. When a preview of a snap in
+        that chat is already open, e.g. after an action failed, that snap is sent instead of a new photo.
 
         :param caption: An optional caption to put on the photo.
         :param conversation: The name of the friend to send the snap to. Not needed when already in that chat.
         """
         if caption:
             self._add_caption(caption)
-        self.gtl_logger.info(f'Sending the snap to {conversation}' if conversation else 'Sending the snap')
-        if conversation:
-            self.driver.click(CHAT_SNAP_PREVIEW_SEND_BUTTON.format(conversation=conversation))
-        else:
-            self.driver.click(f'{CHAT_SNAP_PREVIEW_MORE_FRIENDS_BUTTON}/following-sibling::android.view.ViewGroup')
+        self.gtl_logger.info('Sending the snap')
+        # The chat the snap is sent to was already validated when navigating to this state
+        self.driver.click(CHAT_SNAP_PREVIEW_SEND_BUTTON)
 
     @action(snap_preview_state, end_state=camera_state)
     def send_snap(self, recipients: list[str] = None, caption: str = None, my_story: bool = False,
-                     public_story: bool = False):
+                  public_story: bool = False):
         """
         Takes a photo with the camera tab and sends it as a snap to one or more friends, and/or posts it to a story.
+        When a preview of a snap is already open, e.g. after an action failed, that snap is sent instead of a new photo.
 
         :param recipients: The names of the friends to send the snap to. Optional when posting to a story.
         :param caption: An optional caption to put on the photo.
@@ -283,10 +284,10 @@ class Snapchat(StateGraph):
         self.driver.wait_until_keyboard_shown(shown=False)
 
     def _select_recipient(self, recipient: str):
-        if self.driver.is_present(SEND_TO_SELECTED_RECIPIENT.format(recipient=recipient)):
+        if self.driver.is_present(SEND_TO_SELECTED_RECIPIENT.format(recipient=xpath_quoted(recipient))):
             return
         self.gtl_logger.info(f'Selecting {recipient} as recipient')
         self.driver.send_keys(SEND_TO_SEARCH_FIELD, recipient)
-        self.driver.click(SEND_TO_RECIPIENT.format(recipient=recipient))
-        if not self.driver.is_present(SEND_TO_SELECTED_RECIPIENT.format(recipient=recipient), implicit_wait=2):
+        self.driver.click(SEND_TO_RECIPIENT.format(recipient=xpath_quoted(recipient)))
+        if not self.driver.is_present(SEND_TO_SELECTED_RECIPIENT.format(recipient=xpath_quoted(recipient)), implicit_wait=2):
             raise PumaClickException(f'Could not select {recipient} as recipient of the snap')

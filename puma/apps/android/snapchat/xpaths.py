@@ -41,8 +41,9 @@ SNAP_PREVIEW_SEND_TO_BUTTON = '//android.view.ViewGroup[@resource-id="com.snapch
 
 # Preview of a snap taken from a chat: it has a button to send it to the chat, and one to add more friends
 CHAT_SNAP_PREVIEW_MORE_FRIENDS_BUTTON = '//android.widget.TextView[@text="+ More Friends"]'
-CHAT_SNAP_PREVIEW_SEND_BUTTON = ('//android.widget.TextView[@text="+ More Friends"]'
-                                 '/following-sibling::android.view.ViewGroup[.//android.widget.TextView[lower-case(@text)=lower-case("{conversation}")]]')
+CHAT_SNAP_PREVIEW_SEND_BUTTON = '//android.widget.TextView[@text="+ More Friends"]/following-sibling::android.view.ViewGroup'
+CHAT_SNAP_PREVIEW_RECIPIENT = (f'{CHAT_SNAP_PREVIEW_SEND_BUTTON}'
+                               '//android.widget.TextView[lower-case(@text)=lower-case("{conversation}")]')
 
 # Send to, where the recipients of a snap are chosen
 SEND_TO_SEARCH_FIELD = '//android.widget.EditText[@resource-id="com.snapchat.android:id/input_field_edit_text"]'
@@ -51,8 +52,10 @@ SEND_TO_RECIPIENT = '//android.view.View[./javaClass[lower-case(@text)=lower-cas
 SEND_TO_SELECTED_RECIPIENT = ('//android.view.ViewGroup[@resource-id="com.snapchat.android:id/send_to_confirmation_bar"]'
                               '//android.widget.TextView[lower-case(@text)=lower-case("{recipient}")]')
 # The stories to post to, visible to friends only or to everyone. Only one of them can be selected. The name of a story
-# is the first line of its row: the row of the last snap has the story it was posted to as second line.
-SEND_TO_MY_STORY = '//android.view.View[./javaClass[1][@text="My Story · Friends Only"]]'
+# is the first line of its row: the row of the last snap has the story it was posted to as second line. The name of My
+# Story ends with who can see it ("Friends Only" by default), which depends on the settings of the account.
+SEND_TO_MY_STORY = ('//android.view.View[./javaClass[1][starts-with(@text, "My Story ·")'
+                    ' and not(@text="My Story · Public")]]')
 SEND_TO_PUBLIC_STORY = '//android.view.View[./javaClass[1][@text="My Story · Public"]]'
 # Asks to confirm adding the snap to My Story, when My Story is selected. Cancel deselects My Story.
 SEND_TO_ADD_TO_STORY_CONFIRM_BUTTON = '//android.view.View[@resource-id="com.snapchat.android:id/add_to_story_dialog_confirm_view"]'
