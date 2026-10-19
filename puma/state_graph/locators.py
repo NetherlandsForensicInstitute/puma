@@ -46,6 +46,14 @@ def ios_class_chain(value: str) -> Locator:
     return Locator(value, AppiumBy.IOS_CLASS_CHAIN)
 
 
+def quoted(text: str) -> str:
+    """
+    Escapes a text for use within double quotes in an iOS predicate string or class chain, e.g. a message containing
+    quotes: `f'label CONTAINS "{quoted(text)}"'`.
+    """
+    return text.replace('\\', '\\\\').replace('"', '\\"')
+
+
 def to_by_value(locator: str) -> tuple[str, str]:
     """
     Converts a locator to the (by, value) pair used by Appium. Plain strings are interpreted as XPaths.
