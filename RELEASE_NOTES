@@ -1,6 +1,7 @@
 Version 6.1.0
 -------------
 234. Android: Update Snapchat support based on version 14.28.0.54. Contains breaking changes for Snapchat.
+300. Telegram: support newest version 13.1.0
 292. Whatsapp: support newest version 2.26.40.76, including fixing PumaDriver.long_click_element()
 290. Telegram: support newest version 13.0.2
 247. iOS: Add Telegram support, to send messages, photos and the location, and to read messages
