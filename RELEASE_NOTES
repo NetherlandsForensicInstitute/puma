@@ -1,5 +1,6 @@
 Version 6.1.0
 -------------
+300. Telegram: support newest version 13.1.0
 292. Whatsapp: support newest version 2.26.40.76, including fixing PumaDriver.long_click_element()
 290. Telegram: support newest version 13.0.2
 247. iOS: Add Telegram support, to send messages, photos and the location, and to read messages
