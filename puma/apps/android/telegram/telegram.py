@@ -60,7 +60,7 @@ class TelegramChatSettingsState(SimpleState, ContextualState):
         driver.click(CHAT_STATE_CONVERSATION_NAME.format(conversation=conversation))
 
 
-@supported_version("13.0.2")
+@supported_version("13.1.1")
 class Telegram(StateGraph):
     """
     A class representing a state graph for managing UI states and transitions in the Telegram Messenger application.
