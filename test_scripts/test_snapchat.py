@@ -7,6 +7,7 @@ device_udids = {
     'Alice': ''
 }
 
+
 class TestSnapchat(unittest.TestCase):
     """
     With this test, you can check whether all Appium functionality works for the current version of Snapchat.
@@ -14,23 +15,21 @@ class TestSnapchat(unittest.TestCase):
 
     Prerequisites:
     - All prerequisites mentioned in the README.
-    - 1 registered Snapchat account for Alice
-    - 1 phone with:
-        - Snapchat installed and registered for Bob
-        - Alice and Charlie in contacts
-        - An existing conversation for Bob and Charlie (TODO: do this automatically)
+    - 1 phone with Snapchat installed and registered for Alice
+    - Bob and Charlie are friends of Alice in Snapchat
     - Appium running
     """
+
     @classmethod
-    def setUpClass(self):
+    def setUpClass(cls):
         if not device_udids['Alice']:
             print('No udid was configured for Alice. Please add at the top of the script.')
             print('Exiting...')
             exit(1)
-        self.alice = Snapchat(device_udids['Alice'])
+        cls.alice = Snapchat(device_udids['Alice'])
 
-        self.contact_bob = 'Bob'
-        self.contact_charlie = 'Charlie'
+        cls.contact_bob = 'Bob'
+        cls.contact_charlie = 'Charlie'
 
     def setUp(self):
         """
@@ -40,19 +39,33 @@ class TestSnapchat(unittest.TestCase):
 
     def test_send_message(self):
         self.alice.send_message(message='Hi Charlie!', conversation=self.contact_charlie)
+        self.alice.send_message(message='How are you?')
+
+    def test_send_snap_in_chat(self):
+        self.alice.send_snap_in_chat(conversation=self.contact_charlie, caption='Hi Charlie!')
+        self.alice.send_snap_in_chat()
 
     def test_send_snap(self):
-        self.alice.toggle_camera()
-        self.alice.send_snap_to(recipients=[self.contact_charlie], caption='Hi Charlie!')
-        self.alice.send_snap_to(recipients=[self.contact_bob, self.contact_charlie])
+        self.alice.send_snap(recipients=[self.contact_charlie], caption='Hi Charlie!')
+        self.alice.send_snap(recipients=[self.contact_bob, self.contact_charlie])
 
     def test_send_snap_to_my_story(self):
-        self.alice.send_snap_to_my_story(caption='Hello!')
+        self.alice.send_snap(my_story=True, caption='Hello!')
+        self.alice.send_snap(recipients=[self.contact_charlie], my_story=True)
+
+    def test_send_snap_to_public_story(self):
+        self.alice.send_snap(public_story=True, caption='Hello everyone!')
+
+    def test_flip_camera(self):
+        self.alice.flip_camera()
+        self.alice.flip_camera()
 
     def test_transitions(self):
         for to_state in self.alice.states:
-            self.alice.go_to_state(to_state, conversation=self.contact_bob)
+            if not to_state.recognize_only:
+                self.alice.go_to_state(to_state, conversation=self.contact_bob)
         self.alice.go_to_state(self.alice.initial_state)
+
 
 if __name__ == '__main__':
     unittest.main()
