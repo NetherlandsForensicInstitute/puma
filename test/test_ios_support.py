@@ -17,6 +17,7 @@ from puma.state_graph.puma_driver import PumaDriver, Platform
 from puma.state_graph.state import SimpleState
 from puma.state_graph.state_graph import StateGraph, StateGraphMeta
 from puma.state_graph.utils import is_valid_bundle_id, is_valid_app_id
+from puma.utils.route_simulator import RouteSimulator
 
 
 def _mock_appium_driver():
@@ -170,6 +171,87 @@ class TestWdaPorts(unittest.TestCase):
         self.assertEqual(8100, driver.options.wda_local_port)
 
 
+class TestPumaDriverWait(unittest.TestCase):
+    def setUp(self):
+        self.appium_driver = _mock_appium_driver()
+        self.driver = _create_driver(Platform.IOS, self.appium_driver)
+        self.driver.gtl_logger = Mock()
+
+    def test_wait_until_logs_to_the_ground_truth_log(self):
+        self.driver.wait_until(lambda: True, timeout=1, description='the thing')
+        self.driver.gtl_logger.info.assert_any_call('Waiting for the thing')
+
+    def test_wait_until_present(self):
+        self.appium_driver.find_elements.side_effect = [[], [Mock()]]
+        self.assertTrue(self.driver.wait_until_present('//one', timeout=5))
+
+    def test_wait_until_present_any_of_the_elements(self):
+        self.appium_driver.find_elements.side_effect = lambda by, value: [Mock()] if value == '//two' else []
+        self.assertTrue(self.driver.wait_until_present('//one', '//two', timeout=5))
+
+    def test_wait_until_present_times_out(self):
+        self.appium_driver.find_elements.return_value = []
+        self.assertFalse(self.driver.wait_until_present('//one', timeout=0))
+
+    def test_wait_until_not_present(self):
+        self.appium_driver.find_elements.side_effect = [[Mock()], []]
+        self.assertTrue(self.driver.wait_until_not_present('//one', timeout=5))
+
+    def test_wait_until_not_present_already_gone(self):
+        self.appium_driver.find_elements.return_value = []
+        self.assertTrue(self.driver.wait_until_not_present('//one', timeout=0))
+
+    def test_wait_until_not_present_waits_for_all_elements(self):
+        self.appium_driver.find_elements.side_effect = lambda by, value: [Mock()] if value == '//two' else []
+        self.assertFalse(self.driver.wait_until_not_present('//one', '//two', timeout=0))
+
+    def test_wait_until_not_present_times_out(self):
+        self.appium_driver.find_elements.return_value = [Mock()]
+        self.assertFalse(self.driver.wait_until_not_present('//one', timeout=0))
+
+    def test_wait_until_not_present_accepts_locators(self):
+        self.appium_driver.find_elements.return_value = []
+        self.assertTrue(self.driver.wait_until_not_present(ios_predicate('name == "Loading"'), timeout=0))
+        self.appium_driver.find_elements.assert_called_with(by=AppiumBy.IOS_PREDICATE, value='name == "Loading"')
+
+    def test_wait_until_locators_present_and_not_present(self):
+        present = {'//one'}
+        self.appium_driver.find_elements.side_effect = lambda by, value: [Mock()] if value in present else []
+        self.assertTrue(self.driver.wait_until_locators(present=['//one'], not_present=['//two'], timeout=0))
+
+    def test_wait_until_locators_fails_when_not_present_element_is_present(self):
+        self.appium_driver.find_elements.return_value = [Mock()]
+        self.assertFalse(self.driver.wait_until_locators(present=['//one'], not_present=['//two'], timeout=0))
+
+    def test_wait_until_locators_fails_when_present_element_is_missing(self):
+        self.appium_driver.find_elements.return_value = []
+        self.assertFalse(self.driver.wait_until_locators(present=['//one'], not_present=['//two'], timeout=0))
+
+
+class TestPumaDriverKeyboard(unittest.TestCase):
+    def test_is_keyboard_shown_on_both_platforms(self):
+        for platform in Platform:
+            for shown in (True, False):
+                appium_driver = _mock_appium_driver()
+                appium_driver.is_keyboard_shown.return_value = shown
+                self.assertIs(shown, _create_driver(platform, appium_driver).is_keyboard_shown())
+
+    def test_wait_until_keyboard_shown(self):
+        appium_driver = _mock_appium_driver()
+        appium_driver.is_keyboard_shown.side_effect = [False, True]
+        self.assertTrue(_create_driver(Platform.ANDROID, appium_driver).wait_until_keyboard_shown(timeout=5))
+
+    def test_wait_until_keyboard_hidden(self):
+        appium_driver = _mock_appium_driver()
+        appium_driver.is_keyboard_shown.side_effect = [True, False]
+        self.assertTrue(_create_driver(Platform.ANDROID, appium_driver).wait_until_keyboard_shown(shown=False, timeout=5))
+
+    def test_wait_until_keyboard_shown_times_out(self):
+        appium_driver = _mock_appium_driver()
+        appium_driver.is_keyboard_shown.return_value = False
+        self.assertFalse(_create_driver(Platform.ANDROID, appium_driver).wait_until_keyboard_shown(timeout=0))
+
+
 class TestIOSPumaDriver(unittest.TestCase):
     def setUp(self):
         self.appium_driver = _mock_appium_driver()
@@ -210,12 +292,35 @@ class TestIOSPumaDriver(unittest.TestCase):
         self.assertGreater(arguments['toX'], arguments['fromX'])
         self.assertEqual(arguments['fromY'], arguments['toY'])
 
+    def test_swipe_left(self):
+        row = Mock()
+        row.rect = {'x': 20, 'y': 100, 'width': 200, 'height': 40}
+        self.appium_driver.find_elements.return_value = [row]
+        self.appium_driver.find_element.return_value = row
+        self.driver.swipe_left('//row', start=0.1, end=0.6, duration=0.5)
+        self.appium_driver.execute_script.assert_called_with('mobile: dragFromToForDuration', {
+            'fromX': 200, 'fromY': 120, 'toX': 100, 'toY': 120, 'duration': 0.5})
+
+    def test_swipe_left_on_android(self):
+        appium_driver = _mock_appium_driver()
+        row = Mock()
+        row.rect = {'x': 20, 'y': 100, 'width': 200, 'height': 40}
+        appium_driver.find_elements.return_value = [row]
+        appium_driver.find_element.return_value = row
+        _create_driver(Platform.ANDROID, appium_driver).swipe_left('//row', start=0.1, end=0.6, duration=0.5)
+        appium_driver.swipe.assert_called_with(200, 120, 100, 120, 500)
+
     def test_is_simulator(self):
         self.appium_driver.execute_script.return_value = {'isSimulator': True, 'name': 'iPhone 17 Pro'}
         self.assertTrue(self.driver.is_simulator())
         self.appium_driver.execute_script.assert_called_with('mobile: deviceInfo')
-        self.appium_driver.execute_script.return_value = {'isSimulator': False}
-        self.assertFalse(self.driver.is_simulator())
+        # The device info is looked up once
+        self.assertTrue(self.driver.is_simulator())
+        self.appium_driver.execute_script.assert_called_once()
+
+        real_device_appium_driver = _mock_appium_driver()
+        real_device_appium_driver.execute_script.return_value = {'isSimulator': False}
+        self.assertFalse(_create_driver(Platform.IOS, real_device_appium_driver).is_simulator())
 
     def test_home(self):
         self.driver.home()
@@ -298,6 +403,45 @@ class TestIOSPopups(unittest.TestCase):
         driver = self._driver(['OK'], platform=Platform.ANDROID)
         self.assertFalse(handler.is_popup_window(driver))
 
+
+class TestRouteSimulator(unittest.TestCase):
+    def test_unwraps_puma_objects(self):
+        appium_driver = Mock(spec=WebDriver)
+        puma_driver = Mock()
+        puma_driver.driver = appium_driver
+        app = Mock()
+        app.driver = puma_driver
+        self.assertIs(appium_driver, RouteSimulator(appium_driver, 0).driver)
+        self.assertIs(appium_driver, RouteSimulator(puma_driver, 0).driver)
+        self.assertIs(appium_driver, RouteSimulator(app, 0).driver)
+
+    @patch('puma.utils.route_simulator.requests.get')
+    def test_osm_route_uses_transport_mode(self, get):
+        get.return_value.json.return_value = {'routes': [{'geometry': {'coordinates': [[2.3, 48.8], [2.4, 48.9]]}}]}
+        points = RouteSimulator._get_osm_route(48.8, 2.3, 48.9, 2.4, 'bike')
+        self.assertIn('/routed-bike/', get.call_args[0][0])
+        self.assertIn('2.3,48.8;2.4,48.9', get.call_args[0][0])
+        self.assertEqual([(48.8, 2.3), (48.9, 2.4)], [(p.latitude, p.longitude) for p in points])
+
+    def test_unsupported_transport_mode(self):
+        with self.assertRaises(ValueError):
+            RouteSimulator(Mock(spec=WebDriver), 0).execute_route_with_queries('a', 'b', 'boat')
+
+    def test_route_finished(self):
+        simulator = RouteSimulator(Mock(spec=WebDriver), 0)
+        self.assertTrue(simulator.is_route_finished())
+        simulator._next_locations = [Point(48.8, 2.3)]
+        self.assertFalse(simulator.is_route_finished())
+        self.assertFalse(simulator.wait_until_route_finished(timeout=0))
+        simulator.stop_route()
+        self.assertTrue(simulator.wait_until_route_finished(timeout=0))
+
+    def test_apple_maps_route_rejects_transit(self):
+        from puma.apps.ios.apple_maps.apple_maps import AppleMaps, TransportType
+        maps = Mock()
+        with self.assertRaises(ValueError):
+            AppleMaps.start_route(maps, 'a', 'b', 50, TransportType.TRANSIT)
+        maps.route_simulator.execute_route_with_queries.assert_not_called()
 
 
 if __name__ == '__main__':

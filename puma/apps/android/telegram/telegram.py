@@ -60,7 +60,7 @@ class TelegramChatSettingsState(SimpleState, ContextualState):
         driver.click(CHAT_STATE_CONVERSATION_NAME.format(conversation=conversation))
 
 
-@supported_version("12.0.1")
+@supported_version("13.1.1")
 class Telegram(StateGraph):
     """
     A class representing a state graph for managing UI states and transitions in the Telegram Messenger application.
@@ -85,7 +85,7 @@ class Telegram(StateGraph):
          SEND_FROM_GALLERY_THREE_DOTS_BUTTON, SEND_FROM_GALLERY_MEDIA_SWITCH.format(index=1)],
         parent_state=chat_state)  # pressing back goes to the chat state
     new_message_state = SimpleState(
-        [NEW_MESSAGE_STATE_NEW_GROUP_BUTTON, NEW_MESSAGE_STATE_NEW_CONTACT_BUTTON, NEW_MESSAGE_STATE_NEW_CHANNEL_BUTTON,
+        [NEW_MESSAGE_STATE_NEW_GROUP_BUTTON, NEW_MESSAGE_STATE_NEW_CHANNEL_BUTTON,
          NEW_MESSAGE_STATE_CREATE_NEW_CONTACT_BUTTON],
         parent_state=conversations_state)
 
@@ -98,14 +98,16 @@ class Telegram(StateGraph):
     conversations_state.to(new_message_state,
                            compose_clicks([CHAT_OVERVIEW_NEW_MESSAGE_BUTTON], name='press_new_message_button'))
 
-    def __init__(self, device_udid, telegram_web_version: bool = False):
+    def __init__(self, device_udid, telegram_web_version: bool = False, **kwargs):
         """
         Initializes Telegram messenger with a device UDID.
 
         :param device_udid: The unique device identifier for the Android device.
+        :param telegram_web_version: Whether to use Telegram Web instead of Telegram.
+        :param kwargs: Optional arguments passed to the StateGraph, such as appium_server or desired_capabilities.
         """
         package = TELEGRAM_WEB_PACKAGE if telegram_web_version else TELEGRAM_PACKAGE
-        StateGraph.__init__(self, device_udid, package)
+        StateGraph.__init__(self, device_udid, package, **kwargs)
 
     @action(chat_state)
     def send_message(self, message: str, conversation: str = None):
@@ -223,9 +225,10 @@ class Telegram(StateGraph):
         self.driver.click(ANSWER_CALL_NOTIFICATION_BUTTON)
 
     @action(call_state)
-    def mute_mic(self):
+    def mute_mic(self, conversation: str = None):
         """
         Mutes or unmutes the microphone when in a call.
+        :param conversation: The conversation of the call. Optional: not needed when already in the call
         """
         self.driver.click(CALL_STATE_MUTE_BUTTON)
 
@@ -334,7 +337,7 @@ class Telegram(StateGraph):
             except PumaClickException:
                 raise PumaClickException(
                     f'Could not add member {name} as it could not be found in the UI after a search')
-        self.driver.click('//android.widget.ImageView[@content-desc="Next"]')
+        self.driver.click(CHAT_SETTINGS_STATE_ADD_MEMBERS_NEXT)
         self.driver.click('//android.widget.TextView[@text="Add"]')
 
     @action(chat_settings_state)

@@ -54,6 +54,14 @@ def quoted(text: str) -> str:
     return text.replace('\\', '\\\\').replace('"', '\\"')
 
 
+def xpath_quoted(text: str) -> str:
+    """
+    Escapes a text for use within double quotes in an XPath 2.0 expression, e.g. a name containing quotes:
+    `f'//*[@text="{xpath_quoted(name)}"]'`. XPath 2.0 escapes a double quote by doubling it.
+    """
+    return text.replace('"', '""')
+
+
 def to_by_value(locator: str) -> tuple[str, str]:
     """
     Converts a locator to the (by, value) pair used by Appium. Plain strings are interpreted as XPaths.

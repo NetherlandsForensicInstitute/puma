@@ -1,3 +1,29 @@
+Version 6.1.0
+-------------
+304. Telegram: support newest version 13.1.1
+306. Whatsapp: support newest version 2.26.41.77
+234. Android: Update Snapchat support based on version 14.28.0.54. Contains breaking changes for Snapchat.
+300. Telegram: support newest version 13.1.0
+292. Whatsapp: support newest version 2.26.40.76, including fixing PumaDriver.long_click_element()
+290. Telegram: support newest version 13.0.2
+247. iOS: Add Telegram support, to send messages, photos and the location, and to read messages
+272. States must now be reachable from the initial state (and vice-versa). States that are only added for recognition purposes can be marked with `recognize_only=True` to skip this check
+244. Add AGENTS.md with instructions for AI agents, and an agent skill to explore the UI of a device without an Appium session
+146. The name parameter of compose_clicks is mandatory
+282. Android apps accept optional arguments such as desired_capabilities and appium_server, like the iOS apps
+187. PumaDriver can detect whether the on-screen keyboard is shown
+24. iOS: Add Safari, Apple Maps, Contacts, Calendar and Reminders, and routes by bike and on foot in the route simulator
+265. Android: Add Settings support, to change the brightness and screen timeout, and to connect to a Wi-Fi network. compose_clicks can scroll to elements with scroll_to, and wait after the clicks
+269. Check that actions accept the contextual arguments of their state when the app class is defined.
+267. Remember contextual arguments, so recovery works when an action is called without them (e.g. send_message without a conversation)
+271. Minor bugs: better error message for StateGraph without initial state, fix OCR skipping the last word, and fix WhatsApp group_exists always failing
+274. Fix duplicate and missing ground truth log lines, and tag all apps (including the App Store) on a release
+242. iOS: Add App Store support, to install, update and uninstall apps
+261. Add a generic wait_until helper, and use it in the Play Store, iOS Messages and WhatsApp Business. iOS App Store waits until an app is installed or updated
+203. Add get_app_version, and warn when the installed app version differs from the supported version
+230. Log which xpath caused SimpleState validation to fail
+228. Google Play Store: support newest version 53.4.34-34
+
 Version 6.0.0
 -------------
 248. WhatsApp: Add WhatsApp for iOS

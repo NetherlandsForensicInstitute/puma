@@ -1,7 +1,10 @@
 import unittest
+from unittest.mock import Mock, call, patch
 
+from puma.state_graph.locators import quoted, xpath_quoted
+from puma.state_graph.action import action
 from puma.state_graph.puma_driver import PumaDriver, Platform
-from puma.state_graph.state import State, ContextualState, SimpleState
+from puma.state_graph.state import State, ContextualState, SimpleState, compose_clicks, scroll_to
 from puma.state_graph.state_graph import StateGraphMeta, StateGraph
 
 
@@ -83,6 +86,65 @@ class TestStateGraphMeta(unittest.TestCase):
         with self.assertRaises(ValueError):
             StateGraphMeta._validate_graph(states)
 
+    def test_validate_graph_state_can_be_left_but_not_reached(self):
+        state1 = TestState(id="State1", initial_state=True)
+        state2 = TestState(id="State2", parent_state=state1)
+        with self.assertRaises(ValueError) as error:
+            StateGraphMeta._validate_graph([state1, state2])
+        self.assertIn("cannot be reached from the initial state 'State1': [State2]", str(error.exception))
+
+    def test_validate_graph_state_can_be_reached_but_not_left(self):
+        state1 = TestState(id="State1", initial_state=True)
+        state2 = TestState(id="State2")
+        state1.to(state2, None)
+        with self.assertRaises(ValueError) as error:
+            StateGraphMeta._validate_graph([state1, state2])
+        self.assertIn("initial state 'State1' cannot be reached, so navigation would get stuck there: [State2]",
+                      str(error.exception))
+
+    def test_validate_graph_recognize_only_state_does_not_need_transition_to_it(self):
+        state1 = TestState(id="State1", initial_state=True)
+        state2 = TestState(id="State2", parent_state=state1, recognize_only=True)
+        StateGraphMeta._validate_graph([state1, state2])
+
+    def test_validate_graph_recognize_only_state_needs_path_to_initial_state(self):
+        state1 = TestState(id="State1", initial_state=True)
+        state2 = TestState(id="State2", recognize_only=True)
+        with self.assertRaises(ValueError):
+            StateGraphMeta._validate_graph([state1, state2])
+
+    def test_action_in_recognize_only_state_is_not_allowed(self):
+        with self.assertRaises(ValueError) as error:
+            class RecognizeOnlyActionApp(StateGraph):
+                platform = Platform.ANDROID
+
+                state1 = SimpleState(xpaths=['//state1'], initial_state=True)
+                state2 = SimpleState(xpaths=['//state2'], parent_state=state1, recognize_only=True)
+
+                @action(state2)
+                def do_something(self):
+                    pass
+        self.assertIn("RecognizeOnlyActionApp.do_something (state 'state2')", str(error.exception))
+
+    def test_action_ending_in_recognize_only_state_is_allowed(self):
+        class RecognizeOnlyEndStateApp(StateGraph):
+            platform = Platform.ANDROID
+
+            state1 = SimpleState(xpaths=['//state1'], initial_state=True)
+            state2 = SimpleState(xpaths=['//state2'], parent_state=state1, recognize_only=True)
+
+            @action(state1, end_state=state2)
+            def open_state2(self):
+                pass
+
+    def test_graph_without_initial_state(self):
+        with self.assertRaises(ValueError) as error:
+            class NoInitialStateApp(StateGraph):
+                platform = Platform.ANDROID
+
+                state1 = SimpleState(xpaths=['//state1'])
+        self.assertEqual('Graph needs an initial state', str(error.exception))
+
     def test_validate_graph_contextual_state_without_parent(self):
         # Create an invalid state graph with a ContextualState without a parent
         state1 = TestState(id="State1", initial_state=True)
@@ -131,5 +193,46 @@ class TestStateGraph(unittest.TestCase):
         self.assertEqual('The provided package name is invalid: ', str(error.exception))
 
 
+class TestComposeClicks(unittest.TestCase):
+    def test_clicks_in_order(self):
+        driver = Mock()
+        compose_clicks(['xpath1', 'xpath2'], 'name')(driver)
+        self.assertEqual([call.click('xpath1'), call.click('xpath2')], driver.mock_calls)
+
+    def test_scroll_to(self):
+        driver = Mock()
+        compose_clicks([scroll_to('xpath1', swipe_down=False, max_swipes=5)], 'name')(driver)
+        driver.swipe_to_find_element.assert_called_once_with('xpath1', 5, False)
+        driver.swipe_to_find_element.return_value.click.assert_called_once_with()
+        driver.click.assert_not_called()
+
+    def test_mixed_clicks_keep_order(self):
+        driver = Mock()
+        compose_clicks(['xpath1', scroll_to('xpath2'), 'xpath3'], 'name')(driver)
+        self.assertEqual([call.click('xpath1'), call.swipe_to_find_element('xpath2', 10, True),
+                          call.swipe_to_find_element().click(), call.click('xpath3')], driver.mock_calls)
+
+    @patch('puma.state_graph.state.sleep')
+    def test_wait(self, sleep):
+        compose_clicks(['xpath1'], 'name')(Mock())
+        sleep.assert_not_called()
+        compose_clicks(['xpath1'], 'name', wait=1)(Mock())
+        sleep.assert_called_once_with(1)
+
+    def test_name(self):
+        self.assertEqual('open_settings', compose_clicks([scroll_to('xpath')], 'open_settings').__name__)
+
+
 if __name__ == '__main__':
     unittest.main()
+
+
+class TestQuoted(unittest.TestCase):
+    def test_quoted_escapes_quotes_and_backslashes(self):
+        self.assertEqual('Alice NFI', quoted('Alice NFI'))
+        self.assertEqual('Say \\"hi\\"', quoted('Say "hi"'))
+        self.assertEqual('a\\\\b', quoted('a\\b'))
+
+    def test_xpath_quoted_doubles_double_quotes(self):
+        self.assertEqual("Alice's", xpath_quoted("Alice's"))
+        self.assertEqual('Say ""hi""', xpath_quoted('Say "hi"'))

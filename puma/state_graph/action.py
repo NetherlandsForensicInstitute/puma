@@ -131,6 +131,9 @@ def action(state: State, end_state: State = None):
                 gtl_logger.exception("Unexpected exception while executing an action")
                 raise e
 
+        # used by the StateGraph metaclass to validate that the action accepts the contextual arguments of its state
+        wrapper.action_state = state
+        wrapper.action_function = func
 
         return wrapper
 

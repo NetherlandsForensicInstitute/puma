@@ -4,7 +4,7 @@ from abc import abstractmethod
 from datetime import datetime
 from enum import Enum
 from pathlib import Path
-from typing import Dict
+from typing import Callable, Dict, Sequence
 from uuid import uuid4
 
 from PIL import Image
@@ -21,6 +21,7 @@ from puma.state_graph import logger
 from puma.state_graph.locators import to_by_value
 from puma.utils import CACHE_FOLDER
 from puma.utils.gtl_logging import create_gtl_logger
+from puma.utils.wait import wait_until
 
 # Android keycode constants, found at https://developer.android.com/reference/android/view/KeyEvent
 KEYCODE_LEFT_ARROW = 21
@@ -34,6 +35,21 @@ class Platform(Enum):
     """
     ANDROID = 'Android'
     IOS = 'iOS'
+
+
+class AppVersionUnavailable(Exception):
+    """
+    Raised when the version of an app cannot be looked up. This is different from an app that is not installed, for
+    which the lookup succeeds and returns None.
+    """
+
+
+class AppVersionLookupNotSupported(AppVersionUnavailable):
+    """
+    Raised when the version of an app cannot be looked up in this setup, which is expected and not a failure. For
+    example when the version of apps on an iOS simulator is looked up from a machine other than the Mac the simulator
+    runs on.
+    """
 
 
 class PumaClickException(Exception):
@@ -132,6 +148,18 @@ class PumaDriver:
         """
         return self.app_package
 
+    @abstractmethod
+    def get_app_version(self, app_id: str = None) -> str | None:
+        """
+        Returns the version of an app installed on the device. This is the version as reported by the app, except for
+        apps that are bundled with the OS (iOS), whose version is the OS version.
+
+        :param app_id: The package name (Android) or bundle id (iOS) of the app. Defaults to the app of this driver.
+        :return: The version, or None if the app is not installed.
+        :raises AppVersionUnavailable: if the version cannot be looked up, for example because adb is not available.
+        """
+        pass
+
     @staticmethod
     @abstractmethod
     def _default_options() -> AppiumOptions:
@@ -207,6 +235,63 @@ class PumaDriver:
         """
         pass
 
+    def wait_until(self, condition: Callable[[], bool], timeout: float, interval: float = 1, description: str = None):
+        """
+        Polls a condition until it returns True, and logs the wait to the ground truth log of this device. See
+        puma.utils.wait.wait_until.
+
+        :param condition: A function without arguments, returning whether the thing waited for has happened.
+        :param timeout: The maximum time to wait, in seconds.
+        :param interval: The time between two checks of the condition, in seconds.
+        :param description: What is waited for. Nothing is logged without a description.
+        :raises TimeoutError: If the condition was not met within the timeout.
+        """
+        wait_until(condition, timeout, interval, description, self.gtl_logger)
+
+    def wait_until_locators(self, present: Sequence[str] = (), not_present: Sequence[str] = (), timeout: float = 10,
+                            description: str = None) -> bool:
+        """
+        Waits until any of the `present` elements is present and none of the `not_present` elements is present. An empty
+        list adds no condition. The elements are checked at least once, also with a timeout of 0.
+
+        :param present: The XPaths (or Locators) of the elements to wait for. One of them must be present.
+        :param not_present: The XPaths (or Locators) of the elements to wait to disappear. None of them may be present.
+        :param timeout: The maximum time to wait, in seconds.
+        :param description: What is waited for. Nothing is logged without a description.
+        :return: True if the condition was met, False if the timeout was reached.
+        """
+        def condition():
+            return ((not present or any(self.is_present(locator) for locator in present))
+                    and not any(self.is_present(locator) for locator in not_present))
+
+        try:
+            self.wait_until(condition, timeout, 0.5, description)
+            return True
+        except TimeoutError:
+            return False
+
+    def wait_until_present(self, *locators: str, timeout: float = 10, description: str = None) -> bool:
+        """
+        Waits until any of the elements is present. The elements are checked at least once, also with a timeout of 0.
+
+        :param locators: The XPaths (or Locators) of the elements. The wait ends when any of them is present.
+        :param timeout: The maximum time to wait, in seconds.
+        :param description: What is waited for. Nothing is logged without a description.
+        :return: True if one of the elements is present, False if the timeout was reached.
+        """
+        return self.wait_until_locators(present=locators, timeout=timeout, description=description)
+
+    def wait_until_not_present(self, *locators: str, timeout: float = 10, description: str = None) -> bool:
+        """
+        Waits until none of the elements is present. The elements are checked at least once, also with a timeout of 0.
+
+        :param locators: The XPaths (or Locators) of the elements. The wait ends when none of them is present.
+        :param timeout: The maximum time to wait, in seconds.
+        :param description: What is waited for. Nothing is logged without a description.
+        :return: True if none of the elements is present, False if the timeout was reached.
+        """
+        return self.wait_until_locators(not_present=locators, timeout=timeout, description=description)
+
     def click(self, xpath: str, width_ratio:float=0.5, height_ratio:float=0.5):
         """
         Clicks on an element specified by its XPath.
@@ -262,7 +347,37 @@ class PumaDriver:
             top_left = element.location['x'], element.location['y']
             size = element.size['height'], element.size['width']
             location = int(top_left[0] + width_ratio * size[1]), int(top_left[1] + height_ratio * size[0])
-            self.tap(location, duration=duration)
+            self.tap(location, duration=duration * 1000)  # tap takes milliseconds
+
+    def swipe_left(self, xpath: str, start: float = 0.05, end: float = 0.85, duration: float = 0.2):
+        """
+        Swipes an element to the left, across the middle of the element. In lists this typically reveals the delete
+        button of a row.
+
+        The start and end are ratios of the width of the element, measured from its right edge: 0 is the right edge,
+        0.5 the middle, and 1 the left edge.
+
+        :param xpath: The XPath (or Locator) of the element to swipe.
+        :param start: Optional. Where the swipe starts, as a ratio of the width from the right edge.
+        :param end: Optional. Where the swipe ends, as a ratio of the width from the right edge.
+        :param duration: Optional. The duration of the swipe, in seconds.
+        """
+        rect = self.get_element(xpath).rect
+        y = rect['y'] + rect['height'] / 2
+        right = rect['x'] + rect['width']
+        self.gtl_logger.info(f'Swiping element {xpath} to the left')
+        self._drag((right - start * rect['width'], y), (right - end * rect['width'], y), duration)
+
+    @abstractmethod
+    def _drag(self, start: tuple[float, float], end: tuple[float, float], duration: float):
+        """
+        Drags a finger over the screen in a straight line.
+
+        :param start: The (x, y) coordinates where the drag starts.
+        :param end: The (x, y) coordinates where the drag ends.
+        :param duration: The duration of the drag, in seconds.
+        """
+        pass
 
     def get_element(self, xpath: str):
         """
@@ -392,6 +507,29 @@ class PumaDriver:
         element = self.get_element(xpath)
         element.clear()
         element.send_keys(text)
+
+    def is_keyboard_shown(self) -> bool:
+        """
+        Checks if the on-screen keyboard is currently shown. Some apps change their UI when the keyboard is open, e.g.
+        by hiding elements or by needing an extra back press to leave a screen.
+
+        :return: True if the on-screen keyboard is shown, False otherwise.
+        """
+        return bool(self.driver.is_keyboard_shown())
+
+    def wait_until_keyboard_shown(self, shown: bool = True, timeout: float = 5) -> bool:
+        """
+        Waits until the on-screen keyboard is shown (or hidden), as the keyboard takes a moment to open and close.
+
+        :param shown: True to wait until the keyboard is shown, False to wait until it is hidden.
+        :param timeout: The maximum time to wait, in seconds.
+        :return: True if the keyboard reached the requested state, False if the timeout was reached.
+        """
+        try:
+            self.wait_until(lambda: self.is_keyboard_shown() == shown, timeout, 0.5)
+            return True
+        except TimeoutError:
+            return False
 
     @abstractmethod
     def press_enter(self):

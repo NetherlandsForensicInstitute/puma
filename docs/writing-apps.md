@@ -39,6 +39,32 @@ home_state = SimpleState(xpaths=['//android.widget.TextView[@content-desc="Home"
                          initial_state=True)
 ```
 
+Every state must be reachable from the initial state, and the initial state must be reachable from every state, so
+Puma can always navigate to the state of an action and never gets stuck. Defining a `parent_state` is optional, but it
+automatically adds a transition to the parent state through the `back` gesture. Puma checks this when your application
+class is defined, and raises a `ValueError` naming the states that are missing transitions.
+
+##### Recognize-only states
+
+An exception to the validation above are recognize-only states: states that only exist to be recognized. Some states
+exist only as intermediary steps of an action, or can be reached through unpredictable behavior of applications. For
+example, the iOS App Store can open in a different tab than the expected Today tab. These other tabs are defined in Puma
+so Puma can easily navigate towards the correct tab.
+Defining those states is not strictly needed, but it enables Puma to recognize them and quickly navigate out of them,
+which is faster than relying on the state recovery mechanism. Mark such states with `recognize_only=True`, so the
+framework knows no transition towards them is needed. They still need a transition towards other states, which usually
+can be done with a `parent_state`:
+
+```python
+other_tab_state = SimpleState(xpaths=['xpath_other_tab_selected'], parent_state=today_state,
+                              parent_state_transition=compose_clicks(['xpath_today_tab'], 'open_today'),
+                              recognize_only=True)
+```
+
+An example of an intermediary state is turn-by-turn navigation in Apple Maps, which is only entered by the
+`start_navigation` action. Puma never navigates to a recognize-only state, so actions cannot be defined in these states:
+Puma raises a `ValueError` when the application class is defined.
+
 ##### Contextual states
 
 A `ContextualState` is a special kind of state that takes context into account when validating the UI. Imagine you're in a
@@ -96,6 +122,19 @@ conversations_state = SimpleState(["xpath1", "xpath2"], initial_state=True)
 chat_state = ExampleAppChatState(parent_state=conversations_state)
 ```
 
+###### Remembered contextual arguments
+
+Puma remembers the last value given for each contextual argument, and reuses it when it has to navigate to a contextual
+state without that argument. For example, after `send_message('hi', conversation='Alice')`, you can call
+`send_message('hi again')` without a conversation. If an error occurs and Puma has to recover (for instance by restarting
+the app), it navigates back to the chat with Alice instead of failing.
+
+Contextual arguments are detected automatically: they are the parameters of `validate_context` and of the transitions to
+contextual states (except `driver`). Parameters of transitions to other states, such as a caption added while
+navigating, are not remembered. Remembered values are only used to navigate: when you're already in a chat, an action
+without a conversation still runs in the current chat. To make this work, give contextual parameters the same name in
+your actions, transitions and `validate_context` methods.
+
 ###### Special case: Contextual states that cannot be validated from the UI
 
 For some contextual states, the information that is required for validation is not present in the app UI. For example,
@@ -118,8 +157,18 @@ Typically, these actions are assembled using the `compose_clicks` function, whic
 elements that need to be clicked to execute the transition.
 
 ```python
-home_state.to(to_state=settings_state, ui_actions=compose_clicks(['xpath_button1', 'xpath_button2']))
+home_state.to(to_state=settings_state, ui_actions=compose_clicks(['xpath_button1', 'xpath_button2'], 'open_settings'))
 ```
+
+If an element may be out of view, wrap it in `scroll_to` to scroll to it before clicking. The screen is only scrolled
+when the element is not present. Pass `swipe_down=False` to scroll up instead of down:
+
+```python
+home_state.to(settings_state, compose_clicks(['xpath_menu', scroll_to('xpath_settings'), 'xpath_button'], 'open_settings'))
+```
+
+The state is validated directly after a transition. If a screen takes a while to open, pass `wait` to wait a number of
+seconds after the clicks: `compose_clicks(['xpath_button'], 'open_settings', wait=1)`.
 
 If you're defining a transition to a `ContextualState`, the transition probably needs to know the context to be executed.
 In that case you need to define the transition method from scratch, rather than use `compose_clicks`, by defining a method
@@ -171,6 +220,12 @@ def send_message(self, message:str, conversation:str):
 
 In this example, the argument `conversation` is not used inside the `send_message` method, but it will be used to properly
 navigate to the correct conversation.
+
+Puma checks this when your application class is defined. If an action is missing an argument that a transition or
+`validate_context` method on the way to its state needs, a `ValueError` is raised that names the action and the missing
+arguments. This also applies to actions in states that come after a contextual state: an action in the chat settings
+of a conversation also needs the `conversation` argument. When the argument is only needed to navigate, you can make it
+optional (`conversation: str = None`), so the action can also be called when the application is already in that state.
 
 ### Ground Truth Logging
 
@@ -227,15 +282,16 @@ class ExampleApp(StateGraph):
     settings_state = SimpleState(xpaths=['//android.widget.TextView[@content-desc="Settings"]'])
 
     # Define transitions
-    home_state.to(settings_state, compose_clicks(['//android.widget.Button[@content-desc="Go to Settings"]']))
+    home_state.to(settings_state, compose_clicks(['//android.widget.Button[@content-desc="Go to Settings"]'], 'open_settings'))
 
-    def __init__(self, device_udid):
+    def __init__(self, device_udid, **kwargs):
         """
         Initializes the ExampleApp with a device UDID.
 
         :param device_udid: The unique device identifier for the Android device.
+        :param kwargs: Optional arguments passed to the StateGraph, such as appium_server or desired_capabilities.
         """
-        StateGraph.__init__(self, device_udid, APPLICATION_PACKAGE)
+        StateGraph.__init__(self, device_udid, APPLICATION_PACKAGE, **kwargs)
 
     @action(settings_state)
     def update_settings(self):
@@ -261,10 +317,12 @@ start with `POPUP_`. Locators that depend on a value, such as the name of a conv
 or small functions (iOS) in the same file.
 
 The following steps should be taken to implement support for a new application:
-- Add the desired functionality (see [the next section](#how-to-write-appium-actions))
+- Add the desired functionality (see [the next section](#how-to-write-appium-actions)). Make sure every state can be
+  reached from the initial state, or mark it [recognize-only](#recognize-only-states)
 - Add a README for this app and add a link to the project README
 - Add a test script in the [test scripts directory](../test_scripts), in which each function is tested.
-- Add your class to the list of apps in [publish_app_tags](../.github/scripts/publish_app_tags.py)
+- Annotate your class with `@supported_version`. On a release, each app is tagged with its supported version by
+  [publish_app_tags](../.github/scripts/publish_app_tags.py), which finds the apps by this annotation
 - Add the app name to the list of supported apps in the [README](../README.md#supported-apps)
 
 ### iOS applications
@@ -332,7 +390,7 @@ class ExampleIOSApp(StateGraph):
 
 Use Appium Inspector with the capabilities `platformName: iOS`, `appium:automationName: XCUITest` and `appium:udid` to
 inspect the UI hierarchy. See the [iOS apps](../puma/apps/ios) for complete examples, such as
-[Messages](../puma/apps/ios/messages/messages.py).
+[Safari](../puma/apps/ios/safari/safari.py).
 
 ## How to write Appium actions
 Appium is a framework for testing applications, based on Selenium. In this project, we use Appium to execute actions on the device.
@@ -395,6 +453,19 @@ self.add_popup_handler(PopUpHandler(['/xpath/for/recognition', '/xpath/recogniti
 ```
 There is also a convenience method `simple_popup_handler`, which only requires a single XPath expression that is used
 for recognition and dismissal and returns a `PopUpHandler`.
+
+### On-screen keyboard
+Some apps change their UI when the on-screen keyboard is open: elements are hidden or moved, or the first back press
+only closes the keyboard. Use `self.driver.is_keyboard_shown()` to check whether the keyboard is open. The keyboard
+takes a moment to open and close, so use `self.driver.wait_until_keyboard_shown()` (or
+`wait_until_keyboard_shown(shown=False)`) directly after an interaction that opens or closes it:
+```python
+self.driver.click('//text_field')
+self.driver.wait_until_keyboard_shown()
+...
+if self.driver.is_keyboard_shown():
+    self.driver.back()  # closes the keyboard on Android
+```
 
 ### Case Sensitivity in XPath:
 XPath is case-sensitive by default. As the element attribute values regularly change, and sometimes the only change is

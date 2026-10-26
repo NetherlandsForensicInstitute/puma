@@ -26,31 +26,31 @@ def go_to_chat(driver: PumaDriver, conversation: str):
     driver.get_elements(CONVERSATIONS_ROW_BY_SUBJECT.format(conversation=conversation))[-1].click()
 
 
-def go_to_voice_call(driver: PumaDriver, contact: str):
+def go_to_voice_call(driver: PumaDriver, conversation: str):
     """
     Starts a voice call with a specific user.
 
     :param driver: The PumaDriver instance used to interact with the application.
-    :param contact: The name of user to call.
+    :param conversation: The name of user to call.
     """
     driver.click(CALL_TAB_SEARCH_BUTTON)
-    driver.send_keys(SEARCH_BAR, contact)
+    driver.send_keys(SEARCH_BAR, conversation)
     driver.click(VOICE_CALL_START_BUTTON)
 
 
-def go_to_video_call(driver: PumaDriver, contact: str):
+def go_to_video_call(driver: PumaDriver, conversation: str):
     """
     Starts a video call with a specific user.
 
     :param driver: The PumaDriver instance used to interact with the application.
-    :param contact: The name of user to call.
+    :param conversation: The name of user to call.
     """
     driver.click(CALL_TAB_SEARCH_BUTTON)
-    driver.send_keys(SEARCH_BAR, contact)
+    driver.send_keys(SEARCH_BAR, conversation)
     driver.click(VIDEO_CALL_START_BUTTON)
 
 
-@supported_version("2.26.2.70")
+@supported_version("2.26.41.77")
 class WhatsApp(StateGraph):
     """
     A class representing a state graph for managing UI states and transitions in the WhatsApp application.
@@ -107,8 +107,15 @@ class WhatsApp(StateGraph):
                                                       name='navigate_to_location'))
     chat_state.to(chat_settings_state, WhatsAppChatState.open_chat_settings)
 
-    def __init__(self, device_udid: str, app_package: str = 'com.whatsapp'):
-        StateGraph.__init__(self, device_udid, app_package)
+    def __init__(self, device_udid: str, app_package: str = 'com.whatsapp', **kwargs):
+        """
+        Initializes WhatsApp with a device UDID.
+
+        :param device_udid: The unique device identifier for the Android device.
+        :param app_package: The package name of the WhatsApp application.
+        :param kwargs: Optional arguments passed to the StateGraph, such as appium_server or desired_capabilities.
+        """
+        StateGraph.__init__(self, device_udid, app_package, **kwargs)
         self.add_popup_handler(simple_popup_handler(CHAT_SETTINGS_DISAPPEARING_MESSAGES_POPUP_OK))
         self.add_popup_handler(PopUpHandler([GOOGLE_BACKUP_POPUP_HEADER, GOOGLE_BACKUP_POPUP_NOT_NOW],
                                             [GOOGLE_BACKUP_POPUP_NOT_NOW]))
@@ -193,7 +200,6 @@ class WhatsApp(StateGraph):
         """
         self.driver.click(
             f'//*[@resource-id="{WHATSAPP_PACKAGE}:id/contactpicker_text_container"]//*[@text="{conversation}"]')
-        self.driver.click(build_content_desc_xpath_widget('Button', 'Message'))
         self.send_message(first_message)
 
     def open_more_options(self):
@@ -230,8 +236,9 @@ class WhatsApp(StateGraph):
         :param message_text: literal message text of the message to remove. The first match will be removed in case
         there are multiple with the same text.
         """
-        self.driver.long_click_element(
-            f"//*[@resource-id='{WHATSAPP_PACKAGE}:id/conversation_text_row']//*[@text='{message_text}']")
+        message_xpath = f"//*[@resource-id='{WHATSAPP_PACKAGE}:id/conversation_text_row']//*[@text='{message_text}']"
+        self.driver.swipe_to_find_element(message_xpath, swipe_down=False)
+        self.driver.long_click_element(message_xpath)
         self.driver.click(CHAT_DELETE_BUTTON)
         self.driver.click(CHAT_DELETE_FOR_EVERYONE)
 
@@ -621,7 +628,7 @@ class WhatsApp(StateGraph):
         else:
             WhatsAppChatState.open_chat_settings(self.driver, conversation)
 
-            found_member_elements = self.driver.swipe_to_find_elements(CHAT_SETTINGS_ANY_MEMBER, max_swipes=4)
+            found_member_elements = self.driver.swipe_to_find_elements(CHAT_SETTINGS_ANY_MEMBER, num_swipes=4)
             found_member_names = [member.text for member in found_member_elements]
 
             if set(found_member_names) != set(expected_member_names):
