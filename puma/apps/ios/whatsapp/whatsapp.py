@@ -210,10 +210,7 @@ def _swipe_row_left(driver: PumaDriver, row: str):
     """
     Swipes a row of a list of chats all the way to the left, which archives the chat, or unarchives an archived chat.
     """
-    rect = driver.get_element(row).rect
-    y = rect['y'] + rect['height'] / 2
-    driver.execute_script('mobile: dragFromToForDuration', {
-        'fromX': rect['x'] + rect['width'] - 20, 'fromY': y, 'toX': rect['x'] + 20, 'toY': y, 'duration': 0.2})
+    driver.swipe_left(row, start=0.05, end=0.95)
     sleep(2)
 
 
