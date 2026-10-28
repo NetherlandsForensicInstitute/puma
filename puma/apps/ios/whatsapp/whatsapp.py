@@ -497,6 +497,8 @@ class WhatsApp(StateGraph):
     conversations_state.to(updates_state, compose_clicks([TAB_UPDATES], 'open_updates_tab'))
     settings_state.to(profile_state, compose_clicks([SETTINGS_EDIT_PROFILE_BUTTON], 'open_profile'))
     chat_state.to(chat_settings_state, compose_clicks([CHAT_HEADER], 'open_chat_info'))
+    chat_state.to(voice_call_state, compose_clicks([CHAT_VOICE_CALL_BUTTON], 'start_voice_call'))
+    chat_state.to(video_call_state, compose_clicks([CHAT_VIDEO_CALL_BUTTON], 'start_video_call'))
     chat_state.to(send_location_state, compose_clicks([CHAT_ATTACH_BUTTON, ATTACH_LOCATION], 'open_location'))
 
     def __init__(self, device_udid: str, **kwargs):
