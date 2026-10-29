@@ -147,7 +147,7 @@ class AppPage(SimpleState, ContextualState):
         driver.is_present(APP_PAGE_NAVIGATION_BAR, SCREEN_TIMEOUT)
 
 
-@supported_version("26.6")
+@supported_version("27.2")
 class AppStore(StateGraph):
     """
     A class representing the App Store application on iOS.
