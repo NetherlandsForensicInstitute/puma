@@ -1,7 +1,7 @@
 import unittest
 from unittest.mock import Mock, call, patch
 
-from puma.state_graph.locators import quoted
+from puma.state_graph.locators import quoted, xpath_quoted
 from puma.state_graph.action import action
 from puma.state_graph.puma_driver import PumaDriver, Platform
 from puma.state_graph.state import State, ContextualState, SimpleState, compose_clicks, scroll_to
@@ -232,3 +232,7 @@ class TestQuoted(unittest.TestCase):
         self.assertEqual('Alice NFI', quoted('Alice NFI'))
         self.assertEqual('Say \\"hi\\"', quoted('Say "hi"'))
         self.assertEqual('a\\\\b', quoted('a\\b'))
+
+    def test_xpath_quoted_doubles_double_quotes(self):
+        self.assertEqual("Alice's", xpath_quoted("Alice's"))
+        self.assertEqual('Say ""hi""', xpath_quoted('Say "hi"'))
