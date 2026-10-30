@@ -2,6 +2,7 @@ import unittest
 from datetime import datetime
 
 from puma.apps.android.slack.message_parser import Message, merge_messages, parse_messages, to_iso_time
+from puma.state_graph.puma_driver import PumaClickException
 
 # A Thursday
 NOW = datetime(2026, 10, 8, 10, 30)
@@ -41,6 +42,14 @@ class TestSlackMessagesParsing(unittest.TestCase):
     def test_parse_messages_removes_zero_width_spaces(self):
         page = _page(_message(300, 500, 'puma w', 'Today at 4:01 PM', 'Hello 👋​'))
         self.assertEqual('Hello 👋', parse_messages(page)[0].text)
+        # Slack also inserts them after hyphens in names
+        page = _page(_message(300, 500, 'Anne-​Marie', 'Today at 4:01 PM', 'Hello'))
+        self.assertEqual('Anne-Marie', parse_messages(page)[0].sender)
+
+    def test_parse_messages_without_messages_list(self):
+        # e.g. when a pop-up covers the conversation
+        with self.assertRaises(PumaClickException):
+            parse_messages('<hierarchy><android.widget.FrameLayout bounds="[0,0][1080,2400]"/></hierarchy>')
 
     def test_parse_messages_skips_partly_shown_messages(self):
         page = _page(_message(200, 400, 'puma w', 'Today at 4:01 PM', 'Partly shown at the top'),

@@ -9,6 +9,7 @@ from xml.etree import ElementTree
 
 from puma.apps.android.slack.xpaths import MESSAGES_LIST_ID, MESSAGE_ID, MESSAGE_SENDER_ID, MESSAGE_TIME_ID, \
     MESSAGE_TEXT_ID, MESSAGE_FILE_ID, ZERO_WIDTH_SPACE
+from puma.state_graph.puma_driver import PumaClickException
 
 _WEEKDAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
 
@@ -37,9 +38,15 @@ def parse_messages(page_source: str) -> list[Message]:
     Parses the messages shown in a conversation. Messages that are only partly shown are skipped, unless they are too
     large to be shown completely. Messages without a header (the first of consecutive messages of the same sender has
     one) get None as sender. The time of the messages is the time as shown in Slack, see to_iso_time.
+
+    :param page_source: The page source of the conversation screen.
+    :return: The messages that are shown, from top to bottom.
+    :raises PumaClickException: If the list of messages is not in the page source, e.g. when a pop-up covers it.
     """
-    messages_list = next(element for element in ElementTree.fromstring(page_source).iter()
-                         if element.get('resource-id') == MESSAGES_LIST_ID)
+    messages_list = next((element for element in ElementTree.fromstring(page_source).iter()
+                          if element.get('resource-id') == MESSAGES_LIST_ID), None)
+    if messages_list is None:
+        raise PumaClickException('The list of messages is not shown in the conversation')
     _, list_top, _, list_bottom = _bounds(messages_list)
     messages = []
     for message_element in messages_list:
@@ -56,6 +63,10 @@ def merge_messages(messages: list[Message], new_messages: list[Message]) -> list
     """
     Appends the messages on a new screen to the messages found so far. The screens overlap, so the largest overlap
     between the end of the messages and the start of the new messages is not added again.
+
+    :param messages: The messages found so far.
+    :param new_messages: The messages on the new screen.
+    :return: The messages found so far, followed by the messages on the new screen that were not found yet.
     """
     for overlap in range(min(len(messages), len(new_messages)), 0, -1):
         if messages[-overlap:] == new_messages[:overlap]:
@@ -116,12 +127,12 @@ def _parse_message(message_element: ElementTree.Element) -> Message:
     sender, message_time, texts, attachments = None, None, [], []
     for element in message_element.iter():
         resource_id = element.get('resource-id')
+        # Slack inserts zero-width spaces, e.g. after emoji and after hyphens in names
         if resource_id == MESSAGE_SENDER_ID:
-            sender = element.get('text')
+            sender = element.get('text').replace(ZERO_WIDTH_SPACE, '')
         elif resource_id == MESSAGE_TIME_ID:
             message_time = element.get('content-desc')
         elif resource_id == MESSAGE_TEXT_ID:
-            # Slack inserts zero-width spaces, e.g. after emoji
             texts.append(element.get('text').replace(ZERO_WIDTH_SPACE, ''))
         elif resource_id == MESSAGE_FILE_ID:
             # e.g. 'Open image: IMG-20260206-WA0002.jpeg.'

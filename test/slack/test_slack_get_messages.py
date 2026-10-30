@@ -131,6 +131,16 @@ class TestSlackGetMessages(unittest.TestCase):
         self.assertIsNone(messages[0].sender)
         self.slack.gtl_logger.warning.assert_called_once()
 
+    def test_get_all_messages_keeps_the_messages_when_the_swipe_limit_is_reached(self):
+        swipe_messages_list = self.slack._swipe_messages_list
+        self.slack._swipe_messages_list = lambda up, until, slow=False: swipe_messages_list(up, until, slow, 3)
+        messages = self.slack.get_messages()
+        self.assertLess(len(messages), len(self.expected))
+        self.assertEqual([message.text for message in self.expected[-len(messages):]],
+                         [message.text for message in messages])
+        # one warning for the swipe limit, and one that messages may be missing
+        self.assertEqual(2, self.slack.gtl_logger.warning.call_count)
+
     # Getting the last messages
 
     def test_get_last_message(self):

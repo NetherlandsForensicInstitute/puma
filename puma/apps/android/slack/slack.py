@@ -1,5 +1,6 @@
 import csv
 import time
+from typing import Callable
 from dataclasses import astuple, fields
 from datetime import datetime
 
@@ -31,6 +32,9 @@ def parse_conversation(conversation: str) -> tuple[bool, str]:
         else conversation
     if not name:
         raise ValueError(f"'{conversation}' is not the name of a channel or direct message conversation")
+    # the name is inserted in a double-quoted string in the XPaths
+    if '"' in name:
+        raise ValueError(f"Names with a double quote are not supported: '{conversation}'")
     return conversation.startswith(CHANNEL_PREFIX), name
 
 
@@ -39,14 +43,14 @@ class SlackChatState(SimpleState, ContextualState):
     State defining a Slack conversation screen: a channel or a direct message conversation
     """
 
-    def __init__(self, parent_state: State):
+    def __init__(self, parent_state: State) -> None:
         super().__init__([CHAT_BACK_BUTTON, CHAT_TEXT_INPUT],
                          invalid_xpaths=[ATTACHMENTS_UPLOAD_FILE_BUTTON],
                          parent_state=parent_state,
                          parent_state_transition=SlackChatState.back_to_home)
 
     @staticmethod
-    def back_to_home(driver: PumaDriver):
+    def back_to_home(driver: PumaDriver) -> None:
         # When the keyboard is open, going back only closes the keyboard
         driver.close_keyboard()
         driver.back()
@@ -59,7 +63,7 @@ class SlackChatState(SimpleState, ContextualState):
         return True
 
     @staticmethod
-    def go_to_chat(driver: PumaDriver, conversation: str = None):
+    def go_to_chat(driver: PumaDriver, conversation: str = None) -> None:
         is_channel, name = parse_conversation(conversation)
         if is_channel:
             chat_xpath = HOME_CHANNEL_BUTTON.format(channel_name=name)
@@ -75,9 +79,13 @@ class SlackChatState(SimpleState, ContextualState):
 
 @supported_version("26.09.50.0")
 class Slack(StateGraph):
+    """
+    Slack on Android: navigating to channels and direct message conversations, sending messages and pictures, and
+    getting and exporting the messages of a conversation.
+    """
     platform = Platform.ANDROID
 
-    def __init__(self, device_udid, **kwargs):
+    def __init__(self, device_udid: str, **kwargs) -> None:
         """
         Initializes Slack messenger with a device UDID.
 
@@ -98,7 +106,7 @@ class Slack(StateGraph):
     home_state.to(chat_state, SlackChatState.go_to_chat)
 
     @action(chat_state)
-    def send_message(self, message: str, conversation: str = None):
+    def send_message(self, message: str, conversation: str = None) -> None:
         """
         Sends a text message in the current or selected channel or direct message conversation.
 
@@ -112,7 +120,7 @@ class Slack(StateGraph):
     # The attachments menu is opened in the action itself rather than by starting from the attachments state: the
     # conversation is not visible in the attachments menu, so the context of that state cannot be validated
     @action(chat_state)
-    def send_picture(self, picture_id: int = 1, caption: str = None, conversation: str = None):
+    def send_picture(self, picture_id: int = 1, caption: str = None, conversation: str = None) -> None:
         """
         Sends a picture in the current or selected channel or direct message conversation.
 
@@ -195,7 +203,7 @@ class Slack(StateGraph):
                     self.gtl_logger.warning(f"Unknown time format '{message.time}', the time is kept as shown in Slack")
         return messages
 
-    def export_messages(self, file_path: str, conversation: str = None, message_count: int = None):
+    def export_messages(self, file_path: str, conversation: str = None, message_count: int = None) -> None:
         """
         Exports the messages in the current or selected channel or direct message conversation to a CSV file, oldest
         first. By default all messages are exported, see get_messages.
@@ -217,7 +225,8 @@ class Slack(StateGraph):
             writer.writerows(astuple(message) for message in messages)
         self.gtl_logger.info(f'Exported {len(messages)} messages to {file_path}')
 
-    def _swipe_messages_list(self, up: bool, until, slow: bool = False, max_swipes: int = 500) -> bool:
+    def _swipe_messages_list(self, up: bool, until: Callable[[str], bool], slow: bool = False,
+                             max_swipes: int = 500) -> bool:
         """
         Swipes the messages list up or down until the given condition holds, or until the end of the list is reached.
 
@@ -226,7 +235,8 @@ class Slack(StateGraph):
         True.
         :param slow: True to swipe in short, slow swipes, which is needed when messages are collected while swiping.
         :param max_swipes: The maximum number of swipes.
-        :return: True if the condition holds, False if the end of the list was reached first.
+        :return: True if the condition holds, False if the end of the list or the maximum number of swipes was reached
+        first.
         """
         messages_list = self.driver.get_element(CHAT_MESSAGES_LIST).rect
         x = messages_list['x'] + messages_list['width'] / 2
@@ -257,7 +267,9 @@ class Slack(StateGraph):
             if new_page_source == page_source:
                 return False
             page_source = new_page_source
-        raise PumaClickException(f'Did not reach the end of the conversation after {max_swipes} swipes')
+        # the messages collected so far are kept, get_messages warns that messages may be missing
+        self.gtl_logger.warning(f'Stopped swiping after {max_swipes} swipes')
+        return False
 
     def _find_picture(self, picture_index: int) -> str:
         """
@@ -269,10 +281,12 @@ class Slack(StateGraph):
         """
         seen_pictures = []
         while True:
-            pictures = [element.get_attribute('content-desc') for element in self.driver.get_elements(ATTACHMENTS_PICTURES)]
+            pictures = [element.get_attribute('content-desc')
+                        for element in self.driver.get_elements(ATTACHMENTS_PICTURES)]
             new_pictures = [picture for picture in pictures if picture not in seen_pictures]
             if not new_pictures:
-                raise PumaClickException(f'Could not find picture {picture_index}, only {len(seen_pictures)} pictures were found')
+                raise PumaClickException(f'Could not find picture {picture_index}, '
+                                         f'only {len(seen_pictures)} pictures were found')
             seen_pictures += new_pictures
             if len(seen_pictures) >= picture_index:
                 return ATTACHMENTS_PICTURE.format(content_desc=seen_pictures[picture_index - 1])

@@ -12,6 +12,7 @@ from appium import webdriver
 from appium.options.common import AppiumOptions
 from appium.webdriver import WebElement
 from appium.webdriver.webdriver import WebDriver
+from selenium.common.exceptions import WebDriverException
 from selenium.webdriver import ActionChains
 from urllib3.exceptions import MaxRetryError
 
@@ -547,12 +548,17 @@ class PumaDriver:
         not shown.
 
         :param timeout: The maximum time to wait until the keyboard is hidden, in seconds.
-        :return: True if the keyboard is hidden, False if the timeout was reached.
+        :return: True if the keyboard is hidden, False if it could not be closed or the timeout was reached.
         """
         if not self.is_keyboard_shown():
             return True
         self.gtl_logger.info('Closing the on-screen keyboard')
-        self.driver.hide_keyboard()
+        try:
+            self.driver.hide_keyboard()
+        except WebDriverException as e:
+            # e.g. on iOS, a keyboard without a key to dismiss it, such as the number pad
+            self.gtl_logger.warning(f'Could not close the on-screen keyboard: {e.msg}')
+            return False
         return self.wait_until_keyboard_shown(shown=False, timeout=timeout)
 
     @abstractmethod

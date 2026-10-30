@@ -260,6 +260,13 @@ class TestPumaDriverKeyboard(unittest.TestCase):
         appium_driver.is_keyboard_shown.return_value = True
         self.assertFalse(_create_driver(Platform.ANDROID, appium_driver).close_keyboard(timeout=0))
 
+    def test_close_keyboard_that_cannot_be_dismissed(self):
+        # e.g. the number pad on iOS, which has no key to dismiss it
+        appium_driver = _mock_appium_driver()
+        appium_driver.is_keyboard_shown.return_value = True
+        appium_driver.hide_keyboard.side_effect = WebDriverException('Did not know how to dismiss the keyboard')
+        self.assertFalse(_create_driver(Platform.IOS, appium_driver).close_keyboard())
+
     def test_wait_until_keyboard_hidden(self):
         appium_driver = _mock_appium_driver()
         appium_driver.is_keyboard_shown.side_effect = [True, False]

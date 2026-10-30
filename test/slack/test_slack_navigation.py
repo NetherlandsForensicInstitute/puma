@@ -72,9 +72,14 @@ class TestParseConversation(unittest.TestCase):
         self.assertEqual((False, 'bob@work'), parse_conversation('bob@work'))
 
     def test_empty_name(self):
-        for conversation in ('#', '@'):
+        for conversation in ('#', '@', '', None):
             with self.assertRaises(ValueError):
                 parse_conversation(conversation)
+
+    def test_name_with_double_quote(self):
+        # the name is inserted in a double-quoted string in the XPaths
+        with self.assertRaises(ValueError):
+            parse_conversation('@Bob "The Builder"')
 
 
 class TestSlackNavigation(unittest.TestCase):
