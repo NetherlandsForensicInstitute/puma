@@ -1,5 +1,6 @@
 Version 6.1.0
 -------------
+135. Google Maps: rewrite as StateGraph, support newest version 26.41.00, and add route location spoofing to the PumaDriver
 313. App Store: support newest version 27.2
 304. Telegram: support newest version 13.1.1
 306. Whatsapp: support newest version 2.26.41.77

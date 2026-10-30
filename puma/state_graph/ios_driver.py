@@ -282,6 +282,13 @@ class IOSPumaDriver(PumaDriver):
         self.gtl_logger.info(f'Opening url {url}')
         self.driver.execute_script('mobile: deepLink', {'url': url})
 
+    def reset_location(self):
+        """
+        Stops spoofing the location, so the device reports its real location again.
+        """
+        self.gtl_logger.info('Resetting the location of the device to its real location')
+        self.driver.execute_script('mobile: resetSimulatedLocation')
+
     def open_notifications(self):
         """
         Opens the iOS notification center by swiping down from the top left of the screen.
