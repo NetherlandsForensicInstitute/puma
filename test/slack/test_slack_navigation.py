@@ -1,5 +1,8 @@
 import logging
 import unittest
+from xml.etree import ElementTree
+
+import elementpath
 
 from puma.apps.android.slack.slack import Slack, parse_conversation
 from puma.apps.android.slack.xpaths import HOME_HISTORY_BUTTON, HOME_WORKSPACE_SELECTOR, HOME_CHANNEL_BUTTON, \
@@ -81,6 +84,25 @@ class TestParseConversation(unittest.TestCase):
 
     def test_name_with_double_quote(self):
         self.assertEqual((False, 'Bob "The Builder"'), parse_conversation('@Bob "The Builder"'))
+
+
+class TestChatMemberCount(unittest.TestCase):
+    def _matches(self, content_desc: str) -> bool:
+        toolbar = ElementTree.fromstring(
+            '<hierarchy><android.view.ViewGroup resource-id="com.Slack:id/toolbar_compose">'
+            f'<android.view.View content-desc="{content_desc}"/></android.view.ViewGroup></hierarchy>')
+        return bool(elementpath.select(toolbar, CHAT_MEMBER_COUNT))
+
+    def test_channel(self):
+        for content_desc in ('9 members • 2 tabs', '1 member', '1,234 members', '1.2K members', '12K members'):
+            with self.subTest(content_desc=content_desc):
+                self.assertTrue(self._matches(content_desc))
+
+    def test_direct_message(self):
+        # e.g. the custom status of the other user
+        for content_desc in ('Team member', '2 team members', 'Team member since 2019', 'Back', ''):
+            with self.subTest(content_desc=content_desc):
+                self.assertFalse(self._matches(content_desc))
 
 
 class TestSlackNavigation(unittest.TestCase):
