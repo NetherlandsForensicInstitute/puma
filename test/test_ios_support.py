@@ -13,7 +13,7 @@ from puma.state_graph.android_driver import AndroidPumaDriver
 from puma.state_graph.ios_driver import IOSPumaDriver
 from puma.state_graph.locators import Locator, accessibility_id, ios_predicate, ios_class_chain, to_by_value
 from puma.state_graph.popup_handler import IOSAlertHandler, known_popups_for, known_android_popups, known_ios_popups
-from puma.state_graph.puma_driver import PumaDriver, Platform
+from puma.state_graph.puma_driver import PumaDriver, PumaClickException, Platform
 from puma.state_graph.state import SimpleState
 from puma.state_graph.state_graph import StateGraph, StateGraphMeta
 from puma.state_graph.utils import is_valid_bundle_id, is_valid_app_id
@@ -226,6 +226,27 @@ class TestPumaDriverWait(unittest.TestCase):
     def test_wait_until_locators_fails_when_present_element_is_missing(self):
         self.appium_driver.find_elements.return_value = []
         self.assertFalse(self.driver.wait_until_locators(present=['//one'], not_present=['//two'], timeout=0))
+
+
+class TestPumaDriverSwipeToFindElement(unittest.TestCase):
+    def setUp(self):
+        self.appium_driver = _mock_appium_driver()
+        # the element is never found and the screen never changes, e.g. while older messages are loading
+        self.appium_driver.find_elements.return_value = []
+        self.appium_driver.page_source = '<hierarchy/>'
+        self.driver = _create_driver(Platform.ANDROID, self.appium_driver)
+        self.driver.gtl_logger = Mock()
+        self.driver._scroll_down = Mock()
+
+    def test_keeps_swiping_by_default(self):
+        with self.assertRaises(PumaClickException):
+            self.driver.swipe_to_find_element('//missing', max_swipes=5)
+        self.assertEqual(5, self.driver._scroll_down.call_count)
+
+    def test_stops_at_the_end_when_asked(self):
+        with self.assertRaises(PumaClickException):
+            self.driver.swipe_to_find_element('//missing', max_swipes=5, stop_at_end=True)
+        self.assertEqual(1, self.driver._scroll_down.call_count)
 
 
 class TestPumaDriverKeyboard(unittest.TestCase):

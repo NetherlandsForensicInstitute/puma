@@ -71,9 +71,9 @@ class SlackChatState(SimpleState, ContextualState):
             chat_xpath = HOME_DIRECT_MESSAGE_BUTTON.format(direct_message=xpath_quoted(name))
         # The home screen might still be scrolled from an earlier visit, so search down first and then back up
         try:
-            driver.swipe_to_find_element(chat_xpath, max_swipes=20, swipe_down=True)
+            driver.swipe_to_find_element(chat_xpath, max_swipes=20, swipe_down=True, stop_at_end=True)
         except PumaClickException:
-            driver.swipe_to_find_element(chat_xpath, max_swipes=20, swipe_down=False)
+            driver.swipe_to_find_element(chat_xpath, max_swipes=20, swipe_down=False, stop_at_end=True)
         driver.click(chat_xpath)
 
 
