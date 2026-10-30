@@ -119,7 +119,6 @@ class Slack(StateGraph):
 
     # The attachments menu is opened in the action itself rather than by starting from the attachments state: the
     # conversation is not visible in the attachments menu, so the context of that state cannot be validated
-    @action(chat_state)
     def send_picture(self, picture_id: int = 1, caption: str = None, conversation: str = None) -> None:
         """
         Sends a picture in the current or selected channel or direct message conversation.
@@ -129,8 +128,13 @@ class Slack(StateGraph):
         :param conversation: The name of the conversation: a channel with a '#' prefix (e.g. '#general'), or a direct
         message conversation with an optional '@' prefix (e.g. '@Bob' or 'Bob').
         """
+        # checked before the action, which would navigate and retry on the error
         if picture_id < 1:
             raise ValueError(f'The picture index starts at 1, got {picture_id}')
+        self._send_picture(picture_id, caption, conversation)
+
+    @action(chat_state)
+    def _send_picture(self, picture_id: int, caption: str, conversation: str) -> None:
         self.driver.click(CHAT_ATTACHMENTS_BUTTON)
         if not self.driver.is_present(ATTACHMENTS_MEDIA_STRIP, self.driver.implicit_wait) and \
                 self.driver.is_present(ATTACHMENTS_ATTACH_PHOTOS_BUTTON):
@@ -143,7 +147,6 @@ class Slack(StateGraph):
             self.driver.send_keys(CHAT_TEXT_INPUT, caption)
         self.driver.click(CHAT_SEND_BUTTON)
 
-    @action(chat_state)
     def get_messages(self, conversation: str = None, message_count: int = None) -> list[Message]:
         """
         Returns the messages in the current or selected conversation, oldest first.
@@ -162,8 +165,13 @@ class Slack(StateGraph):
         are returned. By default, all messages are returned.
         :return: The messages, with their sender, time, text and attachments.
         """
+        # checked before the action, which would navigate and retry on the error
         if message_count is not None and message_count < 1:
             raise ValueError(f'The message count should be at least 1, got {message_count}')
+        return self._get_messages(conversation, message_count)
+
+    @action(chat_state)
+    def _get_messages(self, conversation: str, message_count: int) -> list[Message]:
         # Slack shows relative dates ('Today') and dates without a year in the time zone of the device
         now = datetime.fromisoformat(self.driver.driver.get_device_time('YYYY-MM-DDTHH:mm:ss'))
         # The keyboard takes up half of the conversation

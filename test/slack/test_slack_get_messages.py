@@ -169,9 +169,22 @@ class TestSlackGetMessages(unittest.TestCase):
         self.assertEqual(self.expected, self.slack.get_messages(message_count=len(self.expected)))
 
     def test_invalid_message_count(self):
+        self.slack.go_to_state = Mock()
+        self.slack.recover_state = Mock()
         for message_count in (0, -1):
             with self.assertRaises(ValueError):
                 self.slack.get_messages(message_count=message_count)
+        # the argument is checked before navigating
+        self.slack.go_to_state.assert_not_called()
+        self.slack.recover_state.assert_not_called()
+
+    def test_invalid_picture_id(self):
+        self.slack.go_to_state = Mock()
+        self.slack.recover_state = Mock()
+        with self.assertRaises(ValueError):
+            self.slack.send_picture(picture_id=0)
+        self.slack.go_to_state.assert_not_called()
+        self.slack.recover_state.assert_not_called()
 
     def test_keyboard_is_closed_before_collecting_messages(self):
         # the keyboard takes up half of the conversation, e.g. after sending a message
