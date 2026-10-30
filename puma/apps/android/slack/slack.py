@@ -11,6 +11,7 @@ from puma.apps.android.slack.xpaths import HOME_HISTORY_BUTTON, HOME_WORKSPACE_S
     ATTACHMENTS_UPLOAD_FILE_BUTTON, ATTACHMENTS_ATTACH_PHOTOS_BUTTON, ATTACHMENTS_MEDIA_STRIP, ATTACHMENTS_PICTURES, \
     ATTACHMENTS_PICTURE, ATTACHMENTS_DONE_BUTTON, CHAT_MESSAGES_LIST, CHAT_BEGINNING_OF_CONVERSATION
 from puma.state_graph.action import action
+from puma.state_graph.locators import xpath_quoted
 from puma.state_graph.puma_driver import PumaDriver, PumaClickException, supported_version, Platform
 from puma.state_graph.state import SimpleState, ContextualState, State
 from puma.state_graph.state_graph import StateGraph
@@ -32,9 +33,6 @@ def parse_conversation(conversation: str) -> tuple[bool, str]:
         else conversation
     if not name:
         raise ValueError(f"'{conversation}' is not the name of a channel or direct message conversation")
-    # the name is inserted in a double-quoted string in the XPaths
-    if '"' in name:
-        raise ValueError(f"Names with a double quote are not supported: '{conversation}'")
     return conversation.startswith(CHANNEL_PREFIX), name
 
 
@@ -58,18 +56,19 @@ class SlackChatState(SimpleState, ContextualState):
     def validate_context(self, driver: PumaDriver, conversation: str = None) -> bool:
         if conversation:
             is_channel, name = parse_conversation(conversation)
-            # a channel and a direct message conversation can have the same name, only a channel shows its members
-            return driver.is_present(CHAT_TITLE.format(chat_title=name)) \
-                and driver.is_present(CHAT_MEMBER_COUNT) == is_channel
+            # a channel and a direct message conversation can have the same name, only a channel shows its members,
+            # which can appear a moment after the title
+            return driver.is_present(CHAT_TITLE.format(chat_title=xpath_quoted(name))) \
+                and driver.is_present(CHAT_MEMBER_COUNT, driver.implicit_wait if is_channel else 0) == is_channel
         return True
 
     @staticmethod
     def go_to_chat(driver: PumaDriver, conversation: str = None) -> None:
         is_channel, name = parse_conversation(conversation)
         if is_channel:
-            chat_xpath = HOME_CHANNEL_BUTTON.format(channel_name=name)
+            chat_xpath = HOME_CHANNEL_BUTTON.format(channel_name=xpath_quoted(name))
         else:
-            chat_xpath = HOME_DIRECT_MESSAGE_BUTTON.format(direct_message=name)
+            chat_xpath = HOME_DIRECT_MESSAGE_BUTTON.format(direct_message=xpath_quoted(name))
         # The home screen might still be scrolled from an earlier visit, so search down first and then back up
         try:
             driver.swipe_to_find_element(chat_xpath, max_swipes=20, swipe_down=True)

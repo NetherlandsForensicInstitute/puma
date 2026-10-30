@@ -80,9 +80,7 @@ class TestParseConversation(unittest.TestCase):
                 parse_conversation(conversation)
 
     def test_name_with_double_quote(self):
-        # the name is inserted in a double-quoted string in the XPaths
-        with self.assertRaises(ValueError):
-            parse_conversation('@Bob "The Builder"')
+        self.assertEqual((False, 'Bob "The Builder"'), parse_conversation('@Bob "The Builder"'))
 
 
 class TestSlackNavigation(unittest.TestCase):
