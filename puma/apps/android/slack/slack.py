@@ -1,15 +1,17 @@
 import csv
+import re
 import time
 from typing import Callable
 from dataclasses import astuple, fields
 from datetime import datetime
+from xml.etree import ElementTree
 
-from puma.apps.android.slack.message_parser import Message, parse_messages, merge_messages, to_iso_time
+from puma.apps.android.slack.message_parser import Message, parse_messages, new_items, to_iso_time
 from puma.apps.android.slack.xpaths import HOME_HISTORY_BUTTON, HOME_WORKSPACE_SELECTOR, HOME_CHANNEL_BUTTON, \
     CHAT_TITLE, CHAT_MEMBER_COUNT, \
     CHAT_BACK_BUTTON, CHAT_TEXT_INPUT, HOME_DIRECT_MESSAGE_BUTTON, CHAT_ATTACHMENTS_BUTTON, CHAT_SEND_BUTTON, \
     ATTACHMENTS_UPLOAD_FILE_BUTTON, ATTACHMENTS_ATTACH_PHOTOS_BUTTON, ATTACHMENTS_MEDIA_STRIP, ATTACHMENTS_PICTURES, \
-    ATTACHMENTS_PICTURE, ATTACHMENTS_DONE_BUTTON, CHAT_MESSAGES_LIST, CHAT_BEGINNING_OF_CONVERSATION
+    ATTACHMENTS_MEDIA_STRIP_ID, ATTACHMENTS_DONE_BUTTON, CHAT_MESSAGES_LIST, CHAT_BEGINNING_OF_CONVERSATION
 from puma.state_graph.action import action
 from puma.state_graph.locators import xpath_quoted
 from puma.state_graph.puma_driver import PumaDriver, PumaClickException, supported_version, Platform
@@ -177,22 +179,30 @@ class Slack(StateGraph):
         # The keyboard takes up half of the conversation
         self.driver.close_keyboard()
         messages = []
+        messages_list = self.driver.get_element(CHAT_MESSAGES_LIST).rect
+        visible = messages_list['y'], messages_list['y'] + messages_list['height']
+        # the last screen that showed messages, and the distance swiped since
+        previous_screen, scrolled = [], 0
 
-        def collect(page_source: str) -> bool:
+        def collect(page_source: str, swiped: int) -> bool:
             """
-            Adds the messages on the current screen above the messages collected so far. Used as the stop condition
+            Adds the new messages on the current screen above the messages collected so far. Used as the stop condition
             while swiping up: it returns True when enough messages are collected, and the sender of the first of
             these is shown. The sender of a message without a header is the sender of a message above it.
             """
-            nonlocal messages
-            messages = merge_messages(parse_messages(page_source), messages)
+            nonlocal messages, previous_screen, scrolled
+            scrolled += swiped
+            screen = parse_messages(page_source)
+            if screen:
+                messages = [message for *_, message in new_items(previous_screen, screen, scrolled, visible)] + messages
+                previous_screen, scrolled = screen, 0
             if message_count is None:
                 return False
             first_message = len(messages) - message_count
             return first_message >= 0 and any(message.sender for message in messages[:first_message + 1])
 
         # The conversation is not always at the end, e.g. when it has unread messages
-        self._swipe_messages_list(up=False, until=lambda _: False)
+        self._swipe_messages_list(up=False, until=lambda *_: False)
         enough_messages = self._swipe_messages_list(up=True, slow=True, until=collect)
         if not enough_messages and not self.driver.is_present(CHAT_BEGINNING_OF_CONVERSATION):
             self.gtl_logger.warning('Stopped collecting messages before the beginning of the conversation was reached, '
@@ -233,14 +243,14 @@ class Slack(StateGraph):
             writer.writerows(astuple(message) for message in messages)
         self.gtl_logger.info(f'Exported {len(messages)} messages to {file_path}')
 
-    def _swipe_messages_list(self, up: bool, until: Callable[[str], bool], slow: bool = False,
+    def _swipe_messages_list(self, up: bool, until: Callable[[str, int], bool], slow: bool = False,
                              max_swipes: int = 500) -> bool:
         """
         Swipes the messages list up or down until the given condition holds, or until the end of the list is reached.
 
         :param up: True to swipe towards older messages, False to swipe towards newer messages.
-        :param until: Function that is called with the page source of each screen, the swiping stops when it returns
-        True.
+        :param until: Function that is called with the page source of each screen and the distance swiped since the
+        previous screen in pixels (0 for the first screen), the swiping stops when it returns True.
         :param slow: True to swipe in short, slow swipes, which is needed when messages are collected while swiping.
         :param max_swipes: The maximum number of swipes.
         :return: True if the condition holds, False if the end of the list or the maximum number of swipes was reached
@@ -262,9 +272,11 @@ class Slack(StateGraph):
         start_y = messages_list['y'] + messages_list['height'] * start
         end_y = messages_list['y'] + messages_list['height'] * end
         page_source = self.driver.driver.page_source
+        swiped = 0
         for _ in range(max_swipes):
-            if until(page_source):
+            if until(page_source, swiped):
                 return True
+            swiped = round(abs(end_y - start_y))
             self.driver.driver.swipe(x, start_y, x, end_y, duration)
             time.sleep(0.5)
             new_page_source = self.driver.driver.page_source
@@ -287,18 +299,43 @@ class Slack(StateGraph):
         :param picture_index: The index of the picture, 1 being the most recent picture on the device.
         :return: The XPath of the picture.
         """
-        seen_pictures = []
+        strip = self.driver.get_element(ATTACHMENTS_MEDIA_STRIP).rect
+        y = strip['y'] + strip['height'] / 2
+        # Short, slow swipes, so the strip stops when the swipe ends and moves as far as the swipe
+        start_x, end_x = strip['x'] + strip['width'] * 0.65, strip['x'] + strip['width'] * 0.35
+        strip_left, strip_right = strip['x'], strip['x'] + strip['width']
+        found, previous_screen, scrolled = 0, [], 0
         while True:
-            pictures = [element.get_attribute('content-desc')
-                        for element in self.driver.get_elements(ATTACHMENTS_PICTURES)]
-            new_pictures = [picture for picture in pictures if picture not in seen_pictures]
+            pictures = _pictures_in_strip(self.driver.driver.page_source)
+            # Pictures are told apart by their position, as pictures can have the same description. Only completely
+            # shown pictures are counted, as the position of a partly shown picture is cut off.
+            shown = [index for index, (left, right, _) in enumerate(pictures)
+                     if strip_left < left and right < strip_right]
+            # The strip scrolls to the left and shows new pictures on the right, while new_items expects them at low
+            # positions: the positions are mirrored
+            screen = [(-pictures[index][1], -pictures[index][0], pictures[index][2]) for index in reversed(shown)]
+            new_pictures = len(new_items(previous_screen, screen, scrolled, (-strip_right, -strip_left))) \
+                if screen else 0
             if not new_pictures:
-                raise PumaClickException(f'Could not find picture {picture_index}, '
-                                         f'only {len(seen_pictures)} pictures were found')
-            seen_pictures += new_pictures
-            if len(seen_pictures) >= picture_index:
-                return ATTACHMENTS_PICTURE.format(content_desc=seen_pictures[picture_index - 1])
-            strip = self.driver.get_element(ATTACHMENTS_MEDIA_STRIP).rect
-            y = strip['y'] + strip['height'] / 2
-            self.driver.driver.swipe(strip['x'] + strip['width'] * 0.8, y, strip['x'] + strip['width'] * 0.2, y, 500)
+                raise PumaClickException(f'Could not find picture {picture_index}, only {found} pictures were found')
+            if found + new_pictures >= picture_index:
+                # the new pictures are the last completely shown pictures
+                index = shown[len(shown) - new_pictures + picture_index - found - 1]
+                return f'({ATTACHMENTS_PICTURES})[{index + 1}]'
+            found += new_pictures
+            previous_screen, scrolled = screen, round(start_x - end_x)
+            self.driver.driver.swipe(start_x, y, end_x, y, 1500)
+            time.sleep(0.5)
+
+
+def _pictures_in_strip(page_source: str) -> list[tuple[int, int, str]]:
+    """
+    The pictures in the media strip of the attachments menu, from left to right, as (left, right, description) triples.
+    """
+    strip = next((element for element in ElementTree.fromstring(page_source).iter()
+                  if element.get('resource-id') == ATTACHMENTS_MEDIA_STRIP_ID), None)
+    if strip is None:
+        return []
+    return [(*(int(value) for value in re.findall(r'\d+', picture.get('bounds'))[::2]), picture.get('content-desc'))
+            for picture in strip if (picture.get('content-desc') or '').startswith('Photo, ')]
 

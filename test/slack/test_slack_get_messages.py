@@ -13,6 +13,8 @@ LIST_TOP, LIST_BOTTOM = 265, 2174
 LIST_HEIGHT = LIST_BOTTOM - LIST_TOP
 # Space above the first and below the last message, as in Slack
 PADDING = 100
+# How much less the list scrolls than a swipe, about what was measured on a device
+TOUCH_SLOP = 10
 
 
 class FakeConversation:
@@ -46,7 +48,10 @@ class FakeConversation:
         return _page(*elements)
 
     def swipe(self, start_x, start_y, end_x, end_y, duration):
-        self.offset = min(self.max_offset, max(self.min_offset, self.offset + round(start_y - end_y)))
+        # the list scrolls a little less than the swipe, as on a device
+        distance = round(start_y - end_y)
+        distance -= TOUCH_SLOP if distance > 0 else -TOUCH_SLOP
+        self.offset = min(self.max_offset, max(self.min_offset, self.offset + distance))
         self.lowest_offset = min(self.lowest_offset, self.offset)
 
     def is_present(self, xpath, *args, **kwargs) -> bool:
@@ -199,6 +204,27 @@ class TestSlackGetMessages(unittest.TestCase):
         self.conversation.swipe = count_swipes
         self.assertEqual(self.expected[-1:], self.slack.get_messages(message_count=1))
         self.slack.driver.close_keyboard.assert_called_once_with()
+
+    # Identical messages
+
+    def test_identical_messages(self):
+        for count, height in ((3, 200), (12, 150), (30, 200)):
+            with self.subTest(count=count, height=height):
+                # a run of identical messages, which can be longer than a screen and is cut at the border of the screen.
+                # The conversation starts with a screen of other messages, see the limit in new_items.
+                first = [('Alice', 'Today at 9:00 AM', 'first', 300)] + [(None, None, f'message {index}', 300)
+                                                                          for index in range(8)]
+                shown = first + [(None, None, 'ok', height)] * count + [(None, None, 'last', 300)]
+                messages = _slack_in_conversation(FakeConversation(shown)).get_messages()
+                self.assertEqual([text for _, _, text, _ in first] + ['ok'] * count + ['last'],
+                                 [message.text for message in messages])
+
+    def test_last_identical_messages(self):
+        shown = [('Alice', 'Today at 9:00 AM', 'first', 300)] + [(None, None, 'ok', 200)] * 30
+        # the sender is shown above the run, at the beginning of the conversation
+        messages = _slack_in_conversation(FakeConversation(shown)).get_messages(message_count=20)
+        self.assertEqual(['ok'] * 20, [message.text for message in messages])
+        self.assertEqual(['Alice'] * 20, [message.sender for message in messages])
 
     # The sender of messages without a header
 
