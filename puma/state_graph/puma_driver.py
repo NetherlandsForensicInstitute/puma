@@ -12,6 +12,7 @@ from appium import webdriver
 from appium.options.common import AppiumOptions
 from appium.webdriver import WebElement
 from appium.webdriver.webdriver import WebDriver
+from selenium.common.exceptions import WebDriverException
 from selenium.webdriver import ActionChains
 from urllib3.exceptions import MaxRetryError
 
@@ -429,7 +430,8 @@ class PumaDriver:
         self.driver.swipe(start_x, start_y, start_x, end_y, 500)
         time.sleep(0.5)
 
-    def swipe_to_find_element(self, xpath: str, max_swipes: int = 10, swipe_down: bool = True):
+    def swipe_to_find_element(self, xpath: str, max_swipes: int = 10, swipe_down: bool = True,
+                              stop_at_end: bool = False):
         """
         Swipes up or down to find an element specified by its XPath. This is necessary when the element you want to click on
         is out of view.
@@ -437,17 +439,31 @@ class PumaDriver:
         :param xpath: The XPath (or Locator) of the element to find.
         :param max_swipes: The maximum number of swipe attempts to find the element.
         :param swipe_down: If the element can be found below, True, otherwise False.
-        :raises PumaClickException: If the element cannot be found after the maximum number of swipes.
+        :param stop_at_end: Whether to stop when a swipe no longer changes the screen, as the end of the view has been
+        reached. This costs a page source per swipe, and can stop too early when the view is still loading.
+        :raises PumaClickException: If the element cannot be found after the maximum number of swipes, or after reaching
+        the end of the view.
         """
+        page_source = None
         for attempt in range(max_swipes):
             if self.is_present(xpath):
                 return self.get_element(xpath)
+            self.gtl_logger.warning(f"Attempt {attempt + 1}: Element not found, swiping")
+            if stop_at_end:
+                # the page source after the previous swipe is reused, so each swipe needs only one
+                page_source = page_source or self.driver.page_source
+            if swipe_down:
+                self._scroll_down()
             else:
-                self.gtl_logger.warning(f"Attempt {attempt + 1}: Element not found, swiping")
-                if swipe_down:
-                    self._scroll_down()
-                else:
-                    self._scroll_up()
+                self._scroll_up()
+            if stop_at_end:
+                new_page_source = self.driver.page_source
+                if new_page_source == page_source:
+                    if self.is_present(xpath):
+                        return self.get_element(xpath)
+                    raise PumaClickException(f'Reached the end of the view after {attempt + 1} swipes, '
+                                             f'cannot find element with xpath {xpath}')
+                page_source = new_page_source
         raise PumaClickException(f'After {max_swipes} swipes, cannot find element with xpath {xpath}')
 
     def swipe_to_find_elements(self, xpath: str, num_swipes: int = 10):
@@ -530,6 +546,25 @@ class PumaDriver:
             return True
         except TimeoutError:
             return False
+
+    def close_keyboard(self, timeout: float = 5) -> bool:
+        """
+        Closes the on-screen keyboard if it is shown, and waits until it is hidden. Nothing is done when the keyboard is
+        not shown.
+
+        :param timeout: The maximum time to wait until the keyboard is hidden, in seconds.
+        :return: True if the keyboard is hidden, False if it could not be closed or the timeout was reached.
+        """
+        if not self.is_keyboard_shown():
+            return True
+        self.gtl_logger.info('Closing the on-screen keyboard')
+        try:
+            self.driver.hide_keyboard()
+        except WebDriverException as e:
+            # e.g. on iOS, a keyboard without a key to dismiss it, such as the number pad
+            self.gtl_logger.warning(f'Could not close the on-screen keyboard: {e.msg}')
+            return False
+        return self.wait_until_keyboard_shown(shown=False, timeout=timeout)
 
     @abstractmethod
     def press_enter(self):

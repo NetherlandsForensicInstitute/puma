@@ -13,7 +13,7 @@ from puma.state_graph.android_driver import AndroidPumaDriver
 from puma.state_graph.ios_driver import IOSPumaDriver
 from puma.state_graph.locators import Locator, accessibility_id, ios_predicate, ios_class_chain, to_by_value
 from puma.state_graph.popup_handler import IOSAlertHandler, known_popups_for, known_android_popups, known_ios_popups
-from puma.state_graph.puma_driver import PumaDriver, Platform
+from puma.state_graph.puma_driver import PumaDriver, PumaClickException, Platform
 from puma.state_graph.state import SimpleState
 from puma.state_graph.state_graph import StateGraph, StateGraphMeta
 from puma.state_graph.utils import is_valid_bundle_id, is_valid_app_id
@@ -228,6 +228,27 @@ class TestPumaDriverWait(unittest.TestCase):
         self.assertFalse(self.driver.wait_until_locators(present=['//one'], not_present=['//two'], timeout=0))
 
 
+class TestPumaDriverSwipeToFindElement(unittest.TestCase):
+    def setUp(self):
+        self.appium_driver = _mock_appium_driver()
+        # the element is never found and the screen never changes, e.g. while older messages are loading
+        self.appium_driver.find_elements.return_value = []
+        self.appium_driver.page_source = '<hierarchy/>'
+        self.driver = _create_driver(Platform.ANDROID, self.appium_driver)
+        self.driver.gtl_logger = Mock()
+        self.driver._scroll_down = Mock()
+
+    def test_keeps_swiping_by_default(self):
+        with self.assertRaises(PumaClickException):
+            self.driver.swipe_to_find_element('//missing', max_swipes=5)
+        self.assertEqual(5, self.driver._scroll_down.call_count)
+
+    def test_stops_at_the_end_when_asked(self):
+        with self.assertRaises(PumaClickException):
+            self.driver.swipe_to_find_element('//missing', max_swipes=5, stop_at_end=True)
+        self.assertEqual(1, self.driver._scroll_down.call_count)
+
+
 class TestPumaDriverKeyboard(unittest.TestCase):
     def test_is_keyboard_shown_on_both_platforms(self):
         for platform in Platform:
@@ -240,6 +261,32 @@ class TestPumaDriverKeyboard(unittest.TestCase):
         appium_driver = _mock_appium_driver()
         appium_driver.is_keyboard_shown.side_effect = [False, True]
         self.assertTrue(_create_driver(Platform.ANDROID, appium_driver).wait_until_keyboard_shown(timeout=5))
+
+    def test_close_keyboard_on_both_platforms(self):
+        for platform in Platform:
+            with self.subTest(platform=platform):
+                appium_driver = _mock_appium_driver()
+                appium_driver.is_keyboard_shown.side_effect = [True, False]
+                self.assertTrue(_create_driver(platform, appium_driver).close_keyboard(timeout=5))
+                appium_driver.hide_keyboard.assert_called_once_with()
+
+    def test_close_keyboard_when_keyboard_is_not_shown(self):
+        appium_driver = _mock_appium_driver()
+        appium_driver.is_keyboard_shown.return_value = False
+        self.assertTrue(_create_driver(Platform.ANDROID, appium_driver).close_keyboard())
+        appium_driver.hide_keyboard.assert_not_called()
+
+    def test_close_keyboard_times_out(self):
+        appium_driver = _mock_appium_driver()
+        appium_driver.is_keyboard_shown.return_value = True
+        self.assertFalse(_create_driver(Platform.ANDROID, appium_driver).close_keyboard(timeout=0))
+
+    def test_close_keyboard_that_cannot_be_dismissed(self):
+        # e.g. the number pad on iOS, which has no key to dismiss it
+        appium_driver = _mock_appium_driver()
+        appium_driver.is_keyboard_shown.return_value = True
+        appium_driver.hide_keyboard.side_effect = WebDriverException('Did not know how to dismiss the keyboard')
+        self.assertFalse(_create_driver(Platform.IOS, appium_driver).close_keyboard())
 
     def test_wait_until_keyboard_hidden(self):
         appium_driver = _mock_appium_driver()
