@@ -6,7 +6,7 @@ from datetime import datetime
 
 from puma.apps.android.slack.message_parser import Message, parse_messages, merge_messages, to_iso_time
 from puma.apps.android.slack.xpaths import HOME_HISTORY_BUTTON, HOME_WORKSPACE_SELECTOR, HOME_CHANNEL_BUTTON, \
-    CHAT_TITLE, \
+    CHAT_TITLE, CHAT_MEMBER_COUNT, \
     CHAT_BACK_BUTTON, CHAT_TEXT_INPUT, HOME_DIRECT_MESSAGE_BUTTON, CHAT_ATTACHMENTS_BUTTON, CHAT_SEND_BUTTON, \
     ATTACHMENTS_UPLOAD_FILE_BUTTON, ATTACHMENTS_ATTACH_PHOTOS_BUTTON, ATTACHMENTS_MEDIA_STRIP, ATTACHMENTS_PICTURES, \
     ATTACHMENTS_PICTURE, ATTACHMENTS_DONE_BUTTON, CHAT_MESSAGES_LIST, CHAT_BEGINNING_OF_CONVERSATION
@@ -57,9 +57,10 @@ class SlackChatState(SimpleState, ContextualState):
 
     def validate_context(self, driver: PumaDriver, conversation: str = None) -> bool:
         if conversation:
-            # The title does not show whether the conversation is a channel or a direct message conversation
-            _, name = parse_conversation(conversation)
-            return driver.is_present(CHAT_TITLE.format(chat_title=name))
+            is_channel, name = parse_conversation(conversation)
+            # a channel and a direct message conversation can have the same name, only a channel shows its members
+            return driver.is_present(CHAT_TITLE.format(chat_title=name)) \
+                and driver.is_present(CHAT_MEMBER_COUNT) == is_channel
         return True
 
     @staticmethod

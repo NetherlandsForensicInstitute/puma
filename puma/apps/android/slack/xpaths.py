@@ -12,6 +12,8 @@ HOME_DIRECT_MESSAGE_BUTTON = f'//android.view.ViewGroup[@resource-id="com.Slack:
 
 # Channel state
 CHAT_TITLE = f'//android.view.ViewGroup[@resource-id="com.Slack:id/toolbar_compose"]//android.widget.TextView[lower-case(translate(@text, {_XPATH_ZERO_WIDTH_SPACE}, ""))=lower-case("{{chat_title}}")]'
+# Only a channel shows its number of members in the toolbar, e.g. '9 members • 2 tabs', a direct message conversation does not
+CHAT_MEMBER_COUNT = '//android.view.ViewGroup[@resource-id="com.Slack:id/toolbar_compose"]//android.view.View[contains(@content-desc, " member")]'
 CHAT_BACK_BUTTON = '//android.view.ViewGroup[@resource-id="com.Slack:id/toolbar_compose"]//android.view.View[lower-case(@content-desc)="back"]'
 CHAT_TEXT_INPUT = '//android.widget.FrameLayout[@resource-id="com.Slack:id/advanced_message_input_container"]//android.widget.MultiAutoCompleteTextView'
 CHAT_ATTACHMENTS_BUTTON = '//android.widget.FrameLayout[@resource-id="com.Slack:id/advanced_message_input_container"]//android.view.View[@content-desc="Attachments"]'

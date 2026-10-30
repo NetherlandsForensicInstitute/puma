@@ -3,7 +3,7 @@ import unittest
 
 from puma.apps.android.slack.slack import Slack, parse_conversation
 from puma.apps.android.slack.xpaths import HOME_HISTORY_BUTTON, HOME_WORKSPACE_SELECTOR, HOME_CHANNEL_BUTTON, \
-    HOME_DIRECT_MESSAGE_BUTTON, CHAT_BACK_BUTTON, CHAT_TEXT_INPUT, CHAT_TITLE
+    HOME_DIRECT_MESSAGE_BUTTON, CHAT_BACK_BUTTON, CHAT_TEXT_INPUT, CHAT_TITLE, CHAT_MEMBER_COUNT
 from . import slack_without_device
 
 # A workspace with a channel and a direct message conversation that have the same name
@@ -26,6 +26,9 @@ class FakeSlackScreen:
             return self.state == 'home'
         if xpath in (CHAT_BACK_BUTTON, CHAT_TEXT_INPUT):
             return self.state == 'chat'
+        if xpath == CHAT_MEMBER_COUNT:
+            # only a channel shows its number of members
+            return self.state == 'chat' and self.conversation.startswith('#')
         if self.state == 'chat':
             # the title does not show whether the conversation is a channel
             return xpath.lower() == CHAT_TITLE.format(chat_title=self.conversation[1:]).lower()
@@ -105,6 +108,12 @@ class TestSlackNavigation(unittest.TestCase):
     def test_without_prefix_opens_the_direct_message_conversation(self):
         # there is a channel #bob and a direct message conversation with Bob
         self.assertEqual('@Bob', self._send('a', conversation='bob'))
+
+    def test_channel_and_direct_message_with_the_same_name(self):
+        # the title is the same, the channel is told apart by its number of members
+        self.assertEqual('#bob', self._send('a', conversation='#bob'))
+        self.assertEqual('@Bob', self._send('b', conversation='@Bob'))
+        self.assertEqual('#bob', self._send('c', conversation='#bob'))
 
     def test_without_conversation_stays_in_the_current_conversation(self):
         self.assertEqual('#general', self._send('a', conversation='#general'))
