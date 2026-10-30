@@ -8,6 +8,9 @@ from puma.state_graph.puma_driver import PumaDriver, Platform, AppVersionUnavail
     KEYCODE_BACKSPACE, KEYCODE_LEFT_ARROW
 from puma.state_graph.utils import is_valid_package_name
 
+# The service of Appium Settings that spoofs the location on real devices
+APPIUM_LOCATION_SERVICE = 'io.appium.settings/.LocationService'
+
 
 def get_android_default_options() -> UiAutomator2Options:
     """
@@ -114,6 +117,16 @@ class AndroidPumaDriver(PumaDriver):
         """
         self.gtl_logger.info('Opening notifications panel')
         self.driver.open_notifications()
+
+    def reset_location(self):
+        """
+        Stops spoofing the location, so the device reports its real location again. On an emulator the spoofed
+        location stays, as an emulator has no real location.
+        """
+        self.gtl_logger.info('Resetting the location of the device to its real location')
+        # Appium spoofs the location with a service of its settings app. Stopping that service removes the spoofed
+        # location. 'mobile: resetGeolocation' is not used: in appium-android-driver 13.0.0 it does nothing.
+        self.adb.shell(f'am stopservice {APPIUM_LOCATION_SERVICE}')
 
     def start_recording(self, output_directory: str):
         """

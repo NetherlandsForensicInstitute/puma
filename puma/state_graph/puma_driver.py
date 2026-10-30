@@ -1,4 +1,5 @@
 import os
+import threading
 import time
 from abc import abstractmethod
 from datetime import datetime
@@ -12,6 +13,7 @@ from appium import webdriver
 from appium.options.common import AppiumOptions
 from appium.webdriver import WebElement
 from appium.webdriver.webdriver import WebDriver
+from geopy import Point
 from selenium.webdriver import ActionChains
 from urllib3.exceptions import MaxRetryError
 
@@ -21,6 +23,7 @@ from puma.state_graph import logger
 from puma.state_graph.locators import to_by_value
 from puma.utils import CACHE_FOLDER
 from puma.utils.gtl_logging import create_gtl_logger
+from puma.utils.route_simulator import RouteSimulator, plan_route, read_gpx
 from puma.utils.wait import wait_until
 
 # Android keycode constants, found at https://developer.android.com/reference/android/view/KeyEvent
@@ -78,6 +81,19 @@ def _get_appium_driver(appium_server: str, udid: str, options) -> WebDriver:
                        'rewrite your Puma code to ensure the correct capabilities are loaded the first time you connect to '
                        f'server {appium_server} and device {udid}.')
     return __drivers[key]
+
+# The route each device is traveling, by udid. One per device, also when several PumaDrivers use the device.
+_routes: dict[str, RouteSimulator] = {}
+_routes_lock = threading.Lock()
+
+
+def _describe_variance(variance_absolute: float, variance_relative: float) -> str:
+    if variance_absolute:
+        return f' +/- {variance_absolute} km/h'
+    if variance_relative:
+        return f' +/- {variance_relative:.0%}'
+    return ''
+
 
 def supported_version(version: str):
     def decorator(class_or_function):
@@ -660,6 +676,146 @@ class PumaDriver:
 
     def execute_script(self, script: str, *args):
         return self.driver.execute_script(script, *args)
+
+    def set_location(self, latitude: float, longitude: float, altitude: float = None, speed: float = None):
+        """
+        Spoofs the location of the device. This is not written to the ground truth log, as routes call it every second;
+        the start_route_... methods log the route instead.
+
+        :param latitude: The latitude in degrees.
+        :param longitude: The longitude in degrees.
+        :param altitude: (optional) The altitude in meters.
+        :param speed: (optional) The speed in km/h.
+        """
+        # 5 satellites: the number of satellites Android reports for the location
+        self.driver.set_location(latitude, longitude, altitude, speed, 5)
+
+    @abstractmethod
+    def reset_location(self):
+        """
+        Stops spoofing the location, so the device reports its real location again.
+        """
+        pass
+
+    def start_route_with_points(self, points: list[Point], speed: float, variance_absolute: float = 0,
+                                variance_relative: float = 0.0):
+        """
+        Spoofs the location of the device along a route: the device moves to the first point, then travels along the
+        other points at the given speed. Returns right away; the route is traveled in the background. A device can
+        travel only one route at a time: stop the running route first (stop_route()).
+
+        :param points: The points of the route.
+        :param speed: The (average) speed in km/h. Use 0 to stand still at the start, and update_route_speed() to start
+        moving.
+        :param variance_absolute: (optional) The absolute variance in speed, see update_route_speed().
+        :param variance_relative: (optional) The relative variance in speed, see update_route_speed().
+        """
+        self._start_route(points, f'{len(points)} points', speed, variance_absolute, variance_relative)
+
+    def start_route_with_gpx(self, gpx_file: str, speed: float, variance_absolute: float = 0,
+                             variance_relative: float = 0.0):
+        """
+        Spoofs the location of the device along the route in a gpx file. See start_route_with_points().
+
+        :param gpx_file: Path to a gpx file defining the route to travel.
+        :param speed: The (average) speed in km/h.
+        :param variance_absolute: (optional) The absolute variance in speed, see update_route_speed().
+        :param variance_relative: (optional) The relative variance in speed, see update_route_speed().
+        """
+        self._start_route(read_gpx(gpx_file), f'gpx file {gpx_file}', speed, variance_absolute, variance_relative)
+
+    def start_route_with_queries(self, from_query: str, to_query: str, transport_mode: str, speed: float,
+                                 variance_absolute: float = 0, variance_relative: float = 0.0):
+        """
+        Spoofs the location of the device along a route between two places. The places are looked up and the route is
+        planned with OpenStreetMap, so the route can differ from the route a navigation app shows.
+        See start_route_with_points().
+
+        :param from_query: The place to start from, e.g. 'Louvre, Paris'.
+        :param to_query: The destination, e.g. 'Eiffel Tower, Paris'.
+        :param transport_mode: The mode of transportation: 'car', 'foot' or 'bike'.
+        :param speed: The (average) speed in km/h.
+        :param variance_absolute: (optional) The absolute variance in speed, see update_route_speed().
+        :param variance_relative: (optional) The relative variance in speed, see update_route_speed().
+        """
+        self._check_no_route_running()  # fail before planning, which takes a while
+        self._start_route(plan_route(from_query, to_query, transport_mode),
+                          f'{from_query} to {to_query} by {transport_mode}', speed, variance_absolute, variance_relative)
+
+    def update_route_speed(self, speed: float, variance_absolute: float = 0, variance_relative: float = 0.0):
+        """
+        Changes the speed of the route that is being traveled. Optionally, the speed varies around the given speed.
+
+        :param speed: The (average) speed in km/h. 0 makes a stop.
+        :param variance_absolute: (optional) The absolute variance in speed. A value of 5 means the speed will vary
+        between -5 km/h and +5 km/h of the given speed.
+        :param variance_relative: (optional) The relative variance in speed. A value of 0.05 means the speed will vary
+        between 95% and 105% of the given speed.
+        """
+        route = self._route()
+        if route is None:
+            raise RuntimeError('No route is being traveled. Start one with one of the start_route_... methods')
+        self.gtl_logger.info(f'Changing the speed of the route to {speed} km/h'
+                             f'{_describe_variance(variance_absolute, variance_relative)}')
+        route.update_speed(speed, variance_absolute, variance_relative)
+
+    def is_route_finished(self) -> bool:
+        """
+        :return: True if no route is being traveled: the end of the route has been reached, the route was stopped, or
+        no route was started. After reaching the end, the device stays at the last location until stop_route().
+        """
+        route = self._route()
+        return route is None or route.is_route_finished()
+
+    def wait_until_route_finished(self, timeout: float = None) -> bool:
+        """
+        Waits until the end of the route has been reached.
+
+        :param timeout: (optional) The maximum number of seconds to wait. By default, waits until the route is finished.
+        :return: True if the route is finished, False if the timeout expired first.
+        """
+        route = self._route()
+        return route is None or route.wait_until_route_finished(timeout)
+
+    def stop_route(self, reset_location: bool = True):
+        """
+        Stops traveling the route. The route cannot be resumed; to pause, set the speed to 0 (update_route_speed()).
+
+        :param reset_location: (optional) Whether to reset the location of the device to its real location. When False,
+        the device stays at the spoofed location it last had.
+        """
+        with _routes_lock:
+            route = _routes.pop(self.options.udid, None)
+        if route is not None:
+            self.gtl_logger.info('Stopping the spoofed route')
+            route.stop_route()
+        if reset_location:
+            self.reset_location()
+
+    def _route(self) -> RouteSimulator | None:
+        return _routes.get(self.options.udid)
+
+    def _check_no_route_running(self):
+        if not self.is_route_finished():
+            raise RuntimeError(f'Device {self.options.udid} is already traveling a route. Stop it first with '
+                               f'stop_route()')
+
+    def _start_route(self, points: list[Point], description: str, speed: float, variance_absolute: float,
+                     variance_relative: float):
+        # keyed on the device, not the driver: drivers of two apps on one device must not run two routes
+        with _routes_lock:
+            self._check_no_route_running()
+            finished = _routes.pop(self.options.udid, None)
+            if finished is not None:
+                finished.stop_route()
+            route = RouteSimulator(self)
+            route.update_speed(speed, variance_absolute, variance_relative)
+            route.execute_route_with_points(points)
+            _routes[self.options.udid] = route
+        start = points[0]
+        self.gtl_logger.info(f'Spoofing the location along a route of {description}, starting at '
+                             f'{start.latitude:.6f}, {start.longitude:.6f}, at {speed} km/h'
+                             f'{_describe_variance(variance_absolute, variance_relative)}')
 
     def __repr__(self):
         """
