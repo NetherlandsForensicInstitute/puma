@@ -18,7 +18,7 @@ These scripts will:
 1. Install ADB and setup the required environmental values
 2. Install NodeJS and Appium
 3. On macOS: install the Appium XCUITest driver and ffmpeg, for iOS support
-4. Install Python 3.12
+4. Install Python 3.12 or newer (3.11+ required)
 5. Install Appium Inspector
 6. Install all requirements in your python virtual environment
 
@@ -47,7 +47,7 @@ iOS devices.
 
 ### Python
 
-Puma is tested on Python 3.10, 3.11 and 3.12. The script will install 3.12 if none of these versions are installed.
+Puma is tested on Python 3.11, 3.12, 3.13 and 3.14. The script will install 3.12 if none of these versions are installed.
 
 ### Appium inspector
 
