@@ -1,3 +1,7 @@
+Unreleased
+----------
+320. Drop support for Python 3.10; require Python >=3.11. Test on 3.11-3.14.
+
 Version 6.1.0
 -------------
 232. Dismiss known pop-ups, such as permission requests, that appear in the middle of an action
