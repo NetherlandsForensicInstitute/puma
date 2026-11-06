@@ -131,7 +131,7 @@ class PumaDriver:
                 raise ValueError(f'A PumaDriver needs a platform, e.g. platform=Platform.ANDROID, got {platform}')
         return super().__new__(cls)
 
-    def __init__(self, udid: str, app_package: str, implicit_wait: int = 1, appium_server: str = 'http://localhost:4723', desired_capabilities: Dict[str, str] = None, platform: Platform = None):
+    def __init__(self, udid: str, app_package: str, implicit_wait: int = 1, appium_server: str = 'http://localhost:4723', desired_capabilities: Dict[str, str] = None, platform: Platform = None, popup_handler: Callable[[], None] = None):
         """
         Initializes the PumaDriver with device and application details.
 
@@ -143,6 +143,7 @@ class PumaDriver:
         :param desired_capabilities: The desired capabilities as passed to the Appium webdriver.
         :param platform: The platform of the device. Only used when instantiating PumaDriver directly, to choose the
         platform specific driver. Mandatory in that case.
+        :param popup_handler: Dismisses known pop-ups. Called once when an element is not found, before trying again.
         """
         self.options = self._default_options()
         self.options.udid = udid
@@ -157,6 +158,7 @@ class PumaDriver:
         self.udid = self.driver.capabilities.get("udid")
         self._screen_recorder_output_directory = None
         self.gtl_logger = create_gtl_logger(udid)
+        self.popup_handler = popup_handler
 
     @property
     def app_id(self) -> str:
@@ -336,7 +338,20 @@ class PumaDriver:
                     location = int(top_left[0] + width_ratio * size[1]), int(top_left[1] + height_ratio * size[0])
                     self.tap(location)
                 return
+            if attempt == 0:
+                self._handle_popups()
         raise PumaClickException(f'Could not click on non present element with xpath {xpath}')
+
+    def _handle_popups(self):
+        # Called once per failed lookup, as it costs a lookup per known pop-up.
+        # Since pop-up handlers can call click(), we prevent a failing pop-up handler from causing an endless loop by
+        # unsetting self.popup_handler while this method runs, restoring it in the finally clause.
+        handler, self.popup_handler = self.popup_handler, None
+        if handler:
+            try:
+                handler()
+            finally:
+                self.popup_handler = handler
 
     def tap(self, coords: tuple[int, int], duration: int = None):
         """
@@ -408,6 +423,8 @@ class PumaDriver:
             if self.is_present(xpath, self.implicit_wait):
                 by, value = to_by_value(xpath)
                 return self.driver.find_element(by=by, value=value)
+            if attempt == 0:
+                self._handle_popups()
         raise PumaClickException(f'Could not find element with xpath {xpath}')
 
     def get_elements(self, xpath: str) -> list[WebElement]:

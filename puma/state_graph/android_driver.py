@@ -1,5 +1,5 @@
 import re
-from typing import Dict
+from typing import Callable, Dict
 
 from appium.options.android import UiAutomator2Options
 from appium.webdriver.extensions.android.nativekey import AndroidKey
@@ -34,7 +34,7 @@ class AndroidPumaDriver(PumaDriver):
     """
     platform = Platform.ANDROID
 
-    def __init__(self, udid: str, app_package: str, implicit_wait: int = 1, appium_server: str = 'http://localhost:4723', desired_capabilities: Dict[str, str] = None, platform: Platform = None):
+    def __init__(self, udid: str, app_package: str, implicit_wait: int = 1, appium_server: str = 'http://localhost:4723', desired_capabilities: Dict[str, str] = None, platform: Platform = None, popup_handler: Callable[[], None] = None):
         """
         Initializes the AndroidPumaDriver with device and application details.
 
@@ -43,8 +43,9 @@ class AndroidPumaDriver(PumaDriver):
         :param implicit_wait: The implicit wait time for element searches, defaults to 1 second.
         :param appium_server: The address of the Appium server, defaults to 'http://localhost:4723'.
         :param desired_capabilities: The desired capabilities as passed to the Appium webdriver.
+        :param popup_handler: Dismisses known pop-ups. Called once when an element is not found, before trying again.
         """
-        super().__init__(udid, app_package, implicit_wait=implicit_wait, appium_server=appium_server, desired_capabilities=desired_capabilities)
+        super().__init__(udid, app_package, implicit_wait=implicit_wait, appium_server=appium_server, desired_capabilities=desired_capabilities, popup_handler=popup_handler)
         # adb_pywrapper is imported here, as importing it logs errors when adb is not installed (e.g. for iOS users)
         from adb_pywrapper.adb_device import AdbDevice
         self.adb = AdbDevice(self.udid)
