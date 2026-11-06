@@ -322,10 +322,12 @@ class PumaDriver:
                     location = int(top_left[0] + width_ratio * size[1]), int(top_left[1] + height_ratio * size[0])
                     self.tap(location)
                 return
-            self._handle_popups()
+            if attempt == 0:
+                self._handle_popups()
         raise PumaClickException(f'Could not click on non present element with xpath {xpath}')
 
     def _handle_popups(self):
+        # Called once per failed lookup, as it costs a lookup per known pop-up.
         # Unset while it runs: dismissing a pop-up clicks too, and must not handle pop-ups again.
         handler, self.popup_handler = self.popup_handler, None
         if handler:
@@ -404,7 +406,8 @@ class PumaDriver:
             if self.is_present(xpath, self.implicit_wait):
                 by, value = to_by_value(xpath)
                 return self.driver.find_element(by=by, value=value)
-            self._handle_popups()
+            if attempt == 0:
+                self._handle_popups()
         raise PumaClickException(f'Could not find element with xpath {xpath}')
 
     def get_elements(self, xpath: str) -> list[WebElement]:

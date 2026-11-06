@@ -244,7 +244,7 @@ class TestPopupsDuringClick(unittest.TestCase):
         driver.popup_handler = lambda: nested.append(driver.popup_handler)
         with self.assertRaises(PumaClickException):
             driver.click('//button')
-        self.assertEqual([None, None, None], nested)
+        self.assertEqual([None], nested)  # once per click, and unset while it runs
         self.assertIsNotNone(driver.popup_handler)
 
 
