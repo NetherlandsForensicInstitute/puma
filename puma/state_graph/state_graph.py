@@ -286,10 +286,9 @@ class StateGraph(metaclass=StateGraphMeta):
         if not is_valid_app_id(app_package, self.platform):
             raise ValueError(f'The provided {"bundle id" if self.platform == Platform.IOS else "package name"} is invalid: {app_package}')
         self.current_state = self.initial_state
-        self.driver = PumaDriver(device_udid, app_package, appium_server=appium_server, desired_capabilities=desired_capabilities, platform=self.platform)
+        self.driver = PumaDriver(device_udid, app_package, appium_server=appium_server, desired_capabilities=desired_capabilities, platform=self.platform,
+                                 popup_handler=self._handle_popups)
         self.app_popups = []
-        # Pop-ups can also appear in the middle of an action, e.g. a permission request after opening the camera.
-        self.driver.popup_handler = self._handle_popups
         self.try_restart = True
         self.gtl_logger = self.driver.gtl_logger
         if check_version:

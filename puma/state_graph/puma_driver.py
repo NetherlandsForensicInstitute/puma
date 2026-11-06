@@ -102,8 +102,6 @@ class PumaDriver:
     locator strategies such as iOS predicate strings.
     """
     platform: Platform = None
-    # Dismisses known pop-ups when an element is not found. Set by the StateGraph that owns this driver.
-    popup_handler: Callable[[], None] = None
 
     def __new__(cls, *args, platform: Platform = None, **kwargs):
         if cls is PumaDriver:
@@ -117,7 +115,7 @@ class PumaDriver:
                 raise ValueError(f'A PumaDriver needs a platform, e.g. platform=Platform.ANDROID, got {platform}')
         return super().__new__(cls)
 
-    def __init__(self, udid: str, app_package: str, implicit_wait: int = 1, appium_server: str = 'http://localhost:4723', desired_capabilities: Dict[str, str] = None, platform: Platform = None):
+    def __init__(self, udid: str, app_package: str, implicit_wait: int = 1, appium_server: str = 'http://localhost:4723', desired_capabilities: Dict[str, str] = None, platform: Platform = None, popup_handler: Callable[[], None] = None):
         """
         Initializes the PumaDriver with device and application details.
 
@@ -129,6 +127,7 @@ class PumaDriver:
         :param desired_capabilities: The desired capabilities as passed to the Appium webdriver.
         :param platform: The platform of the device. Only used when instantiating PumaDriver directly, to choose the
         platform specific driver. Mandatory in that case.
+        :param popup_handler: Dismisses known pop-ups. Called once when an element is not found, before trying again.
         """
         self.options = self._default_options()
         self.options.udid = udid
@@ -143,6 +142,7 @@ class PumaDriver:
         self.udid = self.driver.capabilities.get("udid")
         self._screen_recorder_output_directory = None
         self.gtl_logger = create_gtl_logger(udid)
+        self.popup_handler = popup_handler
 
     @property
     def app_id(self) -> str:
