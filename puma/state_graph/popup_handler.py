@@ -2,6 +2,7 @@ from typing import List
 
 from puma.state_graph.generic_xpaths import APP_STOPPED_POPUP_CLOSE_BUTTON, APP_STOPPED_POPUP_TITLE, \
     APP_UPDATE_POPUP_DISMISS_BUTTON, PERMISSIONS_POPUP_ALLOW_FOREGROUND_BUTTON, PERMISSIONS_POPUP_ALLOW_BUTTON, \
+    PERMISSIONS_POPUP_ALLOW_ALL_BUTTON, \
     IOS_PERMISSION_DENY_BUTTON, IOS_TRACKING_DENY_BUTTON, IOS_PERMISSION_ALLOW_BUTTONS, IOS_ENABLE_DICTATION_BUTTON, \
     IOS_NOT_NOW_BUTTON
 from puma.state_graph.ios_driver import IOSPumaDriver
@@ -92,6 +93,7 @@ class IOSAlertHandler(PopUpHandler):
 known_android_popups = [simple_popup_handler(APP_UPDATE_POPUP_DISMISS_BUTTON),
                         simple_popup_handler(PERMISSIONS_POPUP_ALLOW_FOREGROUND_BUTTON),
                         simple_popup_handler(PERMISSIONS_POPUP_ALLOW_BUTTON),
+                        simple_popup_handler(PERMISSIONS_POPUP_ALLOW_ALL_BUTTON),
                         PopUpHandler([APP_STOPPED_POPUP_TITLE, APP_STOPPED_POPUP_CLOSE_BUTTON],
                                      [APP_STOPPED_POPUP_CLOSE_BUTTON])]
 
