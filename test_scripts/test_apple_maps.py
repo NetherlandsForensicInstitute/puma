@@ -44,7 +44,7 @@ class TestAppleMaps(unittest.TestCase):
         self.assertEqual('1', selected)
 
     def test_start_route(self):
-        route = self.alice.get_route_simulator()
+        route = self.alice.driver
         try:
             self.alice.start_route("Louvre, Paris", "Eiffel Tower, Paris", 300, TransportType.BIKE)
             self.assertFalse(route.is_route_finished())

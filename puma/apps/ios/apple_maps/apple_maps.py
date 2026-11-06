@@ -8,7 +8,6 @@ from puma.state_graph.popup_handler import simple_popup_handler
 from puma.state_graph.puma_driver import PumaDriver, Platform, supported_version
 from puma.state_graph.state import SimpleState, compose_clicks
 from puma.state_graph.state_graph import StateGraph
-from puma.utils.route_simulator import RouteSimulator
 
 APPLE_MAPS_BUNDLE_ID = 'com.apple.Maps'
 
@@ -83,8 +82,8 @@ class AppleMaps(StateGraph):
     """
     A class representing the Apple Maps application on iOS.
 
-    Apple Maps needs to know the location of the device to plan routes. On a simulator, the location can be set using
-    the route simulator (see get_route_simulator()), or with `xcrun simctl location`.
+    Apple Maps needs to know the location of the device to plan routes. The location can be spoofed with the driver,
+    e.g. `maps.driver.set_location(48.86, 2.34)`, and start_route() spoofs it along a route.
     """
     platform = Platform.IOS
 
@@ -117,13 +116,6 @@ class AppleMaps(StateGraph):
         """
         StateGraph.__init__(self, device_udid, APPLE_MAPS_BUNDLE_ID, **kwargs)
         self.add_popup_handler(simple_popup_handler(POPUP_GETTING_THERE_SAFELY_OK))
-        self.route_simulator = RouteSimulator(self, 0)
-
-    def get_route_simulator(self) -> RouteSimulator:
-        """
-        :return: A route simulator, which can be used to spoof the location of the device along a route.
-        """
-        return self.route_simulator
 
     @action(home_state, end_state=place_state)
     def search_place(self, search_string: str):
@@ -180,9 +172,9 @@ class AppleMaps(StateGraph):
         device starts moving at the given speed. On a simulator, turn-by-turn navigation is not available, so Apple Maps
         shows the directions instead.
 
-        This method returns once the device starts moving. Use get_route_simulator() to change the speed or to wait
-        until the destination is reached (wait_until_route_finished()), and stop_route() to stop the route and reset the
-        location of the device.
+        This method returns once the device starts moving. Use the driver to change the speed
+        (driver.update_route_speed()) or to wait until the destination is reached (driver.wait_until_route_finished()),
+        and stop_route() to stop the route and reset the location of the device.
 
         :param from_query: The place to start from, e.g. 'Louvre, Paris'.
         :param to_query: The destination, e.g. 'Eiffel Tower, Paris'.
@@ -194,9 +186,7 @@ class AppleMaps(StateGraph):
                              f'{[t.name for t in ROUTE_TRANSPORT_MODES]}')
         logger.info(f'Starting route from {from_query} to {to_query} by {transport_type.name} at {speed} km/h')
         # stand still at the start of the route while Apple Maps plans it
-        self.gtl_logger.info(f'Spoofing the location of the device to the start of the route: {from_query}')
-        self.route_simulator.update_speed(0)
-        self.route_simulator.execute_route_with_queries(from_query, to_query, ROUTE_TRANSPORT_MODES[transport_type])
+        self.driver.start_route_with_queries(from_query, to_query, ROUTE_TRANSPORT_MODES[transport_type], 0)
         # Apple Maps takes a moment to pick up the new location, which is not shown in the UI
         sleep(2)
         self.get_directions(to_query, transport_type)
@@ -207,17 +197,13 @@ class AppleMaps(StateGraph):
             self.current_state = self.navigation_state
         else:
             self.gtl_logger.warning('Navigation is not available, only showing the directions')
-        self.gtl_logger.info(f'Spoofing the location of the device along the route to {to_query} at {speed} km/h')
-        self.route_simulator.update_speed(speed)
+        self.driver.update_route_speed(speed)
 
     def stop_route(self):
         """
         Stops traveling the route started with start_route(), ends the navigation in Apple Maps if it is still active,
         and resets the location of the device to its real location.
         """
-        self.gtl_logger.info('Stopping the spoofed route')
-        self.route_simulator.stop_route()
+        self.driver.stop_route()
         self.end_navigation()
-        self.gtl_logger.info('Resetting the location of the device to its real location')
-        self.driver.execute_script('mobile: resetSimulatedLocation')
         logger.info('Stopped route')

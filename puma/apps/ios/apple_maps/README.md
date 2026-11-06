@@ -47,8 +47,8 @@ Apple Maps navigates to the destination. The route is planned with OpenStreetMap
 
 ```python
 phone.start_route("Louvre, Paris", "Eiffel Tower, Paris", speed=15, transport_type=TransportType.BIKE)
-phone.get_route_simulator().update_speed(25)                  # change the speed (km/h) on the way
-phone.get_route_simulator().wait_until_route_finished()       # wait until the destination is reached
+phone.driver.update_route_speed(25)                           # change the speed (km/h) on the way
+phone.driver.wait_until_route_finished()                      # wait until the destination is reached
 phone.stop_route()                                            # stop, end the navigation, reset the location
 ```
 
@@ -56,14 +56,18 @@ On a real device, Apple Maps starts turn-by-turn navigation. On a simulator, tur
 so Apple Maps shows the directions while the device moves. On a real device, the simulated location stays active until
 `stop_route()` is called, or the device is restarted.
 
-### Using the route simulator directly
+### Spoofing the location directly
 
-The route simulator can also be used directly, to travel along your own points or a GPX file:
+The driver can also travel your own points or a GPX file, or set a single location. A device travels one route at a
+time: starting a second route raises an error until the first is stopped.
 
 ```python
 from geopy import Point
 
-route_simulator = phone.get_route_simulator()
-route_simulator.update_speed(50)
-route_simulator.execute_route_with_points([Point(48.8606, 2.3376), Point(48.8584, 2.2945)])
+phone.driver.start_route_with_points([Point(48.8606, 2.3376), Point(48.8584, 2.2945)], speed=50)
+phone.driver.stop_route()
+phone.driver.start_route_with_gpx('route.gpx', speed=15)
+phone.driver.stop_route()
+phone.driver.set_location(48.8584, 2.2945)
+phone.driver.reset_location()
 ```

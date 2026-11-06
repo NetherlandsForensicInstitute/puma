@@ -121,11 +121,10 @@ def maps_demo(udid: str, capabilities: dict):
         time.sleep(2)
         say("Maps: cycle from the Louvre to the Eiffel Tower (4 km), at 100 km/h to keep the demo short")
         maps.start_route("Louvre, Paris", "Eiffel Tower, Paris", 100, TransportType.BIKE)
-        route = maps.get_route_simulator()
         time.sleep(15)
         say("Maps: speeding up to 250 km/h")
-        route.update_speed(250)
-        arrived = route.wait_until_route_finished(timeout=90)
+        maps.driver.update_route_speed(250)
+        arrived = maps.driver.wait_until_route_finished(timeout=90)
         say("Maps: arrived at the Eiffel Tower" if arrived else "Maps: not there yet, stopping the route")
         time.sleep(3)
     finally:
