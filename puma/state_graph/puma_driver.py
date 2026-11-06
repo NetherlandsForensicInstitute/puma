@@ -328,7 +328,8 @@ class PumaDriver:
 
     def _handle_popups(self):
         # Called once per failed lookup, as it costs a lookup per known pop-up.
-        # Unset while it runs: dismissing a pop-up clicks too, and must not handle pop-ups again.
+        # Since pop-up handlers can call click(), we prevent a failing pop-up handler from causing an endless loop by
+        # unsetting self.popup_handler while this method runs, restoring it in the finally clause.
         handler, self.popup_handler = self.popup_handler, None
         if handler:
             try:
