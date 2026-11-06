@@ -3,7 +3,7 @@ from unittest.mock import Mock, call, patch
 
 from puma.state_graph.locators import quoted, xpath_quoted
 from puma.state_graph.action import action
-from puma.state_graph.puma_driver import PumaDriver, Platform
+from puma.state_graph.puma_driver import PumaDriver, Platform, PumaClickException
 from puma.state_graph.state import State, ContextualState, SimpleState, compose_clicks, scroll_to
 from puma.state_graph.state_graph import StateGraphMeta, StateGraph
 
@@ -221,6 +221,31 @@ class TestComposeClicks(unittest.TestCase):
 
     def test_name(self):
         self.assertEqual('open_settings', compose_clicks([scroll_to('xpath')], 'open_settings').__name__)
+
+
+class TestPopupsDuringClick(unittest.TestCase):
+    def _driver(self, present: list) -> PumaDriver:
+        driver = PumaDriver.__new__(PumaDriver, platform=Platform.ANDROID)
+        driver.implicit_wait = 0
+        driver.driver = Mock()
+        driver.is_present = Mock(side_effect=present)
+        return driver
+
+    def test_click_handles_popup_and_retries(self):
+        driver = self._driver([False, True])
+        driver.popup_handler = Mock()
+        driver.click('//button')
+        driver.popup_handler.assert_called_once_with()
+        driver.driver.find_element.return_value.click.assert_called_once_with()
+
+    def test_handler_does_not_nest(self):
+        driver = self._driver([False] * 9)
+        nested = []
+        driver.popup_handler = lambda: nested.append(driver.popup_handler)
+        with self.assertRaises(PumaClickException):
+            driver.click('//button')
+        self.assertEqual([None, None, None], nested)
+        self.assertIsNotNone(driver.popup_handler)
 
 
 if __name__ == '__main__':
