@@ -51,7 +51,7 @@ def _open_directions(driver: PumaDriver, search_string: str, transport_type: Tra
     driver.wait_until_present(selected_transport_mode_button(transport_type.value), timeout=5)
 
 
-@supported_version("26.41.00")
+@supported_version("26.44.05")
 class GoogleMaps(StateGraph):
     """
     A class representing the Google Maps application on Android.
