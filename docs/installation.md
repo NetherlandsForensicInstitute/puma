@@ -23,7 +23,7 @@ These scripts will:
 6. Install all requirements in your python virtual environment
 
 When software is installed (ADB, Node, Appium, Python, Appium Inspector), the scripts will only install the missing
-components. Python 3.12 will not be installed if you already have python 3.10, 3.11 or 3.12 installed.
+components. Python 3.12 will not be installed if you already have Python 3.11 to 3.15 installed.
 
 ### ADB and environmental values
 
@@ -47,7 +47,7 @@ iOS devices.
 
 ### Python
 
-Puma is tested on Python 3.10, 3.11 and 3.12. The script will install 3.12 if none of these versions are installed.
+Puma is tested on Python 3.11 to 3.15. The script will install 3.12 if none of these versions are installed.
 
 ### Appium inspector
 
