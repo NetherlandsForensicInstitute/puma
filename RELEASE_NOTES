@@ -1,5 +1,6 @@
 Version 6.1.0
 -------------
+324. Rewrite the installation scripts: install_windows.ps1 and install_macos_linux.sh install all dependencies with the package manager of the system
 232. Dismiss known pop-ups, such as permission requests, that appear in the middle of an action
 238. Slack: Add support, with sending messages and pictures, and exporting messages to CSV
 313. App Store: support newest version 27.2

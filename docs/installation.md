@@ -2,66 +2,53 @@
 
 ## Installation scripts
 
-To install all required dependencies and configure your machine to run Puma, simply run the installation script for your
-operating system in the [install folder](../install) (`install_windows.bat`, `install_linux.sh` or `install_macos.sh`).
+The scripts in the [install folder](../install) install everything Puma needs, and create a
+[Python venv](https://docs.python.org/3/library/venv.html) named `venv` in the root of this repository with the
+requirements of Puma. Run them as your own user, outside any venv. You can run them again at any time: they skip what is
+already installed.
 
-:warn: The installation scripts might not work properly on some systems. Use at your own risk. If some of the
-dependencies could not be installed with the script, you can install them manually.
+On Windows 10 or 11, in PowerShell:
 
-Note that the requirements for running an Android emulator are not included in the install scripts, as it is optional.
-Please refer to [this section in the README](setup-android.md#optional-android-studio-for-running-an-emulator).
+```shell
+powershell -ExecutionPolicy Bypass -File install\install_windows.ps1
+```
 
-## What does the script do?
+On macOS, or on Linux with apt (Debian, Ubuntu, Kali):
 
-These scripts will:
+```shell
+bash install/install_macos_linux.sh
+```
 
-1. Install ADB and setup the required environmental values
-2. Install NodeJS and Appium
-3. On macOS: install the Appium XCUITest driver and ffmpeg, for iOS support
-4. Install Python 3.12
-5. Install Appium Inspector
-6. Install all requirements in your python virtual environment
+Open a new terminal afterwards, so it picks up the new environment variables.
 
-When software is installed (ADB, Node, Appium, Python, Appium Inspector), the scripts will only install the missing
-components. Python 3.12 will not be installed if you already have python 3.10, 3.11 or 3.12 installed.
+## What the scripts install
 
-### ADB and environmental values
+The scripts use the package manager of your system: winget on Windows, Homebrew on macOS (they install Homebrew when it
+is missing) and apt on Linux.
 
-Puma needs ADB to be installed and either be available on your path, or on `ANDROID_SDK_ROOT/platform-tools/adb`.
-Appium **requires** the environmental values `ANDROID_SDK_ROOT` or `ANDROID_HOME` to be set.
+| Dependency | Why Puma needs it | Windows | macOS | Linux |
+|------------|-------------------|---------|-------|-------|
+| Python 3.10 or newer | Runs Puma | winget, 3.12 | Homebrew, 3.12 | apt, the version of the distribution |
+| adb | Talks to Android devices | Download from Google | Download from Google | Download from Google |
+| Node.js | Runs Appium | winget, unless Node.js is installed | Homebrew | [nvm](https://github.com/nvm-sh/nvm) |
+| Appium, with the UiAutomator2 driver | Operates the apps | npm | npm | npm |
+| Appium XCUITest driver | Operates iOS apps | - | appium | - |
+| Tesseract | OCR, which some apps need | winget | Homebrew | apt |
+| ffmpeg | Screen recordings on iOS and `video_utils.py` | winget | Homebrew | apt |
 
-The script will set these values if they aren't already set, and download the latest Android SDK platform tools and
-extract them to your home folder (`~/Android/Sdk/platform-tools/adb`) .
+Appium needs the environment variable `ANDROID_HOME` to point to an Android SDK folder that contains
+`platform-tools/adb`. When `ANDROID_HOME` is not set, the scripts install adb in the default folder of Android Studio
+(`%LOCALAPPDATA%\Android\Sdk` on Windows, `~/Library/Android/sdk` on macOS, `~/Android/Sdk` on Linux) and set
+`ANDROID_HOME` and `ANDROID_SDK_ROOT` to it. They add adb to the `PATH`. On Windows they set these as user environment
+variables, on macOS and Linux they add them to the profile of your shell (`~/.zshrc`, `~/.bashrc` or
+`~/.bash_profile`).
 
-### NodeJS and Appium
+The scripts do not install:
 
-Puma needs Appium, which is a Node.JS application.
-The script will install Node.JS (through NVM on Linux and MacOS) and then use NPM to install Appium globally.
-
-### iOS (macOS only)
-
-Automating iOS devices is only possible on macOS, and requires Xcode. Xcode cannot be installed by the script: install it
-from the App Store. The script installs the Appium XCUITest driver, and ffmpeg (through Homebrew), which is needed for
-screen recordings on iOS. See [setting up iOS devices](setup-ios.md) for how to prepare
-iOS devices.
-
-### Python
-
-Puma is tested on Python 3.10, 3.11 and 3.12. The script will install 3.12 if none of these versions are installed.
-
-### Appium inspector
-
-Appium Inspector is a tool that can help you develop new Puma code, either for new apps, or to expand functionality in
-existing apps.
-
-On Windows and MacOS, it will be installed as a regular application (through an installer), on Linux a portable binary
-will be placed in `~/.appium-inspector/appium-inspector.AppImage` and an alias will be made so you can run it from
-the terminal using `appium_inspector`.
-
-### Installing requirements in the python virtual environment
-
-The script will create and activate [a python venv](https://docs.python.org/3/library/venv.html) in the root of this
-repository, and then run `pip install -r requirements.txt`.
+- Xcode, which you need to automate iOS devices. Install it from the App Store. See [setting up iOS devices](setup-ios.md).
+- Android Studio, which you only need to run an emulator. See
+  [setting up Android devices](setup-android.md#optional-android-studio-for-running-an-emulator).
+- [Appium Inspector](https://github.com/appium/appium-inspector/releases), which helps you write Puma code for new apps.
 
 ## Installing Puma
 

@@ -1,13 +1,5 @@
-# Ensure Windows scripts have CRLF line endings
-install/install_windows.bat text eol=crlf
-install/windows/*.bat text eol=crlf
-
-# Ensure Linux and macos scripts have LF line endings
-install/install_linux.sh text eol=lf
-install/linux/*.sh text eol=lf
-install/install_macos.sh text eol=lf
-install/macos/*.sh text eol=lf
-install/common/*.sh text eol=lf
+# Bash fails on CRLF line endings
+install/*.sh text eol=lf
 
 # Keep the lines of both branches when both add release notes, instead of a merge conflict
 RELEASE_NOTES merge=union
