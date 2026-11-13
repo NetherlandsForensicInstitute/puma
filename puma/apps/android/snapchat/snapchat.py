@@ -147,7 +147,7 @@ class SnapchatChatSnapPreviewState(SimpleState, ContextualState):
         return driver.is_present(CHAT_SNAP_PREVIEW_RECIPIENT.format(conversation=xpath_quoted(conversation)))
 
 
-@supported_version('14.28.0.54')
+@supported_version('14.31.0.56')
 class Snapchat(StateGraph):
     """
     A class representing a state graph for managing UI states and transitions in the Snapchat application.

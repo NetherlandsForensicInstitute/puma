@@ -84,7 +84,7 @@ example implementations. Each version of Puma supports one version of each app, 
 | [Open Camera](puma/apps/android/open_camera/README.md)          | Android  | 1.55                  |
 | [Settings](puma/apps/android/settings/README.md) (Google Pixel) | Android  | Android 16            |
 | [Slack](puma/apps/android/slack/README.md)                      | Android  | 26.09.50.0            |
-| [Snapchat](puma/apps/android/snapchat/README.md)                | Android  | 14.28.0.54            |
+| [Snapchat](puma/apps/android/snapchat/README.md)                | Android  | 14.31.0.56            |
 | [Telegram](puma/apps/android/telegram/README.md)                | Android  | 12.0.1                |
 | [TeleGuard](puma/apps/android/teleguard/README.md)              | Android  | 4.0.9                 |
 | [WhatsApp](puma/apps/android/whatsapp/README.md)                | Android  | 2.26.40.76            |
