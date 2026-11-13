@@ -29,8 +29,9 @@ SEARCH_FRIEND_RESULT = ('//android.view.View[@resource-id="friend-result-cell"'
 CHAT_TEXT_FIELD = '//android.widget.EditText[@resource-id="com.snapchat.android:id/chat_input_text_field"]'
 CHAT_MESSAGE_LIST = '//androidx.recyclerview.widget.RecyclerView[@resource-id="com.snapchat.android:id/chat_message_list"]'
 CHAT_CAMERA_BUTTON = '//android.widget.ImageButton[@resource-id="com.snapchat.android:id/chat_input_bar_camera"]'
-CHAT_TITLE = ('//android.widget.FrameLayout[@resource-id="com.snapchat.android:id/avatar_icon"]'
-              '/following-sibling::*//android.widget.TextView[lower-case(@text)=lower-case("{conversation}")]')
+# The name of the friend in the header above the messages. The ids in the header are obfuscated.
+CHAT_TITLE = (f'{CHAT_MESSAGE_LIST}/preceding-sibling::android.widget.LinearLayout'
+              '//android.widget.TextView[lower-case(@text)=lower-case("{conversation}")]')
 
 # Preview of a snap that was just taken, on the camera tab and in a chat
 SNAP_PREVIEW_FRAME = '//android.widget.FrameLayout[@resource-id="com.snapchat.android:id/preview_frame"]'
