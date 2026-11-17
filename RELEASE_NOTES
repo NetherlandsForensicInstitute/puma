@@ -1,5 +1,12 @@
 Version 6.1.0
 -------------
+326. Snapchat: support newest version 14.31.0.56
+320. Drop support for Python 3.10, add support for Python 3.12 to 3.15
+232. Dismiss known pop-ups, such as permission requests, that appear in the middle of an action
+238. Slack: Add support, with sending messages and pictures, and exporting messages to CSV
+313. App Store: support newest version 27.2
+304. Telegram: support newest version 13.1.1
+306. Whatsapp: support newest version 2.26.41.77
 234. Android: Update Snapchat support based on version 14.28.0.54. Contains breaking changes for Snapchat.
 300. Telegram: support newest version 13.1.0
 292. Whatsapp: support newest version 2.26.40.76, including fixing PumaDriver.long_click_element()
@@ -24,6 +31,7 @@ Version 6.1.0
 
 Version 6.0.0
 -------------
+248. WhatsApp: Add WhatsApp for iOS
 24. iOS: Add iOS support, with Settings and Messages. StateGraph apps must set their platform
 
 Version 5.1.1

@@ -40,7 +40,7 @@ python -m unittest discover test                                    # the unit t
 python -m unittest test.test_state_graph                            # one test module
 ```
 
-CI runs the unit tests on Python 3.10 and 3.11: write syntax and library calls that both support.
+CI runs the unit tests on Python 3.11 to 3.15: write syntax and library calls that all of them support.
 
 The unit tests include a release notes test that reads the issue number from the branch name, so they fail on a
 branch whose name does not start with `<issue number>-`. The test is skipped on `main`, on

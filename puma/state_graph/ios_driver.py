@@ -5,7 +5,7 @@ import shutil
 import subprocess
 import zlib
 from datetime import datetime
-from typing import Dict
+from typing import Callable, Dict
 
 from appium.options.ios import XCUITestOptions
 from appium.webdriver.applicationstate import ApplicationState
@@ -87,7 +87,7 @@ class IOSPumaDriver(PumaDriver):
     """
     platform = Platform.IOS
 
-    def __init__(self, udid: str, app_package: str, implicit_wait: int = 1, appium_server: str = 'http://localhost:4723', desired_capabilities: Dict[str, str] = None, platform: Platform = None):
+    def __init__(self, udid: str, app_package: str, implicit_wait: int = 1, appium_server: str = 'http://localhost:4723', desired_capabilities: Dict[str, str] = None, platform: Platform = None, popup_handler: Callable[[], None] = None):
         """
         Initializes the IOSPumaDriver with device and application details.
 
@@ -98,8 +98,9 @@ class IOSPumaDriver(PumaDriver):
         :param desired_capabilities: The desired capabilities as passed to the Appium webdriver. For real devices, this
         typically contains the signing settings for WebDriverAgent (xcodeOrgId and xcodeSigningId). Each device gets its
         own WebDriverAgent ports (see wda_ports), which can be overridden with wdaLocalPort and mjpegServerPort.
+        :param popup_handler: Dismisses known pop-ups. Called once when an element is not found, before trying again.
         """
-        super().__init__(udid, app_package, implicit_wait=implicit_wait, appium_server=appium_server, desired_capabilities=desired_capabilities)
+        super().__init__(udid, app_package, implicit_wait=implicit_wait, appium_server=appium_server, desired_capabilities=desired_capabilities, popup_handler=popup_handler)
         self._back_buttons = []
         self._cached_device_info = None
 
