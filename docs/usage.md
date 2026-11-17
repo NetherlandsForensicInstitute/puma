@@ -11,12 +11,12 @@ more extensive step-by-step guide on how to use (and develop) Puma, please refer
 The code below shows a small example on how to search for the Eiffel Tower in Google Maps.
 
 ```python
-from puma.apps.android.google_maps.google_maps import GoogleMapsActions
+from puma.apps.android.google_maps.google_maps import GoogleMaps
 from puma.utils import configure_default_logging
 
 configure_default_logging()# Use Puma's logging configuration. You can also implement your own
 
-phone = GoogleMapsActions("emulator-5444")
+phone = GoogleMaps("emulator-5444")
 phone.search_place('eiffel tower')
 ```
 
