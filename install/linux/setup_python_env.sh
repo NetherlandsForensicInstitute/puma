@@ -33,7 +33,7 @@ check_python_version() {
     local version
     version=$(python3 -c 'import sys; print(f"{sys.version_info.major}.{sys.version_info.minor}")')
 
-    if [[ "$version" == "3.10" || "$version" == "3.11" || "$version" == "3.12" ]]; then
+    if [[ "$version" == "3.11" || "$version" == "3.12" || "$version" == "3.13" || "$version" == "3.14" || "$version" == "3.15" ]]; then
         echo "Python version $version is installed."
         SUPPORTED_PYTHON="python${version}"
         return 0
@@ -63,7 +63,7 @@ install_python3_12() {
 # Check if a venv is activated
 if is_venv_activated; then
   echo "[ERROR] You are already in a virtual environment. If this venv is in the Puma Root, make sure the venv runs
-  python3.10-3.12 and make sure you have run pip install -r requirements.
+  python3.11-3.15 and make sure you have run pip install -r requirements.
   If this is another virtual environment, please execute $0 again outside this venv."
   exit 1
 fi
