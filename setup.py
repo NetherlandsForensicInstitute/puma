@@ -33,6 +33,7 @@ setup(
     author_email="netherlandsforensicinstitute@users.noreply.github.com",
     url="https://github.com/NetherlandsForensicInstitute/puma",
     license="EUPL-1.2",
+    python_requires=">=3.11",
     packages=find_packages(include=['puma*']),
     test_suite="test",
     install_requires=[
