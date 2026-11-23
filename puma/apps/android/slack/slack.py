@@ -79,7 +79,7 @@ class SlackChatState(SimpleState, ContextualState):
         driver.click(chat_xpath)
 
 
-@supported_version("26.09.50.0")
+@supported_version("26.11.30.0")
 class Slack(StateGraph):
     """
     Slack on Android: navigating to channels and direct message conversations, sending messages and pictures, and
