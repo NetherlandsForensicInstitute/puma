@@ -1,5 +1,6 @@
 Version 6.1.0
 -------------
+330. TeleGuard: support newest version 4.0.12
 326. Snapchat: support newest version 14.31.0.56
 320. Drop support for Python 3.10, add support for Python 3.12 to 3.15
 232. Dismiss known pop-ups, such as permission requests, that appear in the middle of an action

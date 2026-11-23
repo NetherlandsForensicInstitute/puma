@@ -62,7 +62,7 @@ class TeleGuardChatState(SimpleState, ContextualState):
         return conversation.lower() in content_desc.lower()
 
 
-@supported_version('4.0.9')
+@supported_version('4.0.12')
 class TeleGuard(StateGraph):
     """
     A class representing a state graph for managing UI states and transitions in the TeleGuard application.
