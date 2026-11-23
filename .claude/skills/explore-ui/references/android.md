@@ -42,6 +42,25 @@ python .claude/skills/explore-ui/scripts/ui.py tap "//*[@content-desc='Navigate 
 Pass all XPaths of a state to one `find`, so they are checked against one dump. A state is done when all its XPaths
 match on its own screen and not all of them match on any other screen: check both.
 
+`states` checks every state of a Puma app against the current screen, the way Puma recognizes a state: all its XPaths
+are present and none of its invalid XPaths. Run it from the root of the repository, in the environment Puma is
+installed in:
+
+```bash
+python .claude/skills/explore-ui/scripts/ui.py states puma.apps.android.teleguard.teleguard.TeleGuard
+```
+
+```
+MATCH chat_state
+-     settings_state
+        missing: //android.view.View[@content-desc="Change TeleGuard ID"]
+```
+
+Exactly one `MATCH` is what Puma needs. No match on a screen of the app means a locator changed or the screen is new
+(Puma fails with `Unknown state, cannot recover`); two matches means the XPaths of a state are not strict enough
+(`More than one state matches the current UI`). States that are not a `SimpleState`, such as a state with its own
+`validate`, are listed but not checked. `validate_context` is not checked either.
+
 Appium evaluates XPath 2.0, lxml only XPath 1.0. `ui.py` adds the XPath 2.0 functions Puma uses (`lower-case`,
 `upper-case`, `ends-with`, `matches`). Other XPath 2.0 features are reported as an invalid XPath here, while they may
 work in Appium.

@@ -1,5 +1,6 @@
 Version 6.1.0
 -------------
+334. Add agent skills for debugging, adding features, supporting new app versions and pull requests, and let explore-ui check which states of an app match the screen
 135. Google Maps: rewrite as StateGraph, support newest version 26.47.00, and add route location spoofing to the PumaDriver
 332. StateGraph: detect the platform of an app when its file is run directly
 330. TeleGuard: support newest version 4.0.12

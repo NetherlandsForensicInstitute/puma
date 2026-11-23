@@ -7,11 +7,14 @@ XPaths you test here can be used in Puma. See ../references/android.md for how a
     python ui.py tree                 the elements on screen that carry information
     python ui.py find '<xpath>' ...   the elements matching each XPath (needs lxml)
     python ui.py tap '<xpath>'        tap the center of the first matching element (needs lxml)
+    python ui.py states <app class>   which states of a Puma app match the screen (needs lxml and Puma)
     python ui.py xml                  the full hierarchy as XML
     python ui.py focus                the package and activity that are in the foreground
 """
 import argparse
+import importlib
 import json
+import os
 import re
 import subprocess
 import sys
@@ -162,6 +165,27 @@ def print_tree(source: str, show_all: bool, package: str | None):
     walk(ElementTree.fromstring(source), 0)
 
 
+def print_states(source: str, app_class: str):
+    """
+    Checks the XPaths of every SimpleState of a Puma app against the current screen, as StateGraph.validate does.
+    """
+    # the app is imported from the directory ui.py is run from, normally the root of the repository
+    sys.path.insert(0, os.getcwd())
+    module_name, _, class_name = app_class.rpartition('.')
+    app = getattr(importlib.import_module(module_name), class_name)
+    for state in app.states:
+        if not hasattr(state, 'present_xpaths'):
+            print(f'?     {state.id}: not a SimpleState, its validate is not checked here')
+            continue
+        missing = [xpath for xpath in state.present_xpaths if not find(source, xpath)]
+        unwanted = [xpath for xpath in state.invalid_xpaths if find(source, xpath)]
+        print(f'{"MATCH" if not missing and not unwanted else "-    "} {state.id}')
+        for xpath in missing:
+            print(f'        missing: {xpath}')
+        for xpath in unwanted:
+            print(f'        present but invalid: {xpath}')
+
+
 def print_focus():
     for line in adb('shell', 'dumpsys', 'window').splitlines():
         if 'mCurrentFocus=' in line:
@@ -178,6 +202,7 @@ def main():
     tree.add_argument('--package', help='Only show elements of this package')
     commands.add_parser('find').add_argument('xpaths', nargs='+')
     commands.add_parser('tap').add_argument('xpath')
+    commands.add_parser('states').add_argument('app_class', help='e.g. puma.apps.android.teleguard.teleguard.TeleGuard')
     commands.add_parser('xml')
     commands.add_parser('focus')
     args = parser.parse_args()
@@ -199,6 +224,9 @@ def main():
             print(f'{len(matches)} match(es) for {xpath}')
             for match in matches:
                 print(f'  {describe(match)}')
+    elif args.command == 'states':
+        print_focus()
+        print_states(get_source(), args.app_class)
     elif args.command == 'tap':
         matches = find(get_source(), args.xpath)
         if not matches:
