@@ -1,4 +1,6 @@
 import inspect
+import sys
+from pathlib import Path
 from time import sleep
 from typing import Any, Dict
 
@@ -18,10 +20,31 @@ def _platform_of_module(module: str) -> Platform | None:
     Returns the platform of the applications in the given module, or None if the module is not in puma.apps.android or
     puma.apps.ios.
     """
+    if module == '__main__':
+        module = _main_module_name()
     for package, platform in _PLATFORM_PACKAGES.items():
         if module == package or module.startswith(package + '.'):
             return platform
     return None
+
+
+def _main_module_name() -> str:
+    """
+    Returns the real module name of the file that runs as __main__: its spec name when run with `python -m`, else the
+    dotted name from puma/apps onwards in its file path, or '' when neither is known.
+    """
+    main = sys.modules.get('__main__')
+    spec = getattr(main, '__spec__', None)
+    if spec is not None:
+        return spec.name
+    file = getattr(main, '__file__', None)
+    if not file:
+        return ''
+    parts = Path(file).resolve().with_suffix('').parts
+    for i in reversed(range(len(parts) - 1)):
+        if parts[i:i + 2] == ('puma', 'apps'):
+            return '.'.join(parts[i:])
+    return ''
 
 
 def _contextual_parameter_names(function) -> list[str]:
