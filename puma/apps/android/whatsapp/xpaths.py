@@ -95,24 +95,34 @@ SEND_LOCATION_LIVE_LOCATION_DIALOG = build_wa_resource_id_xpath_widget('LinearLa
 SEND_LOCATION_POPUP_CONTINUE = build_text_xpath_widget('Button', 'Continue')
 SEND_LOCATION_CAPTION = build_wa_resource_id_xpath('comment')
 
+# The name in the toolbar once the contact or group info is scrolled
+CHAT_SETTINGS_COLLAPSED_NAME = f'//*[@resource-id="{WHATSAPP_PACKAGE}:id/subject_layout"]//android.widget.TextView[@resource-id="{WHATSAPP_PACKAGE}:id/conversation_contact_name"]'
 CHAT_SETTINGS_CONTACT_NAME = (f'{build_wa_resource_id_xpath_widget("TextView", "contact_title")} | '
                               f'{build_wa_resource_id_xpath_widget("TextView", "business_title")} | '
                               f'{build_wa_resource_id_xpath_widget("TextView", "group_title")} | '
-                              f'{build_wa_resource_id_xpath_widget("Button", "group_title")}')
+                              f'{build_wa_resource_id_xpath_widget("Button", "group_title")} | '
+                              f'{CHAT_SETTINGS_COLLAPSED_NAME}')
 CHAT_SETTINGS_CONTACT_NAME_TEXT = (f'//android.widget.TextView[@resource-id="{WHATSAPP_PACKAGE}:id/contact_title" and contains(lower-case(@text), "{{conversation}}")] | '
                                    f'//android.widget.TextView[@resource-id="{WHATSAPP_PACKAGE}:id/business_title" and contains(lower-case(@text), "{{conversation}}")] | '
                                    f'//android.widget.TextView[@resource-id="{WHATSAPP_PACKAGE}:id/group_title" and contains(lower-case(@text), "{{conversation}}")] | '
-                                   f'//android.widget.Button[@resource-id="{WHATSAPP_PACKAGE}:id/group_title" and contains(lower-case(@text), "{{conversation}}")]')
-CHAT_SETTINGS_NOTIFICATIONS = build_wa_resource_id_xpath_widget('LinearLayout', 'notifications_and_sounds_layout')
+                                   f'//android.widget.Button[@resource-id="{WHATSAPP_PACKAGE}:id/group_title" and contains(lower-case(@text), "{{conversation}}")] | '
+                                   f'{CHAT_SETTINGS_COLLAPSED_NAME}[contains(lower-case(@text), "{{conversation}}")]')
+# Group info has a bar with tabs (Members, Media, Settings) that scroll to their section. It scrolls along with the
+# list and sticks below the toolbar once scrolled, so the rows below are often not on screen.
+CHAT_SETTINGS_GROUP_TAB = (f'//android.widget.HorizontalScrollView[starts-with(@resource-id, "{WHATSAPP_PACKAGE}:id/group_info_shortcuts_bar")]'
+                           f'//android.widget.LinearLayout[@content-desc="{{tab}}"]')
+CHAT_SETTINGS_NOTIFICATIONS = (f'{build_wa_resource_id_xpath_widget("LinearLayout", "notifications_and_sounds_layout")} | '
+                               f'{CHAT_SETTINGS_GROUP_TAB.format(tab="Members")}')
 CHAT_SETTINGS_MEDIA_VISIBILITY = (f'{build_wa_resource_id_xpath_widget("Button", "media_visibility_layout")} | '
-                                  f'{build_wa_resource_id_xpath_widget("LinearLayout", "group_settings_layout")}')
+                                  f'{CHAT_SETTINGS_GROUP_TAB.format(tab="Settings")}')
 CHAT_SETTINGS_ANY_MEMBER = f'//android.widget.TextView[@resource-id="{WHATSAPP_PACKAGE}:id/name"]'
 CHAT_SETTINGS_MEMBER = build_wa_resource_id_text_xpath('name', '{member}')
 CHAT_SETTINGS_REMOVE_MEMBER = "//*[starts-with(@text, 'Remove')]"
-CHAT_SETTINGS_EXIT_GROUP_BUTTON = build_text_xpath_widget('Button', 'Exit group')
-CHAT_SETTINGS_EXIT_GROUP_LIST_ITEM = build_wa_resource_id_text_xpath('list_item_title', 'Exit group')
+CHAT_SETTINGS_EXIT_GROUP_BUTTON = build_text_xpath_widget('Button', 'Leave group')
+CHAT_SETTINGS_EXIT_GROUP_LIST_ITEM = build_wa_resource_id_text_xpath('list_item_title', 'Leave group')
 CHAT_SETTINGS_DISAPPEARING_MESSAGES = f'//*[@resource-id="{WHATSAPP_PACKAGE}:id/list_item_title" and @text="Disappearing messages"]'
 CHAT_SETTINGS_DISAPPEARING_MESSAGES_POPUP_OK = '//android.view.ViewGroup[@resource-id="com.whatsapp:id/ephemeral_nux_button_group"]/android.widget.Button[@resource-id="com.whatsapp:id/ephemeral_nux_ok"]'
+CHAT_SETTINGS_GROUP_DESCRIPTION_SAVE = f'//*[@resource-id="{WHATSAPP_PACKAGE}:id/ok_cancel_button"]//android.widget.Button[@text="Save"]'
 CHAT_SETTINGS_OK_BUTTON = build_text_xpath_widget('Button', 'OK')
 CHAT_SETTINGS_CONTAINS_DELETE_GROUP = '//*[contains(@text,"Delete group")]'
 CHAT_SETTINGS_CONTACT_PROFILE_PICTURE = '//android.widget.ImageView[@resource-id="com.whatsapp:id/wds_profile_picture"]'
@@ -144,7 +154,7 @@ CALL_END_CALL_BUTTON = ('//*[@content-desc="Leave call" or '
 
 VOICE_CALL_START_BUTTON = build_wa_resource_id_xpath('voice_call')
 VIDEO_CALL_START_BUTTON = build_wa_resource_id_xpath('video_call')
-VOICE_CALL_CAMERA_BUTTON = f'//android.widget.Button[@content-desc="Turn camera on" and @resource-id="{WHATSAPP_PACKAGE}:id/camera_button"]'
+VOICE_CALL_CAMERA_BUTTON = f'//android.widget.Button[@content-desc="Camera" and @resource-id="{WHATSAPP_PACKAGE}:id/camera_button"]'
 VIDEO_CALL_GRID = '//android.widget.FrameLayout[@resource-id="com.whatsapp:id/call_grid"]'
 VIDEO_CALL_VIDEO_CONTAINER = '//android.view.ViewGroup[@resource-id="com.whatsapp:id/video_container"]'
 
