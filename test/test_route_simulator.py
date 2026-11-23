@@ -110,6 +110,16 @@ class TestRouteSimulator(unittest.TestCase):
         android.reset_location()
         android.adb.shell.assert_called_once_with('am stopservice io.appium.settings/.LocationService')
 
+    def test_appium_connection_keeps_several_connections(self):
+        # the location thread of a route and the main thread use Appium at the same time
+        from appium.webdriver.appium_connection import AppiumConnection
+        drivers = getattr(puma_driver, '__drivers')
+        with patch('puma.state_graph.puma_driver.webdriver.Remote') as remote:
+            puma_driver._get_appium_driver('http://localhost:4723', 'pool test phone', Mock())
+        drivers.pop('http://localhost:4723$pool test phone')
+        connection = AppiumConnection(client_config=remote.call_args.kwargs['client_config'])
+        self.assertEqual(4, connection._conn.connection_pool_kw['maxsize'])
+
     def test_google_maps_route_stands_still_while_navigation_starts(self):
         from puma.apps.android.google_maps.google_maps import GoogleMaps, TransportType
         maps = Mock()

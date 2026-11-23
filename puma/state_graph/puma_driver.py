@@ -12,6 +12,7 @@ from PIL import Image
 from appium import webdriver
 from appium.options.common import AppiumOptions
 from appium.webdriver import WebElement
+from appium.webdriver.client_config import AppiumClientConfig
 from appium.webdriver.webdriver import WebDriver
 from geopy import Point
 from selenium.common.exceptions import WebDriverException
@@ -69,7 +70,11 @@ def _get_appium_driver(appium_server: str, udid: str, options) -> WebDriver:
     key = f"{appium_server}${udid}"
     if key not in __drivers.keys():
         try:
-            __drivers[key] = webdriver.Remote(appium_server, options=options)
+            # A route sets the location from a background thread while the app is operated, so keep more than one
+            # connection to Appium. Selenium 4.30 reads these settings from a nested key of the same name.
+            client_config = AppiumClientConfig(appium_server,
+                                               init_args_for_pool_manager={'init_args_for_pool_manager': {'maxsize': 4}})
+            __drivers[key] = webdriver.Remote(appium_server, options=options, client_config=client_config)
         except MaxRetryError:
             logger.error("Connecting to the Appium server has failed.\n"
                          "Make sure that the appium server is running!\n"
