@@ -1,6 +1,7 @@
 Version 6.1.0
 -------------
 135. Google Maps: rewrite as StateGraph, support newest version 26.47.00, and add route location spoofing to the PumaDriver
+332. StateGraph: detect the platform of an app when its file is run directly
 330. TeleGuard: support newest version 4.0.12
 328. TeleGuard: return the contact name instead of its initials when getting conversations with unread messages
 326. Snapchat: support newest version 14.31.0.56

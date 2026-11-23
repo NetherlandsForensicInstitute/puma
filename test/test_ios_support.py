@@ -13,7 +13,7 @@ from puma.state_graph.locators import Locator, accessibility_id, ios_predicate, 
 from puma.state_graph.popup_handler import IOSAlertHandler, known_popups_for, known_android_popups, known_ios_popups
 from puma.state_graph.puma_driver import PumaDriver, PumaClickException, Platform
 from puma.state_graph.state import SimpleState
-from puma.state_graph.state_graph import StateGraph, StateGraphMeta
+from puma.state_graph.state_graph import StateGraph, StateGraphMeta, _platform_of_module
 from puma.state_graph.utils import is_valid_bundle_id, is_valid_app_id
 
 
@@ -97,6 +97,18 @@ class TestStateGraphPlatform(unittest.TestCase):
         with self.assertRaises(TypeError):
             StateGraphMeta('ExampleApp', (StateGraph,),
                            {'__module__': 'puma.apps.iosx.example', 'home_state': SimpleState(['//home'], initial_state=True)})
+
+    def test_platform_of_app_run_as_main(self):
+        android_file = os.path.join(tempfile.gettempdir(), 'puma', 'apps', 'android', 'example', 'example.py')
+        other_file = os.path.join(tempfile.gettempdir(), 'puma', 'test_scripts', 'example.py')
+        for spec, file, platform in [(Mock(), None, Platform.IOS),  # python -m
+                                     (None, android_file, Platform.ANDROID),  # python path/to/file.py
+                                     (None, other_file, None),
+                                     (None, None, None)]:  # interactive session
+            if spec:
+                spec.name = 'puma.apps.ios.example.example'
+            with self.subTest(file=file), patch.dict('sys.modules', {'__main__': Mock(__spec__=spec, __file__=file)}):
+                self.assertEqual(platform, _platform_of_module('__main__'))
 
     def test_invalid_bundle_id(self):
         with self.assertRaises(ValueError) as error:
