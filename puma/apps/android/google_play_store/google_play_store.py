@@ -22,9 +22,13 @@ TRY_GOOGLE_PASS_POPUP_HANDLER = PopUpHandler(
 GOOGLE_PLAY_POINTS_POPUP_HANDLER = PopUpHandler(
     ['//*[@text="Introducing google play points"]'],
     ['//*[@text="Not now"]'])
-COMPLETE_ACCOUNT_POPUP_HANDLER = PopUpHandler(
-    ['//*[@text="Complete account setup"]'],
+# Older versions show a Continue step before the payment options, newer versions show the payment options straight away
+COMPLETE_ACCOUNT_CONTINUE_POPUP_HANDLER = PopUpHandler(
+    ['//*[@text="Complete account setup"]', '//*[@text="Continue"]'],
     ['//*[@text="Continue"]', '//*[@text="Skip"]'])
+COMPLETE_ACCOUNT_POPUP_HANDLER = PopUpHandler(
+    ['//*[@text="Complete account setup"]', '//*[@text="Skip"]'],
+    ['//*[@text="Skip"]'])
 GAMER_PROFILE_POPUP_HANDLER = PopUpHandler(
     ['//android.widget.TextView[@text="Create a gamer profile"]', '//android.view.View[@content-desc="Not now"]'],
     ['//android.view.View[@content-desc="Not now"]'])
@@ -154,7 +158,7 @@ class AppPage(SimpleState, ContextualState):
         self.last_opened_app_page[driver.udid] = package_name
 
 
-@supported_version("53.4.34-34")
+@supported_version("54.3.07-34")
 class GooglePlayStore(StateGraph):
     """
     A class representing a state graph for managing UI states and transitions in the Google Play Store.
@@ -190,6 +194,7 @@ class GooglePlayStore(StateGraph):
         self.add_popup_handler(LOCAL_RECOMMENDATIONS_POPUP_HANDLER)
         self.add_popup_handler(TRY_GOOGLE_PASS_POPUP_HANDLER)
         self.add_popup_handler(GOOGLE_PLAY_POINTS_POPUP_HANDLER)
+        self.add_popup_handler(COMPLETE_ACCOUNT_CONTINUE_POPUP_HANDLER)
         self.add_popup_handler(COMPLETE_ACCOUNT_POPUP_HANDLER)
         self.add_popup_handler(GAMER_PROFILE_POPUP_HANDLER)
 
@@ -250,9 +255,13 @@ class GooglePlayStore(StateGraph):
         """
         def installed() -> bool:
             # right after pressing Update, the Uninstall button can still be shown next to the Update button
-            return (self.driver.is_present(APP_PAGE_UNINSTALL_BUTTON) and
+            if (self.driver.is_present(APP_PAGE_UNINSTALL_BUTTON) and
                     not self.driver.is_present(APP_PAGE_CANCEL_INSTALL_BUTTON) and
-                    not self.driver.is_present(APP_PAGE_UPDATE_BUTTON))
+                    not self.driver.is_present(APP_PAGE_UPDATE_BUTTON)):
+                return True
+            # pop-ups such as "Complete account setup" can appear on top of the app page while installing
+            self._handle_popups()
+            return False
 
         self.driver.wait_until(installed, timeout, description=f'app {package_name} to be installed')
 
