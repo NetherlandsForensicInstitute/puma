@@ -145,19 +145,16 @@ class TeleGuard(StateGraph):
         """
         Given a conversation row, extracts the name of the conversation.
         For users with an avatar, the first line of the content description is the conversation name.
-        For users without an avatar, there is an extra first line with just the first letter of the name.
-        We try to detect this pattern and return the first or second line based on this.
+        For users without an avatar, there is an extra first line with the initials of the name, such as 'AP' for
+        'Alice Puma'. We try to detect this pattern and return the first or second line based on this.
 
         :param conversation_row: The conversation row to extract a name from.
         """
-        content_description = conversation_row.get_attribute('content-desc')
-        lines = content_description.split('\n')[:2]
-        if len(lines[0])>1:
-            return lines[0]
-        elif lines[1][0] == lines[0]:
+        lines = conversation_row.get_attribute('content-desc').split('\n')
+        initials = ''.join(word[0] for word in lines[1].split()).upper() if len(lines) > 1 else ''
+        if lines[0] and initials.startswith(lines[0].upper()):
             return lines[1]
-        else:
-            return lines[0]
+        return lines[0]
 
     @action(conversations_state)
     def conversations_with_unread_messages(self) -> List[str]:
