@@ -50,7 +50,7 @@ def go_to_video_call(driver: PumaDriver, conversation: str):
     driver.click(VIDEO_CALL_START_BUTTON)
 
 
-@supported_version("2.26.41.77")
+@supported_version("2.26.45.99")
 class WhatsApp(StateGraph):
     """
     A class representing a state graph for managing UI states and transitions in the WhatsApp application.
@@ -291,6 +291,12 @@ class WhatsApp(StateGraph):
         """
         self.driver.swipe_to_click_element(CHAT_VIEW_ONCE_MEDIA)
 
+    def _open_group_info_tab(self, tab: str):
+        # Only group info has tabs, which scroll to their section. The contact info of a 1-on-1 chat has none.
+        tab_xpath = CHAT_SETTINGS_GROUP_TAB.format(tab=tab)
+        if self.driver.is_present(tab_xpath, implicit_wait=1):
+            self.driver.click(tab_xpath)
+
     @action(chat_settings_state)
     def set_group_description(self, conversation: str, description: str):
         """
@@ -301,7 +307,7 @@ class WhatsApp(StateGraph):
         self.driver.swipe_to_click_element(
             f'{build_wa_resource_id_xpath("no_description_view")} | {build_wa_resource_id_xpath("has_description_view")}')
         self.driver.send_keys(EDIT_TEXT, description)
-        self.driver.click(OK_BUTTON)
+        self.driver.click(CHAT_SETTINGS_GROUP_DESCRIPTION_SAVE)
 
     @action(chat_settings_state)
     def delete_group(self, conversation: str):
@@ -415,6 +421,7 @@ class WhatsApp(StateGraph):
         Messages will now auto-delete after 24h.
         :param conversation: The conversation for which disappearing messages should be activated.
         """
+        self._open_group_info_tab('Settings')
         self.driver.swipe_to_click_element(CHAT_SETTINGS_DISAPPEARING_MESSAGES)
         self.driver.click(RADIO_BUTTON_24_HOURS)
         self.driver.back()
@@ -425,6 +432,7 @@ class WhatsApp(StateGraph):
         Disables disappearing messages (auto delete) in the current or a given chat.
         :param conversation: The conversation for which disappearing messages should be activated.
         """
+        self._open_group_info_tab('Settings')
         self.driver.swipe_to_click_element(CHAT_SETTINGS_DISAPPEARING_MESSAGES)
         self.driver.click(RADIO_BUTTON_OFF)
         self.driver.back()
@@ -492,6 +500,7 @@ class WhatsApp(StateGraph):
         This method will leave the given group. It will not delete that group.
         :param conversation: Name of the group we want to leave.
         """
+        self._open_group_info_tab('Settings')
         self.driver.swipe_to_click_element(CHAT_SETTINGS_EXIT_GROUP_LIST_ITEM)
         self.driver.click(CHAT_SETTINGS_EXIT_GROUP_BUTTON)
 
@@ -503,6 +512,7 @@ class WhatsApp(StateGraph):
         :param conversation: The group
         :param member: The member to remove
         """
+        self._open_group_info_tab('Members')
         self.driver.swipe_to_click_element(CHAT_SETTINGS_MEMBER.format(member=member))
         self.driver.click(CHAT_SETTINGS_REMOVE_MEMBER)
         self.driver.click(CHAT_SETTINGS_OK_BUTTON)

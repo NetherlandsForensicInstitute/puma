@@ -1,5 +1,6 @@
 Version 7.1.0
 -------------
+343. WhatsApp: support newest version 2.26.45.99, with the new group info tabs and voice call screen
 344. Telegram: support newest version 13.3.1, recognize the new chat settings and edit group screens, and dismiss the contacts access pop-up
 342. Snapchat: support newest version 14.33.1.0, with both the old and the new snap editor
 339. Google Camera: support newest version 10.3.183.888945295.14
