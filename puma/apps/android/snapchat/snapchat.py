@@ -101,7 +101,7 @@ class SnapchatChatCameraState(SimpleState, ContextualState):
         :param parent_state: The chat state this camera was opened from.
         """
         super().__init__(xpaths=[CAMERA_PAGE, CAMERA_CAPTURE_BUTTON, CHAT_CAMERA_CLOSE_BUTTON],
-                         invalid_xpaths=[POPUP_CAMERA_PERMISSION_TITLE],
+                         invalid_xpaths=[POPUP_CAMERA_PERMISSION_TITLE, POPUP_NOTIFICATIONS_TITLE],
                          parent_state=parent_state,
                          parent_state_transition=compose_clicks([CHAT_CAMERA_CLOSE_BUTTON], 'close_camera'))
 
@@ -147,7 +147,7 @@ class SnapchatChatSnapPreviewState(SimpleState, ContextualState):
         return driver.is_present(CHAT_SNAP_PREVIEW_RECIPIENT.format(conversation=xpath_quoted(conversation)))
 
 
-@supported_version('14.31.0.56')
+@supported_version('14.33.1.0')
 class Snapchat(StateGraph):
     """
     A class representing a state graph for managing UI states and transitions in the Snapchat application.
@@ -157,7 +157,7 @@ class Snapchat(StateGraph):
     and handle unexpected states or errors.
     """
     camera_state = SimpleState([CAMERA_PAGE, CAMERA_CAPTURE_BUTTON, NAVIGATION_CAMERA_TAB],
-                               invalid_xpaths=[POPUP_CAMERA_PERMISSION_TITLE],
+                               invalid_xpaths=[POPUP_CAMERA_PERMISSION_TITLE, POPUP_NOTIFICATIONS_TITLE],
                                initial_state=True)
     conversations_state = SimpleState([CONVERSATIONS_TITLE, CONVERSATIONS_SEARCH_BUTTON, NAVIGATION_CHAT_TAB],
                                       parent_state=camera_state,
@@ -196,7 +196,8 @@ class Snapchat(StateGraph):
                                 PopUpHandler([POPUP_CREATE_AVATAR_TITLE], [POPUP_CREATE_AVATAR_NOT_NOW_BUTTON]),
                                 PopUpHandler([POPUP_AUTO_SAVE_STORY_TITLE], [POPUP_CANCEL_BUTTON]),
                                 simple_popup_handler(POPUP_DISCARD_SNAP_BUTTON),
-                                PopUpHandler([POPUP_CAMERA_PERMISSION_TITLE], [POPUP_CAMERA_PERMISSION_ALLOW_BUTTON]))
+                                PopUpHandler([POPUP_CAMERA_PERMISSION_TITLE], [POPUP_CAMERA_PERMISSION_ALLOW_BUTTON]),
+                                PopUpHandler([POPUP_NOTIFICATIONS_TITLE], [POPUP_NOTIFICATIONS_MAYBE_LATER_BUTTON]))
 
     @action(chat_state)
     def send_message(self, message: str, conversation: str = None):
@@ -278,10 +279,14 @@ class Snapchat(StateGraph):
     def _add_caption(self, caption: str):
         self.gtl_logger.info('Adding a caption to the snap')
         self.driver.click(SNAP_PREVIEW_CAPTION_BUTTON)
-        self.driver.send_keys(SNAP_PREVIEW_CAPTION_TEXT_FIELD, caption)
-        # Closes the keyboard and the caption editor, and keeps the caption
+        self.driver.wait_until_keyboard_shown()
+        # The caption field of the new editor is not in the hierarchy, so the caption is typed in the focused field
+        self.driver.execute_script('mobile: type', {'text': caption})
+        # The first back press closes the keyboard, and sometimes also the caption editor. The caption is kept.
         self.driver.back()
         self.driver.wait_until_keyboard_shown(shown=False)
+        if self.driver.is_present(SNAP_PREVIEW_CAPTION_STYLES, implicit_wait=1):
+            self.driver.back()
 
     def _select_recipient(self, recipient: str):
         if self.driver.is_present(SEND_TO_SELECTED_RECIPIENT.format(recipient=xpath_quoted(recipient))):
