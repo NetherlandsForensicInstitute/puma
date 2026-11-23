@@ -2,12 +2,11 @@ import random
 import threading
 import time
 from time import sleep
-from typing import Optional, Callable, List
+from typing import Optional, List
 
 import geopy.distance
 import gpxpy
 import requests
-from appium.webdriver.webdriver import WebDriver
 from geopy import Point
 from gpxpy.gpx import GPXTrackPoint
 
@@ -16,49 +15,95 @@ OSRM_URL = "https://routing.openstreetmap.de/routed-{transport_mode}/route/v1/dr
 TRANSPORT_MODES = ('car', 'bike', 'foot')
 
 
+def read_gpx(gpx_file: str) -> List[Point]:
+    """
+    Reads the points of all tracks in a gpx file.
+
+    :param gpx_file: path to a gpx file defining the route to travel.
+    :return: the points of the route.
+    """
+    points: [GPXTrackPoint] = []
+    with open(gpx_file, 'r') as opened_file:
+        gpx = gpxpy.parse(opened_file)
+        for track in gpx.tracks:
+            for segment in track.segments:
+                points.extend(segment.points)
+    # Do not include p.elevation because calculating distances between points with an elevation is not supported by
+    # geopy
+    return [Point(p.latitude, p.longitude, 0) for p in points]
+
+
+def plan_route(start_loc: str, destination: str, transport_mode: str) -> List[Point]:
+    """
+    Plans a route between two places. The places are looked up with Nominatim, the route is planned with OSRM, both
+    from OpenStreetMap.
+
+    :param start_loc: the place to start from, e.g. 'Louvre, Paris'.
+    :param destination: the destination, e.g. 'Eiffel Tower, Paris'.
+    :param transport_mode: the mode of transportation: 'car', 'foot' or 'bike'.
+    :return: the points of the route.
+    """
+    if transport_mode not in TRANSPORT_MODES:
+        raise ValueError(f"Unsupported transport mode '{transport_mode}', use one of {TRANSPORT_MODES}")
+    geocoder = geopy.get_geocoder_for_service("nominatim")(user_agent="Maps")
+    start_location = geocoder.geocode(start_loc)
+    destination_location = geocoder.geocode(destination)
+    if start_location is None or destination_location is None:
+        raise ValueError(f"Could not find '{start_loc if start_location is None else destination}' in OpenStreetMap")
+    return _get_osm_route(start_location.latitude, start_location.longitude,
+                          destination_location.latitude, destination_location.longitude, transport_mode)
+
+
+def _get_osm_route(start_lat, start_lon, end_lat, end_lon, transport_mode: str = 'car') -> List[Point]:
+    # OSRM wants lon,lat (instead of lat,lon)
+    url = OSRM_URL.format(transport_mode=transport_mode, start=f"{start_lon},{start_lat}",
+                          end=f"{end_lon},{end_lat}")
+    params = {
+        "overview": "full",  # full geometry of the route, otherwise we don't get all points
+        "geometries": "geojson"
+    }
+
+    response = requests.get(url, params=params)
+    response.raise_for_status()
+
+    data = response.json()
+    if not data.get("routes"):
+        raise ValueError("No route found between the given points.")
+
+    route = data["routes"][0]["geometry"]["coordinates"]
+    # Convert from (lon, lat) to Points containing (lat, lon)
+    return [Point(lat, lon) for lon, lat in route]
+
+
 class RouteSimulator:
     """
-    Class that allows you to spoof the location along a given route on a device available through appium.
-    Starting a route is done with the execute_route_(...) methods. See their documentation on how to call these methods.
-    The speed can be changed while the route is being traveled. See update_speed().
-    Location spoofing can be stopped with stop_route().
+    Spoofs the location of a device along a route. Used by the PumaDriver: start routes with the start_route_...
+    methods of the PumaDriver, not with this class.
+
+    The location is set with the set_location method of the given driver, so it works on Android and iOS.
     """
 
-    def __init__(self, driver,
-                 target_speed: int,
-                 absolute_speed_variance: int = None,
-                 relative_speed_variance: float = None,
-                 location_update_interval: float = 1):
+    def __init__(self, driver, location_update_interval: float = 1):
         """
-        :param driver: the Appium driver, or a Puma object containing an Appium driver: a StateGraph application, a
-        PumaDriver or an AndroidAppiumActions object. Works on Android and iOS.
-        :param target_speed: the speed at which should be traveled when a route is started.
-        :param absolute_speed_variance: (optional) the variance in speed, in kmph. see update_speed()
-        :param relative_speed_variance: (optional) the relative variance in speed. see update_speed()
-        :param location_update_interval: (optional) how often the location needs to be updates. default once per second
+        :param driver: the PumaDriver of the device, used to set the location.
+        :param location_update_interval: (optional) how often the location needs to be updated. default once per second
         """
-        # dynamic fields
-        # unwrap Puma objects (StateGraph -> PumaDriver -> WebDriver) until we have the Appium driver
-        while not isinstance(driver, WebDriver):
-            driver = driver.driver
         self.driver = driver
         self.location_update_interval = location_update_interval
-        # initial speed is 0
-        self.update_speed(target_speed,
-                          variance_absolute=absolute_speed_variance,
-                          variance_relative=relative_speed_variance)
+        self.update_speed(0)
         # fields relating to current and future locations
-        self._next_point = None
         self._current_location: Optional[Point] = None
         self._next_locations: [Point] = []
         self._last_location_update: Optional[float] = None
+        self._threads: List[threading.Thread] = []
 
-    def update_speed(self, speed: float, variance_absolute: int = 0, variance_relative: float = 0.0):
+    def update_speed(self, speed: float, variance_absolute: float = 0, variance_relative: float = 0.0):
         """
         Updates the speed at which the route is being traveled. Optionally, the speed can be variable by giving
         either an absolute or relative variance.
         This method can be called to update the speed as a route is being traveled.
-        :param speed: The (average) speed the route will be traversed.
+
+        :param speed: The (average) speed in km/h.
         :param variance_absolute: The absolute variance in speed. A value of 5 means the speed will vary between -5kmph
         and +5kmph of the given speed.
         :param variance_relative: The relative variance in speed. A value of 0.05 means the speed will vary between 95%
@@ -79,98 +124,25 @@ class RouteSimulator:
 
     def execute_route_with_points(self, point_list: [Point]):
         """
-        This method executes a route by updating the GPS location of the device.
-        The points it will follow are defined in the list provided by the user.
+        Moves the device to the first point, and starts traveling along the other points.
+
         :param point_list: the list with points of the route
         """
-        self._next_locations = point_list
-        self._current_location = None
+        if not point_list:
+            raise ValueError("A route needs at least one point")
+        self._next_locations = list(point_list)
+        # set the first location before the threads start, so the location thread does not exit right away
+        self._current_location = self._next_locations.pop(0)
+        self._last_location_update = time.time()
         self._start_route()
-
-    def execute_route_with_gpx(self, gpx_file: str):
-        """
-        This method executes a route by updating the GPS location of the device.
-        The points it will follow are defined in the gpx file provided by the user.
-        :param gpx_file: path to a gpx file defining the route to travel.
-        """
-        # Parse GPX to point list
-        points: [GPXTrackPoint] = []
-        with open(gpx_file, 'r') as opened_file:
-            gpx = gpxpy.parse(opened_file)
-            for track in gpx.tracks:
-                for segment in track.segments:
-                    points.extend(segment.points)
-        # transform GPXTrackPoint to Point objects. Do not include p.elevation because calculating distances between
-        # points with an elevation is not supported by geopy
-        points = [Point(p.latitude, p.longitude, 0) for p in points]
-        self.execute_route_with_points(points)
-
-    def execute_route_with_queries(self, start_loc: str, destination: str, transport_mode: str,
-                                   start_visual_function: Callable[[str, str], None] = None):
-        """
-        This method executes a route by updating the GPS location of the device.
-        The points this route will follow are calculated based upon the two locations provided by the user.
-        The locations will be queried with nominatim, the route is calculated with OSM, and the nodes
-        are translated by Overpass.
-        :param start_loc: the location to start from as string value
-        :param destination: the destination location as string value
-        :param transport_mode: the mode of transportation that is used, this can only be: 'car', 'foot', or 'bike'
-        :param start_visual_function: an optional method that will be called after the route is calculated, but before the route points are being updated,
-        this can be used to start the directions in a navigation based application after the start location has been set.
-        """
-        if transport_mode not in TRANSPORT_MODES:
-            raise ValueError(f"Unsupported transport mode '{transport_mode}', use one of {TRANSPORT_MODES}")
-        config = dict(user_agent="Maps")
-        cls = geopy.get_geocoder_for_service("nominatim")
-        geocoder = cls(**config)
-
-        start_location = geocoder.geocode(start_loc)
-        destination_location = geocoder.geocode(destination)
-
-        start_lat = start_location.latitude
-        start_lon = start_location.longitude
-        end_lat = destination_location.latitude
-        end_lon = destination_location.longitude
-        self.driver.set_location(start_lat, start_lon)
-
-        point_list = self._get_osm_route(start_lat, start_lon, end_lat, end_lon, transport_mode)
-
-        if start_visual_function is not None:
-            start_visual_function(destination, transport_mode)
-        self.execute_route_with_points(point_list)
 
     def _start_route(self):
         """
         Starts two new threads to update the location according to the given route.
         """
-        consumer_thread = threading.Thread(target=self._route_loop)
-        consumer_thread.daemon = True
-        consumer_thread.start()
-        consumer_thread = threading.Thread(target=self._appium_loop)
-        consumer_thread.daemon = True
-        consumer_thread.start()
-
-    @staticmethod
-    def _get_osm_route(start_lat, start_lon, end_lat, end_lon, transport_mode: str = 'car') -> List[Point]:
-        # OSRM wants lon,lat (instead of lat,lon)
-        url = OSRM_URL.format(transport_mode=transport_mode, start=f"{start_lon},{start_lat}",
-                              end=f"{end_lon},{end_lat}")
-        # params suggested by chatGPT, otherwise we don't get the full route
-        params = {
-            "overview": "full",  # full geometry of the route
-            "geometries": "geojson"
-        }
-
-        response = requests.get(url, params=params)
-        response.raise_for_status()
-
-        data = response.json()
-        if not data.get("routes"):
-            raise ValueError("No route found between the given points.")
-
-        route = data["routes"][0]["geometry"]["coordinates"]
-        # Convert from (lon, lat) to Points containing (lat, lon)
-        return [Point(lat, lon) for lon, lat in route]
+        self._threads = [threading.Thread(target=target, daemon=True) for target in (self._route_loop, self._appium_loop)]
+        for thread in self._threads:
+            thread.start()
 
     def is_route_finished(self) -> bool:
         """
@@ -182,6 +154,7 @@ class RouteSimulator:
     def wait_until_route_finished(self, timeout: float = None) -> bool:
         """
         Waits until the end of the route has been reached.
+
         :param timeout: (optional) the maximum number of seconds to wait. By default, waits until the route is finished.
         :return: True if the route is finished, False if the timeout expired first.
         """
@@ -195,10 +168,13 @@ class RouteSimulator:
     def stop_route(self):
         """
         Stops traversing the current route. This will clear all stored locations, so the route cannot be resumed.
-        If you which to pause while on the route, simply update the speed to 0.
+        If you wish to pause while on the route, simply update the speed to 0.
         """
         self._next_locations = None
         self._current_location = None
+        # wait for a location update that is in progress, so it cannot undo a reset of the location after this
+        for thread in self._threads:
+            thread.join(timeout=10)
 
     # The following methods are for internal use only, and are for traveling along the loaded route.
     def _travel_distance(self, distance_to_travel):
@@ -234,17 +210,14 @@ class RouteSimulator:
         according to said speed and duration.
         This method does nothing if there is no next location.
         """
-        if not self._next_locations:
+        if not self._next_locations or not self._current_location:
             return
         now = time.time()
-        if not self._current_location:
-            self._current_location = self._next_locations.pop(0)
-        else:
-            time_elapsed = now - self._last_location_update
-            # calculate current speed with variance
-            self._current_speed = random.uniform(self._target_speed_lower_bound, self._target_speed_upper_bound)
-            distance_to_travel = time_elapsed * ((self._current_speed * 1000) / 3600)  # km/h to m/s
-            self._travel_distance(distance_to_travel)
+        time_elapsed = now - self._last_location_update
+        # calculate current speed with variance
+        self._current_speed = random.uniform(self._target_speed_lower_bound, self._target_speed_upper_bound)
+        distance_to_travel = time_elapsed * ((self._current_speed * 1000) / 3600)  # km/h to m/s
+        self._travel_distance(distance_to_travel)
         self._last_location_update = now
 
     def _route_loop(self):
@@ -255,22 +228,21 @@ class RouteSimulator:
         while self._next_locations:
             start = time.time()
             self._update_location()
-            stop = time.time()
-            delay = stop - start
+            delay = time.time() - start
             sleep(max(self.location_update_interval - delay, 0.1))
 
     def _appium_loop(self):
         """
-        This method will loop and spoof the location through appium
-        It will exit if there is no set _current_location().
+        This method will loop and spoof the location through the driver.
+        It will exit if there is no set _current_location.
         The loop will attempt to execute every location_update_interval seconds (with a minimum of once every 0.1s)
         """
-        while self._current_location:
+        while True:
+            # read once: stop_route() can clear it from another thread
+            location = self._current_location
+            if not location:
+                return
             start = time.time()
-            self.driver.set_location(self._current_location.latitude,
-                                     self._current_location.longitude,
-                                     self._current_location.altitude,
-                                     self._current_speed, 5)
-            stop = time.time()
-            delay = stop - start
+            self.driver.set_location(location.latitude, location.longitude, location.altitude, self._current_speed)
+            delay = time.time() - start
             sleep(max(self.location_update_interval - delay, 0.1))

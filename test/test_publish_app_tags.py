@@ -22,7 +22,7 @@ class TestPublishAppTags(unittest.TestCase):
     def test_finds_android_and_ios_apps(self):
         names = {app_class.__name__ for app_class in self.app_classes}
         # an app on each platform, the legacy apps and the App Store, which was missing from the hand-maintained list
-        for expected in ['WhatsApp', 'GoogleMapsActions', 'WhatsappBusinessActions', 'Messages', 'AppStore']:
+        for expected in ['WhatsApp', 'GoogleMaps', 'WhatsappBusinessActions', 'Messages', 'AppStore']:
             self.assertIn(expected, names)
 
     def test_finds_no_base_classes(self):
