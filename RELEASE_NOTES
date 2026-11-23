@@ -1,5 +1,6 @@
-Version 6.1.0
+Version 7.0.0
 -------------
+336. Release version 7.0.0, as it contains breaking changes
 135. Google Maps: rewrite as StateGraph, support newest version 26.47.00, and add route location spoofing to the PumaDriver
 332. StateGraph: detect the platform of an app when its file is run directly
 330. TeleGuard: support newest version 4.0.12
