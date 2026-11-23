@@ -33,12 +33,17 @@ CHAT_CAMERA_BUTTON = '//android.widget.ImageButton[@resource-id="com.snapchat.an
 CHAT_TITLE = (f'{CHAT_MESSAGE_LIST}/preceding-sibling::android.widget.LinearLayout'
               '//android.widget.TextView[lower-case(@text)=lower-case("{conversation}")]')
 
-# Preview of a snap that was just taken, on the camera tab and in a chat
-SNAP_PREVIEW_FRAME = '//android.widget.FrameLayout[@resource-id="com.snapchat.android:id/preview_frame"]'
-SNAP_PREVIEW_DISCARD_BUTTON = '//android.widget.ImageButton[@content-desc="Discard"]'
+# Preview of a snap that was just taken, on the camera tab and in a chat. Snapchat rolls out a new editor per account and
+# per screen, so each locator matches the old editor and the new one.
+SNAP_PREVIEW_FRAME = ('//android.widget.FrameLayout[@resource-id="com.snapchat.android:id/preview_frame"]'
+                      ' | //android.view.View[@resource-id="snap_editor/preview_frame"]')
+SNAP_PREVIEW_DISCARD_BUTTON = ('//android.widget.ImageButton[@content-desc="Discard"]'
+                               ' | //android.view.View[@resource-id="snap_editor/preview_back_discard_button"]')
 SNAP_PREVIEW_CAPTION_BUTTON = '//android.view.View[@resource-id="caption"]'
-SNAP_PREVIEW_CAPTION_TEXT_FIELD = '//android.widget.EditText[@resource-id="com.snapchat.android:id/caption_edit_text_view"]'
-SNAP_PREVIEW_SEND_TO_BUTTON = '//android.view.ViewGroup[@resource-id="com.snapchat.android:id/sent_to_button_label_mode_view"]'
+# The styles of the caption, below the caption while it is edited
+SNAP_PREVIEW_CAPTION_STYLES = '//android.view.View[@resource-id="creative_tools_caption_carousel/caption_carousel_style_scroll_view"]'
+SNAP_PREVIEW_SEND_TO_BUTTON = ('//android.view.ViewGroup[@resource-id="com.snapchat.android:id/sent_to_button_label_mode_view"]'
+                               ' | //android.view.View[@resource-id="send_button"]')
 
 # Preview of a snap taken from a chat: it has a button to send it to the chat, and one to add more friends
 CHAT_SNAP_PREVIEW_MORE_FRIENDS_BUTTON = '//android.widget.TextView[@text="+ More Friends"]'
@@ -73,11 +78,18 @@ POPUP_LOCATION_ALLOW_BUTTON = '//android.view.View[@resource-id="com.snapchat.an
 # Asks to create a Bitmoji avatar, when Snapchat is opened. Covers the whole screen. Declined.
 POPUP_CREATE_AVATAR_TITLE = '//android.widget.TextView[@content-desc="Create Your Personal Avatar"]'
 POPUP_CREATE_AVATAR_NOT_NOW_BUTTON = '//android.widget.Button[@content-desc="Not Now"]'
-# Asks whether to abandon a snap that was edited (e.g. has a caption), when leaving the preview.
-POPUP_DISCARD_SNAP_BUTTON = '//android.view.View[@resource-id="com.snapchat.android:id/discard_alert_dialog_discard_view"]'
+# Asks whether to abandon a snap that was edited (e.g. has a caption), when leaving the preview. The new editor always
+# asks, because it adds a song to every snap. Its dialog has two buttons with the same id: the first is Save & Close,
+# which saves the snap in Memories, the second is Abandon.
+POPUP_DISCARD_SNAP_BUTTON = ('//android.view.View[@resource-id="com.snapchat.android:id/discard_alert_dialog_discard_view"]'
+                             ' | //android.widget.LinearLayout[@resource-id="com.snapchat.android:id/dialog_content"]'
+                             '/android.view.View[@resource-id="com.snapchat.android:id/composer_alert_confirm"][2]')
 # Asks to save the snaps posted to a story in Memories, the first time a snap is posted to a story. Declined.
 POPUP_AUTO_SAVE_STORY_TITLE = ('//android.widget.TextView[@resource-id="com.snapchat.android:id/alert_dialog_title"'
                                ' and starts-with(@text, "Auto-Save Story Snaps")]')
+# Asks to turn on notifications for replies, after sending a snap. Covers the bottom of the camera. Declined.
+POPUP_NOTIFICATIONS_TITLE = '//android.widget.TextView[starts-with(@text, "Want to know when") and contains(@text, "Snaps you back")]'
+POPUP_NOTIFICATIONS_MAYBE_LATER_BUTTON = '//android.widget.TextView[@text="Maybe Later"]'
 # Covers the camera until Snapchat may use the camera and microphone. Allowing it shows the permission requests of
 # Android, which are handled by the generic pop-up handlers.
 POPUP_CAMERA_PERMISSION_TITLE = '//android.widget.TextView[@text="Snapchat is a camera app"]'

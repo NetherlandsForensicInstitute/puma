@@ -24,6 +24,9 @@ phone = Snapchat("emulator-5444")
 
 Puma allows Snapchat to use the camera, the microphone and the location when it asks for it.
 
+Snapchat is rolling out a new editor for snaps, per account. Puma supports both the old and the new editor. When Puma
+leaves a snap without sending it, it abandons the snap: it does not save it in Memories.
+
 ### Sending a message
 
 We can send a simple text message to a friend. Puma opens the chat through the search screen, so this also works for
