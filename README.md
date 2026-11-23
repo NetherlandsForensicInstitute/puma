@@ -77,7 +77,7 @@ example implementations. Each version of Puma supports one version of each app, 
 
 | App                                                             | Platform | Supported version     |
 |-----------------------------------------------------------------|----------|-----------------------|
-| [Google Camera](puma/apps/android/google_camera/google_camera.py) | Android  | 8.8.225.510547499.09  |
+| [Google Camera](puma/apps/android/google_camera/google_camera.py) | Android  | 10.3.183.888945295.14 |
 | [Google Chrome](puma/apps/android/google_chrome/README.md)      | Android  | 145.0.7632.159        |
 | [Google Maps](puma/apps/android/google_maps/README.md)          | Android  | 26.47.00              |
 | [Google Play Store](puma/apps/android/google_play_store/README.md) | Android  | 48.3.25-31            |
