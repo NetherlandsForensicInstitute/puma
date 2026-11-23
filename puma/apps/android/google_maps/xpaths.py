@@ -8,8 +8,14 @@ HOME_EXPLORE_TAB = f'//android.widget.FrameLayout[@resource-id="{GOOGLE_MAPS_PAC
 
 SEARCH_EDIT_TEXT = f'//android.widget.EditText[@resource-id="{GOOGLE_MAPS_PACKAGE}:id/search_omnibox_edit_text"]'
 SEARCH_FIRST_SUGGESTION = f'//*[@resource-id="{GOOGLE_MAPS_PACKAGE}:id/typed_suggest_container"]/*[1]'
+SEARCH_NAVIGATE_UP = f'//android.widget.Button[@resource-id="{GOOGLE_MAPS_PACKAGE}:id/search_omnibox_menu_button"]'
+# A suggestion that is a search phrase instead of a place shows a list of results
+SEARCH_RESULT_LIST = f'//*[@resource-id="{GOOGLE_MAPS_PACKAGE}:id/search_list_layout"]'
+SEARCH_FIRST_RESULT = f'{SEARCH_RESULT_LIST}/*[1]'
 
-PLACE_DIRECTIONS_BUTTON = '//android.widget.Button[starts-with(@content-desc, "Directions to")]'
+# A transit station, such as an airport station, has a Directions tab instead of a button. The tab has only a text.
+PLACE_DIRECTIONS_BUTTON = ('//android.widget.Button[starts-with(@content-desc, "Directions to")]'
+                           ' | //android.widget.TextView[@text="Directions"]/..')
 
 DIRECTIONS_START_LOCATION = '//android.widget.TextView[starts-with(@content-desc, "Start location")]'
 DIRECTIONS_DRIVING_MODE = '//android.widget.LinearLayout[starts-with(@content-desc, "Driving mode")]'

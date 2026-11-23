@@ -39,6 +39,10 @@ class TestGoogleMaps(unittest.TestCase):
         self.alice.start_navigation('Tower Bridge, London')
         self.alice.start_navigation('Eiffel Tower', transport_type=TransportType.BIKE)
         self.alice.start_navigation('Atomium', time_to_wait=5)
+        # the first suggestion is a search phrase, which shows a list of results
+        self.alice.start_navigation('gravensteen gent')
+        # the first suggestion is a train station, which has a directions tab instead of a button
+        self.alice.start_navigation('schiphol airport')
         self.alice.end_navigation()
 
     def test_route(self):

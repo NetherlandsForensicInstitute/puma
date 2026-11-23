@@ -35,7 +35,26 @@ def _search(driver: PumaDriver, search_string: str):
     sleep(1)
     driver.gtl_logger.info('Opening the first suggestion')
     driver.click(SEARCH_FIRST_SUGGESTION)
-    driver.wait_until_present(PLACE_DIRECTIONS_BUTTON, timeout=10)
+    driver.wait_until_present(PLACE_DIRECTIONS_BUTTON, SEARCH_RESULT_LIST, timeout=10)
+    if not driver.is_present(PLACE_DIRECTIONS_BUTTON):
+        driver.gtl_logger.info('Opening the first search result')
+        # tap its name at the top: the middle of a result shows photos, which open a photo viewer
+        driver.click(SEARCH_FIRST_RESULT, height_ratio=0.05)
+        driver.wait_until_present(PLACE_DIRECTIONS_BUTTON, timeout=10)
+
+
+def _close_place(driver: PumaDriver):
+    """
+    Closes a place. A place opened from search results or a transit station goes back to the results or the search
+    screen, which are closed too.
+    """
+    driver.click(CARD_CLOSE_BUTTON)
+    driver.wait_until_present(HOME_EXPLORE_TAB, SEARCH_RESULT_LIST, SEARCH_NAVIGATE_UP, timeout=5)
+    if driver.is_present(SEARCH_RESULT_LIST):
+        driver.click(CARD_CLOSE_BUTTON)
+    elif driver.is_present(SEARCH_NAVIGATE_UP):
+        driver.click(SEARCH_NAVIGATE_UP)
+    sleep(1)
 
 
 def _open_directions(driver: PumaDriver, search_string: str, transport_type: TransportType):
@@ -65,7 +84,7 @@ class GoogleMaps(StateGraph):
     home_state = SimpleState(xpaths=[HOME_SEARCH_BOX, HOME_EXPLORE_TAB], initial_state=True)
     place_state = SimpleState(xpaths=[PLACE_DIRECTIONS_BUTTON, CARD_CLOSE_BUTTON],
                               parent_state=home_state,
-                              parent_state_transition=compose_clicks([CARD_CLOSE_BUTTON], 'close_place', wait=1))
+                              parent_state_transition=_close_place)
     directions_state = SimpleState(xpaths=[DIRECTIONS_START_LOCATION, DIRECTIONS_DRIVING_MODE, CARD_CLOSE_BUTTON],
                                    parent_state=place_state,
                                    parent_state_transition=compose_clicks([CARD_CLOSE_BUTTON], 'close_directions', wait=1))
