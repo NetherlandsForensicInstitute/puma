@@ -1,5 +1,6 @@
 Version 7.1.0
 -------------
+348. Google Chrome, Open Camera, Slack: Bump supported versions to 157.0.8103.80, 1.56.2, and 26.11.30.0 after validation
 343. WhatsApp: support newest version 2.26.45.99, with the new group info tabs and voice call screen
 344. Telegram: support newest version 13.3.1, recognize the new chat settings and edit group screens, and dismiss the contacts access pop-up
 342. Snapchat: support newest version 14.33.1.0, with both the old and the new snap editor
