@@ -3,6 +3,7 @@ import time
 from puma.apps.android.telegram import logger
 from puma.apps.android.telegram.xpaths import *
 from puma.state_graph.action import action
+from puma.state_graph.popup_handler import PopUpHandler
 from puma.state_graph.puma_driver import supported_version, PumaDriver, PumaClickException
 from puma.state_graph.state import SimpleState, ContextualState, State, compose_clicks
 from puma.state_graph.state_graph import StateGraph
@@ -60,7 +61,7 @@ class TelegramChatSettingsState(SimpleState, ContextualState):
         driver.click(CHAT_STATE_CONVERSATION_NAME.format(conversation=conversation))
 
 
-@supported_version("13.1.1")
+@supported_version("13.3.1")
 class Telegram(StateGraph):
     """
     A class representing a state graph for managing UI states and transitions in the Telegram Messenger application.
@@ -108,6 +109,7 @@ class Telegram(StateGraph):
         """
         package = TELEGRAM_WEB_PACKAGE if telegram_web_version else TELEGRAM_PACKAGE
         StateGraph.__init__(self, device_udid, package, **kwargs)
+        self.add_popup_handler(PopUpHandler([CONTACTS_POPUP_TEXT], [CONTACTS_POPUP_NOT_NOW]))
 
     @action(chat_state)
     def send_message(self, message: str, conversation: str = None):

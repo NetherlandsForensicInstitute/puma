@@ -1,5 +1,6 @@
 Version 7.1.0
 -------------
+344. Telegram: support newest version 13.3.1, recognize the new chat settings and edit group screens, and dismiss the contacts access pop-up
 339. Google Camera: support newest version 10.3.183.888945295.14
 338. Google Play Store: support newest version 54.3.07-34, and dismiss the 'Complete account setup' pop-up with Skip
 
