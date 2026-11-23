@@ -22,7 +22,7 @@ POPUP_TITLE = '//android.widget.TextView[@resource-id="android:id/alertTitle" an
 POPUP_OK_BUTTON = '//android.widget.Button[@resource-id="android:id/button1" and @text="OK"]'
 
 
-@supported_version("1.55")
+@supported_version("1.56.2")
 class OpenCamera(StateGraph):
     # States
     take_photo_state = SimpleState(xpaths=[TAKE_PHOTO, VIDEO_MODE_XPATH], initial_state=True)
