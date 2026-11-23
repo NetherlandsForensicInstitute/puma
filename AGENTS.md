@@ -19,6 +19,16 @@ Read the document that matches your task before you change code. This file summa
   [explore-ui](.claude/skills/explore-ui/SKILL.md), which reads the UI straight from the device and is faster than an
   Appium session
 
+The skills in `.claude/skills` hold the workflows, with the lessons of earlier reviews:
+
+| Skill | Use for |
+|-------|---------|
+| [explore-ui](.claude/skills/explore-ui/SKILL.md) | Reading and operating the screen of a device, checking locators and which states match |
+| [add-feature](.claude/skills/add-feature/SKILL.md) | Writing a new action, state, app or framework change |
+| [debug-puma](.claude/skills/debug-puma/SKILL.md) | Finding the cause of a failing action, state or app class |
+| [update-app-version](.claude/skills/update-app-version/SKILL.md) | Supporting a new version of an app |
+| [pull-request](.claude/skills/pull-request/SKILL.md) | Release notes, commits, the pull request description, reviewing and handling a review |
+
 ## Layout
 
 | Path | Contents |

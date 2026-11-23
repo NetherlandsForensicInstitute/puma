@@ -45,3 +45,7 @@ works in a Puma run on the device.
 - Prefer `content-desc`, then `resource-id`, then text: texts and content descriptions change with the language of the
   device and with app versions, and resource ids change with app versions.
 - Run the test script of the app in `test_scripts`, or the action you changed.
+
+Related skills: [add-feature](../add-feature/SKILL.md) for writing the states and actions,
+[update-app-version](../update-app-version/SKILL.md) for a new app version, and [debug-puma](../debug-puma/SKILL.md)
+for an action that fails.
